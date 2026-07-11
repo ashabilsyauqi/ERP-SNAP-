@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class CheckRole
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  Closure(Request): (Response)  $next
+     */
+    public function handle(Request $request, Closure $next, ...$roles): Response
+    {
+        if (!auth()->check()) {
+            return redirect()->route('login');
+        }
+
+        if (in_array(auth()->user()->role, $roles)) {
+            return $next($request);
+        }
+
+        // Owner has access to everything
+        if (auth()->user()->isOwner()) {
+            return $next($request);
+        }
+
+        abort(403, 'Unauthorized access.');
+    }
+}
