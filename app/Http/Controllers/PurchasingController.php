@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Material;
 use App\Models\Purchase;
+use App\Models\Supplier;
 use Illuminate\Support\Facades\DB;
 
 class PurchasingController extends Controller
@@ -13,13 +14,24 @@ class PurchasingController extends Controller
     {
         // For the dropdown list and inventory table, load wholesalePrices relation
         $materials = Material::with('wholesalePrices')->orderBy('material_name', 'asc')->get();
-        return view('purchasing.index', compact('materials'));
+        $purchases = Purchase::with(['material', 'supplier', 'user'])->orderBy('created_at', 'desc')->get();
+        $suppliers = Supplier::orderBy('name', 'asc')->get();
+
+        return view('purchasing.index', compact('materials', 'purchases', 'suppliers'));
+    }
+
+    public function create()
+    {
+        $materials = Material::with('wholesalePrices')->orderBy('material_name', 'asc')->get();
+        $suppliers = Supplier::orderBy('name', 'asc')->get();
+        return view('purchasing.create', compact('materials', 'suppliers'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'material_name' => 'required|string',
+            'supplier_name' => 'nullable|string',
             'fixed_size' => 'nullable|numeric|min:0',
             'qty_bought' => 'required|integer|min:1',
             'purchase_price' => 'required|numeric|min:0',
@@ -30,7 +42,7 @@ class PurchasingController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
-            // Find existing or create new
+            // Find existing or create new Material
             $material = Material::where('material_name', $request->material_name)
                 ->where('fixed_size', $request->fixed_size)
                 ->first();
@@ -53,10 +65,18 @@ class PurchasingController extends Controller
             $material->stock_qty += $request->qty_bought;
             $material->save();
 
+            // Handle Supplier
+            $supplierId = null;
+            if ($request->filled('supplier_name')) {
+                $supplier = Supplier::firstOrCreate(['name' => trim($request->supplier_name)]);
+                $supplierId = $supplier->id;
+            }
+
             // Log purchase
             Purchase::create([
                 'material_id' => $material->id,
                 'user_id' => auth()->id(),
+                'supplier_id' => $supplierId,
                 'qty_bought' => $request->qty_bought,
                 'total_cost' => $request->qty_bought * $request->purchase_price,
             ]);
@@ -75,6 +95,6 @@ class PurchasingController extends Controller
             }
         });
 
-        return redirect()->route('purchasing.index')->with('success', 'Stock updated successfully.');
+        return redirect()->route('purchasing.index')->with('success', 'Stock updated and purchase recorded successfully.');
     }
 }

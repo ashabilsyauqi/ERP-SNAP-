@@ -38,6 +38,7 @@ class PosController extends Controller
             $transaction = Transaction::create([
                 'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
                 'user_id' => auth()->id(),
+                'branch_id' => auth()->user()->branch_id,
                 'total_price' => 0,
                 'total_hpp' => 0,
                 'payment_method' => $request->payment_method,
@@ -74,9 +75,9 @@ class PosController extends Controller
                 
                 // Fetch the highest min_qty tier that the requested qty satisfies
                 $applicableTier = MaterialWholesalePrice::where('material_id', $materialToDeduct->id)
-                    ->where('min_qty', '<=', $qty)
-                    ->orderBy('min_qty', 'desc')
-                    ->first();
+                     ->where('min_qty', '<=', $qty)
+                     ->orderBy('min_qty', 'desc')
+                     ->first();
 
                 if ($applicableTier) {
                     $unitPrice = $applicableTier->wholesale_price;
@@ -104,6 +105,38 @@ class PosController extends Controller
             $transaction->total_price = $totalPrice;
             $transaction->total_hpp = $totalHpp;
             $transaction->save();
+
+            // Record Cash Inflow (Sales)
+            $salesAccount = \App\Models\Account::where('kode_akun', '4-1000')->first();
+            if ($salesAccount) {
+                \App\Models\CashTransaction::create([
+                    'branch_id' => auth()->user()->branch_id,
+                    'account_id' => $salesAccount->id,
+                    'user_id' => auth()->id(),
+                    'tipe' => 'masuk',
+                    'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('masuk'),
+                    'tanggal' => now()->toDateString(),
+                    'jumlah' => $totalPrice,
+                    'keterangan' => 'Pemasukan POS dari invoice ' . $transaction->invoice_number,
+                    'transaction_id' => $transaction->id,
+                ]);
+            }
+
+            // Record HPP Outflow (COGS)
+            $hppAccount = \App\Models\Account::where('kode_akun', '6-1000')->first();
+            if ($hppAccount) {
+                \App\Models\CashTransaction::create([
+                    'branch_id' => auth()->user()->branch_id,
+                    'account_id' => $hppAccount->id,
+                    'user_id' => auth()->id(),
+                    'tipe' => 'keluar',
+                    'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('keluar'),
+                    'tanggal' => now()->toDateString(),
+                    'jumlah' => $totalHpp,
+                    'keterangan' => 'Harga Pokok Penjualan (HPP) dari invoice ' . $transaction->invoice_number,
+                    'transaction_id' => $transaction->id,
+                ]);
+            }
 
             DB::commit();
 

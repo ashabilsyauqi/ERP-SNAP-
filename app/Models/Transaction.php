@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['invoice_number', 'user_id', 'total_price', 'total_hpp', 'payment_method'])]
+#[Fillable(['invoice_number', 'user_id', 'total_price', 'total_hpp', 'payment_method', 'branch_id'])]
 class Transaction extends Model
 {
     public function user(): BelongsTo
@@ -19,5 +19,15 @@ class Transaction extends Model
     public function transactionDetails(): HasMany
     {
         return $this->hasMany(TransactionDetail::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function cashTransaction()
+    {
+        return $this->hasOne(CashTransaction::class);
     }
 }

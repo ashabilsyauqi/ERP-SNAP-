@@ -80,6 +80,39 @@
                                 POS Checkout
                             </a>
                         @endif
+
+                        @if(auth()->user()->isOwner())
+                        <div class="pt-4 mt-2 border-t border-slate-800">
+                            <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Finance & Accounting</p>
+                            
+                            <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                                Finance Dashboard
+                            </a>
+                            
+                            <a href="{{ route('accounts.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('accounts.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                                Master Akun
+                            </a>
+
+                            <a href="{{ route('cash-in.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('cash-in.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+                                Kas Masuk
+                            </a>
+                            
+                            <a href="{{ route('cash-out.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('cash-out.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg>
+                                Kas Keluar
+                            </a>
+                            
+                            <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mt-4 mb-2">Laporan</p>
+                            <a href="{{ route('reports.cash-balance') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Saldo Kas</a>
+                            <a href="{{ route('reports.cash-mutation') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Buku Mutasi</a>
+                            <a href="{{ route('reports.sales') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Analisa Penjualan</a>
+                            <a href="{{ route('reports.expenses') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Pengeluaran Operasional</a>
+                            <a href="{{ route('reports.profit-loss') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Laba Rugi</a>
+                        </div>
+                        @endif
                     </nav>
                 </div>
 
@@ -141,6 +174,49 @@
                             POS Checkout
                         </a>
                     @endif
+
+                    <div class="pt-4 mt-2 border-t border-slate-800">
+                        <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Finance & Accounting</p>
+                        
+                        <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
+                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                            Finance Dashboard
+                        </a>
+                        
+                        @if(auth()->user()->isOwner())
+                        <a href="{{ route('accounts.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('accounts.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
+                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                            Master Akun
+                        </a>
+                        @endif
+
+                        <a href="{{ route('cash-in.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('cash-in.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
+                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
+                            Kas Masuk
+                        </a>
+                        
+                        <a href="{{ route('cash-out.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('cash-out.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
+                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg>
+                            Kas Keluar
+                        </a>
+
+                        <div class="relative group mt-1">
+                            <button type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
+                                <div class="flex items-center">
+                                    <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    Laporan
+                                </div>
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </button>
+                            <div class="hidden group-hover:block pl-11 pr-4 space-y-1 mt-1">
+                                <a href="{{ route('reports.cash-balance') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Saldo Kas</a>
+                                <a href="{{ route('reports.cash-mutation') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Buku Mutasi</a>
+                                <a href="{{ route('reports.sales') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Analisa Penjualan</a>
+                                <a href="{{ route('reports.expenses') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Pengeluaran Operasional</a>
+                                <a href="{{ route('reports.profit-loss') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Laba Rugi</a>
+                            </div>
+                        </div>
+                    </div>
                 </nav>
 
                 <!-- Profile and Logout Block -->

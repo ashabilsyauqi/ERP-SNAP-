@@ -28,6 +28,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:purchasing,owner'])->group(function () {
         Route::get('/purchasing', [PurchasingController::class, 'index'])->name('purchasing.index');
+        Route::get('/purchasing/create', [PurchasingController::class, 'create'])->name('purchasing.create');
         Route::post('/purchasing', [PurchasingController::class, 'store'])->name('purchasing.store');
     });
 
@@ -38,5 +39,31 @@ Route::middleware(['auth'])->group(function () {
         // Cashier and Owner sales views
         Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
         Route::get('/sales/{id}/receipt', [SalesController::class, 'receipt'])->name('sales.receipt');
+    });
+
+    // ==========================================
+    // FINANCE MODULE (Added)
+    // ==========================================
+    Route::middleware(['role:owner'])->group(function () {
+        Route::get('/finance-dashboard', [\App\Http\Controllers\FinanceDashboardController::class, 'index'])->name('dashboard');
+        
+        // Master Akun (Owner Only)
+        Route::middleware(['role:owner'])->group(function () {
+            Route::resource('accounts', \App\Http\Controllers\AccountController::class);
+            Route::patch('accounts/{account}/toggle-status', [\App\Http\Controllers\AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
+        });
+        
+        // Transaksi Kas
+        Route::resource('cash-in', \App\Http\Controllers\CashInController::class)->except(['edit', 'update']);
+        Route::resource('cash-out', \App\Http\Controllers\CashOutController::class)->except(['edit', 'update']);
+        
+        // Laporan
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('/cash-balance', [\App\Http\Controllers\Report\CashBalanceController::class, 'index'])->name('cash-balance');
+            Route::get('/cash-mutation', [\App\Http\Controllers\Report\CashMutationController::class, 'index'])->name('cash-mutation');
+            Route::get('/sales', [\App\Http\Controllers\Report\SalesReportController::class, 'index'])->name('sales');
+            Route::get('/expenses', [\App\Http\Controllers\Report\ExpenseReportController::class, 'index'])->name('expenses');
+            Route::get('/profit-loss', [\App\Http\Controllers\Report\ProfitLossController::class, 'index'])->name('profit-loss');
+        });
     });
 });

@@ -10,17 +10,26 @@ use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
 
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
+        // 1. Seed branches & accounts first
+        $this->call([
+            BranchSeeder::class,
+            AccountSeeder::class,
+        ]);
+
+        $pusat = \App\Models\Branch::first();
+
+        // 2. Seed users with branch relations
         User::factory()->create([
             'username' => 'owner1',
             'role' => 'owner',
             'password' => Hash::make('password'),
+            'branch_id' => $pusat->id,
         ]);
 
         User::factory()->create([
@@ -30,7 +39,25 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'username' => 'cashier1',
+            'username' => 'cashier_pusat',
+            'role' => 'cashier',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'username' => 'cashier_grandwis',
+            'role' => 'cashier',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'username' => 'cashier_btr',
+            'role' => 'cashier',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::factory()->create([
+            'username' => 'cashier_tambun',
             'role' => 'cashier',
             'password' => Hash::make('password'),
         ]);
@@ -79,5 +106,8 @@ class DatabaseSeeder extends Seeder
             'retail_price' => 0,
             'stock_qty' => 5
         ]);
+
+        // 3. Seed finance demo transactions
+        $this->call(FinanceDemoSeeder::class);
     }
 }
