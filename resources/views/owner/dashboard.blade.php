@@ -133,8 +133,10 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium">
                                         {{ $trx->created_at->format('d M Y, H:i') }}
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-indigo-600">
-                                        {{ $trx->invoice_number }}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-800">
+                                        <a href="{{ route('sales.receipt', $trx->id) }}" class="text-indigo-600 hover:text-indigo-800 underline">
+                                            {{ $trx->invoice_number }}
+                                        </a>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 font-medium">
                                         {{ $trx->user->username ?? 'N/A' }}

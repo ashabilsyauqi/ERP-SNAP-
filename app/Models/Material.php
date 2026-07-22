@@ -7,9 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['material_name', 'fixed_size', 'purchase_price', 'stock_qty', 'retail_price'])]
+#[Fillable(['branch_id', 'material_name', 'fixed_size', 'purchase_price', 'stock_qty', 'retail_price'])]
 class Material extends Model
 {
+    public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function purchases(): HasMany
     {
         return $this->hasMany(Purchase::class);

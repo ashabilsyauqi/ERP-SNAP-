@@ -71,7 +71,7 @@ class CashInController extends Controller
             'keterangan' => $validated['keterangan'],
         ]);
 
-        return redirect()->route('kas-masuk.index')->with('success', 'Kas masuk berhasil ditambahkan.');
+        return redirect()->route('cash-in.index')->with('success', 'Kas masuk berhasil ditambahkan.');
     }
 
     public function destroy(CashTransaction $cashTransaction)

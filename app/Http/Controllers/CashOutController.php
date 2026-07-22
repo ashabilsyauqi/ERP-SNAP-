@@ -70,7 +70,7 @@ class CashOutController extends Controller
             'keterangan' => $validated['keterangan'],
         ]);
 
-        return redirect()->route('kas-keluar.index')->with('success', 'Kas keluar berhasil ditambahkan.');
+        return redirect()->route('cash-out.index')->with('success', 'Kas keluar berhasil ditambahkan.');
     }
 
     public function destroy(CashTransaction $cashTransaction)

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class FinanceDashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $now = Carbon::now();
@@ -25,6 +25,9 @@ class FinanceDashboardController extends Controller
         if ($user->role !== 'owner') {
             $cashQuery->where('branch_id', $user->branch_id);
             $posQuery->where('branch_id', $user->branch_id);
+        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
+            $cashQuery->where('branch_id', $request->branch_id);
+            $posQuery->where('branch_id', $request->branch_id);
         }
 
         // Stats
@@ -56,13 +59,16 @@ class FinanceDashboardController extends Controller
             ->take(5)
             ->get();
 
+        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
+
         return view('finance-dashboard', compact(
             'totalKasMasuk', 
             'totalKasKeluar', 
             'saldoKas', 
             'jumlahTransaksi', 
             'totalPenjualan', 
-            'recentTransactions'
+            'recentTransactions',
+            'branches'
         ));
     }
 }

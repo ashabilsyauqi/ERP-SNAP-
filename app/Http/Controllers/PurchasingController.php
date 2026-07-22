@@ -10,21 +10,45 @@ use Illuminate\Support\Facades\DB;
 
 class PurchasingController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // For the dropdown list and inventory table, load wholesalePrices relation
-        $materials = Material::with('wholesalePrices')->orderBy('material_name', 'asc')->get();
-        $purchases = Purchase::with(['material', 'supplier', 'user'])->orderBy('created_at', 'desc')->get();
-        $suppliers = Supplier::orderBy('name', 'asc')->get();
+        $user = auth()->user();
+        
+        $materialQuery = Material::with('wholesalePrices')->orderBy('material_name', 'asc');
+        $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch'])->orderBy('created_at', 'desc');
 
-        return view('purchasing.index', compact('materials', 'purchases', 'suppliers'));
+        if ($user->isOwner()) {
+            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+                $materialQuery->where('branch_id', $request->branch_id);
+                $purchaseQuery->where('branch_id', $request->branch_id);
+            }
+        } else {
+            $materialQuery->where('branch_id', $user->branch_id);
+            $purchaseQuery->where('branch_id', $user->branch_id);
+        }
+
+        $materials = $materialQuery->get();
+        $purchases = $purchaseQuery->get();
+        $suppliers = Supplier::orderBy('name', 'asc')->get();
+        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
+
+        return view('purchasing.index', compact('materials', 'purchases', 'suppliers', 'branches'));
     }
 
     public function create()
     {
-        $materials = Material::with('wholesalePrices')->orderBy('material_name', 'asc')->get();
+        $user = auth()->user();
+        $materialQuery = Material::with('wholesalePrices')->orderBy('material_name', 'asc');
+        
+        if (!$user->isOwner()) {
+            $materialQuery->where('branch_id', $user->branch_id);
+        }
+
+        $materials = $materialQuery->get();
         $suppliers = Supplier::orderBy('name', 'asc')->get();
-        return view('purchasing.create', compact('materials', 'suppliers'));
+        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
+        
+        return view('purchasing.create', compact('materials', 'suppliers', 'branches'));
     }
 
     public function store(Request $request)
@@ -39,16 +63,22 @@ class PurchasingController extends Controller
             'wholesale' => 'nullable|array',
             'wholesale.*.min_qty' => 'nullable|integer|min:1',
             'wholesale.*.price' => 'nullable|numeric|min:0',
+            'branch_id' => 'nullable|exists:branches,id'
         ]);
 
-        DB::transaction(function () use ($request) {
+        $user = auth()->user();
+        $targetBranchId = $user->isOwner() && $request->filled('branch_id') ? $request->branch_id : $user->branch_id;
+
+        DB::transaction(function () use ($request, $user, $targetBranchId) {
             // Find existing or create new Material
             $material = Material::where('material_name', $request->material_name)
+                ->where('branch_id', $targetBranchId)
                 ->where('fixed_size', $request->fixed_size)
                 ->first();
 
             if (!$material) {
                 $material = Material::create([
+                    'branch_id' => $targetBranchId,
                     'material_name' => $request->material_name,
                     'fixed_size' => $request->fixed_size,
                     'purchase_price' => $request->purchase_price,
@@ -74,8 +104,9 @@ class PurchasingController extends Controller
 
             // Log purchase
             Purchase::create([
+                'branch_id' => $targetBranchId,
                 'material_id' => $material->id,
-                'user_id' => auth()->id(),
+                'user_id' => $user->id,
                 'supplier_id' => $supplierId,
                 'qty_bought' => $request->qty_bought,
                 'total_cost' => $request->qty_bought * $request->purchase_price,

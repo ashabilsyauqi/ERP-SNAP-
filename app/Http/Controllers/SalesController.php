@@ -14,24 +14,26 @@ class SalesController extends Controller
     /**
      * Display a listing of completed sales.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
+        $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])
+            ->orderBy('created_at', 'desc');
 
         if ($user->isOwner()) {
-            // Owner can see all history
-            $transactions = Transaction::with(['user', 'transactionDetails.material'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            // Owner can see all history, or filter by branch
+            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+                $query->where('branch_id', $request->branch_id);
+            }
         } else {
-            // Cashier can only see their own transactions
-            $transactions = Transaction::with(['user', 'transactionDetails.material'])
-                ->where('user_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->get();
+            // Cashier can only see transactions from their own branch
+            $query->where('branch_id', $user->branch_id);
         }
 
-        return view('sales.index', compact('transactions'));
+        $transactions = $query->get();
+        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
+
+        return view('sales.index', compact('transactions', 'branches'));
     }
 
     /**

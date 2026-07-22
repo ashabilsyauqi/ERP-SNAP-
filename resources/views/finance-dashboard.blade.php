@@ -5,6 +5,23 @@
 
 @section('content')
 
+<!-- Branch Filter (Owner Only) -->
+@if(auth()->user()->isOwner())
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+    <form method="GET" action="{{ route('dashboard') }}" class="flex items-center gap-4">
+        <label class="block text-sm font-medium text-gray-700">Cabang:</label>
+        <select name="branch_id" onchange="this.form.submit()" class="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm">
+            <option value="all" {{ request('branch_id') == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
+            @foreach($branches as $branch)
+                <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
+                    {{ $branch->nama_cabang }}
+                </option>
+            @endforeach
+        </select>
+    </form>
+</div>
+@endif
+
 <!-- Stats Row -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
     

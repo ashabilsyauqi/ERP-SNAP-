@@ -14,8 +14,11 @@ class PosController extends Controller
 {
     public function index()
     {
-        // Exclude Tinta (OPEX) from POS
-        $materials = Material::with('wholesalePrices')->where('material_name', 'not like', '%tinta%')->get();
+        // Exclude Tinta (OPEX) from POS, filter by branch
+        $materials = Material::with('wholesalePrices')
+            ->where('branch_id', auth()->user()->branch_id)
+            ->where('material_name', 'not like', '%tinta%')
+            ->get();
         return view('pos.index', compact('materials'));
     }
 
@@ -51,7 +54,8 @@ class PosController extends Controller
                 $materialToDeduct = null;
 
                 if ($requestedSize) {
-                    $materialToDeduct = Material::where('material_name', 'like', '%' . $item['material_name_or_type'] . '%')
+                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
+                        ->where('material_name', 'like', '%' . $item['material_name_or_type'] . '%')
                         ->where('fixed_size', '>=', $requestedSize)
                         ->where('stock_qty', '>=', $qty)
                         ->orderBy('fixed_size', 'asc')
@@ -61,7 +65,8 @@ class PosController extends Controller
                         throw new \Exception("Insufficient stock for {$item['material_name_or_type']} with size >= {$requestedSize}m (need $qty units).");
                     }
                 } else {
-                    $materialToDeduct = Material::where('material_name', 'like', '%' . $item['material_name_or_type'] . '%')
+                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
+                        ->where('material_name', 'like', '%' . $item['material_name_or_type'] . '%')
                         ->where('stock_qty', '>=', $qty)
                         ->first();
                         

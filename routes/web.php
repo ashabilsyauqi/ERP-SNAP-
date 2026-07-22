@@ -30,6 +30,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/purchasing', [PurchasingController::class, 'index'])->name('purchasing.index');
         Route::get('/purchasing/create', [PurchasingController::class, 'create'])->name('purchasing.create');
         Route::post('/purchasing', [PurchasingController::class, 'store'])->name('purchasing.store');
+        
+        Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
 
     Route::middleware(['role:cashier,owner'])->group(function () {
@@ -54,6 +56,7 @@ Route::middleware(['auth'])->group(function () {
         });
         
         // Transaksi Kas
+
         Route::resource('cash-in', \App\Http\Controllers\CashInController::class)->except(['edit', 'update']);
         Route::resource('cash-out', \App\Http\Controllers\CashOutController::class)->except(['edit', 'update']);
         
@@ -61,6 +64,8 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('reports')->name('reports.')->group(function () {
             Route::get('/cash-balance', [\App\Http\Controllers\Report\CashBalanceController::class, 'index'])->name('cash-balance');
             Route::get('/cash-mutation', [\App\Http\Controllers\Report\CashMutationController::class, 'index'])->name('cash-mutation');
+            Route::get('/cash-in', [\App\Http\Controllers\Report\CashInReportController::class, 'index'])->name('cash-in');
+            Route::get('/cash-out', [\App\Http\Controllers\Report\CashOutReportController::class, 'index'])->name('cash-out');
             Route::get('/sales', [\App\Http\Controllers\Report\SalesReportController::class, 'index'])->name('sales');
             Route::get('/expenses', [\App\Http\Controllers\Report\ExpenseReportController::class, 'index'])->name('expenses');
             Route::get('/profit-loss', [\App\Http\Controllers\Report\ProfitLossController::class, 'index'])->name('profit-loss');

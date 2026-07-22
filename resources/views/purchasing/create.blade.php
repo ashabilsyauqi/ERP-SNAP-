@@ -21,6 +21,22 @@
         <form action="{{ route('purchasing.store') }}" method="POST" id="purchase-form" class="space-y-6">
             @csrf
             
+            @if(auth()->user()->isOwner())
+            <div>
+                <label for="branch_id" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Cabang Tujuan</label>
+                <div class="relative">
+                    <select name="branch_id" id="branch_id" required
+                        class="block w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-sm text-slate-800 transition duration-200 outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10">
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ (request('branch_id') == $branch->id || auth()->user()->branch_id == $branch->id) ? 'selected' : '' }}>
+                                {{ $branch->nama_cabang }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            @endif
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Autocomplete Dropdown for Material Name -->
                 <div class="relative">

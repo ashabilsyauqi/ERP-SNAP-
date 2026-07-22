@@ -7,9 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'material_id', 'qty_bought', 'total_cost', 'supplier_id'])]
+#[Fillable(['branch_id', 'user_id', 'material_id', 'qty_bought', 'total_cost', 'supplier_id'])]
 class Purchase extends Model
 {
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function material(): BelongsTo
     {
         return $this->belongsTo(Material::class);

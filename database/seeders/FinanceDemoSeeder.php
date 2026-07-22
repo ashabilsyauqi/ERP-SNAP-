@@ -45,7 +45,7 @@ class FinanceDemoSeeder extends Seeder
                 // Create POS Transaction
                 $trx = Transaction::create([
                     'branch_id' => $branch->id,
-                    'invoice_number' => 'INV-' . $date->format('Ymd') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT),
+                    'invoice_number' => 'INV-' . $date->format('Ymd') . '-' . uniqid(),
                     'user_id' => $cashier->id,
                     'total_price' => $totalPrice,
                     'total_hpp' => $totalHpp,
@@ -60,7 +60,7 @@ class FinanceDemoSeeder extends Seeder
                     'account_id' => $salesAccount->id,
                     'user_id' => $cashier->id,
                     'tipe' => 'masuk',
-                    'nomor_referensi' => 'KM-' . $date->format('Ymd') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT),
+                    'nomor_referensi' => 'KM-' . $date->format('Ymd') . '-' . uniqid(),
                     'tanggal' => $date,
                     'jumlah' => $totalPrice,
                     'keterangan' => 'Pemasukan POS dari invoice ' . $trx->invoice_number,
@@ -77,7 +77,7 @@ class FinanceDemoSeeder extends Seeder
                         'account_id' => $hppAccount->id,
                         'user_id' => $cashier->id,
                         'tipe' => 'keluar',
-                        'nomor_referensi' => 'KK-' . $date->format('Ymd') . '-HPP-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT),
+                        'nomor_referensi' => 'KK-' . $date->format('Ymd') . '-HPP-' . uniqid(),
                         'tanggal' => $date,
                         'jumlah' => $totalHpp,
                         'keterangan' => 'Harga Pokok Penjualan (HPP) dari invoice ' . $trx->invoice_number,
