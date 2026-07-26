@@ -58,9 +58,14 @@ class CashOutController extends Controller
         ]);
 
         $user = Auth::user();
+        $branchId = $user->branch_id;
+        if (!$branchId) {
+            $centralBranch = Branch::where('nama_cabang', 'like', '%Pusat%')->first() ?: Branch::first();
+            $branchId = $centralBranch ? $centralBranch->id : null;
+        }
 
         CashTransaction::create([
-            'branch_id' => $user->branch_id,
+            'branch_id' => $branchId,
             'account_id' => $validated['account_id'],
             'user_id' => $user->id,
             'tipe' => 'keluar',
@@ -70,7 +75,7 @@ class CashOutController extends Controller
             'keterangan' => $validated['keterangan'],
         ]);
 
-        return redirect()->route('cash-out.index')->with('success', 'Kas keluar berhasil ditambahkan.');
+        return redirect()->route('kas-keluar.index')->with('success', 'Kas keluar berhasil ditambahkan.');
     }
 
     public function destroy(CashTransaction $cashTransaction)

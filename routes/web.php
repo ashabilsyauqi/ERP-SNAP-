@@ -24,6 +24,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit');
         Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update');
         Route::post('/sales/{id}/refund', [SalesController::class, 'refund'])->name('sales.refund');
+
+        // User Management
+        Route::resource('users', \App\Http\Controllers\UserController::class);
     });
 
     Route::middleware(['role:purchasing,owner'])->group(function () {
@@ -57,8 +60,8 @@ Route::middleware(['auth'])->group(function () {
         
         // Transaksi Kas
 
-        Route::resource('cash-in', \App\Http\Controllers\CashInController::class)->except(['edit', 'update']);
-        Route::resource('cash-out', \App\Http\Controllers\CashOutController::class)->except(['edit', 'update']);
+        Route::resource('kas-masuk', \App\Http\Controllers\CashInController::class)->except(['edit', 'update']);
+        Route::resource('kas-keluar', \App\Http\Controllers\CashOutController::class)->except(['edit', 'update']);
         
         // Laporan
         Route::prefix('reports')->name('reports.')->group(function () {

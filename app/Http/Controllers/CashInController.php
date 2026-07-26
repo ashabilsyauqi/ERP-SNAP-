@@ -59,9 +59,14 @@ class CashInController extends Controller
         ]);
 
         $user = Auth::user();
+        $branchId = $user->branch_id;
+        if (!$branchId) {
+            $centralBranch = Branch::where('nama_cabang', 'like', '%Pusat%')->first() ?: Branch::first();
+            $branchId = $centralBranch ? $centralBranch->id : null;
+        }
 
         CashTransaction::create([
-            'branch_id' => $user->branch_id,
+            'branch_id' => $branchId,
             'account_id' => $validated['account_id'],
             'user_id' => $user->id,
             'tipe' => 'masuk',
@@ -71,7 +76,7 @@ class CashInController extends Controller
             'keterangan' => $validated['keterangan'],
         ]);
 
-        return redirect()->route('cash-in.index')->with('success', 'Kas masuk berhasil ditambahkan.');
+        return redirect()->route('kas-masuk.index')->with('success', 'Kas masuk berhasil ditambahkan.');
     }
 
     public function destroy(CashTransaction $cashTransaction)

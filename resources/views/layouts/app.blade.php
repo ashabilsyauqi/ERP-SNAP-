@@ -63,62 +63,122 @@
                     <nav class="space-y-1">
                         @if(auth()->user()->isOwner())
                             <a href="{{ route('owner.dashboard') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('owner.dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                                <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                                 Dashboard
                             </a>
                         @endif
 
-                        @if(auth()->user()->isPurchasing() || auth()->user()->isOwner())
-                            <a href="{{ route('purchasing.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('purchasing.index') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                                Purchasing
-                            </a>
-                            <a href="{{ route('suppliers.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('suppliers.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                                Data Supplier
-                            </a>
-                        @endif
-
+                        <!-- Sales Dropdown -->
                         @if(auth()->user()->isCashier() || auth()->user()->isOwner())
-                            <a href="{{ route('pos.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('pos.index') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                                POS Checkout
-                            </a>
+                            <div x-data="{ open: {{ request()->routeIs('pos.*') || request()->routeIs('sales.*') ? 'true' : 'false' }} }" class="space-y-1">
+                                <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800 hover:text-white">
+                                    <div class="flex items-center">
+                                        <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                        </svg>
+                                        <span>Sales</span>
+                                    </div>
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
+                                    <a href="{{ route('pos.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('pos.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        POS Checkout
+                                    </a>
+                                    <a href="{{ route('sales.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('sales.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Riwayat Penjualan
+                                    </a>
+                                </div>
+                            </div>
                         @endif
 
-                        @if(auth()->user()->isOwner())
-                        <div class="pt-4 mt-2 border-t border-slate-800">
-                            <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Finance &amp; Accounting</p>
-                            
-                            <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
-                                Finance Dashboard
-                            </a>
-                            
-                            <a href="{{ route('accounts.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('accounts.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-                                Master Akun
-                            </a>
+                        <!-- Purchasing Dropdown -->
+                        @if(auth()->user()->isPurchasing() || auth()->user()->isOwner())
+                            <div x-data="{ open: {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'true' : 'false' }} }" class="space-y-1">
+                                <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
+                                    <div class="flex items-center">
+                                        <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                        </svg>
+                                        <span>Purchasing</span>
+                                    </div>
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
+                                    <a href="{{ route('purchasing.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Purchasing
+                                    </a>
+                                    <a href="{{ route('suppliers.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('suppliers.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Data Supplier
+                                    </a>
+                                </div>
+                            </div>
+                        @endif
 
-                            <a href="{{ route('cash-in.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('cash-in.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-                                Kas Masuk
-                            </a>
-                            
-                            <a href="{{ route('cash-out.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('cash-out.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg>
-                                Kas Keluar
-                            </a>
-                            
-                            <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mt-4 mb-2">Laporan</p>
-                            <a href="{{ route('reports.cash-balance') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Saldo Kas</a>
-                            <a href="{{ route('reports.cash-mutation') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Buku Mutasi</a>
-                            <a href="{{ route('reports.cash-in') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Kas Masuk</a>
-                            <a href="{{ route('reports.cash-out') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Kas Keluar</a>
-                            <a href="{{ route('reports.sales') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Analisa Penjualan</a>
-                            <a href="{{ route('reports.expenses') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Pengeluaran Operasional</a>
-                            <a href="{{ route('reports.profit-loss') }}" class="flex items-center px-4 py-2 text-sm text-slate-400 hover:text-white">Laba Rugi</a>
-                        </div>
+                        <!-- Finance Dropdown -->
+                        @if(auth()->user()->isOwner())
+                            <div x-data="{ open: {{ request()->routeIs('dashboard') || request()->routeIs('accounts.*') || request()->routeIs('kas-masuk.*') || request()->routeIs('kas-keluar.*') || request()->routeIs('reports.*') ? 'true' : 'false' }} }" class="space-y-1">
+                                <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
+                                    <div class="flex items-center">
+                                        <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span>Finance</span>
+                                    </div>
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
+                                    <a href="{{ route('dashboard') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Dashboard Keuangan
+                                    </a>
+                                    <a href="{{ route('accounts.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('accounts.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Master Akun
+                                    </a>
+                                    <a href="{{ route('kas-masuk.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('kas-masuk.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Kas Masuk
+                                    </a>
+                                    <a href="{{ route('kas-keluar.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('kas-keluar.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Kas Keluar
+                                    </a>
+                                    
+                                    <!-- Nested Laporan Dropdown -->
+                                    <div x-data="{ reportsOpen: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }" class="space-y-1 mt-2 border-t border-slate-800/50 pt-2">
+                                        <button @click="reportsOpen = !reportsOpen" type="button" class="w-full flex items-center justify-between py-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:text-white">
+                                            <span>Laporan</span>
+                                            <svg class="h-3 w-3 transition-transform duration-200" :class="{ 'rotate-180': reportsOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        <div x-show="reportsOpen" x-collapse x-cloak class="pl-3 space-y-0.5">
+                                            <a href="{{ route('reports.cash-balance') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.cash-balance') ? 'bg-indigo-600/60 text-white' : 'text-slate-400 hover:text-white' }}">Saldo Kas</a>
+                                            <a href="{{ route('reports.cash-mutation') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.cash-mutation') ? 'bg-indigo-600/60 text-white' : 'text-slate-400 hover:text-white' }}">Buku Mutasi</a>
+                                            <a href="{{ route('reports.cash-in') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.cash-in') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Kas Masuk</a>
+                                            <a href="{{ route('reports.cash-out') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.cash-out') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Kas Keluar</a>
+                                            <a href="{{ route('reports.sales') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.sales') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Analisa Penjualan</a>
+                                            <a href="{{ route('reports.expenses') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.expenses') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Pengeluaran Operasional</a>
+                                            <a href="{{ route('reports.profit-loss') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.profit-loss') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Laba Rugi</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- System Settings -->
+                        @if(auth()->user()->isOwner())
+                            <div class="pt-4 mt-2 border-t border-slate-800">
+                                <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Sistem</p>
+                                <a href="{{ route('users.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('users.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
+                                    <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    Manajemen User
+                                </a>
+                            </div>
                         @endif
                     </nav>
                 </div>
@@ -168,72 +228,122 @@
                 <nav class="space-y-1.5">
                     @if(auth()->user()->isOwner())
                         <a href="{{ route('owner.dashboard') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('owner.dashboard') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                            <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                             Dashboard
                         </a>
                     @endif
 
-                    @if(auth()->user()->isPurchasing() || auth()->user()->isOwner())
-                        <a href="{{ route('purchasing.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('purchasing.index') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                            Purchasing
-                        </a>
-                        <a href="{{ route('suppliers.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('suppliers.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                            Data Supplier
-                        </a>
-                    @endif
-
+                    <!-- Sales Dropdown -->
                     @if(auth()->user()->isCashier() || auth()->user()->isOwner())
-                        <a href="{{ route('pos.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('pos.index') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                            POS Checkout
-                        </a>
-                    @endif
-
-                    @if(auth()->user()->isOwner())
-                    <div class="pt-4 mt-2 border-t border-slate-800">
-                        <p class="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Finance &amp; Accounting</p>
-                        
-                        <a href="{{ route('dashboard') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
-                            Finance Dashboard
-                        </a>
-                        
-                        <a href="{{ route('accounts.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('accounts.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-                            Master Akun
-                        </a>
-
-                        <a href="{{ route('cash-in.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('cash-in.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path></svg>
-                            Kas Masuk
-                        </a>
-                        
-                        <a href="{{ route('cash-out.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('cash-out.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"></path></svg>
-                            Kas Keluar
-                        </a>
-
-                        <div class="relative group mt-1">
-                            <button type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
+                        <div x-data="{ open: {{ request()->routeIs('pos.*') || request()->routeIs('sales.*') ? 'true' : 'false' }} }" class="space-y-1">
+                            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
                                 <div class="flex items-center">
-                                    <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                    Laporan
+                                    <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                    <span>Sales</span>
                                 </div>
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
                             </button>
-                            <div class="hidden group-hover:block pl-11 pr-4 space-y-1 mt-1">
-                                <a href="{{ route('reports.cash-balance') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Saldo Kas</a>
-                                <a href="{{ route('reports.cash-mutation') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Buku Mutasi</a>
-                                <a href="{{ route('reports.cash-in') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Kas Masuk</a>
-                                <a href="{{ route('reports.cash-out') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Kas Keluar</a>
-                                <a href="{{ route('reports.sales') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Analisa Penjualan</a>
-                                <a href="{{ route('reports.expenses') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Pengeluaran Operasional</a>
-                                <a href="{{ route('reports.profit-loss') }}" class="block py-2 text-sm text-slate-400 hover:text-white">Laba Rugi</a>
+                            <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
+                                <a href="{{ route('pos.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('pos.*') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    POS Checkout
+                                </a>
+                                <a href="{{ route('sales.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('sales.*') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Riwayat Penjualan
+                                </a>
                             </div>
                         </div>
-                    </div>
+                    @endif
+
+                    <!-- Purchasing Dropdown -->
+                    @if(auth()->user()->isPurchasing() || auth()->user()->isOwner())
+                        <div x-data="{ open: {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'true' : 'false' }} }" class="space-y-1">
+                            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
+                                <div class="flex items-center">
+                                    <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    </svg>
+                                    <span>Purchasing</span>
+                                </div>
+                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
+                                <a href="{{ route('purchasing.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.index') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Purchasing
+                                </a>
+                                <a href="{{ route('suppliers.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('suppliers.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Data Supplier
+                                </a>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Finance Dropdown -->
+                    @if(auth()->user()->isOwner())
+                        <div x-data="{ open: {{ request()->routeIs('dashboard') || request()->routeIs('accounts.*') || request()->routeIs('kas-masuk.*') || request()->routeIs('kas-keluar.*') || request()->routeIs('reports.*') ? 'true' : 'false' }} }" class="space-y-1">
+                            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
+                                <div class="flex items-center">
+                                    <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Finance</span>
+                                </div>
+                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
+                                <a href="{{ route('dashboard') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Dashboard Keuangan
+                                </a>
+                                <a href="{{ route('accounts.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('accounts.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Master Akun
+                                </a>
+                                <a href="{{ route('kas-masuk.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('kas-masuk.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Kas Masuk
+                                </a>
+                                <a href="{{ route('kas-keluar.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('kas-keluar.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Kas Keluar
+                                </a>
+                                
+                                <!-- Nested Laporan Dropdown -->
+                                <div x-data="{ reportsOpen: {{ request()->routeIs('reports.*') ? 'true' : 'false' }} }" class="space-y-1 mt-2 border-t border-slate-800/50 pt-2">
+                                    <button @click="reportsOpen = !reportsOpen" type="button" class="w-full flex items-center justify-between py-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 hover:text-white">
+                                        <span>Laporan</span>
+                                        <svg class="h-3 w-3 transition-transform duration-200" :class="{ 'rotate-180': reportsOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div x-show="reportsOpen" x-collapse x-cloak class="pl-3 space-y-0.5">
+                                        <a href="{{ route('reports.cash-balance') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.cash-balance') ? 'bg-indigo-600/60 text-white' : 'text-slate-400 hover:text-white' }}">Saldo Kas</a>
+                                        <a href="{{ route('reports.cash-mutation') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.cash-mutation') ? 'bg-indigo-600/60 text-white' : 'text-slate-400 hover:text-white' }}">Buku Mutasi</a>
+                                        <a href="{{ route('reports.cash-in') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.cash-in') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Kas Masuk</a>
+                                        <a href="{{ route('reports.cash-out') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.cash-out') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Kas Keluar</a>
+                                        <a href="{{ route('reports.sales') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.sales') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Analisa Penjualan</a>
+                                        <a href="{{ route('reports.expenses') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.expenses') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Pengeluaran Operasional</a>
+                                        <a href="{{ route('reports.profit-loss') }}" class="block py-1.5 text-xs font-medium rounded-lg px-2.5 transition {{ request()->routeIs('reports.profit-loss') ? 'bg-indigo-600/65 text-white' : 'text-slate-400 hover:text-white' }}">Laba Rugi</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- System Settings -->
+                    @if(auth()->user()->isOwner())
+                        <div class="pt-4 mt-2 border-t border-slate-800">
+                            <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Sistem</p>
+                            <a href="{{ route('users.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('users.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
+                                <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                Manajemen User
+                            </a>
+                        </div>
                     @endif
                 </nav>
 
