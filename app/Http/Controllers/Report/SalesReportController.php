@@ -104,7 +104,7 @@ class SalesReportController extends Controller
             'values' => $chartValues
         ];
 
-        $branches = Branch::all();
+        $branches = Branch::withTrashed()->get();
 
         return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches'));
     }

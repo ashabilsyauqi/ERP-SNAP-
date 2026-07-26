@@ -9,13 +9,14 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['username', 'role', 'password', 'branch_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected static function boot()
     {
@@ -85,7 +86,7 @@ class User extends Authenticatable
 
     public function branch()
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Branch::class)->withTrashed();
     }
 
     public function cashTransactions()

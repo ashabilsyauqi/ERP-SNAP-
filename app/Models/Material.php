@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 #[Fillable(['branch_id', 'material_name', 'fixed_size', 'purchase_price', 'stock_qty', 'retail_price'])]
 class Material extends Model
 {
+    use SoftDeletes;
     public function branch(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(Branch::class);

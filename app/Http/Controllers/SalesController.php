@@ -31,7 +31,7 @@ class SalesController extends Controller
         }
 
         $transactions = $query->get();
-        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
+        $branches = \App\Models\Branch::withTrashed()->orderBy('nama_cabang')->get();
 
         return view('sales.index', compact('transactions', 'branches'));
     }

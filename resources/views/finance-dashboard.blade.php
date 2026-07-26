@@ -14,7 +14,7 @@
             <option value="all" {{ request('branch_id') == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
             @foreach($branches as $branch)
                 <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                    {{ $branch->nama_cabang }}
+                    {{ $branch->nama_cabang }} {{ $branch->trashed() ? '(Archived)' : '' }}
                 </option>
             @endforeach
         </select>

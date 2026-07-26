@@ -65,7 +65,7 @@ class ExpenseReportController extends Controller
             'values' => $chartValues
         ];
 
-        $branches = Branch::all();
+        $branches = Branch::withTrashed()->get();
 
         return view('reports.expenses', compact('expenseData', 'chartData', 'totalExpenses', 'branches'));
     }

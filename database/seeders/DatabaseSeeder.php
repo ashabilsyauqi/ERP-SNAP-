@@ -23,8 +23,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $branches = \App\Models\Branch::all();
-        $pusat = $branches->firstWhere('nama_cabang', 'Kantor Pusat');
-        $grandwis = $branches->firstWhere('nama_cabang', 'Cabang Grand Wisata');
+        $pusat = $branches->firstWhere('nama_cabang', 'Cabang Grand Wisata (Pusat)');
+        $grandwis = $pusat;
         $btr = $branches->firstWhere('nama_cabang', 'Cabang BTR Bekasi');
         $tambun = $branches->firstWhere('nama_cabang', 'Cabang Tambun');
 
@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Default materials per-branch (Kantor Pusat)
-        foreach ([$pusat, $grandwis, $btr, $tambun] as $branchItem) {
+        foreach ([$pusat, $btr, $tambun] as $branchItem) {
             $b3m = Material::create([
                 'branch_id' => $branchItem->id,
                 'material_name' => 'Kain Banner 3m',

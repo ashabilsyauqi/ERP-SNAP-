@@ -27,7 +27,7 @@ class CashBalanceController extends Controller
         $totalKeluar = (clone $query)->where('tipe', 'keluar')->sum('jumlah');
         $saldo = $totalMasuk - $totalKeluar;
 
-        $branches = Branch::all();
+        $branches = Branch::withTrashed()->get();
         $perBranch = [];
 
         foreach ($branches as $branch) {

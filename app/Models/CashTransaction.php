@@ -15,7 +15,7 @@ class CashTransaction extends Model
         ];
     }
 
-    public function branch() { return $this->belongsTo(Branch::class); }
+    public function branch() { return $this->belongsTo(Branch::class)->withTrashed(); }
     public function account() { return $this->belongsTo(Account::class); }
     public function user() { return $this->belongsTo(User::class); }
     public function transaction() { return $this->belongsTo(Transaction::class); }

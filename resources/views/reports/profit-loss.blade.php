@@ -43,7 +43,7 @@
             <select name="branch_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm">
                 <option value="">Konsolidasi Semua Cabang</option>
                 @foreach($branches as $branch)
-                    <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
+                    <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }} {{ $branch->trashed() ? '(Archived)' : '' }}</option>
                 @endforeach
             </select>
         </div>

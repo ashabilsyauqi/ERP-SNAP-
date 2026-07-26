@@ -27,6 +27,9 @@ Route::middleware(['auth'])->group(function () {
 
         // User Management
         Route::resource('users', \App\Http\Controllers\UserController::class);
+
+        // Branch Management
+        Route::resource('branches', \App\Http\Controllers\BranchController::class)->except(['create', 'show', 'edit']);
     });
 
     Route::middleware(['role:purchasing,owner'])->group(function () {

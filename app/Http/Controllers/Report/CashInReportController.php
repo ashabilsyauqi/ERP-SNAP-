@@ -82,7 +82,7 @@ class CashInReportController extends Controller
         );
 
         $accounts = Account::active()->orderBy('nama_akun')->get();
-        $branches = Branch::orderBy('nama_cabang')->get();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
         return view('reports.cash-in', [
             'mutations' => $paginatedMutations,

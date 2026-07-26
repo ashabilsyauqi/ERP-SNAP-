@@ -10,12 +10,7 @@ class BranchSeeder extends Seeder
     {
         $branches = [
             [
-                'nama_cabang' => 'Kantor Pusat',
-                'alamat' => 'Jl. Raya Bekasi No. 1',
-                'telepon' => '021-88001234'
-            ],
-            [
-                'nama_cabang' => 'Cabang Grand Wisata',
+                'nama_cabang' => 'Cabang Grand Wisata (Pusat)',
                 'alamat' => 'Jl. Grand Wisata Blok AA No. 10',
                 'telepon' => '021-88005678'
             ],

@@ -30,7 +30,7 @@ class PurchasingController extends Controller
         $materials = $materialQuery->get();
         $purchases = $purchaseQuery->get();
         $suppliers = Supplier::orderBy('name', 'asc')->get();
-        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
+        $branches = \App\Models\Branch::withTrashed()->orderBy('nama_cabang')->get();
 
         return view('purchasing.index', compact('materials', 'purchases', 'suppliers', 'branches'));
     }
