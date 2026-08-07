@@ -102,6 +102,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                                         </svg>
                                         <span>Purchasing</span>
+                                        <span>Purchasing</span>
                                     </div>
                                     <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -127,6 +128,12 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                         <span>Finance</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span>INFO EXAMPLE</span>
                                     </div>
                                     <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -184,6 +191,7 @@
                                     </svg>
                                     Manajemen Cabang
                                 </a>
+                                
                             </div>
                         @endif
                     </nav>
@@ -281,7 +289,17 @@
                             <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
                                 <a href="{{ route('purchasing.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.index') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
                                     Purchasing
+
+                                
+
                                 </a>
+                                <a href="{{ route('purchasing.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.index') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                <h1>INFOOOO</h1>
+
+                                
+
+                                </a>
+                             
                                 <a href="{{ route('suppliers.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('suppliers.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
                                     Data Supplier
                                 </a>
@@ -388,9 +406,12 @@
         </div>
     @endauth
 
+
+
     <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
     <div class="@auth md:pl-64 @endauth flex flex-col flex-1 min-w-0 min-h-screen bg-slate-50">
-        
+    <h1>INFOOOO</h1>
+
         <!-- Header area for dynamic page title context -->
         @auth
             <header class="hidden md:flex justify-between items-center h-16 px-8 border-b border-slate-200 bg-white">
