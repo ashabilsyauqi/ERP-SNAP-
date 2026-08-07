@@ -23,7 +23,7 @@ class AuthController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
 
-            if ($user->isOwner()) {
+            if ($user->isOwner() || $user->isManager()) {
                 return redirect()->route('owner.dashboard');
             } elseif ($user->isPurchasing()) {
                 return redirect()->route('purchasing.index');

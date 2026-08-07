@@ -17,22 +17,22 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:owner'])->group(function () {
+    Route::middleware(['role:owner,manager'])->group(function () {
         Route::get('/owner/dashboard', [OwnerController::class, 'dashboard'])->name('owner.dashboard');
-        
+        Route::resource('users', \App\Http\Controllers\UserController::class);
+    });
+
+    Route::middleware(['role:owner'])->group(function () {
         // Owner only sales actions
         Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit');
         Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update');
         Route::post('/sales/{id}/refund', [SalesController::class, 'refund'])->name('sales.refund');
 
-        // User Management
-        Route::resource('users', \App\Http\Controllers\UserController::class);
-
-        // Branch Management
+        // Branch Management (Owner Only - No Manager Access)
         Route::resource('branches', \App\Http\Controllers\BranchController::class)->except(['create', 'show', 'edit']);
     });
 
-    Route::middleware(['role:purchasing,owner'])->group(function () {
+    Route::middleware(['role:purchasing,owner,manager'])->group(function () {
         Route::get('/purchasing', [PurchasingController::class, 'index'])->name('purchasing.index');
         Route::get('/purchasing/create', [PurchasingController::class, 'create'])->name('purchasing.create');
         Route::post('/purchasing', [PurchasingController::class, 'store'])->name('purchasing.store');
@@ -40,7 +40,7 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
 
-    Route::middleware(['role:cashier,owner'])->group(function () {
+    Route::middleware(['role:cashier,owner,manager'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
         
@@ -50,19 +50,16 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // ==========================================
-    // FINANCE MODULE (Added)
+    // FINANCE MODULE (Owner & Manager)
     // ==========================================
-    Route::middleware(['role:owner'])->group(function () {
+    Route::middleware(['role:owner,manager'])->group(function () {
         Route::get('/finance-dashboard', [\App\Http\Controllers\FinanceDashboardController::class, 'index'])->name('dashboard');
         
-        // Master Akun (Owner Only)
-        Route::middleware(['role:owner'])->group(function () {
-            Route::resource('accounts', \App\Http\Controllers\AccountController::class);
-            Route::patch('accounts/{account}/toggle-status', [\App\Http\Controllers\AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
-        });
+        // Master Akun
+        Route::resource('accounts', \App\Http\Controllers\AccountController::class);
+        Route::patch('accounts/{account}/toggle-status', [\App\Http\Controllers\AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
         
         // Transaksi Kas
-
         Route::resource('kas-masuk', \App\Http\Controllers\CashInController::class)->except(['edit', 'update']);
         Route::resource('kas-keluar', \App\Http\Controllers\CashOutController::class)->except(['edit', 'update']);
         
@@ -76,5 +73,15 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/expenses', [\App\Http\Controllers\Report\ExpenseReportController::class, 'index'])->name('expenses');
             Route::get('/profit-loss', [\App\Http\Controllers\Report\ProfitLossController::class, 'index'])->name('profit-loss');
         });
+    });
+
+    // ==========================================
+    // STOCK MODULE (Manager & Owner)
+    // ==========================================
+    Route::middleware(['role:manager'])->group(function () {
+        Route::get('/stock', [\App\Http\Controllers\StockController::class, 'index'])->name('stock.index');
+        Route::put('/stock/{material}', [\App\Http\Controllers\StockController::class, 'update'])->name('stock.update');
+        Route::post('/stock/purchases/{purchase}/verify', [\App\Http\Controllers\StockController::class, 'verify'])->name('stock.purchases.verify');
+        Route::post('/stock/purchases/{purchase}/reject', [\App\Http\Controllers\StockController::class, 'reject'])->name('stock.purchases.reject');
     });
 });

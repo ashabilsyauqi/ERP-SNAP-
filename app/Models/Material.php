@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['branch_id', 'material_name', 'fixed_size', 'purchase_price', 'stock_qty', 'retail_price'])]
+#[Fillable(['branch_id', 'supplier_id', 'material_name', 'fixed_size', 'purchase_price', 'stock_qty', 'retail_price'])]
 class Material extends Model
 {
     use SoftDeletes;
@@ -31,5 +31,10 @@ class Material extends Model
     public function wholesalePrices(): HasMany
     {
         return $this->hasMany(MaterialWholesalePrice::class)->orderBy('min_qty', 'asc');
+    }
+
+    public function supplier(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 }

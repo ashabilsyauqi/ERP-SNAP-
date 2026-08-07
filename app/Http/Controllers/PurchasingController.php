@@ -76,25 +76,6 @@ class PurchasingController extends Controller
                 ->where('fixed_size', $request->fixed_size)
                 ->first();
 
-            if (!$material) {
-                $material = Material::create([
-                    'branch_id' => $targetBranchId,
-                    'material_name' => $request->material_name,
-                    'fixed_size' => $request->fixed_size,
-                    'purchase_price' => $request->purchase_price,
-                    'retail_price' => $request->retail_price,
-                    'stock_qty' => 0
-                ]);
-            } else {
-                // Update pricing to the latest
-                $material->purchase_price = $request->purchase_price;
-                $material->retail_price = $request->retail_price;
-            }
-            
-            // Add stock
-            $material->stock_qty += $request->qty_bought;
-            $material->save();
-
             // Handle Supplier
             $supplierId = null;
             if ($request->filled('supplier_name')) {
@@ -102,7 +83,27 @@ class PurchasingController extends Controller
                 $supplierId = $supplier->id;
             }
 
-            // Log purchase
+            if (!$material) {
+                $material = Material::create([
+                    'branch_id' => $targetBranchId,
+                    'supplier_id' => $supplierId,
+                    'material_name' => $request->material_name,
+                    'fixed_size' => $request->fixed_size,
+                    'purchase_price' => $request->purchase_price,
+                    'retail_price' => $request->retail_price,
+                    'stock_qty' => 0
+                ]);
+            } else {
+                // Update pricing to the latest and supplier if set
+                $material->purchase_price = $request->purchase_price;
+                $material->retail_price = $request->retail_price;
+                if ($supplierId) {
+                    $material->supplier_id = $supplierId;
+                }
+                $material->save();
+            }
+
+            // Log purchase with pending_verification status (stock is NOT increased until Manager verifies)
             Purchase::create([
                 'branch_id' => $targetBranchId,
                 'material_id' => $material->id,
@@ -110,6 +111,7 @@ class PurchasingController extends Controller
                 'supplier_id' => $supplierId,
                 'qty_bought' => $request->qty_bought,
                 'total_cost' => $request->qty_bought * $request->purchase_price,
+                'status' => 'pending_verification',
             ]);
 
             // Sync Wholesale Tiers — filter out empty rows
@@ -126,6 +128,6 @@ class PurchasingController extends Controller
             }
         });
 
-        return redirect()->route('purchasing.index')->with('success', 'Stock updated and purchase recorded successfully.');
+        return redirect()->route('purchasing.index')->with('success', 'Pengadaan barang berhasil dicatat dan kini menunggu verifikasi penerimaan fisik dari Manajer Cabang.');
     }
 }

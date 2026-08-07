@@ -12,19 +12,34 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('branch')->orderBy('username')->get();
-        $branches = Branch::orderBy('nama_cabang')->get();
+        $authUser = Auth::user();
+        
+        if ($authUser->isManager()) {
+            $users = User::with('branch')->where('branch_id', $authUser->branch_id)->orderBy('username')->get();
+            $branches = Branch::where('id', $authUser->branch_id)->get();
+        } else {
+            $users = User::with('branch')->orderBy('username')->get();
+            $branches = Branch::orderBy('nama_cabang')->get();
+        }
+
         return view('users.index', compact('users', 'branches'));
     }
 
     public function store(Request $request)
     {
+        $authUser = Auth::user();
+        $allowedRoles = $authUser->isManager() ? 'manager,purchasing,cashier' : 'owner,manager,purchasing,cashier';
+
         $validated = $request->validate([
             'username' => 'required|string|max:255|unique:users,username',
-            'role' => 'required|string|in:owner,purchasing,cashier',
+            'role' => 'required|string|in:' . $allowedRoles,
             'password' => 'required|string|min:6',
-            'branch_id' => 'required_if:role,purchasing,cashier|nullable|exists:branches,id',
+            'branch_id' => $authUser->isManager() ? 'nullable|exists:branches,id' : 'required_if:role,manager,purchasing,cashier|nullable|exists:branches,id',
         ]);
+
+        if ($authUser->isManager()) {
+            $validated['branch_id'] = $authUser->branch_id;
+        }
 
         $validated['password'] = Hash::make($request->password);
 
@@ -35,17 +50,25 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $authUser = Auth::user();
+
+        if ($authUser->isManager() && $user->branch_id != $authUser->branch_id) {
+            abort(403, 'Anda tidak berhak mengedit user cabang lain.');
+        }
+
+        $allowedRoles = $authUser->isManager() ? 'manager,purchasing,cashier' : 'owner,manager,purchasing,cashier';
+
         $validated = $request->validate([
             'username' => 'required|string|max:255|unique:users,username,' . $user->id,
-            'role' => 'required|string|in:owner,purchasing,cashier',
+            'role' => 'required|string|in:' . $allowedRoles,
             'password' => 'nullable|string|min:6',
-            'branch_id' => 'required_if:role,purchasing,cashier|nullable|exists:branches,id',
+            'branch_id' => $authUser->isManager() ? 'nullable|exists:branches,id' : 'required_if:role,manager,purchasing,cashier|nullable|exists:branches,id',
         ]);
 
         $data = [
             'username' => $validated['username'],
             'role' => $validated['role'],
-            'branch_id' => $validated['role'] === 'owner' ? null : $validated['branch_id'],
+            'branch_id' => $authUser->isManager() ? $authUser->branch_id : ($validated['role'] === 'owner' ? null : $validated['branch_id']),
         ];
 
         if ($request->filled('password')) {
@@ -59,6 +82,12 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        $authUser = Auth::user();
+
+        if ($authUser->isManager() && $user->branch_id != $authUser->branch_id) {
+            abort(403, 'Anda tidak berhak menghapus user cabang lain.');
+        }
+
         if (Auth::id() === $user->id) {
             return redirect()->route('users.index')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
         }

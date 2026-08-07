@@ -57,6 +57,10 @@
                                     <span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-semibold text-purple-700 ring-1 ring-inset ring-purple-700/10 capitalize">
                                         {{ $user->role }}
                                     </span>
+                                @elseif($user->role === 'manager')
+                                    <span class="inline-flex items-center rounded-md bg-indigo-50 px-2 py-1 text-xs font-semibold text-indigo-700 ring-1 ring-inset ring-indigo-700/10 capitalize">
+                                        Manajer Cabang
+                                    </span>
                                 @elseif($user->role === 'purchasing')
                                     <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-700/10 capitalize">
                                         {{ $user->role }}
@@ -155,7 +159,10 @@
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Role <span class="text-rose-500">*</span></label>
                             <select name="role" x-model="addRole" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white">
-                                <option value="owner">Owner</option>
+                                @if(auth()->user()->isOwner())
+                                    <option value="owner">Owner</option>
+                                @endif
+                                <option value="manager">Manajer Cabang</option>
                                 <option value="purchasing">Purchasing</option>
                                 <option value="cashier">Cashier</option>
                             </select>
@@ -213,7 +220,10 @@
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 mb-1">Role <span class="text-rose-500">*</span></label>
                             <select name="role" x-model="editUser.role" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white">
-                                <option value="owner">Owner</option>
+                                @if(auth()->user()->isOwner())
+                                    <option value="owner">Owner</option>
+                                @endif
+                                <option value="manager">Manajer Cabang</option>
                                 <option value="purchasing">Purchasing</option>
                                 <option value="cashier">Cashier</option>
                             </select>

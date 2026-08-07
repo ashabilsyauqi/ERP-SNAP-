@@ -9,8 +9,15 @@ class OwnerController extends Controller
 {
     public function dashboard()
     {
-        $totalSales = Transaction::sum('total_price');
-        $totalHpp = Transaction::sum('total_hpp');
+        $user = auth()->user();
+        $query = Transaction::query();
+
+        if ($user->isManager()) {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $totalSales = (clone $query)->sum('total_price');
+        $totalHpp = (clone $query)->sum('total_hpp');
         $grossProfit = $totalSales - $totalHpp;
         
         // Placeholder for Operational Expenses
@@ -18,7 +25,7 @@ class OwnerController extends Controller
         
         $netProfit = $grossProfit - $totalOpex;
 
-        $recentTransactions = Transaction::with('user')->orderBy('created_at', 'desc')->take(10)->get();
+        $recentTransactions = (clone $query)->with('user')->orderBy('created_at', 'desc')->take(10)->get();
 
         return view('owner.dashboard', compact('totalSales', 'totalHpp', 'grossProfit', 'netProfit', 'totalOpex', 'recentTransactions'));
     }

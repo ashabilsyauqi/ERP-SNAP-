@@ -79,6 +79,19 @@ class User extends Authenticatable
         return $this->role === 'purchasing';
     }
 
+    public function isManager()
+    {
+        return in_array($this->role, ['manager', 'manajer_cabang']);
+    }
+
+    public function canAccessBranch($branchId)
+    {
+        if ($this->isOwner()) {
+            return true;
+        }
+        return $this->branch_id == $branchId;
+    }
+
     public function isCashier()
     {
         return $this->role === 'cashier';
