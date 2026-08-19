@@ -22,7 +22,21 @@
     <!-- Driver.js for Guided Tour -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
 
+    <!-- Tailwind CSS CDN Engine (Preflight disabled so AdminLTE 4 base styles are preserved) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            corePlugins: {
+                preflight: false,
+            }
+        }
+    </script>
+
+    <!-- Alpine.js CDN for interactive modals, tabs, and dropdowns -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <style>
+        [x-cloak] { display: none !important; }
         body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; }
         .app-sidebar { background-color: #0f172a !important; }
         .sidebar-brand { border-bottom: 1px solid rgba(255,255,255,0.1); }
