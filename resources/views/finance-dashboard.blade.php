@@ -1,191 +1,212 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
-@section('page-title', 'Overview Keuangan')
+@section('title', 'Dashboard Keuangan')
+@section('page-title', 'Overview Keuangan ERP')
 
 @section('content')
 
 <!-- Branch Filter (Owner Only) -->
 @if(auth()->user()->isOwner())
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-    <form method="GET" action="{{ route('dashboard') }}" class="flex items-center gap-4">
-        <label class="block text-sm font-medium text-gray-700">Cabang:</label>
-        <select name="branch_id" onchange="this.form.submit()" class="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm">
-            <option value="all" {{ request('branch_id') == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
-            @foreach($branches as $branch)
-                <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                    {{ $branch->nama_cabang }} {{ $branch->trashed() ? '(Archived)' : '' }}
-                </option>
-            @endforeach
-        </select>
-    </form>
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="{{ route('dashboard') }}" class="row align-items-center g-2">
+            <div class="col-auto">
+                <label class="col-form-label fw-bold text-dark text-sm">Cabang Filter:</label>
+            </div>
+            <div class="col-auto">
+                <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm fw-semibold">
+                    <option value="all" {{ request('branch_id') == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
+                            {{ $branch->nama_cabang }} {{ $branch->trashed() ? '(Archived)' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </form>
+    </div>
 </div>
 @endif
 
-<!-- Stats Row -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<!-- Stats Row - AdminLTE 4 Small Boxes -->
+<div class="row">
     
     <!-- Penjualan -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 relative overflow-hidden group">
-        <div class="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 rounded-full bg-emerald-500/10 transition-transform duration-500 group-hover:scale-150"></div>
-        <div class="flex items-center justify-between mb-4 relative z-10">
-            <h3 class="text-gray-500 text-sm font-medium">Total Penjualan <span class="text-xs font-normal ml-1">(Bulan Ini)</span></h3>
-            <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+    <div class="col-lg-3 col-6 mb-4">
+        <div class="small-box text-bg-success shadow-sm">
+            <div class="inner p-3">
+                <h3 class="fw-bold mb-1">Rp {{ number_format($totalPenjualan, 0, ',', '.') }}</h3>
+                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 11px;">Total Penjualan (Bulan Ini)</p>
             </div>
-        </div>
-        <div class="relative z-10">
-            <p class="text-3xl font-bold text-gray-900 tracking-tight">Rp {{ number_format($totalPenjualan, 0, ',', '.') }}</p>
+            <div class="icon">
+                <i class="bi bi-cart-check-fill"></i>
+            </div>
+            <a href="{{ route('reports.sales') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
+                Laporan Sales <i class="bi bi-arrow-right-circle"></i>
+            </a>
         </div>
     </div>
 
     <!-- Kas Masuk -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 relative overflow-hidden group">
-        <div class="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 rounded-full bg-green-500/10 transition-transform duration-500 group-hover:scale-150"></div>
-        <div class="flex items-center justify-between mb-4 relative z-10">
-            <h3 class="text-gray-500 text-sm font-medium">Total Kas Masuk <span class="text-xs font-normal ml-1">(Bulan Ini)</span></h3>
-            <div class="p-2 bg-green-50 text-green-600 rounded-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+    <div class="col-lg-3 col-6 mb-4">
+        <div class="small-box text-bg-info shadow-sm">
+            <div class="inner p-3">
+                <h3 class="fw-bold mb-1">Rp {{ number_format($totalKasMasuk, 0, ',', '.') }}</h3>
+                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 11px;">Total Kas Masuk (Bulan Ini)</p>
             </div>
-        </div>
-        <div class="relative z-10">
-            <p class="text-3xl font-bold text-gray-900 tracking-tight">Rp {{ number_format($totalKasMasuk, 0, ',', '.') }}</p>
+            <div class="icon">
+                <i class="bi bi-arrow-down-left-circle-fill"></i>
+            </div>
+            <a href="{{ route('kas-masuk.index') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
+                Detail Kas Masuk <i class="bi bi-arrow-right-circle"></i>
+            </a>
         </div>
     </div>
 
     <!-- Kas Keluar -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 relative overflow-hidden group">
-        <div class="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 rounded-full bg-rose-500/10 transition-transform duration-500 group-hover:scale-150"></div>
-        <div class="flex items-center justify-between mb-4 relative z-10">
-            <h3 class="text-gray-500 text-sm font-medium">Total Kas Keluar <span class="text-xs font-normal ml-1">(Bulan Ini)</span></h3>
-            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+    <div class="col-lg-3 col-6 mb-4">
+        <div class="small-box text-bg-danger shadow-sm">
+            <div class="inner p-3">
+                <h3 class="fw-bold mb-1">Rp {{ number_format($totalKasKeluar, 0, ',', '.') }}</h3>
+                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 11px;">Total Kas Keluar (Bulan Ini)</p>
             </div>
-        </div>
-        <div class="relative z-10">
-            <p class="text-3xl font-bold text-gray-900 tracking-tight">Rp {{ number_format($totalKasKeluar, 0, ',', '.') }}</p>
+            <div class="icon">
+                <i class="bi bi-arrow-up-right-circle-fill"></i>
+            </div>
+            <a href="{{ route('kas-keluar.index') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
+                Detail Kas Keluar <i class="bi bi-arrow-right-circle"></i>
+            </a>
         </div>
     </div>
 
     <!-- Saldo Kas -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 relative overflow-hidden group">
-        <div class="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 rounded-full bg-blue-500/10 transition-transform duration-500 group-hover:scale-150"></div>
-        <div class="flex items-center justify-between mb-4 relative z-10">
-            <h3 class="text-gray-500 text-sm font-medium">Saldo Kas <span class="text-xs font-normal ml-1">(Semua)</span></h3>
-            <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    <div class="col-lg-3 col-6 mb-4">
+        <div class="small-box text-bg-primary shadow-sm">
+            <div class="inner p-3">
+                <h3 class="fw-bold mb-1">Rp {{ number_format($saldoKas, 0, ',', '.') }}</h3>
+                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 11px;">Saldo Kas Aktif (Konsolidasi)</p>
             </div>
-        </div>
-        <div class="relative z-10">
-            <p class="text-3xl font-bold {{ $saldoKas >= 0 ? 'text-gray-900' : 'text-red-600' }} tracking-tight">
-                Rp {{ number_format($saldoKas, 0, ',', '.') }}
-            </p>
+            <div class="icon">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <a href="{{ route('reports.cash-balance') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
+                Laporan Saldo <i class="bi bi-arrow-right-circle"></i>
+            </a>
         </div>
     </div>
 
 </div>
 
-<!-- Content Area -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Content Area Row -->
+<div class="row">
     
-    <!-- Recent Transactions Table -->
-    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full">
-        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
-            <h3 class="text-lg font-bold text-gray-900">Transaksi Kas Terbaru</h3>
-            <a href="{{ route('reports.cash-mutation') }}" class="text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors">Lihat Semua &rarr;</a>
-        </div>
-        
-        <div class="overflow-x-auto flex-1">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
-                        <th class="px-6 py-4">Tanggal / Ref</th>
-                        <th class="px-6 py-4">Tipe & Akun</th>
-                        <th class="px-6 py-4 text-right">Jumlah (Rp)</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @forelse($recentTransactions as $trx)
-                        <tr class="hover:bg-gray-50/50 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($trx->tanggal)->translatedFormat('d M Y') }}</div>
-                                <div class="text-xs text-gray-500 mt-1">{{ $trx->nomor_referensi }}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2 mb-1">
-                                    @if($trx->tipe === 'masuk')
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                            Masuk
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-100 text-rose-800">
-                                            Keluar
-                                        </span>
-                                    @endif
-                                </div>
-                                <div class="text-sm text-gray-700 truncate max-w-[200px]">{{ $trx->account->nama_akun }}</div>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <div class="font-semibold {{ $trx->tipe === 'masuk' ? 'text-green-600' : 'text-rose-600' }}">
-                                    {{ $trx->tipe === 'masuk' ? '+' : '-' }} {{ number_format($trx->jumlah, 0, ',', '.') }}
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" class="px-6 py-8 text-center text-gray-500 text-sm">
-                                Belum ada transaksi kas tercatat.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Info Column -->
-    <div class="space-y-6">
-        
-        <!-- Info Card: POS Transaksi -->
-        <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
-            <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-white opacity-5 blur-xl"></div>
+    <!-- Recent Transactions Table Card -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="card-title fw-bold mb-0 text-dark">
+                    <i class="bi bi-journal-bookmark-fill text-primary me-2"></i> Transaksi Kas Terbaru
+                </h5>
+                <a href="{{ route('reports.cash-mutation') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                    Lihat Semua <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
             
-            <div class="relative z-10">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white">Aktivitas POS (Bulan Ini)</h3>
-                </div>
-                
-                <div class="mb-4">
-                    <p class="text-slate-300 text-sm font-medium mb-1">Jumlah Transaksi</p>
-                    <p class="text-4xl font-bold tracking-tight">{{ $jumlahTransaksi }}</p>
-                </div>
-                
-                <div>
-                    <a href="{{ route('reports.sales') }}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-slate-900 bg-white rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50">
-                        Lihat Laporan Penjualan
-                    </a>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-uppercase fs-7 text-muted">
+                            <tr>
+                                <th class="ps-4">Tanggal / Ref</th>
+                                <th>Tipe & Akun</th>
+                                <th class="text-end pe-4">Jumlah (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentTransactions as $trx)
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">{{ \Carbon\Carbon::parse($trx->tanggal)->translatedFormat('d M Y') }}</div>
+                                        <div class="text-muted fs-7 font-mono">{{ $trx->nomor_referensi }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="mb-1">
+                                            @if($trx->tipe === 'masuk')
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                                    <i class="bi bi-plus-circle me-1"></i> Masuk
+                                                </span>
+                                            @else
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                                    <i class="bi bi-dash-circle me-1"></i> Keluar
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="text-dark fw-semibold text-truncate" style="max-width: 240px;">{{ $trx->account->nama_akun }}</div>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="fw-bold {{ $trx->tipe === 'masuk' ? 'text-success' : 'text-danger' }}">
+                                            {{ $trx->tipe === 'masuk' ? '+' : '-' }} Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted">
+                                        Belum ada transaksi kas tercatat.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-
-        <!-- Info Card: Cabang -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center">
-            <div class="flex items-start gap-4">
-                <div class="p-3 bg-primary-50 text-primary-600 rounded-xl shrink-0">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                </div>
-                <div>
-                    <h3 class="text-gray-500 text-sm font-medium mb-1">Cabang Aktif</h3>
-                    <p class="text-lg font-bold text-gray-900">{{ Auth::user()->branch->nama_cabang }}</p>
-                    <p class="text-sm text-gray-500 mt-2">{{ Auth::user()->branch->alamat }}</p>
-                </div>
-            </div>
-        </div>
-        
     </div>
+
+    <!-- Right Side Info Cards -->
+    <div class="col-lg-4 mb-4">
+        <div class="space-y-4">
+            
+            <!-- POS Activity Summary Card -->
+            <div class="card shadow-sm border-0 text-bg-dark rounded-4 p-4">
+                <div class="card-body p-0">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="rounded-circle bg-white text-dark p-2 me-3 d-inline-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="bi bi-receipt fs-5"></i>
+                        </div>
+                        <h5 class="card-title fw-bold text-white mb-0">Aktivitas POS (Bulan Ini)</h5>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-white-50 text-uppercase font-mono fw-semibold mb-1" style="font-size: 11px;">Jumlah Transaksi Checkout</p>
+                        <h2 class="display-6 fw-bold text-white mb-0">{{ number_format($jumlahTransaksi) }} <small class="fs-6 font-normal">Faktur</small></h2>
+                    </div>
+                    
+                    <div>
+                        <a href="{{ route('reports.sales') }}" class="btn btn-light w-100 rounded-pill fw-bold text-dark shadow-sm">
+                            Lihat Laporan Penjualan
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Branch Info Card -->
+            <div class="card shadow-sm border-0 rounded-4 p-4 bg-white">
+                <div class="card-body p-0 d-flex align-items-start">
+                    <div class="rounded-3 bg-primary-subtle text-primary p-3 me-3 d-inline-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-building fs-4"></i>
+                    </div>
+                    <div>
+                        <small class="text-uppercase text-muted fw-bold font-mono" style="font-size: 11px;">Cabang Operasional</small>
+                        <h5 class="fw-bold text-dark mb-1">{{ Auth::user()->branch->nama_cabang ?? 'Pusat' }}</h5>
+                        <p class="text-muted text-xs mb-0">{{ Auth::user()->branch->alamat ?? 'Semua Lokasi Konsolidasi' }}</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
 </div>
 
 @endsection
