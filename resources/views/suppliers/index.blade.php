@@ -5,31 +5,45 @@
 
 @section('content')
 
-<div class="mb-6 flex flex-wrap justify-between items-center gap-3">
-    <div class="flex items-center gap-3">
+<div class="mb-6 flex flex-wrap justify-between items-center gap-3" id="supplier-wrapper" data-view-wrapper>
+    <div class="flex items-center gap-3 flex-wrap">
         <p class="text-gray-500 text-sm mb-0">Kelola daftar supplier / vendor untuk pengadaan.</p>
         <div class="relative w-64">
             <input type="text" class="table-search-input form-control w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs" placeholder="🔍 Cari supplier, perusahaan...">
         </div>
     </div>
-    <button onclick="document.getElementById('modal-add').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition shadow-sm flex items-center">
-        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        Tambah Supplier
-    </button>
+    
+    <div class="flex items-center gap-3">
+        <!-- Dual View Switcher Toggle Buttons -->
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-primary btn-view-list active font-semibold" onclick="toggleViewMode('list', 'supplier-wrapper')">
+                <i class="bi bi-list-task me-1"></i> List Table
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold" onclick="toggleViewMode('grid', 'supplier-wrapper')">
+                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Card Grid
+            </button>
+        </div>
+
+        <button onclick="document.getElementById('modal-add').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition shadow-sm flex items-center">
+            <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Tambah Supplier
+        </button>
+    </div>
 </div>
 
-<!-- Table -->
+<!-- Table & Grid Cards Container -->
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="overflow-x-auto">
+    <!-- Mode 1: Table List View -->
+    <div class="table-view-container overflow-x-auto">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
-                    <th class="px-6 py-4">No</th>
-                    <th class="px-6 py-4">Nama Supplier</th>
-                    <th class="px-6 py-4">Perusahaan</th>
-                    <th class="px-6 py-4">Kontak</th>
-                    <th class="px-6 py-4">Alamat</th>
-                    <th class="px-6 py-4 text-center">Aksi</th>
+                    <th class="px-6 py-4 sortable">No</th>
+                    <th class="px-6 py-4 sortable">Nama Supplier</th>
+                    <th class="px-6 py-4 sortable">Perusahaan</th>
+                    <th class="px-6 py-4 sortable">Kontak</th>
+                    <th class="px-6 py-4 sortable">Alamat</th>
+                    <th class="px-6 py-4 text-center no-sort">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -64,6 +78,50 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    <!-- Mode 2: Grid / Card View (Dynamic Kotak-Kotak Gen-Z Style) -->
+    <div class="grid-view-container d-none p-4">
+        <div class="row g-4">
+            @forelse($suppliers as $supplier)
+                <div class="col-12 col-sm-6 col-md-4 grid-card">
+                    <div class="card h-100 border rounded-4 shadow-sm hover-shadow transition">
+                        <div class="card-header bg-light border-bottom p-3 d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark fs-6">{{ $supplier->name }}</span>
+                            <span class="badge bg-indigo-subtle text-indigo border border-indigo-subtle">Vendor</span>
+                        </div>
+                        <div class="card-body p-3 space-y-2">
+                            <div>
+                                <small class="text-muted text-xs d-block">Perusahaan:</small>
+                                <span class="fw-bold text-dark">{{ $supplier->perusahaan ?? '-' }}</span>
+                            </div>
+                            <div>
+                                <small class="text-muted text-xs d-block">Kontak / HP:</small>
+                                <span class="fw-semibold text-primary"><i class="bi bi-telephone me-1"></i> {{ $supplier->kontak ?? '-' }}</span>
+                            </div>
+                            <div>
+                                <small class="text-muted text-xs d-block">Alamat:</small>
+                                <span class="text-muted text-xs">{{ $supplier->alamat ?? '-' }}</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-top p-3 text-end">
+                            <button onclick="openEditModal({{ $supplier->toJson() }})" class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1">
+                                <i class="bi bi-pencil me-1"></i> Edit
+                            </button>
+                            <form action="{{ route('suppliers.destroy', $supplier->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin hapus supplier?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-12 text-center py-5 text-muted">Belum ada data supplier.</div>
+            @endforelse
+        </div>
     </div>
 </div>
 

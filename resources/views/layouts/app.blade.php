@@ -524,21 +524,76 @@
             rows.forEach(row => tbody.appendChild(row));
         });
 
-        // Global Table Live Search Filter Engine
+        // Global Dual Engine Live Search (Filters Table Rows & Grid Cards simultaneously)
         document.addEventListener('input', function(e) {
             if (!e.target.matches('.table-search-input, [data-table-search]')) return;
 
             const query = e.target.value.toLowerCase().trim();
-            const tableId = e.target.getAttribute('data-table-search');
             const container = e.target.closest('.card, .tab-view, .container-fluid, body');
-            const table = tableId ? document.getElementById(tableId) : (container ? container.querySelector('table') : null);
 
-            if (!table) return;
+            if (!container) return;
 
-            const rows = table.querySelectorAll('tbody tr');
+            // Filter Table Rows
+            const rows = container.querySelectorAll('tbody tr');
             rows.forEach(row => {
                 const text = row.innerText.toLowerCase();
                 row.style.display = text.includes(query) ? '' : 'none';
+            });
+
+            // Filter Grid Cards
+            const cards = container.querySelectorAll('.grid-card, .search-card');
+            cards.forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+
+        // Global View Mode Toggle Utility (List Table vs Grid Cards)
+        function toggleViewMode(viewType, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const tableView = container.querySelector('.table-view-container');
+            const gridView = container.querySelector('.grid-view-container');
+            const btnList = container.querySelector('.btn-view-list');
+            const btnGrid = container.querySelector('.btn-view-grid');
+
+            if (viewType === 'grid') {
+                if (tableView) tableView.classList.add('d-none');
+                if (gridView) gridView.classList.remove('d-none');
+                if (btnList) {
+                    btnList.classList.remove('active', 'btn-primary');
+                    btnList.classList.add('btn-outline-secondary');
+                }
+                if (btnGrid) {
+                    btnGrid.classList.add('active', 'btn-primary');
+                    btnGrid.classList.remove('btn-outline-secondary');
+                }
+            } else {
+                if (gridView) gridView.classList.add('d-none');
+                if (tableView) tableView.classList.remove('d-none');
+                if (btnGrid) {
+                    btnGrid.classList.remove('active', 'btn-primary');
+                    btnGrid.classList.add('btn-outline-secondary');
+                }
+                if (btnList) {
+                    btnList.classList.add('active', 'btn-primary');
+                    btnList.classList.remove('btn-outline-secondary');
+                }
+            }
+
+            localStorage.setItem('preferred_view_' + containerId, viewType);
+        }
+
+        // Auto restore preferred view mode on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-view-wrapper]').forEach(wrapper => {
+                const containerId = wrapper.id;
+                if (!containerId) return;
+                const savedView = localStorage.getItem('preferred_view_' + containerId);
+                if (savedView) {
+                    toggleViewMode(savedView, containerId);
+                }
             });
         });
     </script>

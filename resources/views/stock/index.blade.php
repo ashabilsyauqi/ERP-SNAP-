@@ -79,11 +79,11 @@
         </div>
     </div>
 
-    <!-- Filter & Search Section -->
-    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/60 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <!-- Filter & Search Section with View Switcher -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/60 flex flex-col sm:flex-row justify-between items-center gap-4" id="stock-wrapper" data-view-wrapper>
         <form method="GET" action="{{ route('stock.index') }}" class="w-full flex flex-col sm:flex-row items-center gap-3">
             <div class="relative w-full sm:w-80">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama bahan baku..." class="table-search-input w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="🔍 Cari nama bahan baku..." class="table-search-input w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 <svg class="h-5 w-5 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -100,11 +100,22 @@
 
             <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-medium text-sm transition">Filter</button>
         </form>
+
+        <!-- Dual View Switcher Toggle Buttons -->
+        <div class="btn-group btn-group-sm ms-auto" role="group">
+            <button type="button" class="btn btn-primary btn-view-list active font-semibold" onclick="toggleViewMode('list', 'stock-wrapper')">
+                <i class="bi bi-list-task me-1"></i> List Table
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold" onclick="toggleViewMode('grid', 'stock-wrapper')">
+                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Card Grid
+            </button>
+        </div>
     </div>
 
-    <!-- Inventory Table -->
+    <!-- Inventory Table & Card Grid Container -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-        <div class="overflow-x-auto">
+        <!-- Mode 1: Table List View -->
+        <div class="table-view-container overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider font-semibold">
@@ -175,7 +186,67 @@
                         </tr>
                     @endforelse
                 </tbody>
-            </table>
+        </div>
+
+        <!-- Mode 2: Grid / Card View (Dynamic Kotak-Kotak Gen-Z Style) -->
+        <div class="grid-view-container d-none p-4">
+            <div class="row g-4">
+                @forelse($materials as $material)
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3 grid-card">
+                        <div class="card h-100 border rounded-4 shadow-sm hover-shadow transition">
+                            <div class="card-header bg-light border-bottom p-3 d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-dark border font-mono">#MAT-{{ $material->id }}</span>
+                                @if($material->stock_qty <= 5)
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                        ⚠️ Stok {{ $material->stock_qty }} (Menipis)
+                                    </span>
+                                @else
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                        Stok {{ number_format($material->stock_qty) }} Unit
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="card-body p-3 space-y-3">
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0 fs-6">{{ $material->material_name }}</h6>
+                                    <small class="text-muted text-xs d-block mt-0.5">Supplier: {{ $material->supplier->name ?? '-' }}</small>
+                                </div>
+
+                                <div class="p-2.5 bg-light rounded-3 space-y-1">
+                                    <div class="d-flex justify-content-between text-xs">
+                                        <span class="text-muted">Nilai Modal (HPP):</span>
+                                        <span class="fw-bold text-dark">Rp {{ number_format($material->purchase_price, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between text-xs">
+                                        <span class="text-muted">Harga Jual (Eceran):</span>
+                                        <span class="fw-bold text-success">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between text-xs border-top pt-1 mt-1">
+                                        <span class="text-muted">Total Nilai Aset:</span>
+                                        <span class="fw-bold text-indigo">Rp {{ number_format($material->stock_qty * $material->purchase_price, 0, ',', '.') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white border-top p-3 text-end">
+                                <button type="button" @click="
+                                    editMaterial = {
+                                        id: '{{ $material->id }}',
+                                        name: '{{ addslashes($material->material_name) }}',
+                                        stock_qty: '{{ $material->stock_qty }}',
+                                        purchase_price: '{{ $material->purchase_price }}',
+                                        retail_price: '{{ $material->retail_price }}'
+                                    };
+                                    editOpen = true;
+                                " class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold">
+                                    <i class="bi bi-sliders me-1"></i> Opname / Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12 text-center py-5 text-muted">Belum ada data stok bahan baku.</div>
+                @endforelse
+            </div>
         </div>
     </div>
 
