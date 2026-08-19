@@ -126,8 +126,8 @@
                             </a>
                         @endif
 
-                        <a href="{{ route('finance.dashboard') }}" 
-                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition duration-150 {{ request()->routeIs('finance.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
+                        <a href="{{ route('dashboard') }}" 
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition duration-150 {{ request()->routeIs('dashboard') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
                             <i class="bi bi-wallet2 text-sm"></i>
                             <span x-show="sidebarOpen">Dashboard Keuangan</span>
                         </a>
@@ -159,8 +159,8 @@
                                 class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('stock.inspection') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
                                 • Pemeriksaan Barang (GRN)
                             </a>
-                            <a href="{{ route('stock.returns') }}" 
-                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('stock.returns') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
+                            <a href="{{ route('stock.rejected') }}" 
+                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('stock.rejected') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
                                 • Riwayat Retur & Reject
                             </a>
                         </div>
@@ -203,12 +203,12 @@
                         <a href="{{ route('sales.index') }}" id="tour-step-sales" 
                             class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition {{ request()->routeIs('sales.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
                             <i class="bi bi-receipt-cutoff text-sm text-cyan-400"></i>
-                            <span x-show="sidebarOpen">Penjualan Kasir (POS)</span>
+                            <span x-show="sidebarOpen">Riwayat Transaksi Penjualan</span>
                         </a>
-                        <a href="{{ route('cashier.close') }}" 
-                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition {{ request()->routeIs('cashier.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
+                        <a href="{{ route('pos.index') }}" 
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition {{ request()->routeIs('pos.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
                             <i class="bi bi-cash-stack text-sm text-rose-400"></i>
-                            <span x-show="sidebarOpen">Tutup Shift Kasir</span>
+                            <span x-show="sidebarOpen">POS Kasir Checkout</span>
                         </a>
                     </div>
                 </div>
