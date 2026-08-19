@@ -116,78 +116,50 @@
 </div>
 
 <script>
-    let canvas, ctx, isDrawing = false;
+    let signaturePad = null;
 
-    document.addEventListener("DOMContentLoaded", function() {
-        canvas = document.getElementById('signature-canvas');
-        if(!canvas) return;
-        ctx = canvas.getContext('2d');
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('signature-canvas');
+        if (!canvas) return;
 
-        // Adjust canvas resolution for crisp lines
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-
-        ctx.strokeStyle = "#1e1b4b";
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-
-        function getPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            let clientX = e.clientX;
-            let clientY = e.clientY;
-            if(e.touches && e.touches[0]) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            }
-            return {
-                x: clientX - rect.left,
-                y: clientY - rect.top
-            };
+        // Resize canvas to fill container resolution cleanly
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            if (signaturePad) signaturePad.clear();
         }
 
-        canvas.addEventListener('mousedown', (e) => {
-            isDrawing = true;
-            const pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
-        });
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isDrawing) return;
-            const pos = getPos(e);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-        });
-
-        canvas.addEventListener('mouseup', () => isDrawing = false);
-        canvas.addEventListener('mouseleave', () => isDrawing = false);
-
-        // Touch events for mobile/tablet
-        canvas.addEventListener('touchstart', (e) => {
-            isDrawing = true;
-            const pos = getPos(e);
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
-            e.preventDefault();
-        });
-        canvas.addEventListener('touchmove', (e) => {
-            if (!isDrawing) return;
-            const pos = getPos(e);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-            e.preventDefault();
-        });
-        canvas.addEventListener('touchend', () => isDrawing = false);
+        if (typeof SignaturePad !== 'undefined') {
+            signaturePad = new SignaturePad(canvas, {
+                penColor: 'rgb(30, 41, 59)',
+                minWidth: 1.5,
+                maxWidth: 3.5
+            });
+        }
     });
 
     function clearCanvas() {
-        if(!ctx || !canvas) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (signaturePad) {
+            signaturePad.clear();
+        } else {
+            const canvas = document.getElementById('signature-canvas');
+            if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        }
     }
 
     function saveCanvas() {
-        if(!canvas) return;
-        const dataURL = canvas.toDataURL('image/png');
+        if (signaturePad && signaturePad.isEmpty()) {
+            if (typeof Toast !== 'undefined') Toast.fire({ icon: 'warning', title: 'Silakan corat-coret tanda tangan terlebih dahulu.' });
+            return;
+        }
+
+        const canvas = document.getElementById('signature-canvas');
+        const dataURL = signaturePad ? signaturePad.toDataURL('image/png') : canvas.toDataURL('image/png');
         document.getElementById('signature_base64').value = dataURL;
         document.getElementById('sig-form').submit();
     }

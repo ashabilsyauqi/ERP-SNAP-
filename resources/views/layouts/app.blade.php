@@ -35,6 +35,15 @@
     <!-- Alpine.js CDN for interactive modals, tabs, and dropdowns -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- AutoNumeric.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/autonumeric@4.6.0/dist/autoNumeric.min.js"></script>
+    <!-- SheetJS (xlsx) CDN for 1-Click Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- SignaturePad.js CDN for smooth vector digital signatures -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
     <style>
         [x-cloak] { display: none !important; }
         body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; }
@@ -585,7 +594,55 @@
             localStorage.setItem('preferred_view_' + containerId, viewType);
         }
 
-        // Auto restore preferred view mode on page load
+        // SweetAlert2 Toast Helper
+        const Toast = typeof Swal !== 'undefined' ? Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3500,
+            timerProgressBar: true
+        }) : null;
+
+        // Global SweetAlert2 Action Confirmation
+        function confirmAction(title, text, confirmButtonText, onConfirm) {
+            if (typeof Swal === 'undefined') {
+                if (confirm(title + '\n' + text)) onConfirm();
+                return;
+            }
+            Swal.fire({
+                title: title || 'Apakah Anda Yakin?',
+                text: text || 'Tindakan ini tidak dapat dibatalkan.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: confirmButtonText || 'Ya, Lanjutkan!',
+                cancelButtonText: 'Batal',
+                customClass: { popup: 'rounded-4 shadow' }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    onConfirm();
+                }
+            });
+        }
+
+        // 1-Click Excel Export Utility (SheetJS)
+        function exportTableToExcel(tableId, filename) {
+            if (typeof XLSX === 'undefined') {
+                alert('Library SheetJS belum siap.');
+                return;
+            }
+            const table = (tableId ? document.getElementById(tableId) : null) || document.querySelector('table');
+            if (!table) {
+                if (Toast) Toast.fire({ icon: 'error', title: 'Tabel data tidak ditemukan.' });
+                return;
+            }
+            const wb = XLSX.utils.table_to_book(table, { sheet: "Data Export" });
+            XLSX.writeFile(wb, (filename || 'SnapPrint_ERP_Export') + '.xlsx');
+            if (Toast) Toast.fire({ icon: 'success', title: '📊 File Excel Berhasil Diunduh!' });
+        }
+
+        // Auto restore preferred view mode & initialize AutoNumeric on page load
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('[data-view-wrapper]').forEach(wrapper => {
                 const containerId = wrapper.id;
@@ -595,6 +652,19 @@
                     toggleViewMode(savedView, containerId);
                 }
             });
+
+            // Initialize AutoNumeric on currency input fields if library exists
+            if (typeof AutoNumeric !== 'undefined') {
+                document.querySelectorAll('.autonumeric-rupiah').forEach(input => {
+                    new AutoNumeric(input, {
+                        currencySymbol: 'Rp ',
+                        digitGroupSeparator: '.',
+                        decimalCharacter: ',',
+                        decimalPlaces: 0,
+                        unformatOnSubmit: true
+                    });
+                });
+            }
         });
     </script>
 </body>

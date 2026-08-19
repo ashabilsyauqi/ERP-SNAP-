@@ -115,13 +115,20 @@
                         <input type="text" class="table-search-input form-control w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="🔍 Search No. PO, Supplier, Material...">
                     </div>
 
-                    <!-- Dual View Switcher Toggle Buttons -->
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-primary btn-view-list active font-semibold" onclick="toggleViewMode('list', 'po-wrapper')">
-                            <i class="bi bi-list-task me-1"></i> List Table
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold" onclick="toggleViewMode('grid', 'po-wrapper')">
-                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Card Grid
+                    <div class="flex items-center gap-2">
+                        <!-- Dual View Switcher Toggle Buttons -->
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-primary btn-view-list active font-semibold" onclick="toggleViewMode('list', 'po-wrapper')">
+                                <i class="bi bi-list-task me-1"></i> List Table
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold" onclick="toggleViewMode('grid', 'po-wrapper')">
+                                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Card Grid
+                            </button>
+                        </div>
+
+                        <!-- 1-Click Excel Export Button -->
+                        <button type="button" onclick="exportTableToExcel('po-table', 'Purchase_Orders_SnapPrint')" class="btn btn-sm btn-outline-success rounded-pill px-3 font-semibold d-inline-flex align-items-center">
+                            <i class="bi bi-file-earmark-excel me-1"></i> Ekspor Excel
                         </button>
                     </div>
                 </div>

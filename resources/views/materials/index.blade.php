@@ -35,6 +35,11 @@
                         </button>
                     </div>
 
+                    <!-- 1-Click Excel Export Button -->
+                    <button type="button" onclick="exportTableToExcel('materials-table', 'Master_Bahan_Baku_SnapPrint')" class="btn btn-sm btn-outline-success rounded-pill px-3 font-semibold d-inline-flex align-items-center">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Ekspor Excel
+                    </button>
+
                     <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-semibold d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#modalAddMaterial">
                         <i class="bi bi-plus-lg me-1"></i> Tambah Material Baru
                     </button>
