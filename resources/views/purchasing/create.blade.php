@@ -68,12 +68,27 @@
                         </div>
                         <input type="text" id="supplier_name" name="supplier_name" autocomplete="off"
                             class="block w-full rounded-xl border border-slate-200 bg-slate-50/50 py-3 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 transition duration-200 outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
-                            placeholder="Type existing supplier or add new...">
+                            placeholder="Ketik supplier atau buat baru...">
                     </div>
                     
                     <div id="supplier_dropdown" class="hidden absolute z-30 mt-1 w-full bg-white shadow-xl max-h-60 rounded-xl border border-slate-200/80 py-0 overflow-auto focus:outline-none text-sm divide-y divide-slate-100">
                         <!-- Options injected by JS -->
                     </div>
+                </div>
+            </div>
+
+            <!-- Vendor Invoice Ref (SAP Standard) -->
+            <div>
+                <label for="vendor_ref" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">No. Faktur / Referensi Nota Supplier (Optional)</label>
+                <div class="relative">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <input type="text" id="vendor_ref" name="vendor_ref"
+                        class="block w-full rounded-xl border border-slate-200 bg-slate-50/50 py-3 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 transition duration-200 outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10" 
+                        placeholder="Contoh: INV-BT/2026/0892">
                 </div>
             </div>
 
@@ -201,6 +216,7 @@
             document.getElementById('fixed_size').value = '';
             document.getElementById('purchase_price').value = '';
             document.getElementById('retail_price').value = '';
+            document.getElementById('supplier_name').value = '';
             document.getElementById('wholesale-container').innerHTML = '';
             addWholesaleTier();
         };
@@ -258,7 +274,7 @@
         }
     });
 
-    // Auto-fill existing prices
+    // Auto-fill existing prices & supplier
     function autoFillPricing(name) {
         const mat = materials.find(m => m.material_name === name);
         if (mat) {
@@ -266,6 +282,11 @@
             document.getElementById('purchase_price').value = mat.purchase_price;
             document.getElementById('retail_price').value = mat.retail_price;
             
+            // Auto-fill Supplier Name if associated with this material
+            if (mat.supplier && mat.supplier.name) {
+                document.getElementById('supplier_name').value = mat.supplier.name;
+            }
+
             const container = document.getElementById('wholesale-container');
             container.innerHTML = '';
             

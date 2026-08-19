@@ -108,8 +108,11 @@
                                     </svg>
                                 </button>
                                 <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
-                                    <a href="{{ route('purchasing.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
-                                        Purchasing
+                                    <a href="{{ route('purchasing.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.index') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Purchasing & Master Data
+                                    </a>
+                                    <a href="{{ route('purchasing.history') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.history') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Riwayat Pembelian (PO Logs)
                                     </a>
                                     <a href="{{ route('suppliers.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('suppliers.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
                                         Data Supplier
@@ -118,14 +121,32 @@
                             </div>
                         @endif
 
-                        <!-- Stock Menu (Manager & Owner) -->
+                        <!-- Stock Dropdown (Manager & Owner) -->
                         @if(auth()->user()->isManager() || auth()->user()->isOwner())
-                            <a href="{{ route('stock.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('stock.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">
-                                <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                </svg>
-                                <span>Stock</span>
-                            </a>
+                            <div x-data="{ open: {{ request()->routeIs('stock.*') ? 'true' : 'false' }} }" class="space-y-1">
+                                <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
+                                    <div class="flex items-center">
+                                        <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                        </svg>
+                                        <span>Stock</span>
+                                    </div>
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                                <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
+                                    <a href="{{ route('stock.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('stock.index') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Data Stok & Opname
+                                    </a>
+                                    <a href="{{ route('stock.inspection') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('stock.inspection') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Pemeriksaan Barang
+                                    </a>
+                                    <a href="{{ route('stock.rejected') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('stock.rejected') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                        Riwayat Retur & Reject
+                                    </a>
+                                </div>
+                            </div>
                         @endif
 
                         <!-- Finance Dropdown -->
@@ -259,7 +280,7 @@
 
                     <!-- Sales Dropdown -->
                     @if(auth()->user()->isCashier() || auth()->user()->isOwner() || auth()->user()->isManager())
-                        <div x-data="{ open: {{ request()->routeIs('pos.*') || request()->routeIs('sales.*') ? 'true' : 'false' }} }" class="space-y-1">
+                        <div id="tour-sales" x-data="{ open: {{ request()->routeIs('pos.*') || request()->routeIs('sales.*') ? 'true' : 'false' }} }" class="space-y-1">
                             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
                                 <div class="flex items-center">
                                     <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -284,7 +305,7 @@
 
                     <!-- Purchasing Dropdown -->
                     @if(auth()->user()->isPurchasing() || auth()->user()->isOwner() || auth()->user()->isManager())
-                        <div x-data="{ open: {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'true' : 'false' }} }" class="space-y-1">
+                        <div id="tour-purchasing" x-data="{ open: {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'true' : 'false' }} }" class="space-y-1">
                             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
                                 <div class="flex items-center">
                                     <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -297,8 +318,11 @@
                                 </svg>
                             </button>
                             <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
-                                <a href="{{ route('purchasing.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.index') ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
-                                    Purchasing
+                                <a href="{{ route('purchasing.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.index') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Purchasing & Master Data
+                                </a>
+                                <a href="{{ route('purchasing.history') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('purchasing.history') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Riwayat Pembelian (PO Logs)
                                 </a>
                                 <a href="{{ route('suppliers.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('suppliers.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
                                     Data Supplier
@@ -307,19 +331,37 @@
                         </div>
                     @endif
 
-                    <!-- Stock Menu (Manager & Owner) -->
+                    <!-- Stock Dropdown (Manager & Owner) -->
                     @if(auth()->user()->isManager() || auth()->user()->isOwner())
-                        <a href="{{ route('stock.index') }}" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 {{ request()->routeIs('stock.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:bg-slate-800/60 hover:text-white' }}">
-                            <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                            <span>Stock</span>
-                        </a>
+                        <div id="tour-stock" x-data="{ open: {{ request()->routeIs('stock.*') ? 'true' : 'false' }} }" class="space-y-1">
+                            <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
+                                <div class="flex items-center">
+                                    <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    <span>Stock</span>
+                                </div>
+                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div x-show="open" x-collapse x-cloak class="pl-11 pr-4 space-y-1 mt-1">
+                                <a href="{{ route('stock.index') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('stock.index') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Data Stok & Opname
+                                </a>
+                                <a href="{{ route('stock.inspection') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('stock.inspection') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Pemeriksaan Barang
+                                </a>
+                                <a href="{{ route('stock.rejected') }}" class="block py-2 text-sm font-medium rounded-lg px-3 transition duration-150 {{ request()->routeIs('stock.rejected') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-white hover:bg-slate-800/40' }}">
+                                    Riwayat Retur & Reject
+                                </a>
+                            </div>
+                        </div>
                     @endif
 
                     <!-- Finance Dropdown -->
                     @if(auth()->user()->isOwner() || auth()->user()->isManager())
-                        <div x-data="{ open: {{ request()->routeIs('dashboard') || request()->routeIs('accounts.*') || request()->routeIs('kas-masuk.*') || request()->routeIs('kas-keluar.*') || request()->routeIs('reports.*') ? 'true' : 'false' }} }" class="space-y-1">
+                        <div id="tour-finance" x-data="{ open: {{ request()->routeIs('dashboard') || request()->routeIs('accounts.*') || request()->routeIs('kas-masuk.*') || request()->routeIs('kas-keluar.*') || request()->routeIs('reports.*') ? 'true' : 'false' }} }" class="space-y-1">
                             <button @click="open = !open" type="button" class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition duration-150 text-slate-400 hover:bg-slate-800/60 hover:text-white">
                                 <div class="flex items-center">
                                     <svg class="mr-3 h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -390,13 +432,13 @@
                 </nav>
 
                 <!-- Profile and Logout Block -->
-                <div class="border-t border-slate-800 py-5 my-2 flex items-center justify-between">
-                    <div class="flex items-center">
+                <div class="border-t border-slate-800 py-5 my-2 flex items-center justify-between" id="tour-profile">
+                    <a href="{{ route('profile.index') }}" class="flex items-center hover:bg-slate-800/60 p-2 rounded-xl transition flex-grow mr-2">
                         <div class="h-9 w-9 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400 font-bold text-sm border border-slate-700">
                             {{ strtoupper(substr(auth()->user()->username, 0, 2)) }}
                         </div>
                         <div class="ml-3">
-                            <p class="text-sm font-medium text-white">{{ auth()->user()->username }}</p>
+                            <p class="text-sm font-medium text-white hover:text-indigo-400 transition">{{ auth()->user()->username }} ⚙️</p>
                             <p class="text-xs text-slate-500 capitalize mb-1">{{ auth()->user()->role }}</p>
                             @if(auth()->user()->branch)
                                 <span class="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-1 text-xs font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20">Cabang: {{ auth()->user()->branch->nama_cabang }}</span>
@@ -404,7 +446,7 @@
                                 <span class="inline-flex items-center rounded-md bg-indigo-500/10 px-2 py-1 text-xs font-medium text-indigo-400 ring-1 ring-inset ring-indigo-500/20">Semua Cabang</span>
                             @endif
                         </div>
-                    </div>
+                    </a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="p-2 rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-800/60 transition" title="Logout">
@@ -418,7 +460,9 @@
         </div>
     @endauth
 
-
+    <!-- Include Driver.js CSS/JS for Interactive Onboarding Tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
 
     <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
     <div class="@auth md:pl-64 @endauth flex flex-col flex-1 min-w-0 min-h-screen bg-slate-50">
@@ -430,8 +474,13 @@
                 <h1 class="text-sm font-medium text-slate-500">
                     ERP System / <span class="text-slate-800 font-semibold capitalize">{{ request()->segment(1) }}</span>
                 </h1>
-                <div class="text-xs text-slate-400 font-medium">
-                    {{ date('D, d M Y') }}
+                <div class="flex items-center gap-4">
+                    <button type="button" onclick="startAppTour()" id="tour-button" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition border border-indigo-100 shadow-sm cursor-pointer">
+                        <span>❓ Panduan Tutorial</span>
+                    </button>
+                    <div class="text-xs text-slate-400 font-medium">
+                        {{ date('D, d M Y') }}
+                    </div>
                 </div>
             </header>
         @endauth
@@ -482,7 +531,7 @@
         </footer>
     </div>
 
-    <!-- Vanilla Javascript sidebar toggles -->
+    <!-- Vanilla Javascript sidebar toggles & Interactive Guided Tour -->
     <script>
         function toggleMobileSidebar(open) {
             const container = document.getElementById('mobile-sidebar');
@@ -507,6 +556,73 @@
                     container.classList.add('hidden');
                 }, 300); // match duration-300
             }
+        }
+
+        function startAppTour() {
+            if (typeof window.driver === 'undefined') {
+                alert('Modul Tutorial sedang dimuat...');
+                return;
+            }
+
+            const driverObj = window.driver.js.driver({
+                showProgress: true,
+                animate: true,
+                nextBtnText: 'Lanjut ➔',
+                prevBtnText: '⬅️ Kembali',
+                doneBtnText: 'Selesai 🎉',
+                steps: [
+                    {
+                        element: '#tour-button',
+                        popover: {
+                            title: '👋 Selamat Datang di SnapPrint ERP!',
+                            description: 'Ini adalah Panduan Tutorial Interaktif (Tokopedia Style). Klik tombol ini kapan saja jika Anda ingin mengulang petunjuk navigasi aplikasi.',
+                            side: "bottom", align: 'start'
+                        }
+                    },
+                    {
+                        element: '#tour-purchasing',
+                        popover: {
+                            title: '🛒 1. Modul Purchasing (Pengadaan)',
+                            description: 'Tempat Staf Purchasing membuat Pengajuan Purchase Order (PO) ke Supplier. Status awal PO: <b>⏳ Menunggu ACC Manager</b>.',
+                            side: "right", align: 'start'
+                        }
+                    },
+                    {
+                        element: '#tour-stock',
+                        popover: {
+                            title: '📦 2. Modul Stock & Gudang',
+                            description: 'Tempat Manajer Toko menyetujui PO (ACC) dan melakukan <b>Pemeriksaan Fisik Barang Masuk</b> sebelum stok bertambah ke inventaris.',
+                            side: "right", align: 'start'
+                        }
+                    },
+                    {
+                        element: '#tour-sales',
+                        popover: {
+                            title: '💰 3. Modul Sales & POS Checkout',
+                            description: 'Tempat Kasir menginput pemesanan eceran/grosir pelanggan, serah terima shift kasir, dan mencetak nota fisik.',
+                            side: "right", align: 'start'
+                        }
+                    },
+                    {
+                        element: '#tour-finance',
+                        popover: {
+                            title: '📊 4. Modul Finance & Keuangan',
+                            description: 'Tempat melihat Dashboard Keuangan, Jurnal Kas Masuk/Keluar Voucher, dan Laporan Laba Rugi.',
+                            side: "right", align: 'start'
+                        }
+                    },
+                    {
+                        element: '#tour-profile',
+                        popover: {
+                            title: '✍️ 5. Profil & Tanda Tangan Digital',
+                            description: 'Klik nama akun Anda di sini untuk mengunggah atau menggambar <b>Tanda Tangan Digital Resmi</b> yang akan terstempel otomatis pada nota cetak PO.',
+                            side: "top", align: 'start'
+                        }
+                    }
+                ]
+            });
+
+            driverObj.drive();
         }
     </script>
 </body>

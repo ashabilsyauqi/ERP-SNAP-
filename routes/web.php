@@ -32,10 +32,17 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('branches', \App\Http\Controllers\BranchController::class)->except(['create', 'show', 'edit']);
     });
 
+    // Profile & Digital Signature
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
+    Route::post('/profile/signature', [\App\Http\Controllers\ProfileController::class, 'updateSignature'])->name('profile.signature');
+    Route::post('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
+
     Route::middleware(['role:purchasing,owner,manager'])->group(function () {
         Route::get('/purchasing', [PurchasingController::class, 'index'])->name('purchasing.index');
         Route::get('/purchasing/create', [PurchasingController::class, 'create'])->name('purchasing.create');
+        Route::get('/purchasing/history', [PurchasingController::class, 'history'])->name('purchasing.history');
         Route::post('/purchasing', [PurchasingController::class, 'store'])->name('purchasing.store');
+        Route::post('/purchasing/{purchase}/approve', [PurchasingController::class, 'approve'])->name('purchasing.approve');
         
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
@@ -43,6 +50,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:cashier,owner,manager'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+        Route::post('/cashier-shift/open', [\App\Http\Controllers\CashierShiftController::class, 'openShift'])->name('cashier-shift.open');
+        Route::post('/cashier-shift/close', [\App\Http\Controllers\CashierShiftController::class, 'closeShift'])->name('cashier-shift.close');
         
         // Cashier and Owner sales views
         Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
@@ -76,12 +85,14 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // ==========================================
-    // STOCK MODULE (Manager & Owner)
+    // STOCK MODULE (Manager & Owner Dropdown)
     // ==========================================
-    Route::middleware(['role:manager'])->group(function () {
-        Route::get('/stock', [\App\Http\Controllers\StockController::class, 'index'])->name('stock.index');
-        Route::put('/stock/{material}', [\App\Http\Controllers\StockController::class, 'update'])->name('stock.update');
-        Route::post('/stock/purchases/{purchase}/verify', [\App\Http\Controllers\StockController::class, 'verify'])->name('stock.purchases.verify');
-        Route::post('/stock/purchases/{purchase}/reject', [\App\Http\Controllers\StockController::class, 'reject'])->name('stock.purchases.reject');
+    Route::middleware(['role:manager'])->prefix('stock')->name('stock.')->group(function () {
+        Route::get('/inventory', [\App\Http\Controllers\StockController::class, 'index'])->name('index');
+        Route::get('/inspection', [\App\Http\Controllers\StockController::class, 'inspection'])->name('inspection');
+        Route::get('/rejected', [\App\Http\Controllers\StockController::class, 'rejected'])->name('rejected');
+        Route::put('/materials/{material}', [\App\Http\Controllers\StockController::class, 'update'])->name('update');
+        Route::post('/purchases/{purchase}/verify', [\App\Http\Controllers\StockController::class, 'verify'])->name('purchases.verify');
+        Route::post('/purchases/{purchase}/reject', [\App\Http\Controllers\StockController::class, 'reject'])->name('purchases.reject');
     });
 });

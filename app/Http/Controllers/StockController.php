@@ -11,44 +11,30 @@ use Illuminate\Support\Facades\DB;
 
 class StockController extends Controller
 {
+    /**
+     * 1. Data Stok & Opname (Inventory & Valuation)
+     */
     public function index(Request $request)
     {
         $user = Auth::user();
 
-        // 1. Query Materials (Inventory)
-        $materialQuery = Material::with(['supplier', 'branch', 'wholesalePrices'])->orderBy('material_name', 'asc');
-
-        // 2. Query Pending Purchases (Goods Receipt)
-        $pendingQuery = Purchase::with(['material', 'supplier', 'user', 'branch'])
-            ->where('status', 'pending_verification')
-            ->orderBy('created_at', 'desc');
-
-        // 3. Query Receipt History
-        $historyQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy'])
-            ->whereIn('status', ['received', 'rejected'])
-            ->orderBy('verified_at', 'desc');
+        $query = Material::with(['supplier', 'branch', 'wholesalePrices'])->orderBy('material_name', 'asc');
 
         if ($user->isOwner()) {
             if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $materialQuery->where('branch_id', $request->branch_id);
-                $pendingQuery->where('branch_id', $request->branch_id);
-                $historyQuery->where('branch_id', $request->branch_id);
+                $query->where('branch_id', $request->branch_id);
             }
         } else {
-            $materialQuery->where('branch_id', $user->branch_id);
-            $pendingQuery->where('branch_id', $user->branch_id);
-            $historyQuery->where('branch_id', $user->branch_id);
+            $query->where('branch_id', $user->branch_id);
         }
 
         if ($request->filled('search')) {
-            $materialQuery->where('material_name', 'like', "%{$request->search}%");
+            $query->where('material_name', 'like', "%{$request->search}%");
         }
 
-        $materials = $materialQuery->get();
-        $pendingPurchases = $pendingQuery->get();
-        $historyPurchases = $historyQuery->take(20)->get();
+        $materials = $query->get();
 
-        // Summary Metrics
+        // Calculate summary metrics
         $totalItems = $materials->count();
         $totalStockQty = $materials->sum('stock_qty');
         $totalAssetValue = $materials->sum(function ($m) {
@@ -57,14 +43,17 @@ class StockController extends Controller
         $lowStockCount = $materials->filter(function ($m) {
             return $m->stock_qty <= 5;
         })->count();
-        $pendingCount = $pendingPurchases->count();
+
+        // Count pending inspection items for badge counter
+        $pendingCount = Purchase::where('status', 'pending_verification')
+            ->when(!$user->isOwner(), function ($q) use ($user) {
+                $q->where('branch_id', $user->branch_id);
+            })->count();
 
         $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
         return view('stock.index', compact(
             'materials',
-            'pendingPurchases',
-            'historyPurchases',
             'totalItems',
             'totalStockQty',
             'totalAssetValue',
@@ -74,6 +63,83 @@ class StockController extends Controller
         ));
     }
 
+    /**
+     * 2. Pemeriksaan Barang Masuk (Pending Inspection / GRN)
+     */
+    public function inspection(Request $request)
+    {
+        $user = Auth::user();
+
+        $pendingQuery = Purchase::with(['material', 'supplier', 'user', 'branch'])
+            ->where('status', 'pending_verification')
+            ->orderBy('created_at', 'desc');
+
+        if ($user->isOwner()) {
+            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+                $pendingQuery->where('branch_id', $request->branch_id);
+            }
+        } else {
+            $pendingQuery->where('branch_id', $user->branch_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $pendingQuery->where(function ($q) use ($search) {
+                $q->where('po_number', 'like', "%{$search}%")
+                  ->orWhere('vendor_ref', 'like', "%{$search}%")
+                  ->orWhereHas('material', function ($mq) use ($search) {
+                      $mq->where('material_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $pendingPurchases = $pendingQuery->get();
+        $pendingCount = $pendingPurchases->count();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+
+        return view('stock.inspection', compact('pendingPurchases', 'pendingCount', 'branches'));
+    }
+
+    /**
+     * 3. Riwayat Retur & Reject (Quality Control Return History)
+     */
+    public function rejected(Request $request)
+    {
+        $user = Auth::user();
+
+        $rejectedQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy'])
+            ->where('status', 'rejected')
+            ->orderBy('verified_at', 'desc');
+
+        if ($user->isOwner()) {
+            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+                $rejectedQuery->where('branch_id', $request->branch_id);
+            }
+        } else {
+            $rejectedQuery->where('branch_id', $user->branch_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $rejectedQuery->where(function ($q) use ($search) {
+                $q->where('po_number', 'like', "%{$search}%")
+                  ->orWhere('vendor_ref', 'like', "%{$search}%")
+                  ->orWhereHas('material', function ($mq) use ($search) {
+                      $mq->where('material_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $rejectedPurchases = $rejectedQuery->get();
+        $rejectedCount = $rejectedPurchases->count();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+
+        return view('stock.rejected', compact('rejectedPurchases', 'rejectedCount', 'branches'));
+    }
+
+    /**
+     * Update Stock Opname
+     */
     public function update(Request $request, Material $material)
     {
         $user = Auth::user();
@@ -102,6 +168,9 @@ class StockController extends Controller
         return redirect()->route('stock.index')->with('success', "Stok {$material->material_name} berhasil diperbarui.");
     }
 
+    /**
+     * Verify & Accept Goods Receipt
+     */
     public function verify(Request $request, Purchase $purchase)
     {
         $user = Auth::user();
@@ -111,7 +180,7 @@ class StockController extends Controller
         }
 
         if ($purchase->status !== 'pending_verification') {
-            return redirect()->route('stock.index')->with('error', 'Transaksi pengadaan ini sudah diproses sebelumnya.');
+            return redirect()->route('stock.inspection')->with('error', 'Transaksi pengadaan ini sudah diproses sebelumnya.');
         }
 
         $validated = $request->validate([
@@ -135,9 +204,12 @@ class StockController extends Controller
             $purchase->save();
         });
 
-        return redirect()->route('stock.index')->with('success', "Penerimaan barang #{$purchase->id} berhasil diverifikasi. Stok barang bertambah di sistem.");
+        return redirect()->route('stock.inspection')->with('success', "Penerimaan barang #{$purchase->po_number} berhasil diverifikasi dan stok telah ditambahkan ke inventaris.");
     }
 
+    /**
+     * Reject Goods Receipt
+     */
     public function reject(Request $request, Purchase $purchase)
     {
         $user = Auth::user();
@@ -147,7 +219,7 @@ class StockController extends Controller
         }
 
         if ($purchase->status !== 'pending_verification') {
-            return redirect()->route('stock.index')->with('error', 'Transaksi pengadaan ini sudah diproses sebelumnya.');
+            return redirect()->route('stock.inspection')->with('error', 'Transaksi pengadaan ini sudah diproses sebelumnya.');
         }
 
         $validated = $request->validate([
@@ -160,6 +232,6 @@ class StockController extends Controller
         $purchase->verification_notes = $validated['verification_notes'];
         $purchase->save();
 
-        return redirect()->route('stock.index')->with('success', "Pengadaan barang #{$purchase->id} berhasil ditolak/retur.");
+        return redirect()->route('stock.rejected')->with('success', "Pengadaan barang #{$purchase->po_number} berhasil ditolak/retur dan dicatat pada riwayat retur.");
     }
 }

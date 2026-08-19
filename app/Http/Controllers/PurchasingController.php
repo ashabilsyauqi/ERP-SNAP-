@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Material;
 use App\Models\Purchase;
 use App\Models\Supplier;
+use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 
 class PurchasingController extends Controller
@@ -14,8 +15,8 @@ class PurchasingController extends Controller
     {
         $user = auth()->user();
         
-        $materialQuery = Material::with('wholesalePrices')->orderBy('material_name', 'asc');
-        $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch'])->orderBy('created_at', 'desc');
+        $materialQuery = Material::with(['wholesalePrices', 'supplier'])->orderBy('material_name', 'asc');
+        $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy', 'approvedBy'])->orderBy('created_at', 'desc');
 
         if ($user->isOwner()) {
             if ($request->filled('branch_id') && $request->branch_id !== 'all') {
@@ -27,18 +28,60 @@ class PurchasingController extends Controller
             $purchaseQuery->where('branch_id', $user->branch_id);
         }
 
+        // SAP Filters
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $purchaseQuery->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
+        }
+
+        if ($request->filled('supplier_id') && $request->supplier_id !== 'all') {
+            $purchaseQuery->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $purchaseQuery->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $purchaseQuery->where(function ($q) use ($search) {
+                $q->where('po_number', 'like', "%{$search}%")
+                  ->orWhere('vendor_ref', 'like', "%{$search}%")
+                  ->orWhereHas('material', function ($mq) use ($search) {
+                      $mq->where('material_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
         $materials = $materialQuery->get();
         $purchases = $purchaseQuery->get();
-        $suppliers = Supplier::orderBy('name', 'asc')->get();
-        $branches = \App\Models\Branch::withTrashed()->orderBy('nama_cabang')->get();
 
-        return view('purchasing.index', compact('materials', 'purchases', 'suppliers', 'branches'));
+        // Calculate KPI Metrics
+        $totalSpend = $purchases->where('status', 'received')->sum('total_cost');
+        $waitingApprovalCount = $purchases->where('status', 'waiting_approval')->count();
+        $pendingCount = $purchases->whereIn('status', ['pending_verification', 'approved'])->count();
+        $receivedCount = $purchases->where('status', 'received')->count();
+        $rejectedCount = $purchases->where('status', 'rejected')->count();
+
+        $suppliers = Supplier::orderBy('name', 'asc')->get();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+
+        return view('purchasing.index', compact(
+            'materials',
+            'purchases',
+            'suppliers',
+            'branches',
+            'totalSpend',
+            'waitingApprovalCount',
+            'pendingCount',
+            'receivedCount',
+            'rejectedCount'
+        ));
     }
 
     public function create()
     {
         $user = auth()->user();
-        $materialQuery = Material::with('wholesalePrices')->orderBy('material_name', 'asc');
+        $materialQuery = Material::with(['wholesalePrices', 'supplier'])->orderBy('material_name', 'asc');
         
         if (!$user->isOwner()) {
             $materialQuery->where('branch_id', $user->branch_id);
@@ -46,9 +89,74 @@ class PurchasingController extends Controller
 
         $materials = $materialQuery->get();
         $suppliers = Supplier::orderBy('name', 'asc')->get();
-        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
         
         return view('purchasing.create', compact('materials', 'suppliers', 'branches'));
+    }
+
+    /**
+     * Dedicated Purchase Order History Log Records
+     */
+    public function history(Request $request)
+    {
+        $user = auth()->user();
+        
+        $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy', 'approvedBy'])->orderBy('created_at', 'desc');
+
+        if ($user->isOwner()) {
+            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+                $purchaseQuery->where('branch_id', $request->branch_id);
+            }
+        } else {
+            $purchaseQuery->where('branch_id', $user->branch_id);
+        }
+
+        // SAP Filters
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $purchaseQuery->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
+        }
+
+        if ($request->filled('supplier_id') && $request->supplier_id !== 'all') {
+            $purchaseQuery->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $purchaseQuery->where('status', $request->status);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $purchaseQuery->where(function ($q) use ($search) {
+                $q->where('po_number', 'like', "%{$search}%")
+                  ->orWhere('vendor_ref', 'like', "%{$search}%")
+                  ->orWhereHas('material', function ($mq) use ($search) {
+                      $mq->where('material_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $purchases = $purchaseQuery->get();
+
+        // Calculate KPI Metrics
+        $totalSpend = $purchases->where('status', 'received')->sum('total_cost');
+        $waitingApprovalCount = $purchases->where('status', 'waiting_approval')->count();
+        $pendingCount = $purchases->whereIn('status', ['pending_verification', 'approved'])->count();
+        $receivedCount = $purchases->where('status', 'received')->count();
+        $rejectedCount = $purchases->where('status', 'rejected')->count();
+
+        $suppliers = Supplier::orderBy('name', 'asc')->get();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+
+        return view('purchasing.history', compact(
+            'purchases',
+            'suppliers',
+            'branches',
+            'totalSpend',
+            'waitingApprovalCount',
+            'pendingCount',
+            'receivedCount',
+            'rejectedCount'
+        ));
     }
 
     public function store(Request $request)
@@ -56,6 +164,7 @@ class PurchasingController extends Controller
         $request->validate([
             'material_name' => 'required|string',
             'supplier_name' => 'nullable|string',
+            'vendor_ref' => 'nullable|string|max:100',
             'fixed_size' => 'nullable|numeric|min:0',
             'qty_bought' => 'required|integer|min:1',
             'purchase_price' => 'required|numeric|min:0',
@@ -94,7 +203,6 @@ class PurchasingController extends Controller
                     'stock_qty' => 0
                 ]);
             } else {
-                // Update pricing to the latest and supplier if set
                 $material->purchase_price = $request->purchase_price;
                 $material->retail_price = $request->retail_price;
                 if ($supplierId) {
@@ -103,18 +211,23 @@ class PurchasingController extends Controller
                 $material->save();
             }
 
-            // Log purchase with pending_verification status (stock is NOT increased until Manager verifies)
+            // Generate SAP PO Number
+            $poNumber = Purchase::generatePoNumber();
+
+            // Log purchase with status waiting_approval (Pre-Order request waiting Manager ACC)
             Purchase::create([
+                'po_number' => $poNumber,
+                'vendor_ref' => $request->vendor_ref ?: null,
                 'branch_id' => $targetBranchId,
                 'material_id' => $material->id,
                 'user_id' => $user->id,
                 'supplier_id' => $supplierId,
                 'qty_bought' => $request->qty_bought,
                 'total_cost' => $request->qty_bought * $request->purchase_price,
-                'status' => 'pending_verification',
+                'status' => 'waiting_approval',
             ]);
 
-            // Sync Wholesale Tiers — filter out empty rows
+            // Sync Wholesale Tiers
             $material->wholesalePrices()->delete();
             if ($request->has('wholesale') && is_array($request->wholesale)) {
                 foreach ($request->wholesale as $tier) {
@@ -128,6 +241,34 @@ class PurchasingController extends Controller
             }
         });
 
-        return redirect()->route('purchasing.index')->with('success', 'Pengadaan barang berhasil dicatat dan kini menunggu verifikasi penerimaan fisik dari Manajer Cabang.');
+        return redirect()->route('purchasing.history')->with('success', 'Pengajuan Purchase Order (PO) berhasil dibuat! Status PO saat ini: Menunggu Persetujuan (ACC) Manajer Toko.');
+    }
+
+    /**
+     * Approve Purchase Order (Manager / Owner ACC)
+     */
+    public function approve(Request $request, Purchase $purchase)
+    {
+        $user = auth()->user();
+
+        if (!$user->isOwner() && !$user->isManager()) {
+            abort(403, 'Hanya Manajer atau Owner yang dapat memberikan persetujuan PO.');
+        }
+
+        if ($user->isManager() && $purchase->branch_id != $user->branch_id) {
+            abort(403, 'Anda hanya dapat menyetujui PO cabang Anda sendiri.');
+        }
+
+        $request->validate([
+            'approval_notes' => 'nullable|string|max:500',
+        ]);
+
+        $purchase->status = 'pending_verification'; // Approved & now waiting physical goods receipt at warehouse
+        $purchase->approved_by = $user->id;
+        $purchase->approved_at = now();
+        $purchase->approval_notes = $request->approval_notes ?? 'Disetujui oleh Manajer Toko.';
+        $purchase->save();
+
+        return redirect()->back()->with('success', "Purchase Order #{$purchase->po_number} berhasil DISETUJUI (ACC)! Nota PO resmi dapat dicetak dengan Tanda Tangan Digital Manajer.");
     }
 }
