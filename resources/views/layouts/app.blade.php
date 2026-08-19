@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- Bootstrap Icons & FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -68,6 +71,23 @@
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; 
             background-color: #f8fafc;
         }
+        svg {
+            max-width: 100%;
+            height: auto;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .btn-outline-indigo {
+            color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .btn-outline-indigo:hover {
+            background-color: #4f46e5;
+            color: #ffffff;
+        }
+        .text-indigo { color: #4f46e5 !important; }
+        .bg-indigo-50 { background-color: #eef2ff !important; }
+        .text-indigo-600 { color: #4f46e5 !important; }
         /* Custom Sort Indicator */
         th.sortable { cursor: pointer; user-select: none; position: relative; }
         th.sortable:hover { background-color: rgba(241, 245, 249, 0.8); }
