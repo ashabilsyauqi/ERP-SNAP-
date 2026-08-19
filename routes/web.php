@@ -20,6 +20,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:owner,manager'])->group(function () {
         Route::get('/owner/dashboard', [OwnerController::class, 'dashboard'])->name('owner.dashboard');
         Route::resource('users', \App\Http\Controllers\UserController::class);
+        Route::resource('materials', \App\Http\Controllers\MaterialController::class)->except(['create', 'show', 'edit']);
     });
 
     Route::middleware(['role:owner'])->group(function () {

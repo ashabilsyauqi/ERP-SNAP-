@@ -108,40 +108,48 @@
                 </div>
             </div>
 
-            <!-- SAP Server-side Filter Toolbar -->
-            <form method="GET" action="{{ route('purchasing.index') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-slate-100">
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Mulai Tanggal</label>
-                    <input type="date" name="start_date" value="{{ request('start_date') }}" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Sampai Tanggal</label>
-                    <input type="date" name="end_date" value="{{ request('end_date') }}" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Filter Supplier</label>
-                    <select name="supplier_id" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white">
-                        <option value="all">Semua Supplier</option>
-                        @foreach($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}" {{ request('supplier_id') == $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Status Verifikasi</label>
-                    <div class="flex gap-2">
-                        <select name="status" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white">
-                            <option value="all">Semua Status</option>
-                            <option value="pending_verification" {{ request('status') == 'pending_verification' ? 'selected' : '' }}>Menunggu Cek</option>
-                            <option value="received" {{ request('status') == 'received' ? 'selected' : '' }}>Diterima (GR Completed)</option>
-                            <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Ditolak / Retur</option>
-                        </select>
-                        <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-medium text-xs transition">
-                            Terapkan
-                        </button>
+            <!-- SAP Server-side Filter & Instant Search Toolbar -->
+            <div class="pt-3 border-t border-slate-100 space-y-3">
+                <div class="flex justify-between items-center flex-wrap gap-2">
+                    <div class="relative w-full sm:w-72">
+                        <input type="text" class="table-search-input form-control w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="🔍 Search No. PO, Supplier, Material...">
                     </div>
                 </div>
-            </form>
+
+                <form method="GET" action="{{ route('purchasing.index') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Mulai Tanggal</label>
+                        <input type="date" name="start_date" value="{{ request('start_date') }}" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Sampai Tanggal</label>
+                        <input type="date" name="end_date" value="{{ request('end_date') }}" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Filter Supplier</label>
+                        <select name="supplier_id" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white">
+                            <option value="all">Semua Supplier</option>
+                            @foreach($suppliers as $supplier)
+                                <option value="{{ $supplier->id }}" {{ request('supplier_id') == $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Status Verifikasi</label>
+                        <div class="flex gap-2">
+                            <select name="status" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white">
+                                <option value="all">Semua Status</option>
+                                <option value="pending_verification" {{ request('status') == 'pending_verification' ? 'selected' : '' }}>Menunggu Cek</option>
+                                <option value="received" {{ request('status') == 'received' ? 'selected' : '' }}>Diterima (GR Completed)</option>
+                                <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Ditolak / Retur</option>
+                            </select>
+                            <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-medium text-xs transition">
+                                Terapkan
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- 1. Riwayat Pembelian (SAP Document Table) -->

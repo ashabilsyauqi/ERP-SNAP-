@@ -5,8 +5,13 @@
 
 @section('content')
 
-<div class="mb-6 flex justify-between items-center">
-    <p class="text-gray-500 text-sm">Kelola daftar supplier untuk keperluan purchasing.</p>
+<div class="mb-6 flex flex-wrap justify-between items-center gap-3">
+    <div class="flex items-center gap-3">
+        <p class="text-gray-500 text-sm mb-0">Kelola daftar supplier / vendor untuk pengadaan.</p>
+        <div class="relative w-64">
+            <input type="text" class="table-search-input form-control w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs" placeholder="🔍 Cari supplier, perusahaan...">
+        </div>
+    </div>
     <button onclick="document.getElementById('modal-add').classList.remove('hidden')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition shadow-sm flex items-center">
         <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Tambah Supplier

@@ -163,50 +163,23 @@
                             </a>
                         </li>
 
-                        <!-- Purchasing Dropdown -->
-                        @if(auth()->user()->isPurchasing() || auth()->user()->isOwner() || auth()->user()->isManager())
-                        <li class="nav-item {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'menu-open' : '' }}" id="tour-purchasing">
-                            <a href="#" class="nav-link {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'active' : '' }}">
-                                <i class="nav-icon bi bi-cart-check"></i>
-                                <p>
-                                    Purchasing
-                                    <i class="nav-arrow bi bi-chevron-right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{{ route('purchasing.index') }}" class="nav-link {{ request()->routeIs('purchasing.index') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-info"></i>
-                                        <p>Purchasing & Master Data</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('purchasing.history') }}" class="nav-link {{ request()->routeIs('purchasing.history') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-warning"></i>
-                                        <p>Riwayat PO Logs</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-success"></i>
-                                        <p>Data Supplier</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                        @endif
-
-                        <!-- Stock Dropdown -->
+                        <!-- Stock & Master Data Dropdown (Odoo Standard Inventory) -->
                         @if(auth()->user()->isManager() || auth()->user()->isOwner())
-                        <li class="nav-item {{ request()->routeIs('stock.*') ? 'menu-open' : '' }}" id="tour-stock">
-                            <a href="#" class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}">
+                        <li class="nav-item {{ request()->routeIs('materials.*') || request()->routeIs('stock.*') ? 'menu-open' : '' }}" id="tour-stock">
+                            <a href="#" class="nav-link {{ request()->routeIs('materials.*') || request()->routeIs('stock.*') ? 'active' : '' }}">
                                 <i class="nav-icon bi bi-boxes"></i>
                                 <p>
-                                    Stock & Gudang
+                                    Stock & Master Data
                                     <i class="nav-arrow bi bi-chevron-right"></i>
                                 </p>
                             </a>
                             <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('materials.index') }}" class="nav-link {{ request()->routeIs('materials.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-circle text-warning"></i>
+                                        <p>Master Bahan Baku & Produk</p>
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a href="{{ route('stock.index') }}" class="nav-link {{ request()->routeIs('stock.index') ? 'active' : '' }}">
                                         <i class="nav-icon bi bi-circle text-primary"></i>
@@ -216,13 +189,46 @@
                                 <li class="nav-item">
                                     <a href="{{ route('stock.inspection') }}" class="nav-link {{ request()->routeIs('stock.inspection') ? 'active' : '' }}">
                                         <i class="nav-icon bi bi-circle text-success"></i>
-                                        <p>Pemeriksaan Barang</p>
+                                        <p>Pemeriksaan Barang (GRN)</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ route('stock.rejected') }}" class="nav-link {{ request()->routeIs('stock.rejected') ? 'active' : '' }}">
                                         <i class="nav-icon bi bi-circle text-danger"></i>
                                         <p>Riwayat Retur & Reject</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        @endif
+
+                        <!-- Purchasing Dropdown (Odoo Procurement) -->
+                        @if(auth()->user()->isPurchasing() || auth()->user()->isOwner() || auth()->user()->isManager())
+                        <li class="nav-item {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'menu-open' : '' }}" id="tour-purchasing">
+                            <a href="#" class="nav-link {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                                <i class="nav-icon bi bi-cart-check"></i>
+                                <p>
+                                    Purchasing (Pengadaan)
+                                    <i class="nav-arrow bi bi-chevron-right"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('purchasing.index') }}" class="nav-link {{ request()->routeIs('purchasing.index') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-circle text-info"></i>
+                                        <p>Pengajuan PO (RFQ)</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('purchasing.history') }}" class="nav-link {{ request()->routeIs('purchasing.history') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-circle text-warning"></i>
+                                        <p>Riwayat & Log PO</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-circle text-success"></i>
+                                        <p>Data Supplier (Vendors)</p>
                                     </a>
                                 </li>
                             </ul>
@@ -449,6 +455,92 @@
 
             driverObj.drive();
         }
+    <!-- Global Table Header Sorting & Live Search Engine Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto initialize sortable headers on tables
+            document.querySelectorAll('table th').forEach(th => {
+                if (!th.classList.contains('no-sort') && th.innerText.trim().length > 0) {
+                    th.classList.add('sortable');
+                    if (!th.querySelector('.sort-icon')) {
+                        const icon = document.createElement('span');
+                        icon.className = 'sort-icon opacity-50 ms-1 text-muted';
+                        icon.innerHTML = '↕';
+                        th.appendChild(icon);
+                    }
+                }
+            });
+        });
+
+        // Click Handler for Header Column Sorting
+        document.addEventListener('click', function(e) {
+            const th = e.target.closest('th.sortable');
+            if (!th) return;
+
+            const table = th.closest('table');
+            if (!table) return;
+
+            const tbody = table.querySelector('tbody');
+            if (!tbody) return;
+
+            const thIndex = Array.from(th.parentNode.children).indexOf(th);
+            const isAsc = !th.classList.contains('sort-asc');
+
+            table.querySelectorAll('th').forEach(header => {
+                header.classList.remove('sort-asc', 'sort-desc');
+                const icon = header.querySelector('.sort-icon');
+                if (icon) {
+                    icon.innerHTML = '↕';
+                    icon.classList.add('opacity-50', 'text-muted');
+                    icon.classList.remove('text-primary');
+                }
+            });
+
+            th.classList.add(isAsc ? 'sort-asc' : 'sort-desc');
+            const icon = th.querySelector('.sort-icon');
+            if (icon) {
+                icon.innerHTML = isAsc ? '▲' : '▼';
+                icon.classList.remove('opacity-50', 'text-muted');
+                icon.classList.add('text-primary');
+            }
+
+            const rows = Array.from(tbody.querySelectorAll('tr:not(.no-sort)'));
+            if (rows.length <= 1) return;
+
+            rows.sort((a, b) => {
+                const aCol = (a.children[thIndex]?.innerText || '').trim().toLowerCase();
+                const bCol = (b.children[thIndex]?.innerText || '').trim().toLowerCase();
+
+                const aNum = parseFloat(aCol.replace(/[^0-9.-]+/g, ''));
+                const bNum = parseFloat(bCol.replace(/[^0-9.-]+/g, ''));
+
+                if (!isNaN(aNum) && !isNaN(bNum) && !aCol.includes('-') && !bCol.includes('-')) {
+                    return isAsc ? aNum - bNum : bNum - aNum;
+                }
+
+                return isAsc ? aCol.localeCompare(bCol) : bCol.localeCompare(aCol);
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        });
+
+        // Global Table Live Search Filter Engine
+        document.addEventListener('input', function(e) {
+            if (!e.target.matches('.table-search-input, [data-table-search]')) return;
+
+            const query = e.target.value.toLowerCase().trim();
+            const tableId = e.target.getAttribute('data-table-search');
+            const container = e.target.closest('.card, .tab-view, .container-fluid, body');
+            const table = tableId ? document.getElementById(tableId) : (container ? container.querySelector('table') : null);
+
+            if (!table) return;
+
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
     </script>
 </body>
 </html>
