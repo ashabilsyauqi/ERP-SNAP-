@@ -5,66 +5,55 @@
 
 @section('content')
 <div class="row">
-    <!-- AdminLTE 4 Small Boxes KPI -->
-    <div class="col-lg-3 col-6 mb-4">
-        <div class="small-box text-bg-primary shadow-sm">
-            <div class="inner p-3">
-                <h3 class="fw-bold mb-1">Rp {{ number_format($totalSales, 0, ',', '.') }}</h3>
-                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 12px;">Total Omset Penjualan</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Bladewind KPI 1: Total Omset -->
+    <x-bladewind::statistic 
+        number="Rp {{ number_format($totalSales, 0, ',', '.') }}" 
+        label="Total Omset Penjualan" 
+        has_shadow="true">
+        <x-slot name="icon">
+            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                <i class="bi bi-currency-dollar text-2xl"></i>
             </div>
-            <div class="icon">
-                <i class="bi bi-currency-dollar"></i>
-            </div>
-            <a href="{{ route('sales.index') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
-                Lihat Detail Sales <i class="bi bi-link-45deg"></i>
-            </a>
-        </div>
-    </div>
+        </x-slot>
+    </x-bladewind::statistic>
 
-    <div class="col-lg-3 col-6 mb-4">
-        <div class="small-box text-bg-success shadow-sm">
-            <div class="inner p-3">
-                <h3 class="fw-bold mb-1">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h3>
-                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 12px;">Laba Kotor (Gross Profit)</p>
+    <!-- Bladewind KPI 2: Laba Kotor -->
+    <x-bladewind::statistic 
+        number="Rp {{ number_format($grossProfit, 0, ',', '.') }}" 
+        label="Laba Kotor (Gross Profit)" 
+        has_shadow="true">
+        <x-slot name="icon">
+            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                <i class="bi bi-graph-up-arrow text-2xl"></i>
             </div>
-            <div class="icon">
-                <i class="bi bi-graph-up-arrow"></i>
-            </div>
-            <a href="{{ route('dashboard') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
-                Laporan Keuangan <i class="bi bi-link-45deg"></i>
-            </a>
-        </div>
-    </div>
+        </x-slot>
+    </x-bladewind::statistic>
 
-    <div class="col-lg-3 col-6 mb-4">
-        <div class="small-box text-bg-warning shadow-sm">
-            <div class="inner p-3">
-                <h3 class="fw-bold mb-1 text-dark">{{ number_format($totalTransactionsCount) }}</h3>
-                <p class="mb-0 text-dark-50 text-uppercase font-mono fw-semibold" style="font-size: 12px;">Total Transaksi POS</p>
+    <!-- Bladewind KPI 3: Transaksi POS -->
+    <x-bladewind::statistic 
+        number="{{ number_format($totalTransactionsCount) }}" 
+        label="Total Transaksi POS" 
+        has_shadow="true">
+        <x-slot name="icon">
+            <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                <i class="bi bi-cart-check-fill text-2xl"></i>
             </div>
-            <div class="icon text-dark">
-                <i class="bi bi-cart-check-fill"></i>
-            </div>
-            <a href="{{ route('pos.index') }}" class="small-box-footer link-dark link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
-                POS Checkout <i class="bi bi-link-45deg"></i>
-            </a>
-        </div>
-    </div>
+        </x-slot>
+    </x-bladewind::statistic>
 
-    <div class="col-lg-3 col-6 mb-4">
-        <div class="small-box text-bg-danger shadow-sm">
-            <div class="inner p-3">
-                <h3 class="fw-bold mb-1">{{ number_format($pendingPOCount) }} <small class="fs-6 font-normal">PO Pending</small></h3>
-                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 12px;">{{ number_format($lowStockCount) }} Item Stok Menipis</p>
+    <!-- Bladewind KPI 4: Pending PO & Low Stock -->
+    <x-bladewind::statistic 
+        number="{{ number_format($pendingPOCount) }} PO" 
+        label="{{ number_format($lowStockCount) }} Item Menipis" 
+        has_shadow="true">
+        <x-slot name="icon">
+            <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+                <i class="bi bi-exclamation-triangle-fill text-2xl"></i>
             </div>
-            <div class="icon">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-            </div>
-            <a href="{{ route('stock.inspection') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
-                Pemeriksaan Stock <i class="bi bi-link-45deg"></i>
-            </a>
-        </div>
-    </div>
+        </x-slot>
+    </x-bladewind::statistic>
+</div>
 </div>
 
 <!-- ApexCharts Interactive Widgets Row -->

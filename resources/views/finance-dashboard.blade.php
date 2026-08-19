@@ -28,73 +28,55 @@
 </div>
 @endif
 
-<!-- Stats Row - AdminLTE 4 Small Boxes -->
-<div class="row">
-    
+<!-- Stats Row - Bladewind Statistic Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <!-- Penjualan -->
-    <div class="col-lg-3 col-6 mb-4">
-        <div class="small-box text-bg-success shadow-sm">
-            <div class="inner p-3">
-                <h3 class="fw-bold mb-1">Rp {{ number_format($totalPenjualan, 0, ',', '.') }}</h3>
-                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 11px;">Total Penjualan (Bulan Ini)</p>
+    <x-bladewind::statistic 
+        number="Rp {{ number_format($totalPenjualan, 0, ',', '.') }}" 
+        label="Total Penjualan (Bulan Ini)" 
+        has_shadow="true">
+        <x-slot name="icon">
+            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                <i class="bi bi-cart-check-fill text-2xl"></i>
             </div>
-            <div class="icon">
-                <i class="bi bi-cart-check-fill"></i>
-            </div>
-            <a href="{{ route('reports.sales') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
-                Laporan Sales <i class="bi bi-arrow-right-circle"></i>
-            </a>
-        </div>
-    </div>
+        </x-slot>
+    </x-bladewind::statistic>
 
     <!-- Kas Masuk -->
-    <div class="col-lg-3 col-6 mb-4">
-        <div class="small-box text-bg-info shadow-sm">
-            <div class="inner p-3">
-                <h3 class="fw-bold mb-1">Rp {{ number_format($totalKasMasuk, 0, ',', '.') }}</h3>
-                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 11px;">Total Kas Masuk (Bulan Ini)</p>
+    <x-bladewind::statistic 
+        number="Rp {{ number_format($totalKasMasuk, 0, ',', '.') }}" 
+        label="Total Kas Masuk (Bulan Ini)" 
+        has_shadow="true">
+        <x-slot name="icon">
+            <div class="p-3 bg-sky-50 text-sky-600 rounded-2xl">
+                <i class="bi bi-arrow-down-left-circle-fill text-2xl"></i>
             </div>
-            <div class="icon">
-                <i class="bi bi-arrow-down-left-circle-fill"></i>
-            </div>
-            <a href="{{ route('kas-masuk.index') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
-                Detail Kas Masuk <i class="bi bi-arrow-right-circle"></i>
-            </a>
-        </div>
-    </div>
+        </x-slot>
+    </x-bladewind::statistic>
 
-    <!-- Kas Keluar -->
-    <div class="col-lg-3 col-6 mb-4">
-        <div class="small-box text-bg-danger shadow-sm">
-            <div class="inner p-3">
-                <h3 class="fw-bold mb-1">Rp {{ number_format($totalKasKeluar, 0, ',', '.') }}</h3>
-                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 11px;">Total Kas Keluar (Bulan Ini)</p>
+    <!-- Pengeluaran Operasional -->
+    <x-bladewind::statistic 
+        number="Rp {{ number_format($totalPengeluaranOpex, 0, ',', '.') }}" 
+        label="Pengeluaran Operasional (OPEX)" 
+        has_shadow="true">
+        <x-slot name="icon">
+            <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+                <i class="bi bi-receipt-cutoff text-2xl"></i>
             </div>
-            <div class="icon">
-                <i class="bi bi-arrow-up-right-circle-fill"></i>
-            </div>
-            <a href="{{ route('kas-keluar.index') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
-                Detail Kas Keluar <i class="bi bi-arrow-right-circle"></i>
-            </a>
-        </div>
-    </div>
+        </x-slot>
+    </x-bladewind::statistic>
 
-    <!-- Saldo Kas -->
-    <div class="col-lg-3 col-6 mb-4">
-        <div class="small-box text-bg-primary shadow-sm">
-            <div class="inner p-3">
-                <h3 class="fw-bold mb-1">Rp {{ number_format($saldoKas, 0, ',', '.') }}</h3>
-                <p class="mb-0 text-white-50 text-uppercase font-mono fw-semibold" style="font-size: 11px;">Saldo Kas Aktif (Konsolidasi)</p>
+    <!-- Pembelian Bahan Baku -->
+    <x-bladewind::statistic 
+        number="Rp {{ number_format($totalPembelianBahan, 0, ',', '.') }}" 
+        label="Pembelian Bahan (HPP Modal)" 
+        has_shadow="true">
+        <x-slot name="icon">
+            <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                <i class="bi bi-box-seam-fill text-2xl"></i>
             </div>
-            <div class="icon">
-                <i class="bi bi-wallet2"></i>
-            </div>
-            <a href="{{ route('reports.cash-balance') }}" class="small-box-footer link-light link-underline-opacity-0 link-underline-opacity-50-hover py-2 px-3 text-end d-block">
-                Laporan Saldo <i class="bi bi-arrow-right-circle"></i>
-            </a>
-        </div>
-    </div>
-
+        </x-slot>
+    </x-bladewind::statistic>
 </div>
 
 <!-- Content Area Row -->

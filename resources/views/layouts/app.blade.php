@@ -3,36 +3,54 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Dashboard') | SnapPrint ERP AdminLTE 4</title>
+    <title>@yield('title', 'Dashboard') | SnapPrint ERP Bladewind UI</title>
 
-    <!-- Google Font: Plus Jakarta Sans & Source Sans 3 -->
+    <!-- Google Font: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Overlayscrollbars -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.10.1/styles/overlayscrollbars.min.css">
-    <!-- Bootstrap Icons -->
+    
+    <!-- Bootstrap Icons & FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- FontAwesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <!-- AdminLTE 4 CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/css/adminlte.min.css">
+    
     <!-- ApexCharts CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.css">
     <!-- Driver.js for Guided Tour -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
 
-    <!-- Tailwind CSS CDN Engine (Preflight disabled so AdminLTE 4 base styles are preserved) -->
+    <!-- Bladewind UI CSS -->
+    <link href="{{ asset('vendor/bladewind/css/animate.min.css') }}" rel="stylesheet" />
+    <link href="{{ asset('vendor/bladewind/css/bladewind-ui.min.css') }}" rel="stylesheet" />
+
+    <!-- Tailwind CSS CDN Engine -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             corePlugins: {
                 preflight: false,
+            },
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        indigo: {
+                            50: '#eep2ff',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
             }
         }
     </script>
 
-    <!-- Alpine.js CDN for interactive modals, tabs, and dropdowns -->
+    <!-- Alpine.js CDN -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- SweetAlert2 CDN -->
@@ -41,447 +59,302 @@
     <script src="https://cdn.jsdelivr.net/npm/autonumeric@4.6.0/dist/autoNumeric.min.js"></script>
     <!-- SheetJS (xlsx) CDN for 1-Click Excel Export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- SignaturePad.js CDN for smooth vector digital signatures -->
+    <!-- SignaturePad.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
     <style>
         [x-cloak] { display: none !important; }
-        body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; }
-        .app-sidebar { background-color: #0f172a !important; }
-        .sidebar-brand { border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .brand-text { font-weight: 700; color: #818cf8; letter-spacing: 0.5px; }
-        .nav-link.active { background-color: #4f46e5 !important; color: #ffffff !important; font-weight: 600; }
-        .small-box { border-radius: 1rem; overflow: hidden; }
-        .card { border-radius: 1rem; border: 1px solid rgba(0,0,0,0.05); }
-
-        /* SVG & Tailwind Layout Compatibility Fixes */
-        svg { display: inline-block; vertical-align: middle; max-width: 100%; }
-        svg.w-4, svg.h-4 { width: 1rem !important; height: 1rem !important; min-width: 1rem; min-height: 1rem; }
-        svg.w-5, svg.h-5 { width: 1.25rem !important; height: 1.25rem !important; min-width: 1.25rem; min-height: 1.25rem; }
-        svg.w-6, svg.h-6 { width: 1.5rem !important; height: 1.5rem !important; min-width: 1.5rem; min-height: 1.5rem; }
-        svg.w-8, svg.h-8 { width: 2rem !important; height: 2rem !important; min-width: 2rem; min-height: 2rem; }
-        svg.w-12, svg.h-12 { width: 3rem !important; height: 3rem !important; min-width: 3rem; min-height: 3rem; }
-        svg.w-16, svg.h-16 { width: 4rem !important; height: 4rem !important; }
-        svg.w-24, svg.h-24 { width: 6rem !important; height: 6rem !important; }
-        svg:not([width]):not([class*="w-"]) { max-width: 1.5rem; max-height: 1.5rem; }
-
-        /* Tailwind grid & flex bridge helper classes */
-        .grid { display: grid; }
-        .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-        @media (min-width: 768px) {
-            .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-            .md\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        body { 
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; 
+            background-color: #f8fafc;
         }
-        @media (min-width: 1024px) {
-            .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        }
-        .gap-6 { gap: 1.5rem; }
-        .gap-4 { gap: 1rem; }
-        .flex { display: flex; }
-        .items-center { align-items: center; }
-        .justify-between { justify-content: space-between; }
-        .space-y-4 > * + * { margin-top: 1rem; }
+        /* Custom Sort Indicator */
+        th.sortable { cursor: pointer; user-select: none; position: relative; }
+        th.sortable:hover { background-color: rgba(241, 245, 249, 0.8); }
+        .sort-icon { display: inline-block; margin-left: 6px; font-size: 0.75rem; transition: transform 0.2s; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen" x-data="{ sidebarOpen: true }">
 
-<body class="layout-fixed sidebar-expand-lg bg-body-tertiary">
-    <div class="app-wrapper">
-        @auth
-        <!-- Header Navbar (App Header) -->
-        <nav class="app-header navbar navbar-expand bg-body shadow-sm">
-            <div class="container-fluid">
-                <!-- Start Navbar Links -->
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" data-lte-toggle="sidebar" href="#" role="button">
-                            <i class="bi bi-list fs-4"></i>
-                        </a>
-                    </li>
-                    <li class="nav-item d-none d-md-block">
-                        <span class="nav-link text-muted fw-semibold">
-                            Cabang: <span class="text-primary">{{ auth()->user()->branch->nama_cabang ?? 'Semua Cabang (Global)' }}</span>
-                        </span>
-                    </li>
-                </ul>
+    <div class="flex h-screen overflow-hidden bg-slate-100">
 
-                <!-- End Navbar Links -->
-                <ul class="navbar-nav ms-auto align-items-center">
-                    <!-- Interactive Tour Button -->
-                    <li class="nav-item me-2">
-                        <button type="button" onclick="startAppTour()" id="tour-button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                            <i class="bi bi-question-circle-fill me-1"></i> Panduan Tutorial
-                        </button>
-                    </li>
-
-                    <!-- User Menu Dropdown -->
-                    <li class="nav-item dropdown user-menu" id="tour-profile">
-                        <a href="#" class="nav-link dropdown-toggle flex items-center" data-bs-toggle="dropdown">
-                            <div class="rounded-circle bg-indigo-600 text-white fw-bold d-inline-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 13px;">
-                                {{ strtoupper(substr(auth()->user()->username, 0, 2)) }}
-                            </div>
-                            <span class="d-none d-md-inline fw-semibold text-dark">{{ auth()->user()->username }}</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end shadow border-0 rounded-4 mt-2">
-                            <!-- User Header -->
-                            <li class="user-header bg-primary text-white rounded-top-4 p-3 text-center">
-                                <div class="rounded-circle bg-white text-primary fw-bold mx-auto mb-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 48px; height: 48px; font-size: 18px;">
-                                    {{ strtoupper(substr(auth()->user()->username, 0, 2)) }}
-                                </div>
-                                <p class="mb-0 fw-bold">{{ auth()->user()->username }}</p>
-                                <small class="text-white-50 text-uppercase fw-semibold">{{ auth()->user()->role }} - {{ auth()->user()->branch->nama_cabang ?? 'Global' }}</small>
-                            </li>
-                            <!-- Menu Body / Footer -->
-                            <li class="user-footer p-3 bg-light rounded-bottom-4 d-flex justify-between">
-                                <a href="{{ route('profile.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                    <i class="bi bi-person-gear me-1"></i> Profil & Tanda Tangan
-                                </a>
-                                <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3">
-                                        <i class="bi bi-box-arrow-right me-1"></i> Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-        <!-- /.navbar -->
-
-        <!-- Main Sidebar Container -->
-        <aside class="app-sidebar shadow" data-bs-theme="dark">
-            <!-- Sidebar Brand -->
-            <div class="sidebar-brand p-3">
-                <a href="{{ route('owner.dashboard') }}" class="brand-link text-decoration-none">
-                    <span class="brand-text fs-5">SnapPrint <small class="badge bg-indigo-500 text-white">ERP 4</small></span>
+        <!-- Bladewind-inspired Sleek Sidebar Nav -->
+        <aside :class="sidebarOpen ? 'w-64' : 'w-20'" class="bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 ease-in-out shadow-2xl relative z-30 flex-shrink-0">
+            <!-- Brand Logo -->
+            <div class="h-16 px-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-950/60">
+                <a href="{{ route('owner.dashboard') }}" class="flex items-center gap-3 overflow-hidden text-decoration-none">
+                    <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 flex-shrink-0">
+                        <i class="bi bi-printer-fill fs-5"></i>
+                    </div>
+                    <div x-show="sidebarOpen" class="transition-opacity duration-200">
+                        <h1 class="text-base font-extrabold text-white tracking-wide leading-tight mb-0">SnapPrint</h1>
+                        <span class="text-[10px] font-semibold tracking-wider text-indigo-400 uppercase">ERP Enterprise</span>
+                    </div>
                 </a>
+                <button @click="sidebarOpen = !sidebarOpen" class="text-slate-400 hover:text-white p-1 rounded-lg transition focus:outline-none hidden md:block">
+                    <i :class="sidebarOpen ? 'bi bi-chevron-left' : 'bi bi-chevron-right'"></i>
+                </button>
             </div>
 
-            <!-- Sidebar Menu -->
-            <div class="sidebar-wrapper">
-                <nav class="mt-2">
-                    <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
-                        
-                        <!-- Dashboard -->
-                        <li class="nav-item">
-                            <a href="{{ route('owner.dashboard') }}" class="nav-link {{ request()->routeIs('owner.dashboard') ? 'active' : '' }}">
-                                <i class="nav-icon bi bi-speedometer2"></i>
-                                <p>Dashboard Enterprise</p>
-                            </a>
-                        </li>
-
-                        <!-- Stock & Master Data Dropdown (Odoo Standard Inventory) -->
-                        @if(auth()->user()->isManager() || auth()->user()->isOwner())
-                        <li class="nav-item {{ request()->routeIs('materials.*') || request()->routeIs('stock.*') ? 'menu-open' : '' }}" id="tour-stock">
-                            <a href="#" class="nav-link {{ request()->routeIs('materials.*') || request()->routeIs('stock.*') ? 'active' : '' }}">
-                                <i class="nav-icon bi bi-boxes"></i>
-                                <p>
-                                    Stock & Master Data
-                                    <i class="nav-arrow bi bi-chevron-right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{{ route('materials.index') }}" class="nav-link {{ request()->routeIs('materials.*') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-warning"></i>
-                                        <p>Master Bahan Baku & Produk</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('stock.index') }}" class="nav-link {{ request()->routeIs('stock.index') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-primary"></i>
-                                        <p>Data Stok & Opname</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('stock.inspection') }}" class="nav-link {{ request()->routeIs('stock.inspection') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-success"></i>
-                                        <p>Pemeriksaan Barang (GRN)</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('stock.rejected') }}" class="nav-link {{ request()->routeIs('stock.rejected') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-danger"></i>
-                                        <p>Riwayat Retur & Reject</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                        @endif
-
-                        <!-- Purchasing Dropdown (Odoo Procurement) -->
-                        @if(auth()->user()->isPurchasing() || auth()->user()->isOwner() || auth()->user()->isManager())
-                        <li class="nav-item {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'menu-open' : '' }}" id="tour-purchasing">
-                            <a href="#" class="nav-link {{ request()->routeIs('purchasing.*') || request()->routeIs('suppliers.*') ? 'active' : '' }}">
-                                <i class="nav-icon bi bi-cart-check"></i>
-                                <p>
-                                    Purchasing (Pengadaan)
-                                    <i class="nav-arrow bi bi-chevron-right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{{ route('purchasing.index') }}" class="nav-link {{ request()->routeIs('purchasing.index') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-info"></i>
-                                        <p>Pengajuan PO (RFQ)</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('purchasing.history') }}" class="nav-link {{ request()->routeIs('purchasing.history') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-warning"></i>
-                                        <p>Riwayat & Log PO</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('suppliers.index') }}" class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-success"></i>
-                                        <p>Data Supplier (Vendors)</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                        @endif
-
-                        <!-- Sales Dropdown -->
-                        @if(auth()->user()->isCashier() || auth()->user()->isOwner() || auth()->user()->isManager())
-                        <li class="nav-item {{ request()->routeIs('pos.*') || request()->routeIs('sales.*') ? 'menu-open' : '' }}" id="tour-sales">
-                            <a href="#" class="nav-link {{ request()->routeIs('pos.*') || request()->routeIs('sales.*') ? 'active' : '' }}">
-                                <i class="nav-icon bi bi-bag"></i>
-                                <p>
-                                    Sales & POS
-                                    <i class="nav-arrow bi bi-chevron-right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{{ route('pos.index') }}" class="nav-link {{ request()->routeIs('pos.index') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-primary"></i>
-                                        <p>POS Checkout</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('sales.index') }}" class="nav-link {{ request()->routeIs('sales.index') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-info"></i>
-                                        <p>Riwayat Penjualan</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                        @endif
-
-                        <!-- Finance Dropdown -->
-                        @if(auth()->user()->isOwner() || auth()->user()->isManager())
-                        <li class="nav-item {{ request()->routeIs('dashboard') || request()->routeIs('accounts.*') || request()->routeIs('kas-masuk.*') || request()->routeIs('kas-keluar.*') || request()->routeIs('reports.*') ? 'menu-open' : '' }}" id="tour-finance">
-                            <a href="#" class="nav-link {{ request()->routeIs('dashboard') || request()->routeIs('accounts.*') || request()->routeIs('kas-masuk.*') || request()->routeIs('kas-keluar.*') || request()->routeIs('reports.*') ? 'active' : '' }}">
-                                <i class="nav-icon bi bi-cash-stack"></i>
-                                <p>
-                                    Finance & Akuntansi
-                                    <i class="nav-arrow bi bi-chevron-right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav nav-treeview">
-                                <li class="nav-item">
-                                    <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-info"></i>
-                                        <p>Dashboard Keuangan</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('accounts.index') }}" class="nav-link {{ request()->routeIs('accounts.*') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-warning"></i>
-                                        <p>Master Akun</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('kas-masuk.index') }}" class="nav-link {{ request()->routeIs('kas-masuk.*') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-success"></i>
-                                        <p>Kas Masuk</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('kas-keluar.index') }}" class="nav-link {{ request()->routeIs('kas-keluar.*') ? 'active' : '' }}">
-                                        <i class="nav-icon bi bi-circle text-danger"></i>
-                                        <p>Kas Keluar</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                        @endif
-
-                        <!-- User Management (Owner & Manager) -->
-                        @if(auth()->user()->isOwner() || auth()->user()->isManager())
-                        <li class="nav-item">
-                            <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                                <i class="nav-icon bi bi-people"></i>
-                                <p>Manajemen User</p>
-                            </a>
-                        </li>
-                        @endif
-
-                        <!-- Profil & Tanda Tangan -->
-                        <li class="nav-item">
-                            <a href="{{ route('profile.index') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}">
-                                <i class="nav-icon bi bi-pencil-square"></i>
-                                <p>Profil & Signature</p>
-                            </a>
-                        </li>
-
-                    </ul>
-                </nav>
-            </div>
-        </aside>
-        @endauth
-
-        <!-- Main Content (App Main) -->
-        <main class="app-main">
-            <!-- App Content Header (Page Title & Breadcrumb) -->
-            <div class="app-content-header py-3 bg-white border-bottom">
-                <div class="container-fluid">
-                    <div class="row align-items-center">
-                        <div class="col-sm-6">
-                            <h3 class="mb-0 fw-bold text-dark">@yield('page-title', 'Dashboard')</h3>
-                        </div>
-                        <div class="col-sm-6">
-                            <ol class="breadcrumb float-sm-end mb-0">
-                                <li class="breadcrumb-item"><a href="{{ route('owner.dashboard') }}" class="text-decoration-none">Home</a></li>
-                                <li class="breadcrumb-item active" aria-current="page">@yield('title', 'ERP System')</li>
-                            </ol>
-                        </div>
+            <!-- Active Branch Info Pill -->
+            <div x-show="sidebarOpen" class="px-4 py-3 border-b border-slate-800/50 bg-slate-900/40">
+                <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                    <i class="bi bi-building text-indigo-400"></i>
+                    <div class="overflow-hidden">
+                        <p class="text-[10px] uppercase font-bold text-slate-400 mb-0">Cabang Aktif</p>
+                        <p class="text-xs font-semibold text-slate-200 truncate mb-0">
+                            {{ auth()->user()->branch->nama_cabang ?? 'Pusat (Global)' }}
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <!-- App Content Body -->
-            <div class="app-content py-4">
-                <div class="container-fluid">
-                    <!-- Session Alerts -->
-                    @if(session('success'))
-                        <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" role="alert">
-                            <i class="bi bi-check-circle-fill me-2 fs-5"></i> {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
+            <!-- Navigation Links -->
+            <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6 hide-scrollbar">
+                
+                <!-- Main Analytics -->
+                <div>
+                    <p x-show="sidebarOpen" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Utama & Analitik</p>
+                    <div class="space-y-1">
+                        @if(auth()->user()->isOwner() || auth()->user()->isManager())
+                            <a href="{{ route('owner.dashboard') }}" id="tour-step-dashboard" 
+                                class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition duration-150 {{ request()->routeIs('owner.dashboard') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
+                                <i class="bi bi-grid-1x2-fill text-sm"></i>
+                                <span x-show="sidebarOpen">Dashboard Owner</span>
+                            </a>
+                        @endif
 
-                    @if(session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i> {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    @endif
+                        <a href="{{ route('finance.dashboard') }}" 
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition duration-150 {{ request()->routeIs('finance.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
+                            <i class="bi bi-wallet2 text-sm"></i>
+                            <span x-show="sidebarOpen">Dashboard Keuangan</span>
+                        </a>
+                    </div>
+                </div>
 
-                    @yield('content')
+                <!-- Stock & Inventory (Odoo Standard) -->
+                <div>
+                    <p x-show="sidebarOpen" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Stock & Inventory (Odoo)</p>
+                    <div class="space-y-1" x-data="{ openStock: true }">
+                        <button @click="openStock = !openStock" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/70 hover:text-slate-200 transition text-left focus:outline-none">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-box-seam-fill text-amber-400"></i>
+                                <span x-show="sidebarOpen">Stock & Master Data</span>
+                            </div>
+                            <i x-show="sidebarOpen" :class="openStock ? 'bi bi-chevron-down' : 'bi bi-chevron-right'" class="text-[10px]"></i>
+                        </button>
+                        
+                        <div x-show="openStock && sidebarOpen" class="pl-7 space-y-1 mt-1">
+                            <a href="{{ route('materials.index') }}" 
+                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('materials.*') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
+                                • Master Bahan & Produk
+                            </a>
+                            <a href="{{ route('stock.index') }}" 
+                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('stock.index') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
+                                • Data Stok & Opname
+                            </a>
+                            <a href="{{ route('stock.inspection') }}" 
+                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('stock.inspection') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
+                                • Pemeriksaan Barang (GRN)
+                            </a>
+                            <a href="{{ route('stock.returns') }}" 
+                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('stock.returns') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
+                                • Riwayat Retur & Reject
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Purchasing (Odoo Standard) -->
+                <div>
+                    <p x-show="sidebarOpen" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Purchasing (Odoo)</p>
+                    <div class="space-y-1" x-data="{ openPurchasing: true }">
+                        <button @click="openPurchasing = !openPurchasing" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-slate-800/70 hover:text-slate-200 transition text-left focus:outline-none">
+                            <div class="flex items-center gap-3">
+                                <i class="bi bi-cart-check-fill text-emerald-400"></i>
+                                <span x-show="sidebarOpen">Pengadaan (Purchasing)</span>
+                            </div>
+                            <i x-show="sidebarOpen" :class="openPurchasing ? 'bi bi-chevron-down' : 'bi bi-chevron-right'" class="text-[10px]"></i>
+                        </button>
+
+                        <div x-show="openPurchasing && sidebarOpen" class="pl-7 space-y-1 mt-1">
+                            <a href="{{ route('purchasing.index') }}" 
+                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('purchasing.index') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
+                                • Pengajuan PO (RFQ)
+                            </a>
+                            <a href="{{ route('purchasing.history') }}" 
+                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('purchasing.history') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
+                                • Riwayat & Log PO
+                            </a>
+                            <a href="{{ route('suppliers.index') }}" 
+                                class="block px-3 py-2 rounded-lg text-xs text-decoration-none transition {{ request()->routeIs('suppliers.*') ? 'text-indigo-400 font-bold bg-indigo-950/40' : 'text-slate-400 hover:text-slate-200' }}">
+                                • Data Supplier (Vendors)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- POS & Cashier -->
+                <div>
+                    <p x-show="sidebarOpen" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Kasir & Penjualan</p>
+                    <div class="space-y-1">
+                        <a href="{{ route('sales.index') }}" id="tour-step-sales" 
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition {{ request()->routeIs('sales.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
+                            <i class="bi bi-receipt-cutoff text-sm text-cyan-400"></i>
+                            <span x-show="sidebarOpen">Penjualan Kasir (POS)</span>
+                        </a>
+                        <a href="{{ route('cashier.close') }}" 
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition {{ request()->routeIs('cashier.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
+                            <i class="bi bi-cash-stack text-sm text-rose-400"></i>
+                            <span x-show="sidebarOpen">Tutup Shift Kasir</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Account & Settings -->
+                <div>
+                    <p x-show="sidebarOpen" class="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Sistem & Pengguna</p>
+                    <div class="space-y-1">
+                        @if(auth()->user()->isOwner() || auth()->user()->isManager())
+                            <a href="{{ route('users.index') }}" 
+                                class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition {{ request()->routeIs('users.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
+                                <i class="bi bi-people-fill text-sm"></i>
+                                <span x-show="sidebarOpen">Manajemen User</span>
+                            </a>
+                        @endif
+
+                        <a href="{{ route('profile.index') }}" 
+                            class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-xs text-decoration-none transition {{ request()->routeIs('profile.*') ? 'bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30' : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-200' }}">
+                            <i class="bi bi-person-bounding-box text-sm"></i>
+                            <span x-show="sidebarOpen">Profil & Tanda Tangan</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer User Section -->
+            <div class="p-3 border-t border-slate-800/80 bg-slate-950/40">
+                <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-800/50">
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <x-bladewind::avatar name="{{ auth()->user()->username }}" size="small" />
+                        <div x-show="sidebarOpen" class="overflow-hidden">
+                            <p class="text-xs font-bold text-white truncate mb-0">{{ auth()->user()->username }}</p>
+                            <p class="text-[10px] text-indigo-400 uppercase font-semibold mb-0">{{ auth()->user()->role }}</p>
+                        </div>
+                    </div>
+                    <form action="{{ route('logout') }}" method="POST" class="d-inline" x-show="sidebarOpen">
+                        @csrf
+                        <button type="submit" class="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg transition" title="Logout Account">
+                            <i class="bi bi-box-arrow-right text-base"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
-        </main>
+        </aside>
 
-        <!-- App Footer -->
-        <footer class="app-footer text-center py-3 bg-white border-top">
-            <div class="float-end d-none d-sm-inline">AdminLTE 4 Enterprise</div>
-            <strong>Copyright &copy; {{ date('Y') }} SnapPrint ERP.</strong> All rights reserved.
-        </footer>
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+            
+            <!-- Top Header Navbar (Bladewind Style) -->
+            <header class="h-16 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between shadow-sm z-20">
+                <div class="flex items-center gap-4">
+                    <button @click="sidebarOpen = !sidebarOpen" class="text-slate-500 hover:text-slate-800 p-2 rounded-xl hover:bg-slate-100 transition focus:outline-none md:hidden">
+                        <i class="bi bi-list text-xl"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 tracking-tight mb-0">@yield('page-title', 'Dashboard System')</h2>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <!-- Guided Tour Driver.js Button -->
+                    <button type="button" onclick="startGuidedTour()" id="tour-button" class="btn btn-sm btn-outline-indigo rounded-pill px-3 font-semibold d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-compass-fill text-indigo-600"></i>
+                        <span class="d-none d-sm-inline">Petunjuk Navigasi</span>
+                    </button>
+
+                    <!-- Bladewind Notification Bell -->
+                    <x-bladewind::bell has_unread="true" />
+
+                    <!-- User Profile Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <x-bladewind::avatar name="{{ auth()->user()->username }}" size="small" />
+                            <span class="text-xs font-semibold text-slate-700 d-none d-md-inline">{{ auth()->user()->username }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-2" style="min-width: 200px;">
+                            <li>
+                                <a class="dropdown-menu-item dropdown-item rounded-3 text-xs fw-semibold py-2" href="{{ route('profile.index') }}">
+                                    <i class="bi bi-person me-2 text-indigo"></i> Profil Account
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form action="{{ route('logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item rounded-3 text-xs fw-semibold py-2 text-danger">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Keluar (Logout)
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Page Content Body -->
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-100/70">
+                <!-- Flash Notification Alerts -->
+                @if(session('success'))
+                    <div class="mb-4">
+                        <x-bladewind::alert type="success" show_close_icon="true">
+                            {{ session('success') }}
+                        </x-bladewind::alert>
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="mb-4">
+                        <x-bladewind::alert type="error" show_close_icon="true">
+                            {{ session('error') }}
+                        </x-bladewind::alert>
+                    </div>
+                @endif
+
+                @yield('content')
+            </main>
+
+        </div>
     </div>
 
-    <!-- JS Dependencies -->
-    <!-- Popper & Bootstrap 5 -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Overlayscrollbars -->
-    <script src="https://cdn.jsdelivr.net/npm/overlayscrollbars@2.10.1/browser/overlayscrollbars.browser.es6.min.js"></script>
-    <!-- AdminLTE 4 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/admin-lte@4.0.0-beta3/dist/js/adminlte.min.js"></script>
-    <!-- ApexCharts -->
+    <!-- ApexCharts JS -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.min.js"></script>
     <!-- Driver.js for Guided Tour -->
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js"></script>
+    <!-- Bladewind UI Helper JS -->
+    <script src="{{ asset('vendor/bladewind/js/helpers.js') }}"></script>
 
-    <!-- Interactive Guided Tour Script -->
     <script>
-        function startAppTour() {
-            if (typeof window.driver === 'undefined') {
-                alert('Modul Tutorial sedang dimuat...');
-                return;
-            }
-
-            const driverObj = window.driver.js.driver({
+        // Guided Tour Engine (Tokopedia/Admin LTE 4 style)
+        function startGuidedTour() {
+            if (typeof driver === 'undefined') return;
+            const driverObj = driver.js.driver({
                 showProgress: true,
-                animate: true,
-                nextBtnText: 'Lanjut ➔',
-                prevBtnText: '⬅️ Kembali',
-                doneBtnText: 'Selesai 🎉',
                 steps: [
-                    {
-                        element: '#tour-button',
-                        popover: {
-                            title: '👋 AdminLTE 4 ERP Tutorial',
-                            description: 'Klik tombol ini kapan saja untuk memulai ulang panduan navigasi interaktif aplikasi!',
-                            side: "bottom", align: 'start'
-                        }
-                    },
-                    {
-                        element: '#tour-purchasing',
-                        popover: {
-                            title: '🛒 Modul Purchasing',
-                            description: 'Tempat Staf Purchasing membuat Pengajuan Purchase Order (PO) ke Supplier. Status awal: <b>⏳ Menunggu ACC Manager</b>.',
-                            side: "right", align: 'start'
-                        }
-                    },
-                    {
-                        element: '#tour-stock',
-                        popover: {
-                            title: '📦 Modul Stock & Gudang',
-                            description: 'Tempat Manajer Toko menyetujui PO (ACC) dan melakukan <b>Pemeriksaan Fisik Barang Masuk</b> sebelum stok bertambah.',
-                            side: "right", align: 'start'
-                        }
-                    },
-                    {
-                        element: '#tour-sales',
-                        popover: {
-                            title: '💰 Modul Sales & POS',
-                            description: 'Tempat Kasir menginput pemesanan eceran/grosir pelanggan dan mencetak nota transaksi.',
-                            side: "right", align: 'start'
-                        }
-                    },
-                    {
-                        element: '#tour-finance',
-                        popover: {
-                            title: '📊 Modul Finance & Keuangan',
-                            description: 'Tempat melihat Dashboard Keuangan, Jurnal Kas Masuk/Keluar Voucher, dan Laporan Laba Rugi.',
-                            side: "right", align: 'start'
-                        }
-                    },
-                    {
-                        element: '#tour-profile',
-                        popover: {
-                            title: '✍️ Profil & Tanda Tangan Digital',
-                            description: 'Klik di sini untuk mengunggah atau menggambar <b>Tanda Tangan Digital Resmi</b> yang akan terstempel otomatis pada nota cetak PO.',
-                            side: "bottom", align: 'end'
-                        }
-                    }
+                    { element: '#tour-button', popover: { title: 'Petunjuk Navigasi Tokopedia-Style', description: 'Klik tombol ini kapan saja untuk mempelajari alur penggunaan fitur di SnapPrint ERP.', side: "bottom" } },
+                    { element: '#tour-step-dashboard', popover: { title: 'Dashboard Analytics', description: 'Pantau indikator kinerja utama (KPI) omset, laba bersih, dan grafik metode pembayaran.', side: "right" } },
+                    { element: '#tour-step-sales', popover: { title: 'POS Kasir Cetak Nota', description: 'Area kasir toko untuk melakukan transaksi cetak banner, stiker, atau A3+ dengan struk nota otomatis.', side: "right" } }
                 ]
             });
-
             driverObj.drive();
         }
-    <!-- Global Table Header Sorting & Live Search Engine Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Auto initialize sortable headers on tables
-            document.querySelectorAll('table th').forEach(th => {
-                if (!th.classList.contains('no-sort') && th.innerText.trim().length > 0) {
-                    th.classList.add('sortable');
-                    if (!th.querySelector('.sort-icon')) {
-                        const icon = document.createElement('span');
-                        icon.className = 'sort-icon opacity-50 ms-1 text-muted';
-                        icon.innerHTML = '↕';
-                        th.appendChild(icon);
-                    }
-                }
-            });
-        });
 
-        // Click Handler for Header Column Sorting
+        // Global Table Column Sorting Engine
         document.addEventListener('click', function(e) {
             const th = e.target.closest('th.sortable');
             if (!th) return;
@@ -493,25 +366,23 @@
             if (!tbody) return;
 
             const thIndex = Array.from(th.parentNode.children).indexOf(th);
-            const isAsc = !th.classList.contains('sort-asc');
+            const isAsc = th.getAttribute('data-sort') !== 'asc';
 
-            table.querySelectorAll('th').forEach(header => {
-                header.classList.remove('sort-asc', 'sort-desc');
-                const icon = header.querySelector('.sort-icon');
-                if (icon) {
-                    icon.innerHTML = '↕';
-                    icon.classList.add('opacity-50', 'text-muted');
-                    icon.classList.remove('text-primary');
-                }
+            Array.from(th.parentNode.children).forEach(sibling => {
+                sibling.removeAttribute('data-sort');
+                const icon = sibling.querySelector('.sort-icon');
+                if (icon) icon.innerHTML = '⇅';
             });
 
-            th.classList.add(isAsc ? 'sort-asc' : 'sort-desc');
-            const icon = th.querySelector('.sort-icon');
-            if (icon) {
-                icon.innerHTML = isAsc ? '▲' : '▼';
-                icon.classList.remove('opacity-50', 'text-muted');
-                icon.classList.add('text-primary');
+            th.setAttribute('data-sort', isAsc ? 'asc' : 'desc');
+            
+            let icon = th.querySelector('.sort-icon');
+            if (!icon) {
+                icon = document.createElement('span');
+                icon.className = 'sort-icon';
+                th.appendChild(icon);
             }
+            icon.innerHTML = isAsc ? '▲' : '▼';
 
             const rows = Array.from(tbody.querySelectorAll('tr:not(.no-sort)'));
             if (rows.length <= 1) return;
