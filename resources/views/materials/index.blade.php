@@ -96,7 +96,7 @@
                                             <div class="d-flex flex-column gap-1">
                                                 @foreach($mat->wholesalePrices as $wp)
                                                     <span class="badge bg-warning-subtle text-dark border border-warning-subtle text-start">
-                                                        ≥ {{ $wp->min_qty }} Unit: Rp {{ number_format($wp->price, 0, ',', '.') }}
+                                                        ≥ {{ $wp->min_qty }} Unit: Rp {{ number_format($wp->price ?? 0, 0, ',', '.') }}
                                                     </span>
                                                 @endforeach
                                             </div>
@@ -193,7 +193,7 @@
                                         <div class="d-flex flex-wrap gap-1">
                                             @foreach($mat->wholesalePrices as $wp)
                                                 <span class="badge bg-warning-subtle text-dark border border-warning-subtle" style="font-size: 10px;">
-                                                    ≥{{ $wp->min_qty }}: Rp {{ number_format($wp->price, 0, ',', '.') }}
+                                                    ≥{{ $wp->min_qty }}: Rp {{ number_format($wp->price ?? 0, 0, ',', '.') }}
                                                 </span>
                                             @endforeach
                                         </div>

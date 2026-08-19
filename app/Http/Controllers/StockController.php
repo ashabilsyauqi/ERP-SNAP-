@@ -66,8 +66,9 @@ class StockController extends Controller
     /**
      * 2. Pemeriksaan Barang Masuk (Pending Inspection / GRN)
      */
-    public function inspection(Request $request)
+    public function inspection(?Request $request = null)
     {
+        $request = $request ?? request();
         $user = Auth::user();
 
         $pendingQuery = Purchase::with(['material', 'supplier', 'user', 'branch'])
@@ -103,8 +104,9 @@ class StockController extends Controller
     /**
      * 3. Riwayat Retur & Reject (Quality Control Return History)
      */
-    public function rejected(Request $request)
+    public function rejected(?Request $request = null)
     {
+        $request = $request ?? request();
         $user = Auth::user();
 
         $rejectedQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy'])

@@ -54,26 +54,26 @@
         </x-slot>
     </x-bladewind::statistic>
 
-    <!-- Pengeluaran Operasional -->
+    <!-- Kas Keluar -->
     <x-bladewind::statistic 
-        number="Rp {{ number_format($totalPengeluaranOpex, 0, ',', '.') }}" 
-        label="Pengeluaran Operasional (OPEX)" 
+        number="Rp {{ number_format($totalKasKeluar, 0, ',', '.') }}" 
+        label="Total Kas Keluar (Bulan Ini)" 
         has_shadow="true">
         <x-slot name="icon">
             <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl">
-                <i class="bi bi-receipt-cutoff text-2xl"></i>
+                <i class="bi bi-arrow-up-right-circle-fill text-2xl"></i>
             </div>
         </x-slot>
     </x-bladewind::statistic>
 
-    <!-- Pembelian Bahan Baku -->
+    <!-- Saldo Kas -->
     <x-bladewind::statistic 
-        number="Rp {{ number_format($totalPembelianBahan, 0, ',', '.') }}" 
-        label="Pembelian Bahan (HPP Modal)" 
+        number="Rp {{ number_format($saldoKas, 0, ',', '.') }}" 
+        label="Saldo Kas Aktif" 
         has_shadow="true">
         <x-slot name="icon">
-            <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl">
-                <i class="bi bi-box-seam-fill text-2xl"></i>
+            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                <i class="bi bi-wallet2 text-2xl"></i>
             </div>
         </x-slot>
     </x-bladewind::statistic>

@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\Auth;
 
 class MaterialController extends Controller
 {
-    public function index(Request $request)
+    public function index(?Request $request = null)
     {
+        $request = $request ?? request();
         $user = Auth::user();
         $query = Material::with(['supplier', 'branch', 'wholesalePrices']);
 

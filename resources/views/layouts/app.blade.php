@@ -259,7 +259,7 @@
             <div class="p-3 border-t border-slate-800/80 bg-slate-950/40">
                 <div class="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-800/50">
                     <div class="flex items-center gap-2.5 overflow-hidden">
-                        <x-bladewind::avatar name="{{ auth()->user()->username }}" size="small" />
+                        <x-bladewind::avatar label="{{ strtoupper(substr(auth()->user()->username ?? 'U', 0, 2)) }}" size="small" />
                         <div x-show="sidebarOpen" class="overflow-hidden">
                             <p class="text-xs font-bold text-white truncate mb-0">{{ auth()->user()->username }}</p>
                             <p class="text-[10px] text-indigo-400 uppercase font-semibold mb-0">{{ auth()->user()->role }}</p>
@@ -302,7 +302,7 @@
                     <!-- User Profile Dropdown -->
                     <div class="dropdown">
                         <button class="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <x-bladewind::avatar name="{{ auth()->user()->username }}" size="small" />
+                            <x-bladewind::avatar label="{{ strtoupper(substr(auth()->user()->username ?? 'U', 0, 2)) }}" size="small" />
                             <span class="text-xs font-semibold text-slate-700 d-none d-md-inline">{{ auth()->user()->username }}</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-2" style="min-width: 200px;">
