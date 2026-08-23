@@ -174,11 +174,33 @@ class DatabaseSeeder extends Seeder
                 'fixed_size' => null,
                 'purchase_price' => 50000,
                 'retail_price' => 0,
-                'stock_qty' => 5
+                'stock_qty' => 15
             ]);
+
+            $stiker = Material::create([
+                'branch_id' => $branchItem->id,
+                'supplier_id' => $suppliers[0]->id, // Bintang Terang
+                'material_name' => 'Stiker Vinyl Glossy A3+',
+                'fixed_size' => null,
+                'purchase_price' => 2500,
+                'retail_price' => 6000,
+                'stock_qty' => 250
+            ]);
+            $stiker->wholesalePrices()->create(['min_qty' => 50, 'wholesale_price' => 4500]);
+
+            $xbanner = Material::create([
+                'branch_id' => $branchItem->id,
+                'supplier_id' => $suppliers[2]->id, // Mitra Sablon
+                'material_name' => 'X-Banner 60x160cm (Set + Cetak)',
+                'fixed_size' => null,
+                'purchase_price' => 45000,
+                'retail_price' => 85000,
+                'stock_qty' => 25
+            ]);
+            $xbanner->wholesalePrices()->create(['min_qty' => 5, 'wholesale_price' => 75000]);
         }
 
-        // 3. Seed finance demo transactions
-        $this->call(FinanceDemoSeeder::class);
+        // 3. Seed 6-Month Realistic Simulation Data
+        $this->call(SixMonthBranchSimulationSeeder::class);
     }
 }

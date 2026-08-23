@@ -6,12 +6,13 @@
 @section('content')
 <div class="row">
     <div class="col-12 mb-4" id="materials-wrapper" data-view-wrapper>
-        <div class="card shadow-sm border-0">
+        <div class="o_form_sheet">
             <!-- Header Toolbar -->
-            <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="pb-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div class="d-flex align-items-center gap-2">
-                    <h5 class="card-title fw-bold text-dark mb-0">
-                        <i class="bi bi-boxes text-warning me-2"></i> Master Bahan Baku & Produk
+                    <h5 class="card-title fw-bold text-dark mb-0 d-flex align-items-center">
+                        <i class="fa-solid fa-boxes-stacked text-amber-500 me-2"></i>
+                        <span>Master Bahan Baku & Produk</span>
                     </h5>
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">
                         {{ $materials->count() }} Items Registered
@@ -20,28 +21,28 @@
 
                 <div class="d-flex items-center gap-2 flex-wrap">
                     <!-- Real-Time Search Bar -->
-                    <div class="input-group input-group-sm" style="width: 260px;">
-                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control table-search-input border-start-0 ps-0" placeholder="🔍 Cari material, supplier..." aria-label="Search">
+                    <div class="input-group input-group-sm" style="width: 270px;">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" class="form-control table-search-input border-start-0 ps-0" placeholder="Cari nama bahan, supplier..." aria-label="Search">
                     </div>
 
                     <!-- Dual View Switcher Toggle Buttons (Standard List vs Gen-Z Cards) -->
                     <div class="btn-group btn-group-sm" role="group" aria-label="View Switcher">
-                        <button type="button" class="btn btn-primary btn-view-list active fw-semibold" onclick="toggleViewMode('list', 'materials-wrapper')" title="Tampilan Tabel Standard">
-                            <i class="bi bi-list-task me-1"></i> List Table
+                        <button type="button" class="btn btn-primary btn-view-list active fw-semibold d-inline-flex align-items-center" onclick="toggleViewMode('list', 'materials-wrapper')" title="Tampilan Tabel Standard">
+                            <i class="fa-solid fa-table-list me-1.5"></i> List Table
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-view-grid fw-semibold" onclick="toggleViewMode('grid', 'materials-wrapper')" title="Tampilan Kotak-Kotak Gen-Z">
-                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Card Grid
+                        <button type="button" class="btn btn-outline-secondary btn-view-grid fw-semibold d-inline-flex align-items-center" onclick="toggleViewMode('grid', 'materials-wrapper')" title="Tampilan Kotak-Kotak Gen-Z">
+                            <i class="fa-solid fa-grip me-1.5"></i> Card Grid
                         </button>
                     </div>
 
                     <!-- 1-Click Excel Export Button -->
                     <button type="button" onclick="exportTableToExcel('materials-table', 'Master_Bahan_Baku_SnapPrint')" class="btn btn-sm btn-outline-success rounded-pill px-3 font-semibold d-inline-flex align-items-center">
-                        <i class="bi bi-file-earmark-excel me-1"></i> Ekspor Excel
+                        <i class="fa-solid fa-file-excel me-1.5 text-emerald-600"></i> Ekspor Excel
                     </button>
 
                     <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 font-semibold d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#modalAddMaterial">
-                        <i class="bi bi-plus-lg me-1"></i> Tambah Material Baru
+                        <i class="fa-solid fa-plus me-1.5"></i> Tambah Material Baru
                     </button>
                 </div>
             </div>
@@ -73,7 +74,7 @@
                                     </td>
                                     <td>
                                         @if($mat->supplier)
-                                            <span class="badge bg-light text-dark border"><i class="bi bi-building me-1"></i> {{ $mat->supplier->name }}</span>
+                                            <span class="badge bg-light text-dark border"><i class="fa-solid fa-building me-1 opacity-70"></i> {{ $mat->supplier->name }}</span>
                                         @else
                                             <span class="text-muted italic text-xs">Tanpa Supplier</span>
                                         @endif
@@ -96,7 +97,7 @@
                                             <div class="d-flex flex-column gap-1">
                                                 @foreach($mat->wholesalePrices as $wp)
                                                     <span class="badge bg-warning-subtle text-dark border border-warning-subtle text-start">
-                                                        ≥ {{ $wp->min_qty }} Unit: Rp {{ number_format($wp->price ?? 0, 0, ',', '.') }}
+                                                        ≥ {{ $wp->min_qty }} Unit: Rp {{ number_format($wp->wholesale_price ?? 0, 0, ',', '.') }}
                                                     </span>
                                                 @endforeach
                                             </div>
@@ -106,8 +107,9 @@
                                     </td>
                                     <td class="text-center">
                                         @if($mat->stock_qty <= 5)
-                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 fw-bold">
-                                                ⚠️ {{ number_format($mat->stock_qty) }} (Menipis)
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 fw-bold d-inline-flex align-items-center">
+                                                <i class="fa-solid fa-triangle-exclamation me-1.5 text-danger"></i>
+                                                <span>{{ number_format($mat->stock_qty) }} (Menipis)</span>
                                             </span>
                                         @else
                                             <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 fw-bold">
@@ -118,13 +120,13 @@
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalEditMaterial{{ $mat->id }}">
-                                                <i class="bi bi-pencil me-1"></i> Edit
+                                                <i class="fa-solid fa-pen-to-square me-1"></i> Edit
                                             </button>
                                             <form action="{{ route('materials.destroy', $mat->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus material ini dari Katalog Master?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger rounded-pill px-2">
-                                                    <i class="bi bi-trash"></i>
+                                                <button type="submit" class="btn btn-outline-danger rounded-pill px-2" title="Hapus Material">
+                                                    <i class="fa-solid fa-trash-can"></i>
                                                 </button>
                                             </form>
                                         </div>
@@ -149,11 +151,12 @@
                                 <div class="card-header bg-light border-bottom p-3 d-flex justify-content-between align-items-center">
                                     <span class="font-mono fw-bold text-primary text-xs">#MAT-{{ $mat->id }}</span>
                                     @if($mat->stock_qty <= 5)
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
-                                            ⚠️ Stok {{ $mat->stock_qty }}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 d-inline-flex align-items-center">
+                                            <i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>
+                                            <span>Stok {{ $mat->stock_qty }}</span>
                                         </span>
                                     @else
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
                                             Stok {{ number_format($mat->stock_qty) }}
                                         </span>
                                     @endif
@@ -193,7 +196,7 @@
                                         <div class="d-flex flex-wrap gap-1">
                                             @foreach($mat->wholesalePrices as $wp)
                                                 <span class="badge bg-warning-subtle text-dark border border-warning-subtle" style="font-size: 10px;">
-                                                    ≥{{ $wp->min_qty }}: Rp {{ number_format($wp->price ?? 0, 0, ',', '.') }}
+                                                    ≥{{ $wp->min_qty }}: Rp {{ number_format($wp->wholesale_price ?? 0, 0, ',', '.') }}
                                                 </span>
                                             @endforeach
                                         </div>

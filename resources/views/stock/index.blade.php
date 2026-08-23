@@ -83,7 +83,7 @@
     <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/60 flex flex-col sm:flex-row justify-between items-center gap-4" id="stock-wrapper" data-view-wrapper>
         <form method="GET" action="{{ route('stock.index') }}" class="w-full flex flex-col sm:flex-row items-center gap-3">
             <div class="relative w-full sm:w-80">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="🔍 Cari nama bahan baku..." class="table-search-input w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama bahan baku..." class="table-search-input w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 <svg class="h-5 w-5 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -103,11 +103,11 @@
 
         <!-- Dual View Switcher Toggle Buttons -->
         <div class="btn-group btn-group-sm ms-auto" role="group">
-            <button type="button" class="btn btn-primary btn-view-list active font-semibold" onclick="toggleViewMode('list', 'stock-wrapper')">
-                <i class="bi bi-list-task me-1"></i> List Table
+            <button type="button" class="btn btn-primary btn-view-list active font-semibold d-inline-flex align-items-center" onclick="toggleViewMode('list', 'stock-wrapper')">
+                <i class="fa-solid fa-table-list me-1.5"></i> List Table
             </button>
-            <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold" onclick="toggleViewMode('grid', 'stock-wrapper')">
-                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Card Grid
+            <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold d-inline-flex align-items-center" onclick="toggleViewMode('grid', 'stock-wrapper')">
+                <i class="fa-solid fa-grip me-1.5"></i> Card Grid
             </button>
         </div>
     </div>
@@ -197,11 +197,12 @@
                             <div class="card-header bg-light border-bottom p-3 d-flex justify-content-between align-items-center">
                                 <span class="badge bg-light text-dark border font-mono">#MAT-{{ $material->id }}</span>
                                 @if($material->stock_qty <= 5)
-                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
-                                        ⚠️ Stok {{ $material->stock_qty }} (Menipis)
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 d-inline-flex align-items-center">
+                                        <i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>
+                                        <span>Stok {{ $material->stock_qty }} (Menipis)</span>
                                     </span>
                                 @else
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
                                         Stok {{ number_format($material->stock_qty) }} Unit
                                     </span>
                                 @endif

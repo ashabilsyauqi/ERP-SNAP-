@@ -9,18 +9,18 @@
     <div class="flex items-center gap-3 flex-wrap">
         <p class="text-gray-500 text-sm mb-0">Kelola daftar supplier / vendor untuk pengadaan.</p>
         <div class="relative w-64">
-            <input type="text" class="table-search-input form-control w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs" placeholder="🔍 Cari supplier, perusahaan...">
+            <input type="text" class="table-search-input form-control w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs" placeholder="Cari supplier, perusahaan...">
         </div>
     </div>
     
     <div class="flex items-center gap-3">
         <!-- Dual View Switcher Toggle Buttons -->
         <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn btn-primary btn-view-list active font-semibold" onclick="toggleViewMode('list', 'supplier-wrapper')">
-                <i class="bi bi-list-task me-1"></i> List Table
+            <button type="button" class="btn btn-primary btn-view-list active font-semibold d-inline-flex align-items-center" onclick="toggleViewMode('list', 'supplier-wrapper')">
+                <i class="fa-solid fa-table-list me-1.5"></i> List Table
             </button>
-            <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold" onclick="toggleViewMode('grid', 'supplier-wrapper')">
-                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Card Grid
+            <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold d-inline-flex align-items-center" onclick="toggleViewMode('grid', 'supplier-wrapper')">
+                <i class="fa-solid fa-grip me-1.5"></i> Card Grid
             </button>
         </div>
 

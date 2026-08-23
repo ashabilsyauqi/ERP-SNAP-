@@ -25,7 +25,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <p class="text-xs text-indigo-900 leading-relaxed">
-            <span class="font-bold">Standar Inspeksi Fisik:</span> Seluruh pengadaan yang dilakukan oleh staf Purchasing wajib melalui tahap verifikasi Manajer di halaman ini. Klik tombol <span class="font-bold text-emerald-700">✓ Verifikasi & Terima</span> setelah memastikan fisik barang di gudang sesuai, atau klik <span class="font-bold text-rose-700">✕ Tolak / Retur</span> jika fisik barang cacat/rusak.
+            <span class="font-bold">Standar Inspeksi Fisik:</span> Seluruh pengadaan yang dilakukan oleh staf Purchasing wajib melalui tahap verifikasi Manajer di halaman ini. Klik tombol <span class="font-bold text-emerald-700"><i class="fa-solid fa-check me-1"></i> Verifikasi & Terima</span> setelah memastikan fisik barang di gudang sesuai, atau klik <span class="font-bold text-rose-700"><i class="fa-solid fa-xmark me-1"></i> Tolak / Retur</span> jika fisik barang cacat/rusak.
         </p>
     </div>
 
@@ -113,7 +113,7 @@
                                         };
                                         verifyOpen = true;
                                     " class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs transition shadow-sm flex items-center gap-1">
-                                        ✓ Verifikasi & Terima
+                                        <i class="fa-solid fa-check me-1"></i> Verifikasi & Terima
                                     </button>
 
                                     <button @click="
@@ -123,8 +123,8 @@
                                             material_name: '{{ addslashes($purchase->material->material_name ?? '') }}'
                                         };
                                         rejectOpen = true;
-                                    " class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-semibold text-xs transition">
-                                        ✕ Tolak / Retur
+                                    " class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-semibold text-xs transition flex items-center gap-1">
+                                        <i class="fa-solid fa-xmark me-1"></i> Tolak / Retur
                                     </button>
                                 </div>
                             </td>
@@ -176,7 +176,9 @@
                     </div>
                 </div>
                 <div class="bg-slate-50 px-6 py-4 flex flex-row-reverse gap-3 rounded-b-2xl">
-                    <button type="submit" class="inline-flex justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 transition">✓ Terima & Tambahkan ke Stok</button>
+                    <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 transition">
+                        <i class="fa-solid fa-circle-check me-1.5"></i> Terima & Tambahkan ke Stok
+                    </button>
                     <button type="button" @click="verifyOpen = false" class="inline-flex justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition">Batal</button>
                 </div>
             </form>

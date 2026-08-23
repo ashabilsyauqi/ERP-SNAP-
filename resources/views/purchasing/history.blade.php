@@ -198,23 +198,23 @@
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 @if($purchase->status === 'waiting_approval')
                                     <span class="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 animate-pulse">
-                                        ⏳ Menunggu ACC Manager
+                                        <i class="fa-solid fa-clock me-1 text-amber-600"></i> Menunggu ACC Manager
                                     </span>
                                 @elseif($purchase->status === 'approved' || $purchase->status === 'pending_verification')
                                     <span class="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/20">
-                                        ✓ PO Disetujui (Cek Gudang)
+                                        <i class="fa-solid fa-check me-1 text-blue-600"></i> PO Disetujui (Cek Gudang)
                                     </span>
                                     @if($purchase->approvedBy)
                                         <div class="text-[10px] text-slate-400 mt-0.5">ACC: {{ $purchase->approvedBy->username }}</div>
                                     @endif
                                 @elseif($purchase->status === 'received')
                                     <span class="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                                        ✓ Diterima & Masuk Stok
+                                        <i class="fa-solid fa-circle-check me-1 text-emerald-600"></i> Diterima & Masuk Stok
                                     </span>
                                     <div class="text-[10px] text-slate-400 mt-0.5">by {{ $purchase->verifiedBy->username ?? 'Manager' }}</div>
                                 @elseif($purchase->status === 'rejected')
                                     <span class="inline-flex items-center rounded-md bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-600/20">
-                                        ✕ Ditolak / Retur
+                                        <i class="fa-solid fa-ban me-1 text-rose-600"></i> Ditolak / Retur
                                     </span>
                                 @endif
                             </td>
@@ -225,17 +225,14 @@
                                         <form action="{{ route('purchasing.approve', $purchase->id) }}" method="POST" onsubmit="return confirm('Setujui Purchase Order #{{ $purchase->po_number }}? Tanda tangan digital Anda akan terstempel pada nota PO.');">
                                             @csrf
                                             <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition shadow-sm">
-                                                ✓ Setujui PO
+                                                <i class="fa-solid fa-signature me-1"></i> Setujui PO
                                             </button>
                                         </form>
                                     @endif
 
                                     <button onclick="printPO('{{ $purchase->po_number ?? 'PO-'.$purchase->id }}', '{{ addslashes($purchase->supplier->name ?? 'Supplier') }}', '{{ addslashes($purchase->material->material_name ?? '-') }}', '{{ $purchase->qty_bought }}', '{{ number_format($purchase->total_cost, 0, ',', '.') }}', '{{ $purchase->created_at->format('d M Y') }}', '{{ addslashes($purchase->user->username ?? 'Staf Purchasing') }}', '{{ $purchase->user->signature_path ? asset('storage/'.$purchase->user->signature_path) : '' }}', '{{ addslashes($purchase->approvedBy->username ?? 'Manajer Toko') }}', '{{ $purchase->approvedBy && $purchase->approvedBy->signature_path ? asset('storage/'.$purchase->approvedBy->signature_path) : '' }}', '{{ $purchase->approved_at ? \Carbon\Carbon::parse($purchase->approved_at)->format('d M Y, H:i') : '' }}')" 
                                         class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
-                                        <svg class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                        </svg>
-                                        Cetak PO
+                                        <i class="fa-solid fa-print me-1 text-slate-500"></i> Cetak PO
                                     </button>
                                 </div>
                             </td>

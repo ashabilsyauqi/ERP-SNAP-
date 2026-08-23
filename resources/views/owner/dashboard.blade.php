@@ -4,99 +4,210 @@
 @section('page-title', 'Dashboard Monitoring ERP Enterprise')
 
 @section('content')
-<div class="row">
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <!-- Bladewind KPI 1: Total Omset -->
-    <x-bladewind::statistic 
-        number="Rp {{ number_format($totalSales, 0, ',', '.') }}" 
-        label="Total Omset Penjualan" 
-        has_shadow="true">
-        <x-slot name="icon">
-            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-                <i class="bi bi-currency-dollar text-2xl"></i>
-            </div>
-        </x-slot>
-    </x-bladewind::statistic>
 
-    <!-- Bladewind KPI 2: Laba Kotor -->
-    <x-bladewind::statistic 
-        number="Rp {{ number_format($grossProfit, 0, ',', '.') }}" 
-        label="Laba Kotor (Gross Profit)" 
-        has_shadow="true">
-        <x-slot name="icon">
-            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-                <i class="bi bi-graph-up-arrow text-2xl"></i>
-            </div>
-        </x-slot>
-    </x-bladewind::statistic>
-
-    <!-- Bladewind KPI 3: Transaksi POS -->
-    <x-bladewind::statistic 
-        number="{{ number_format($totalTransactionsCount) }}" 
-        label="Total Transaksi POS" 
-        has_shadow="true">
-        <x-slot name="icon">
-            <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl">
-                <i class="bi bi-cart-check-fill text-2xl"></i>
-            </div>
-        </x-slot>
-    </x-bladewind::statistic>
-
-    <!-- Bladewind KPI 4: Pending PO & Low Stock -->
-    <x-bladewind::statistic 
-        number="{{ number_format($pendingPOCount) }} PO" 
-        label="{{ number_format($lowStockCount) }} Item Menipis" 
-        has_shadow="true">
-        <x-slot name="icon">
-            <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl">
-                <i class="bi bi-exclamation-triangle-fill text-2xl"></i>
-            </div>
-        </x-slot>
-    </x-bladewind::statistic>
+<!-- Branch Filter Dropdown (Owner Only) -->
+@if(auth()->user()->isOwner())
+<div class="bg-white border border-slate-200 rounded-lg mb-4 p-3 shadow-sm">
+    <form method="GET" action="{{ route('owner.dashboard') }}" class="row align-items-center g-3 mb-0">
+        <div class="col-auto">
+            <label class="col-form-label fw-bold text-dark text-xs d-flex align-items-center">
+                <i class="fa-solid fa-building text-indigo-600 me-2"></i>
+                <span>Pilih Cabang Analisis:</span>
+            </label>
+        </div>
+        <div class="col-auto">
+            <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm fw-semibold border-slate-300 rounded-lg text-xs">
+                <option value="all" {{ $branchId == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
+                @foreach($branches as $branch)
+                    <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
+                        {{ $branch->nama_cabang }} {{ $branch->trashed() ? '(Archived)' : '' }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-auto ms-auto">
+            @if($branchId === 'all')
+                <span class="badge bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-pill px-3 py-1.5 font-bold text-xs">
+                    <i class="fa-solid fa-globe me-1"></i> Data Konsolidasi Enterprise (Seluruh Cabang)
+                </span>
+            @else
+                <span class="badge bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-pill px-3 py-1.5 font-bold text-xs">
+                    <i class="fa-solid fa-code-branch me-1"></i> Data Cabang Mandiri
+                </span>
+            @endif
+        </div>
+    </form>
 </div>
+@endif
+
+<!-- Overhauled Financial KPI Grid (5 Columns) -->
+<div class="o_form_sheet">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <!-- Card 1: Revenue -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Omset (Revenue)</p>
+            <h3 class="text-lg font-extrabold text-slate-900">Rp {{ number_format($totalSales, 0, ',', '.') }}</h3>
+            <small class="text-slate-400 text-[10px]">Total penjualan kotor POS</small>
+        </div>
+        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+            <i class="fa-solid fa-coins text-xl"></i>
+        </div>
+    </div>
+
+    <!-- Card 2: HPP -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">HPP Modal (COGS)</p>
+            <h3 class="text-lg font-extrabold text-slate-900">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h3>
+            <small class="text-slate-400 text-[10px]">Biaya bahan baku terpakai</small>
+        </div>
+        <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+            <i class="fa-solid fa-boxes-stacked text-xl"></i>
+        </div>
+    </div>
+
+    <!-- Card 3: Gross Profit -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Laba Kotor</p>
+            <h3 class="text-lg font-extrabold text-emerald-600">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h3>
+            <small class="text-slate-400 text-[10px]">Omset dikurangi HPP</small>
+        </div>
+        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+            <i class="fa-solid fa-chart-line text-xl"></i>
+        </div>
+    </div>
+
+    <!-- Card 4: OPEX -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Beban Operasional</p>
+            <h3 class="text-lg font-extrabold text-rose-600">Rp {{ number_format($totalOpex, 0, ',', '.') }}</h3>
+            <small class="text-slate-400 text-[10px]">Gaji, Listrik, Sewa, Maint.</small>
+        </div>
+        <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl">
+            <i class="fa-solid fa-wallet text-xl"></i>
+        </div>
+    </div>
+
+    <!-- Card 5: Net Profit -->
+    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Laba Bersih (Net)</p>
+            <h3 class="text-lg font-extrabold {{ $netProfit >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
+                Rp {{ number_format($netProfit, 0, ',', '.') }}
+            </h3>
+            <small class="text-slate-400 text-[10px]">Laba kotor dikurangi OPEX</small>
+        </div>
+        <div class="p-3 {{ $netProfit >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }} rounded-2xl">
+            <i class="fa-solid fa-scale-balanced text-xl"></i>
+        </div>
+    </div>
 </div>
 
-<!-- ApexCharts Interactive Widgets Row -->
-<div class="row">
-    <!-- Chart 1: Revenue & Profit Trend -->
-    <div class="col-lg-8 mb-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="card-title fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i> Performa Penjualan & Profitabilitas</h5>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool text-muted" data-lte-toggle="card-collapse"><i class="bi bi-dash-lg"></i></button>
-                    <button type="button" class="btn btn-tool text-muted" data-lte-toggle="card-maximize"><i class="bi bi-fullscreen"></i></button>
+<!-- ApexCharts Section -->
+@if($branchId === 'all')
+    <!-- Consolidated View Layout (Full Trend on Top, Breakdown Below) -->
+    <div class="row g-4 mb-6">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="fa-solid fa-chart-column text-indigo-600 me-2"></i>
+                        <span>Tren Keuangan 6 Bulan Terakhir (Konsolidasi Seluruh Cabang)</span>
+                    </h5>
+                    <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-pill px-3 py-1 font-semibold text-xs">
+                        Maret - Agustus 2026
+                    </span>
                 </div>
-            </div>
-            <div class="card-body">
-                <div id="revenue-chart" style="min-height: 300px;"></div>
+                <div class="card-body p-4">
+                    <div id="financial-trend-chart" style="min-height: 350px;"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Chart 2: Payment Method Distribution Donut -->
-    <div class="col-lg-4 mb-4">
-        <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="card-title fw-bold mb-0 text-dark"><i class="bi bi-pie-chart-fill text-success me-2"></i> Distribusi Pembayaran</h5>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-tool text-muted" data-lte-toggle="card-collapse"><i class="bi bi-dash-lg"></i></button>
+    <div class="row g-4 mb-6">
+        <!-- Branch Comparison -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="fa-solid fa-code-branch text-purple-600 me-2"></i>
+                        <span>Performa Penjualan Antar Cabang</span>
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div id="branch-comparison-chart" style="min-height: 280px;"></div>
                 </div>
             </div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                <div id="payment-chart" class="w-100" style="min-height: 280px;"></div>
+        </div>
+
+        <!-- Payment Method Distribution -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="fa-solid fa-chart-pie text-emerald-600 me-2"></i>
+                        <span>Metode Pembayaran POS</span>
+                    </h5>
+                </div>
+                <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                    <div id="payment-chart" class="w-100" style="min-height: 280px;"></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
+@else
+    <!-- Specific Branch View Layout (Side-by-Side) -->
+    <div class="row g-4 mb-6">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="fa-solid fa-chart-column text-indigo-600 me-2"></i>
+                        <span>Tren Keuangan Cabang</span>
+                    </h5>
+                    <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-pill px-3 py-1 font-semibold text-xs">
+                        Maret - Agustus 2026
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    <div id="financial-trend-chart" style="min-height: 320px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100 rounded-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="fa-solid fa-chart-pie text-emerald-600 me-2"></i>
+                        <span>Metode Pembayaran</span>
+                    </h5>
+                </div>
+                <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                    <div id="payment-chart" class="w-100" style="min-height: 280px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 
 <!-- Recent Transactions Table Card -->
 <div class="row">
     <div class="col-12 mb-4">
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
             <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="card-title fw-bold mb-0 text-dark"><i class="bi bi-clock-history text-indigo me-2"></i> Transaksi Penjualan Terkini</h5>
-                <a href="{{ route('sales.index') }}" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold">Lihat Semua Sales</a>
+                <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
+                    <i class="fa-solid fa-clock-rotate-left text-indigo-600 me-2"></i>
+                    <span>Transaksi Penjualan Terkini</span>
+                </h5>
+                <a href="{{ route('sales.index') }}" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold d-inline-flex align-items-center">
+                    <span>Lihat Semua Penjualan</span>
+                    <i class="fa-solid fa-arrow-right ms-1.5 text-xs"></i>
+                </a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -115,23 +226,17 @@
                         <tbody>
                             @forelse($recentTransactions as $tx)
                                 <tr>
-                                    <td class="ps-4 font-mono fw-bold text-primary">#{{ $tx->id }}</td>
+                                    <td class="ps-4 font-mono fw-bold text-primary">#{{ $tx->invoice_number }}</td>
                                     <td class="text-muted fs-7">{{ $tx->created_at->format('d M Y, H:i') }}</td>
                                     <td><span class="badge bg-light text-dark border">{{ $tx->branch->nama_cabang ?? 'Pusat' }}</span></td>
                                     <td class="fw-semibold text-dark">{{ $tx->user->username ?? 'Kasir' }}</td>
                                     <td>
-                                        @if($tx->payment_method === 'cash')
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle">Cash</span>
-                                        @elseif($tx->payment_method === 'qris')
-                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">QRIS</span>
-                                        @else
-                                            <span class="badge bg-info-subtle text-info border border-info-subtle">Transfer</span>
-                                        @endif
+                                        <span class="badge bg-slate-100 text-slate-700 border px-2.5 py-1">{{ $tx->payment_method }}</span>
                                     </td>
-                                    <td class="fw-bold text-dark">Rp {{ number_format($tx->total_price, 0, ',', '.') }}</td>
+                                    <td class="fw-bold text-emerald-600">Rp {{ number_format($tx->total_price, 0, ',', '.') }}</td>
                                     <td class="text-center">
-                                        <a href="{{ route('sales.receipt', $tx->id) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3">
-                                            <i class="bi bi-printer me-1"></i> Struk
+                                        <a href="{{ route('sales.receipt', $tx->id) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3 d-inline-flex align-items-center">
+                                            <i class="fa-solid fa-print me-1 text-slate-600"></i> Struk
                                         </a>
                                     </td>
                                 </tr>
@@ -147,36 +252,60 @@
         </div>
     </div>
 </div>
+</div>
 
 <!-- ApexCharts Script Initialization -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // 1. Revenue & Gross Profit Bar/Line Chart
-        const revenueChartOptions = {
+        // 1. Combo Chart: Financial Trend (Sales vs OPEX vs Net Profit)
+        const trendChartOptions = {
             series: [{
-                name: 'Omset Sales (Rp)',
-                data: [{{ $totalSales }}]
+                name: 'Omset Penjualan (Revenue)',
+                type: 'column',
+                data: @json($monthlySales)
             }, {
-                name: 'Laba Kotor (Rp)',
-                data: [{{ $grossProfit }}]
+                name: 'Beban Operasional (OPEX)',
+                type: 'column',
+                data: @json($monthlyOpex)
+            }, {
+                name: 'Laba Bersih (Net Profit)',
+                type: 'line',
+                data: @json($monthlyNetProfit)
             }],
             chart: {
-                type: 'bar',
-                height: 320,
+                height: 350,
+                type: 'line',
+                stacked: false,
                 toolbar: { show: false }
             },
-            colors: ['#4f46e5', '#10b981'],
+            stroke: {
+                width: [0, 0, 4],
+                curve: 'smooth'
+            },
             plotOptions: {
                 bar: {
-                    horizontal: false,
-                    columnWidth: '45%',
-                    borderRadius: 6
-                },
+                    columnWidth: '50%',
+                    borderRadius: 5
+                }
             },
-            dataLabels: { enabled: false },
-            stroke: { show: true, width: 2, colors: ['transparent'] },
+            colors: ['#4f46e5', '#f43f5e', '#10b981'],
+            fill: {
+                opacity: [0.85, 0.85, 1],
+                gradient: {
+                    inverseColors: false,
+                    shade: 'light',
+                    type: "vertical",
+                    opacityFrom: 0.85,
+                    opacityTo: 0.55,
+                    stops: [0, 100, 100, 100]
+                }
+            },
+            labels: @json($months),
+            markers: {
+                size: 5
+            },
             xaxis: {
-                categories: ['Periode Saat Ini'],
+                type: 'category'
             },
             yaxis: {
                 labels: {
@@ -185,21 +314,26 @@
                     }
                 }
             },
-            fill: { opacity: 1 },
             tooltip: {
+                shared: true,
+                intersect: false,
                 y: {
-                    formatter: function (val) {
-                        return "Rp " + new Intl.NumberFormat('id-ID').format(val);
+                    formatter: function (y) {
+                        if (typeof y !== "undefined") {
+                            return "Rp " + new Intl.NumberFormat('id-ID').format(y);
+                        }
+                        return y;
                     }
                 }
             }
         };
-        const revenueChart = new ApexCharts(document.querySelector("#revenue-chart"), revenueChartOptions);
-        revenueChart.render();
+
+        const trendChart = new ApexCharts(document.querySelector("#financial-trend-chart"), trendChartOptions);
+        trendChart.render();
 
         // 2. Payment Method Distribution Donut Chart
         const paymentChartOptions = {
-            series: [{{ $cashSales }}, {{ $qrisSales }}, {{ $transferSales }}],
+            series: [{{ (float)$cashSales }}, {{ (float)$qrisSales }}, {{ (float)$transferSales }}],
             labels: ['Cash / Tunai', 'QRIS', 'Transfer Bank'],
             chart: {
                 type: 'donut',
@@ -218,6 +352,54 @@
         };
         const paymentChart = new ApexCharts(document.querySelector("#payment-chart"), paymentChartOptions);
         paymentChart.render();
+
+        // 3. Branch Sales Comparison (Only in Consolidated View)
+        @if($branchId === 'all')
+            const branchComparisonOptions = {
+                series: [{
+                    name: 'Total Penjualan (Rp)',
+                    data: @json($branchSalesData->pluck('sales'))
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 280,
+                    toolbar: { show: false }
+                },
+                plotOptions: {
+                    bar: {
+                        barHeight: '60%',
+                        distributed: true,
+                        horizontal: true,
+                        borderRadius: 6
+                    }
+                },
+                colors: ['#6366f1', '#a855f7', '#ec4899', '#f43f5e'],
+                dataLabels: {
+                    enabled: true,
+                    formatter: function (val) {
+                        return "Rp " + new Intl.NumberFormat('id-ID').format(val);
+                    }
+                },
+                xaxis: {
+                    categories: @json($branchSalesData->pluck('name')),
+                    labels: {
+                        formatter: function (val) {
+                            return "Rp " + new Intl.NumberFormat('id-ID').format(val);
+                        }
+                    }
+                },
+                legend: { show: false },
+                tooltip: {
+                    y: {
+                        formatter: function (val) {
+                            return "Rp " + new Intl.NumberFormat('id-ID').format(val);
+                        }
+                    }
+                }
+            };
+            const branchChart = new ApexCharts(document.querySelector("#branch-comparison-chart"), branchComparisonOptions);
+            branchChart.render();
+        @endif
     });
 </script>
 @endsection
