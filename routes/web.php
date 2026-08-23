@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Profile & Digital Signature
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
+    Route::post('/profile/biodata', [\App\Http\Controllers\ProfileController::class, 'updateBiodata'])->name('profile.biodata');
     Route::post('/profile/signature', [\App\Http\Controllers\ProfileController::class, 'updateSignature'])->name('profile.signature');
     Route::post('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
 
@@ -88,7 +89,7 @@ Route::middleware(['auth'])->group(function () {
     // ==========================================
     // STOCK MODULE (Manager & Owner Dropdown)
     // ==========================================
-    Route::middleware(['role:manager'])->prefix('stock')->name('stock.')->group(function () {
+    Route::middleware(['role:owner,manager'])->prefix('stock')->name('stock.')->group(function () {
         Route::get('/inventory', [\App\Http\Controllers\StockController::class, 'index'])->name('index');
         Route::get('/inspection', [\App\Http\Controllers\StockController::class, 'inspection'])->name('inspection');
         Route::get('/rejected', [\App\Http\Controllers\StockController::class, 'rejected'])->name('rejected');

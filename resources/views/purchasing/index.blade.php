@@ -1,506 +1,246 @@
 @extends('layouts.app')
 
+@section('title', 'Requests for Quotation & Purchase Orders')
+@section('page-title', 'Requests for Quotation (RFQ)')
+
+@section('action-buttons')
+<a href="{{ route('purchasing.create') }}" class="btn-odoo-primary text-decoration-none">
+    <i class="fa-solid fa-plus"></i>
+    <span>New RFQ</span>
+</a>
+@endsection
+
 @section('content')
-<div class="space-y-8 animate-fade-in">
-    <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-            <h2 class="text-2xl font-bold tracking-tight text-slate-900">Purchasing & Material Procurement</h2>
-            <p class="text-sm text-slate-500">Kelola master bahan baku, penerbitan Purchase Order (PO), dan riwayat pengadaan SAP Standard.</p>
-        </div>
-        <div class="flex items-center gap-4">
-            @if(auth()->user()->isOwner())
-            <form action="{{ route('purchasing.index') }}" method="GET" class="hidden sm:block">
-                <select name="branch_id" onchange="this.form.submit()" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full py-2.5 px-3">
-                    <option value="all" {{ request('branch_id') == 'all' ? 'selected' : '' }}>Semua Cabang</option>
-                    @foreach($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                            {{ $branch->nama_cabang }} {{ $branch->trashed() ? '(Archived)' : '' }}
-                        </option>
-                    @endforeach
-                </select>
-            </form>
-            @endif
-
-            <a href="{{ route('purchasing.create') }}" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-5 rounded-xl transition duration-150 shadow-sm flex items-center gap-2 cursor-pointer w-full sm:w-auto justify-center text-sm">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                Buat Purchase Order Baru
-            </a>
-        </div>
-    </div>
-
-    <!-- KPI Summary Metrics Header Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm flex items-center gap-4">
-            <div class="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
+<div id="main-view-wrapper" data-view-wrapper>
+    <!-- Top Stat Buttons (Odoo Enterprise Sheet Header) -->
+    <div class="d-flex align-items-center gap-2 mb-3 overflow-x-auto pb-1">
+        <div class="o_stat_button bg-white shadow-sm">
+            <i class="fa-solid fa-wallet text-teal-600 fs-5"></i>
             <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Belanja Terverifikasi</p>
-                <h3 class="text-xl font-bold text-slate-900 mt-0.5">Rp {{ number_format($totalSpend, 0, ',', '.') }}</h3>
+                <div class="o_stat_value text-teal-700">Rp {{ number_format($totalSpend, 0, ',', '.') }}</div>
+                <div class="o_stat_text">Total Purchases</div>
             </div>
         </div>
-
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm flex items-center gap-4">
-            <div class="h-12 w-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 font-bold">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
+        <div class="o_stat_button bg-white shadow-sm">
+            <i class="fa-solid fa-clock text-amber-500 fs-5"></i>
             <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Menunggu Cek Gudang</p>
-                <h3 class="text-2xl font-bold text-amber-600 mt-0.5">{{ number_format($pendingCount) }} <span class="text-xs font-normal text-slate-500">PO</span></h3>
+                <div class="o_stat_value text-amber-600">{{ number_format($pendingCount) }}</div>
+                <div class="o_stat_text">Waiting Verification</div>
             </div>
         </div>
-
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm flex items-center gap-4">
-            <div class="h-12 w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
+        <div class="o_stat_button bg-white shadow-sm">
+            <i class="fa-solid fa-circle-check text-emerald-600 fs-5"></i>
             <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Terverifikasi (GR Completed)</p>
-                <h3 class="text-2xl font-bold text-emerald-600 mt-0.5">{{ number_format($receivedCount) }} <span class="text-xs font-normal text-slate-500">PO</span></h3>
+                <div class="o_stat_value text-emerald-600">{{ number_format($receivedCount) }}</div>
+                <div class="o_stat_text">Received / Completed</div>
             </div>
         </div>
-
-        <div class="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm flex items-center gap-4">
-            <div class="h-12 w-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 font-bold">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
+        <div class="o_stat_button bg-white shadow-sm">
+            <i class="fa-solid fa-rotate-left text-rose-500 fs-5"></i>
             <div>
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Ditolak / Retur</p>
-                <h3 class="text-2xl font-bold text-rose-600 mt-0.5">{{ number_format($rejectedCount) }} <span class="text-xs font-normal text-slate-500">PO</span></h3>
+                <div class="o_stat_value text-rose-600">{{ number_format($rejectedCount) }}</div>
+                <div class="o_stat_text">Rejected / Returns</div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content Container -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden flex flex-col">
-        
-        <!-- Tab Navigation & Filters -->
-        <div class="p-5 border-b border-slate-200/80 bg-white flex flex-col gap-4">
-            
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <!-- Tabs -->
-                <div class="flex gap-1.5 p-1 bg-slate-100 rounded-xl overflow-x-auto w-full md:w-auto hide-scrollbar">
-                    <button onclick="switchMainTab('history')" id="tab-history" class="px-5 py-2 font-semibold text-xs rounded-lg transition duration-200 bg-white text-slate-800 shadow-sm whitespace-nowrap">Riwayat PO & Pembelian (SAP Table)</button>
-                    <button onclick="switchMainTab('inventory')" id="tab-inventory" class="px-5 py-2 font-semibold text-xs rounded-lg transition duration-200 text-slate-500 hover:text-slate-800 whitespace-nowrap">Master Bahan Baku</button>
-                    <button onclick="switchMainTab('supplier')" id="tab-supplier" class="px-5 py-2 font-semibold text-xs rounded-lg transition duration-200 text-slate-500 hover:text-slate-800 whitespace-nowrap">Data Supplier</button>
-                </div>
-
-                <!-- Global Quick Search -->
-                <div class="relative w-full md:w-72">
-                    <input type="text" id="global-search" onkeyup="filterActiveTable()" placeholder="Cari No. PO, Supplier, Barang..." 
-                        class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15 focus:border-indigo-500 text-xs transition duration-150">
-                    <div class="absolute left-3.5 top-2.5 text-slate-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SAP Server-side Filter & Instant Search Toolbar -->
-            <div class="pt-3 border-t border-slate-100 space-y-3" id="po-wrapper" data-view-wrapper>
-                <div class="flex justify-between items-center flex-wrap gap-2">
-                    <div class="relative w-full sm:w-72">
-                        <input type="text" class="table-search-input form-control w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs bg-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Search No. PO, Supplier, Material...">
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <!-- Dual View Switcher Toggle Buttons -->
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn btn-primary btn-view-list active font-semibold d-inline-flex align-items-center" onclick="toggleViewMode('list', 'po-wrapper')">
-                                <i class="fa-solid fa-table-list me-1.5"></i> List Table
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-view-grid font-semibold d-inline-flex align-items-center" onclick="toggleViewMode('grid', 'po-wrapper')">
-                                <i class="fa-solid fa-grip me-1.5"></i> Card Grid
-                            </button>
-                        </div>
-
-                        <!-- 1-Click Excel Export Button -->
-                        <button type="button" onclick="exportTableToExcel('po-table', 'Purchase_Orders_SnapPrint')" class="btn btn-sm btn-outline-success rounded-pill px-3 font-semibold d-inline-flex align-items-center">
-                            <i class="fa-solid fa-file-excel me-1.5 text-emerald-600"></i> Ekspor Excel
-                        </button>
-                    </div>
-                </div>
-
-                <form method="GET" action="{{ route('purchasing.index') }}" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Mulai Tanggal</label>
-                        <input type="date" name="start_date" value="{{ request('start_date') }}" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Sampai Tanggal</label>
-                        <input type="date" name="end_date" value="{{ request('end_date') }}" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Filter Supplier</label>
-                        <select name="supplier_id" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white">
-                            <option value="all">Semua Supplier</option>
-                            @foreach($suppliers as $supplier)
-                                <option value="{{ $supplier->id }}" {{ request('supplier_id') == $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Status Verifikasi</label>
-                        <div class="flex gap-2">
-                            <select name="status" class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white">
-                                <option value="all">Semua Status</option>
-                                <option value="pending_verification" {{ request('status') == 'pending_verification' ? 'selected' : '' }}>Menunggu Cek</option>
-                                <option value="received" {{ request('status') == 'received' ? 'selected' : '' }}>Diterima (GR Completed)</option>
-                                <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Ditolak / Retur</option>
-                            </select>
-                            <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-medium text-xs transition">
-                                Terapkan
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 1. Riwayat Pembelian (SAP Document Table & Card Grid) -->
-        <div id="view-history" class="tab-view animate-fade-in">
-            <!-- Mode 1: Table List View -->
-            <div class="table-view-container overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 search-table">
-                    <thead class="bg-slate-50/70">
+    <!-- Main Odoo Sheet -->
+    <div class="o_form_sheet p-0 overflow-hidden">
+        <!-- View Mode 1: Table List View (Odoo Tree View) -->
+        <div class="table-view-container">
+            <div class="table-responsive">
+                <table class="table table-hover o_list_table mb-0" id="main-table">
+                    <thead>
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase sortable">No. PO (SAP Doc)</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase sortable">No. Faktur Supplier</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase sortable">Tgl PO & GR</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase sortable">Supplier</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase sortable">Barang / Material</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase sortable">Qty & Satuan</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase sortable">Harga Satuan</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase sortable">Total Biaya PO</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase sortable">Status PO & Gudang</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase no-sort">Aksi / Cetak</th>
+                            <th style="width: 40px;" class="ps-3 text-center no-sort">
+                                <input type="checkbox" class="form-check-input" id="checkAllPO">
+                            </th>
+                            <th class="sortable">Reference (No. PO)</th>
+                            <th class="sortable">Order Date</th>
+                            <th class="sortable">Vendor (Supplier)</th>
+                            <th class="sortable">Product / Material</th>
+                            <th class="sortable text-center">Quantity</th>
+                            <th class="sortable text-end">Total Amount</th>
+                            <th class="sortable text-center">Status</th>
+                            <th class="text-center no-sort" style="width: 120px;">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
+                    <tbody>
                         @forelse($purchases as $purchase)
-                            <tr class="hover:bg-slate-50/50 transition duration-150 search-row">
-                                <!-- No. PO -->
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-700 search-target">
-                                    {{ $purchase->po_number ?? ('PO-'.str_pad($purchase->id, 6, '0', STR_PAD_LEFT)) }}
+                            <tr class="search-row">
+                                <td class="ps-3 text-center">
+                                    <input type="checkbox" class="form-check-input">
                                 </td>
-                                <!-- No. Faktur Supplier -->
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-700 search-target">
-                                    {{ $purchase->vendor_ref ?? '-' }}
-                                </td>
-                                <!-- Tgl Order & GR -->
-                                <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-600">
-                                    <div><span class="text-slate-400">PO:</span> {{ $purchase->created_at->format('d M Y') }}</div>
-                                    @if($purchase->verified_at)
-                                        <div class="text-[11px] text-emerald-700"><span class="text-slate-400">GR:</span> {{ \Carbon\Carbon::parse($purchase->verified_at)->format('d M Y') }}</div>
+                                <td>
+                                    <span class="font-mono fw-bold text-indigo-700">
+                                        {{ $purchase->po_number ?? ('PO-'.str_pad($purchase->id, 6, '0', STR_PAD_LEFT)) }}
+                                    </span>
+                                    @if($purchase->vendor_ref)
+                                        <div class="text-[11px] text-slate-400 font-mono">Ref: {{ $purchase->vendor_ref }}</div>
                                     @endif
                                 </td>
-                                <!-- Supplier -->
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-800 search-target">
+                                <td class="text-slate-600 text-xs">
+                                    <div>{{ $purchase->created_at->format('d M Y') }}</div>
+                                    <div class="text-[10px] text-slate-400">{{ $purchase->created_at->format('H:i') }}</div>
+                                </td>
+                                <td>
                                     @if($purchase->supplier)
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-800">
-                                            {{ $purchase->supplier->name }}
+                                        <span class="badge bg-slate-100 text-slate-800 border text-[11px] font-normal">
+                                            <i class="fa-solid fa-building me-1 opacity-60"></i> {{ $purchase->supplier->name }}
                                         </span>
                                     @else
-                                        <span class="text-slate-400 italic text-xs">Tanpa Supplier</span>
+                                        <span class="text-slate-400 italic text-[11px]">-</span>
                                     @endif
                                 </td>
-                                <!-- Barang -->
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900 search-target">
-                                    {{ $purchase->material->material_name ?? 'N/A' }}
-                                    @if($purchase->material && $purchase->material->fixed_size)
-                                        <span class="text-xs text-slate-500 font-normal">({{ $purchase->material->fixed_size }}m)</span>
-                                    @endif
+                                <td>
+                                    <div class="fw-semibold text-slate-800">{{ $purchase->material->material_name ?? 'N/A' }}</div>
+                                    <div class="text-[11px] text-slate-400">Cabang: {{ $purchase->branch->nama_cabang ?? 'Pusat' }}</div>
                                 </td>
-                                <!-- Qty & Satuan -->
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-800">
+                                <td class="text-center font-bold text-slate-700">
                                     {{ number_format($purchase->qty_bought) }} Unit
                                 </td>
-                                <!-- Harga Satuan -->
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-medium">
-                                    Rp {{ number_format($purchase->total_cost / max(1, $purchase->qty_bought), 0, ',', '.') }}
-                                </td>
-                                <!-- Total Biaya PO -->
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-700 font-bold">
+                                <td class="text-end font-mono fw-bold text-slate-800">
                                     Rp {{ number_format($purchase->total_cost, 0, ',', '.') }}
                                 </td>
-                                <!-- Status PO & Gudang -->
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <td class="text-center">
                                     @if($purchase->status === 'waiting_approval')
-                                        <span class="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-inset ring-amber-600/20 animate-pulse">
-                                            <i class="fa-solid fa-clock me-1 text-amber-600"></i> Menunggu ACC Manager
+                                        <span class="badge bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold">
+                                            <i class="fa-solid fa-clock me-1"></i> 1. Menunggu ACC Manager
                                         </span>
                                     @elseif($purchase->status === 'approved' || $purchase->status === 'pending_verification')
-                                        <span class="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-600/20">
-                                            <i class="fa-solid fa-check me-1 text-blue-600"></i> PO Disetujui (Cek Gudang)
+                                        <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold">
+                                            <i class="fa-solid fa-truck me-1"></i> 2. PO Terbit (Menunggu Fisik Gudang)
                                         </span>
                                         @if($purchase->approvedBy)
-                                            <div class="text-[10px] text-slate-400 mt-0.5">ACC: {{ $purchase->approvedBy->username }}</div>
+                                            <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">✓ Di-ACC: {{ $purchase->approvedBy->username }}</div>
                                         @endif
                                     @elseif($purchase->status === 'received')
-                                        <span class="inline-flex items-center rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
-                                            <i class="fa-solid fa-circle-check me-1 text-emerald-600"></i> Diterima & Masuk Stok
+                                        <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold">
+                                            <i class="fa-solid fa-circle-check me-1"></i> 3. Selesai (Masuk Stok Gudang)
                                         </span>
-                                        <div class="text-[10px] text-slate-400 mt-0.5">by {{ $purchase->verifiedBy->username ?? 'Manager' }}</div>
+                                        @if($purchase->verifiedBy)
+                                            <div class="text-[10px] text-slate-500 mt-0.5">Cek Fisik: {{ $purchase->verifiedBy->username }}</div>
+                                        @endif
                                     @elseif($purchase->status === 'rejected')
-                                        <span class="inline-flex items-center rounded-md bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-inset ring-rose-600/20">
-                                            <i class="fa-solid fa-ban me-1 text-rose-600"></i> Ditolak / Retur
+                                        <span class="badge bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-semibold">
+                                            <i class="fa-solid fa-ban me-1"></i> Ditolak / Retur
                                         </span>
                                     @endif
                                 </td>
-                                <!-- Aksi / ACC & Cetak PO -->
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <div class="flex items-center justify-center gap-2">
-                                        @if($purchase->status === 'waiting_approval' && (auth()->user()->isOwner() || auth()->user()->isManager()))
-                                            <form action="{{ route('purchasing.approve', $purchase->id) }}" method="POST" onsubmit="return confirm('Setujui Purchase Order #{{ $purchase->po_number }}? Tanda tangan digital Anda akan terstempel pada nota PO.');">
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <!-- Manager Approval Button -->
+                                        @if(($purchase->status === 'waiting_approval') && (auth()->user()->isOwner() || auth()->user()->isManager()))
+                                            <form action="{{ route('purchasing.approve', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Setujui Purchase Order #{{ $purchase->po_number }}? Tanda tangan digital Anda akan terstempel pada nota PO.');">
                                                 @csrf
-                                                <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition shadow-sm">
-                                                    <i class="fa-solid fa-signature me-1"></i> Setujui PO
+                                                <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Setujui (ACC) PO">
+                                                    <i class="fa-solid fa-signature me-1"></i> ACC PO
                                                 </button>
                                             </form>
                                         @endif
 
-                                        <button onclick="printPO('{{ $purchase->po_number ?? 'PO-'.$purchase->id }}', '{{ addslashes($purchase->supplier->name ?? 'Supplier') }}', '{{ addslashes($purchase->material->material_name ?? '-') }}', '{{ $purchase->qty_bought }}', '{{ number_format($purchase->total_cost, 0, ',', '.') }}', '{{ $purchase->created_at->format('d M Y') }}', '{{ addslashes($purchase->user->username ?? 'Staf Purchasing') }}', '{{ $purchase->user->signature_path ? asset('storage/'.$purchase->user->signature_path) : '' }}', '{{ addslashes($purchase->approvedBy->username ?? 'Manajer Toko') }}', '{{ $purchase->approvedBy && $purchase->approvedBy->signature_path ? asset('storage/'.$purchase->approvedBy->signature_path) : '' }}', '{{ $purchase->approved_at ? \Carbon\Carbon::parse($purchase->approved_at)->format('d M Y, H:i') : '' }}')" 
-                                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
-                                            <i class="fa-solid fa-print me-1 text-slate-500"></i> Cetak PO
+                                        <!-- Print Document Button -->
+                                        <button onclick="printPO(
+                                            '{{ $purchase->po_number ?? 'PO-'.$purchase->id }}', 
+                                            '{{ addslashes($purchase->supplier->name ?? 'Supplier') }}', 
+                                            '{{ addslashes($purchase->material->material_name ?? '-') }}', 
+                                            '{{ $purchase->qty_bought }}', 
+                                            '{{ number_format($purchase->total_cost, 0, ',', '.') }}', 
+                                            '{{ $purchase->created_at->format('d M Y') }}', 
+                                            '{{ addslashes($purchase->user->username ?? 'Staf Purchasing') }}', 
+                                            '{{ $purchase->user && $purchase->user->signature_path ? asset('storage/'.$purchase->user->signature_path) : '' }}', 
+                                            '{{ addslashes($purchase->approvedBy->username ?? 'Manajer Toko') }}', 
+                                            '{{ $purchase->approvedBy && $purchase->approvedBy->signature_path ? asset('storage/'.$purchase->approvedBy->signature_path) : '' }}', 
+                                            '{{ $purchase->approved_at ? \Carbon\Carbon::parse($purchase->approved_at)->format('d M Y, H:i') : '' }}',
+                                            '{{ addslashes($purchase->verifiedBy->username ?? 'Petugas Gudang') }}',
+                                            '{{ $purchase->verifiedBy && $purchase->verifiedBy->signature_path ? asset('storage/'.$purchase->verifiedBy->signature_path) : '' }}',
+                                            '{{ $purchase->verified_at ? \Carbon\Carbon::parse($purchase->verified_at)->format('d M Y, H:i') : '' }}'
+                                        )" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Print PO Document">
+                                            <i class="fa-solid fa-print text-xs"></i>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="px-6 py-12 text-center text-sm text-slate-400">Belum ada data riwayat pembelian / PO.</td>
+                                <td colspan="9" class="text-center py-5 text-muted">
+                                    <div class="p-4">
+                                        <i class="fa-solid fa-cart-shopping fs-1 text-slate-300 mb-2"></i>
+                                        <p class="mb-0">Belum ada data Purchase Order (RFQ).</p>
+                                    </div>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <!-- Mode 2: Grid / Card View (Dynamic Kotak-Kotak Gen-Z Style) -->
-            <div class="grid-view-container d-none pt-4">
-                <div class="row g-4">
-                    @forelse($purchases as $purchase)
-                        <div class="col-12 col-sm-6 col-md-4 grid-card">
-                            <div class="card h-100 border rounded-4 shadow-sm hover-shadow transition">
-                                <div class="card-header bg-light border-bottom p-3 d-flex justify-content-between align-items-center">
-                                    <span class="font-mono fw-bold text-indigo fs-6">{{ $purchase->po_number ?? 'PO-'.$purchase->id }}</span>
-                                    @if($purchase->status === 'waiting_approval')
-                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 d-inline-flex align-items-center">
-                                            <i class="fa-solid fa-clock me-1 text-warning"></i> Menunggu ACC
-                                        </span>
-                                    @elseif($purchase->status === 'received')
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 d-inline-flex align-items-center">
-                                            <i class="fa-solid fa-circle-check me-1 text-success"></i> GR Selesai
-                                        </span>
-                                    @else
-                                        <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 d-inline-flex align-items-center">
-                                            <i class="fa-solid fa-check me-1 text-info"></i> PO Disetujui
-                                        </span>
-                                    @endif
-                                </div>
-                                <div class="card-body p-3 space-y-3">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <small class="text-muted text-xs d-block">Supplier:</small>
-                                            <span class="fw-bold text-dark fs-6">{{ $purchase->supplier->name ?? 'Tanpa Supplier' }}</span>
-                                        </div>
-                                        <span class="badge bg-light text-dark border font-mono fs-7">{{ $purchase->vendor_ref ?? '-' }}</span>
-                                    </div>
-
-                                    <div class="p-2.5 bg-light rounded-3 space-y-1">
-                                        <div class="d-flex justify-content-between text-xs">
-                                            <span class="text-muted">Material:</span>
-                                            <span class="fw-bold text-dark">{{ $purchase->material->material_name ?? 'N/A' }}</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between text-xs">
-                                            <span class="text-muted">Qty Order:</span>
-                                            <span class="fw-bold text-dark">{{ number_format($purchase->qty_bought) }} Unit</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between text-xs border-top pt-1 mt-1">
-                                            <span class="text-muted">Total Nilai PO:</span>
-                                            <span class="fw-bold text-indigo fs-6">Rp {{ number_format($purchase->total_cost, 0, ',', '.') }}</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="text-xs text-muted">
-                                        <div>Order Date: <span class="fw-semibold text-dark">{{ $purchase->created_at->format('d M Y, H:i') }}</span></div>
-                                        <div>Created By: <span class="fw-semibold text-dark">{{ $purchase->user->username ?? 'Staff' }}</span></div>
-                                    </div>
-                                </div>
-                                <div class="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center">
-                                    @if($purchase->status === 'waiting_approval' && (auth()->user()->isOwner() || auth()->user()->isManager()))
-                                        <form action="{{ route('purchasing.approve', $purchase->id) }}" method="POST" onsubmit="return confirm('Setujui Purchase Order #{{ $purchase->po_number }}?');">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-bold d-inline-flex align-items-center">
-                                                <i class="fa-solid fa-signature me-1"></i> Setujui PO
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span></span>
-                                    @endif
-
-                                    <button onclick="printPO('{{ $purchase->po_number ?? 'PO-'.$purchase->id }}', '{{ addslashes($purchase->supplier->name ?? 'Supplier') }}', '{{ addslashes($purchase->material->material_name ?? '-') }}', '{{ $purchase->qty_bought }}', '{{ number_format($purchase->total_cost, 0, ',', '.') }}', '{{ $purchase->created_at->format('d M Y') }}', '{{ addslashes($purchase->user->username ?? 'Staf Purchasing') }}', '{{ $purchase->user->signature_path ? asset('storage/'.$purchase->user->signature_path) : '' }}', '{{ addslashes($purchase->approvedBy->username ?? 'Manajer Toko') }}', '{{ $purchase->approvedBy && $purchase->approvedBy->signature_path ? asset('storage/'.$purchase->approvedBy->signature_path) : '' }}', '{{ $purchase->approved_at ? \Carbon\Carbon::parse($purchase->approved_at)->format('d M Y, H:i') : '' }}')" 
-                                        class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                        <i class="bi bi-printer me-1"></i> Cetak PO
-                                    </button>
-                                </div>
-                            </div>
+        <!-- View Mode 2: Kanban Cards -->
+        <div class="grid-view-container d-none p-4 bg-slate-50 border-top">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                @forelse($purchases as $purchase)
+                    <div class="o_kanban_record bg-white border rounded p-3 shadow-sm hover:shadow transition search-card" style="border-left: 4px solid {{ $purchase->status === 'received' ? '#059669' : ($purchase->status === 'waiting_approval' ? '#d97706' : '#2563eb') }} !important;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="font-mono fw-bold text-slate-900 text-xs">{{ $purchase->po_number ?? 'PO-'.$purchase->id }}</span>
+                            <span class="badge {{ $purchase->status === 'received' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700' }} text-[10px]">
+                                {{ ucfirst(str_replace('_', ' ', $purchase->status)) }}
+                            </span>
                         </div>
-                    @empty
-                        <div class="col-12 text-center py-5 text-muted">Belum ada data riwayat PO.</div>
-                    @endforelse
-                </div>
+                        <div class="fw-semibold text-slate-800 line-clamp-1 mb-1">{{ $purchase->material->material_name ?? 'N/A' }}</div>
+                        <div class="text-[11px] text-slate-500 mb-2">Vendor: {{ $purchase->supplier->name ?? 'N/A' }}</div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top border-slate-100 mt-2">
+                            <span class="fw-bold font-mono text-slate-800 text-xs">Rp {{ number_format($purchase->total_cost, 0, ',', '.') }}</span>
+                            <button onclick="printPO(
+                                '{{ $purchase->po_number ?? 'PO-'.$purchase->id }}', 
+                                '{{ addslashes($purchase->supplier->name ?? 'Supplier') }}', 
+                                '{{ addslashes($purchase->material->material_name ?? '-') }}', 
+                                '{{ $purchase->qty_bought }}', 
+                                '{{ number_format($purchase->total_cost, 0, ',', '.') }}', 
+                                '{{ $purchase->created_at->format('d M Y') }}', 
+                                '{{ addslashes($purchase->user->username ?? 'Staf Purchasing') }}', 
+                                '{{ $purchase->user && $purchase->user->signature_path ? asset('storage/'.$purchase->user->signature_path) : '' }}', 
+                                '{{ addslashes($purchase->approvedBy->username ?? 'Manajer Toko') }}', 
+                                '{{ $purchase->approvedBy && $purchase->approvedBy->signature_path ? asset('storage/'.$purchase->approvedBy->signature_path) : '' }}', 
+                                '{{ $purchase->approved_at ? \Carbon\Carbon::parse($purchase->approved_at)->format('d M Y, H:i') : '' }}',
+                                '{{ addslashes($purchase->verifiedBy->username ?? 'Petugas Gudang') }}',
+                                '{{ $purchase->verifiedBy && $purchase->verifiedBy->signature_path ? asset('storage/'.$purchase->verifiedBy->signature_path) : '' }}',
+                                '{{ $purchase->verified_at ? \Carbon\Carbon::parse($purchase->verified_at)->format('d M Y, H:i') : '' }}'
+                            )" class="btn btn-sm btn-light py-0 px-2 text-xs">
+                                <i class="fa-solid fa-print"></i>
+                            </button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12 text-center py-5 text-muted">Belum ada data RFQ.</div>
+                @endforelse
             </div>
-        </div>
-
-        <!-- 2. Master Barang (Inventory) -->
-        <div id="view-inventory" class="overflow-x-auto tab-view hidden">
-            <table class="min-w-full divide-y divide-slate-200 search-table">
-                <thead class="bg-slate-50/50">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">ID</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Material Name</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Cabang</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Size</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">HPP (Modal)</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Retail Price</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Stock Qty</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse($materials as $material)
-                        <tr class="hover:bg-slate-50/30 transition duration-150 search-row">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400 font-medium">#{{ $material->id }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-800 search-target">{{ $material->material_name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium search-target">{{ $material->branch->nama_cabang ?? 'Global' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium">{{ $material->fixed_size ? $material->fixed_size . 'm' : '-' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-semibold">Rp {{ number_format($material->purchase_price, 0, ',', '.') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 font-bold">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                @if($material->stock_qty > 0)
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                        {{ $material->stock_qty }} left
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100">
-                                        Out of stock
-                                    </span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-sm text-slate-400">Belum ada data barang.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        <!-- 3. Data Supplier -->
-        <div id="view-supplier" class="overflow-x-auto tab-view hidden">
-            <table class="min-w-full divide-y divide-slate-200 search-table">
-                <thead class="bg-slate-50/50">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">ID Supplier</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Nama Supplier</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Kontak</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Alamat</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Tanggal Bergabung</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse($suppliers as $supplier)
-                        <tr class="hover:bg-slate-50/30 transition duration-150 search-row">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400 font-medium">SUP-{{ str_pad($supplier->id, 4, '0', STR_PAD_LEFT) }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-800 search-target">{{ $supplier->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ $supplier->kontak ?? '-' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ $supplier->alamat ?? '-' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-medium">{{ $supplier->created_at->format('d M Y') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-sm text-slate-400">Belum ada data supplier.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
 
-<style>
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-</style>
-
 <script>
-    let activeTabId = 'history';
-
-    function switchMainTab(tab) {
-        activeTabId = tab;
-        document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
-        
-        const activeClass = "px-5 py-2 font-semibold text-xs rounded-lg transition duration-200 bg-white text-slate-800 shadow-sm whitespace-nowrap".split(" ");
-        const inactiveClass = "px-5 py-2 font-semibold text-xs rounded-lg transition duration-200 text-slate-500 hover:text-slate-800 whitespace-nowrap".split(" ");
-        
-        ['history', 'inventory', 'supplier'].forEach(t => {
-            const btn = document.getElementById('tab-' + t);
-            if (!btn) return;
-            btn.className = '';
-            if (t === tab) {
-                btn.classList.add(...activeClass);
-                document.getElementById('view-' + t).classList.remove('hidden');
-                document.getElementById('view-' + t).classList.add('animate-fade-in');
-            } else {
-                btn.classList.add(...inactiveClass);
-            }
-        });
-
-        filterActiveTable();
-    }
-
-    function filterActiveTable() {
-        const input = document.getElementById('global-search').value.toLowerCase();
-        const activeView = document.getElementById('view-' + activeTabId);
-        if(!activeView) return;
-
-        const rows = activeView.querySelectorAll('.search-row');
-        rows.forEach(row => {
-            const targets = row.querySelectorAll('.search-target');
-            let matched = false;
-            
-            targets.forEach(target => {
-                if (target.innerText.toLowerCase().includes(input)) matched = true;
-            });
-
-            if(targets.length === 0) {
-                if (row.innerText.toLowerCase().includes(input)) matched = true;
-            }
-
-            if (matched || input === '') {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-
-    function printPO(poNum, supplierName, itemName, qty, totalCost, poDate, staffName = 'Staf Purchasing', staffSig = '', managerName = 'Manajer Toko', managerSig = '', approvedAt = '') {
+    function printPO(poNum, supplierName, itemName, qty, totalCost, poDate, staffName, staffSig, managerName, managerSig, approvedAt, warehouseName, warehouseSig, verifiedAt) {
         const printWindow = window.open('', '_blank');
-        const staffSigHtml = staffSig ? `<img src="${staffSig}" style="max-height: 60px; max-width: 140px; margin: 0 auto 5px auto; display: block;">` : `<div style="height: 50px; line-height: 50px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Tanda Tangan Digital ]</div>`;
-        const managerSigHtml = managerSig ? `<img src="${managerSig}" style="max-height: 60px; max-width: 140px; margin: 0 auto 5px auto; display: block;">` : (approvedAt ? `<div style="border: 2px dashed #10b981; padding: 4px; color: #047857; font-size: 10px; font-weight: bold; border-radius: 6px; margin-bottom: 5px;">✓ VERIFIED DIGITAL STAMP<br><small style="font-weight:normal;">${approvedAt}</small></div>` : `<div style="height: 50px; line-height: 50px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Menunggu ACC Manager ]</div>`);
+        
+        // 1. Staff Purchasing Signature
+        const staffSigHtml = staffSig 
+            ? `<img src="${staffSig}" style="max-height: 55px; max-width: 130px; margin: 0 auto 5px auto; display: block;">` 
+            : `<div style="height: 50px; line-height: 50px; font-style: italic; color: #94a3b8; font-size: 11px;">[ TTD Digital ]</div>`;
+        
+        // 2. Manager ACC Signature
+        const managerSigHtml = managerSig 
+            ? `<img src="${managerSig}" style="max-height: 55px; max-width: 130px; margin: 0 auto 5px auto; display: block;">` 
+            : (approvedAt 
+                ? `<div style="border: 1.5px dashed #008784; padding: 4px; color: #008784; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 5px;">✓ APPROVED DIGITAL STAMP<br><small style="font-weight:normal;">${approvedAt}</small></div>` 
+                : `<div style="height: 50px; line-height: 50px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Menunggu ACC Manager ]</div>`);
+
+        // 3. Warehouse Receipt Signature
+        const warehouseSigHtml = warehouseSig
+            ? `<img src="${warehouseSig}" style="max-height: 55px; max-width: 130px; margin: 0 auto 5px auto; display: block;">`
+            : (verifiedAt
+                ? `<div style="border: 1.5px dashed #059669; padding: 4px; color: #059669; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 5px;">✓ RECEIVED IN WAREHOUSE<br><small style="font-weight:normal;">${verifiedAt}</small></div>`
+                : `<div style="height: 50px; line-height: 50px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Menunggu Fisik Gudang ]</div>`);
 
         printWindow.document.write(`
             <html>
@@ -508,23 +248,23 @@
                 <title>Purchase Order - ${poNum}</title>
                 <style>
                     body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #1e293b; }
-                    .header { display: flex; justify-content: space-between; border-b: 2px solid #6366f1; padding-bottom: 20px; margin-bottom: 30px; }
-                    .brand { font-size: 24px; font-weight: bold; color: #4338ca; }
+                    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #714B67; padding-bottom: 20px; margin-bottom: 30px; }
+                    .brand { font-size: 24px; font-weight: bold; color: #714B67; }
                     .title { font-size: 20px; font-weight: bold; text-align: right; }
                     .info-table { width: 100%; margin-bottom: 30px; }
                     .info-table td { padding: 6px 0; font-size: 14px; }
                     .items-table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
                     .items-table th, .items-table td { border: 1px solid #cbd5e1; padding: 12px; font-size: 14px; text-align: left; }
                     .items-table th { background: #f8fafc; }
-                    .total { text-align: right; font-size: 18px; font-weight: bold; color: #4338ca; }
-                    .footer { margin-top: 50px; display: flex; justify-content: space-between; }
-                    .sig { text-align: center; width: 220px; border-top: 1px solid #94a3b8; padding-top: 10px; font-size: 12px; }
+                    .total { text-align: right; font-size: 18px; font-weight: bold; color: #714B67; }
+                    .footer { margin-top: 50px; display: flex; justify-content: space-between; gap: 20px; }
+                    .sig { text-align: center; flex: 1; border-top: 1px solid #94a3b8; padding-top: 10px; font-size: 12px; }
                 </style>
             </head>
             <body>
                 <div class="header">
                     <div class="brand">SnapPrint ERP</div>
-                    <div class="title">PURCHASE ORDER (PO)<br><small style="font-size:12px; font-weight:normal; color:#64748b;">Standar SAP ERP Management</small></div>
+                    <div class="title">PURCHASE ORDER (PO)<br><small style="font-size:12px; font-weight:normal; color:#64748b;">Standar Odoo Enterprise</small></div>
                 </div>
 
                 <table class="info-table">
@@ -534,7 +274,7 @@
                     </tr>
                     <tr>
                         <td><strong>Supplier:</strong> ${supplierName}</td>
-                        <td style="text-align:right;"><strong>Status:</strong> ${approvedAt ? 'Resmi Terbit & Disetujui' : 'Draft / Menunggu ACC'}</td>
+                        <td style="text-align:right;"><strong>Status:</strong> ${verifiedAt ? 'Selesai Diterima Gudang' : (approvedAt ? 'Resmi Terbit (Disetujui Manajer)' : 'Draft / Menunggu ACC')}</td>
                     </tr>
                 </table>
 
@@ -562,13 +302,18 @@
                 <div class="footer">
                     <div class="sig">
                         ${staffSigHtml}
-                        <strong>( ${staffName} )</strong><br>
-                        <small style="color: #64748b;">Staf Purchasing</small>
+                        <strong>( ${staffName || 'Staf Purchasing'} )</strong><br>
+                        <small style="color: #64748b;">1. Dibuat (Purchasing)</small>
                     </div>
                     <div class="sig">
                         ${managerSigHtml}
-                        <strong>( ${managerName} )</strong><br>
-                        <small style="color: #64748b;">Manajer Toko</small>
+                        <strong>( ${managerName || 'Manajer Toko'} )</strong><br>
+                        <small style="color: #64748b;">2. Disetujui (Manajer Toko)</small>
+                    </div>
+                    <div class="sig">
+                        ${warehouseSigHtml}
+                        <strong>( ${warehouseName || 'Admin Gudang'} )</strong><br>
+                        <small style="color: #64748b;">3. Diterima (Pemeriksa Gudang)</small>
                     </div>
                 </div>
 

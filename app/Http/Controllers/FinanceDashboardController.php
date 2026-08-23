@@ -53,10 +53,10 @@ class FinanceDashboardController extends Controller
             ->sum('total_price');
 
         $recentTransactions = (clone $cashQuery)
-            ->with(['account', 'branch'])
+            ->with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])
             ->orderBy('tanggal', 'desc')
             ->orderBy('created_at', 'desc')
-            ->take(5)
+            ->take(8)
             ->get();
 
         $branches = \App\Models\Branch::withTrashed()->orderBy('nama_cabang')->get();

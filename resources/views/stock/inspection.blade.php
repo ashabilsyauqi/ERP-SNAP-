@@ -1,7 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Pemeriksaan Barang Masuk')
-@section('page-title', 'Pemeriksaan & Inspeksi Barang Masuk')
+@section('title', 'Incoming Receipts Inspection (GRN)')
+@section('page-title', 'Incoming Receipts (GRN Inspection)')
+
+@section('action-buttons')
+<a href="{{ route('stock.rejected') }}" class="btn-odoo-secondary text-decoration-none">
+    <i class="fa-solid fa-rotate-left text-rose-600"></i>
+    <span>Scrap / Return History</span>
+</a>
+@endsection
 
 @section('content')
 <div x-data="{ 
@@ -9,130 +16,108 @@
     verifyPurchase: { id: '', po_number: '', material_name: '', qty_bought: 0, supplier_name: '', total_cost: 0 },
     rejectOpen: false,
     rejectPurchase: { id: '', po_number: '', material_name: '' }
-}" class="space-y-6">
+}" id="main-view-wrapper" data-view-wrapper>
 
-    <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h2 class="text-2xl font-bold tracking-tight text-slate-900">Pemeriksaan Barang Masuk (Goods Receipt Verification)</h2>
-            <p class="text-sm text-slate-500">Lakukan inspeksi fisik barang dari Purchasing sebelum barang resmi dimasukkan ke dalam stok toko.</p>
+    <!-- Info Banner (Odoo Flow Explanation) -->
+    <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded d-flex align-items-start gap-2">
+        <i class="fa-solid fa-circle-info text-indigo-600 fs-5 mt-0.5"></i>
+        <div class="text-xs text-indigo-950">
+            <strong>Alur Goods Receipt (GRN / Cek Fisik Gudang):</strong> Barang pada daftar ini adalah Purchase Order yang <strong>telah disetujui (ACC) oleh Manajer Toko</strong> dan sedang menunggu kedatangan fisik barang di gudang. Klik tombol <span class="badge bg-emerald-600 text-white"><i class="fa-solid fa-check"></i> Validate & Receive</span> setelah fisik barang diperiksa untuk resmi memasukkan kuantitas ke stok gudang.
         </div>
     </div>
 
-    <!-- Info Banner -->
-    <div class="bg-indigo-50/70 border border-indigo-100 p-4 rounded-2xl flex items-start gap-3">
-        <svg class="h-6 w-6 text-indigo-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p class="text-xs text-indigo-900 leading-relaxed">
-            <span class="font-bold">Standar Inspeksi Fisik:</span> Seluruh pengadaan yang dilakukan oleh staf Purchasing wajib melalui tahap verifikasi Manajer di halaman ini. Klik tombol <span class="font-bold text-emerald-700"><i class="fa-solid fa-check me-1"></i> Verifikasi & Terima</span> setelah memastikan fisik barang di gudang sesuai, atau klik <span class="font-bold text-rose-700"><i class="fa-solid fa-xmark me-1"></i> Tolak / Retur</span> jika fisik barang cacat/rusak.
-        </p>
-    </div>
-
-    <!-- Filter & Search Section -->
-    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/60 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <form method="GET" action="{{ route('stock.inspection') }}" class="w-full flex flex-col sm:flex-row items-center gap-3">
-            <div class="relative w-full sm:w-80">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari No. PO, Supplier, Barang..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                <svg class="h-5 w-5 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-            </div>
-
-            @if(auth()->user()->isOwner())
-                <select name="branch_id" onchange="this.form.submit()" class="w-full sm:w-60 px-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white">
-                    <option value="all" {{ request('branch_id') == 'all' ? 'selected' : '' }}>Semua Cabang</option>
-                    @foreach($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
-                    @endforeach
-                </select>
-            @endif
-
-            <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg font-medium text-sm transition">Filter</button>
-        </form>
-    </div>
-
-    <!-- Table Pending Inspection -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/60 overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h3 class="font-bold text-slate-900 text-base">Daftar Barang Menunggu Verifikasi Manajer</h3>
-            <span class="bg-amber-100 text-amber-800 font-bold text-xs px-3 py-1 rounded-full">{{ number_format($pendingCount) }} Transaksi</span>
+    <!-- Main Odoo Sheet -->
+    <div class="o_form_sheet p-0 overflow-hidden">
+        <div class="p-3 bg-slate-50 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold text-slate-800 mb-0 fs-6 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-truck-ramp-box text-teal-600"></i> Menunggu Cek Fisik Gudang (Incoming Orders)
+            </h6>
+            <span class="badge bg-amber-50 text-amber-800 border border-amber-300 font-bold text-xs">
+                {{ number_format($pendingCount) }} Transaksi Menunggu
+            </span>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+
+        <div class="table-responsive">
+            <table class="table table-hover o_list_table mb-0" id="main-table">
                 <thead>
-                    <tr class="bg-slate-50/70 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider font-semibold">
-                        <th class="px-6 py-4">No. PO & Tanggal</th>
-                        <th class="px-6 py-4">No. Faktur Supplier</th>
-                        <th class="px-6 py-4">Barang / Material</th>
-                        <th class="px-6 py-4">Supplier</th>
-                        <th class="px-6 py-4">Qty Order</th>
-                        <th class="px-6 py-4">Total Biaya</th>
-                        <th class="px-6 py-4">Pemesan (Purchasing)</th>
-                        <th class="px-6 py-4 text-center">Inspeksi & Aksi</th>
+                    <tr>
+                        <th style="width: 40px;" class="ps-3 text-center no-sort">
+                            <input type="checkbox" class="form-check-input">
+                        </th>
+                        <th class="sortable">No. PO & Status ACC</th>
+                        <th class="sortable">Tgl Order</th>
+                        <th class="sortable">Vendor / Supplier</th>
+                        <th class="sortable">Barang / Material</th>
+                        <th class="sortable text-center">Qty Dipesan</th>
+                        <th class="sortable text-end">Total Biaya PO</th>
+                        <th class="text-center no-sort" style="width: 200px;">Aksi Verifikasi Fisik</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-150 text-slate-700">
+                <tbody>
                     @forelse($pendingPurchases as $purchase)
-                        <tr class="hover:bg-slate-50/50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                <div class="font-bold text-indigo-700">{{ $purchase->po_number ?? ('PO-'.str_pad($purchase->id, 6, '0', STR_PAD_LEFT)) }}</div>
-                                <div class="text-xs text-slate-400">{{ $purchase->created_at->format('d M Y, H:i') }}</div>
+                        <tr class="search-row">
+                            <td class="ps-3 text-center">
+                                <input type="checkbox" class="form-check-input">
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-700">
-                                {{ $purchase->vendor_ref ?? '-' }}
+                            <td>
+                                <span class="font-mono fw-bold text-indigo-700">{{ $purchase->po_number ?? 'PO-'.$purchase->id }}</span>
+                                <div class="text-[10px] text-emerald-700">
+                                    <i class="fa-solid fa-circle-check text-[9px] me-0.5"></i> Di-ACC: {{ $purchase->approvedBy->username ?? 'Manajer' }}
+                                </div>
                             </td>
-                            <td class="px-6 py-4 font-semibold text-slate-900">
-                                {{ $purchase->material->material_name ?? 'N/A' }}
-                                @if($purchase->material && $purchase->material->fixed_size)
-                                    <span class="text-xs text-slate-500 font-normal">({{ $purchase->material->fixed_size }}m)</span>
-                                @endif
+                            <td class="text-slate-600 text-xs">
+                                {{ $purchase->created_at->format('d M Y') }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600">
-                                {{ $purchase->supplier->name ?? 'Tanpa Supplier' }}
+                            <td>
+                                <span class="badge bg-slate-100 text-slate-700 border text-[11px] font-normal">
+                                    {{ $purchase->supplier->name ?? '-' }}
+                                </span>
                             </td>
-                            <td class="px-6 py-4 text-sm font-bold text-indigo-700">
-                                {{ number_format($purchase->qty_bought) }} Unit
+                            <td>
+                                <div class="fw-bold text-slate-800">{{ $purchase->material->material_name ?? 'N/A' }}</div>
+                                <span class="text-[10px] text-slate-400">Cabang: {{ $purchase->branch->nama_cabang ?? 'Pusat' }}</span>
                             </td>
-                            <td class="px-6 py-4 text-sm font-medium text-slate-900">
+                            <td class="text-center font-bold text-slate-800">
+                                {{ number_format($purchase->qty_bought) }} Units
+                            </td>
+                            <td class="text-end font-mono fw-bold text-slate-700">
                                 Rp {{ number_format($purchase->total_cost, 0, ',', '.') }}
                             </td>
-                            <td class="px-6 py-4 text-sm text-slate-600">
-                                {{ $purchase->user->username ?? 'System' }}
-                            </td>
-                            <td class="px-6 py-4 text-center whitespace-nowrap">
-                                <div class="flex justify-center items-center gap-2">
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-1.5">
                                     <button @click="
                                         verifyPurchase = {
                                             id: '{{ $purchase->id }}',
-                                            po_number: '{{ $purchase->po_number }}',
-                                            material_name: '{{ addslashes($purchase->material->material_name ?? '') }}',
+                                            po_number: '{{ $purchase->po_number ?? 'PO-'.$purchase->id }}',
+                                            material_name: '{{ addslashes($purchase->material->material_name ?? 'N/A') }}',
                                             qty_bought: '{{ $purchase->qty_bought }}',
-                                            supplier_name: '{{ addslashes($purchase->supplier->name ?? '-') }}',
+                                            supplier_name: '{{ addslashes($purchase->supplier->name ?? 'N/A') }}',
                                             total_cost: '{{ number_format($purchase->total_cost, 0, ',', '.') }}'
                                         };
                                         verifyOpen = true;
-                                    " class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs transition shadow-sm flex items-center gap-1">
-                                        <i class="fa-solid fa-check me-1"></i> Verifikasi & Terima
+                                    " class="btn-odoo-primary py-0.5 px-2 text-xs">
+                                        <i class="fa-solid fa-check me-1"></i> Terima Fisik
                                     </button>
-
                                     <button @click="
                                         rejectPurchase = {
                                             id: '{{ $purchase->id }}',
-                                            po_number: '{{ $purchase->po_number }}',
-                                            material_name: '{{ addslashes($purchase->material->material_name ?? '') }}'
+                                            po_number: '{{ $purchase->po_number ?? 'PO-'.$purchase->id }}',
+                                            material_name: '{{ addslashes($purchase->material->material_name ?? 'N/A') }}'
                                         };
                                         rejectOpen = true;
-                                    " class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-semibold text-xs transition flex items-center gap-1">
-                                        <i class="fa-solid fa-xmark me-1"></i> Tolak / Retur
+                                    " class="btn-odoo-secondary text-rose-700 py-0.5 px-2 text-xs">
+                                        <i class="fa-solid fa-xmark me-1"></i> Tolak
                                     </button>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-slate-400 text-sm">
-                                Tidak ada pengadaan barang yang menunggu verifikasi saat ini. Seluruh fisik barang di gudang telah terverifikasi.
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <div class="p-4">
+                                    <i class="fa-solid fa-circle-check fs-1 text-emerald-400 mb-2"></i>
+                                    <p class="mb-0 fw-semibold text-slate-600">Tidak ada barang masuk yang menunggu pemeriksaan fisik gudang.</p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse
@@ -141,80 +126,78 @@
         </div>
     </div>
 
-    <!-- Modal Verifikasi & Terima Stok -->
-    <div x-show="verifyOpen" class="fixed inset-0 z-50 flex items-center justify-center" x-cloak>
-        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="verifyOpen = false"></div>
-        <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg z-10">
+    <!-- Verify Modal (Odoo Form Style) -->
+    <div x-show="verifyOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none;" x-cloak>
+        <div class="bg-white rounded shadow-2xl border w-full max-w-lg overflow-hidden" @click.away="verifyOpen = false">
             <form :action="'/stock/purchases/' + verifyPurchase.id + '/verify'" method="POST">
                 @csrf
-                <div class="bg-white px-6 pb-6 pt-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-slate-900">Verifikasi & Terima Stok Fisik</h3>
-                        <button type="button" @click="verifyOpen = false" class="text-slate-400 hover:text-slate-600">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                <div class="bg-slate-50 border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-truck-ramp-box text-teal-600"></i> Verifikasi Penerimaan Fisik Barang (GRN)
+                    </h5>
+                    <button type="button" class="btn-close text-xs" @click="verifyOpen = false"></button>
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="p-3 bg-slate-50 rounded border border-slate-100 space-y-1">
+                        <div class="d-flex justify-content-between text-xs">
+                            <span class="text-slate-500">No. PO:</span>
+                            <span class="fw-bold font-mono text-slate-900" x-text="verifyPurchase.po_number"></span>
+                        </div>
+                        <div class="d-flex justify-content-between text-xs">
+                            <span class="text-slate-500">Bahan Baku:</span>
+                            <span class="fw-bold text-slate-900" x-text="verifyPurchase.material_name"></span>
+                        </div>
+                        <div class="d-flex justify-content-between text-xs">
+                            <span class="text-slate-500">Supplier / Vendor:</span>
+                            <span class="text-slate-700" x-text="verifyPurchase.supplier_name"></span>
+                        </div>
                     </div>
 
-                    <div class="mb-4 p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl space-y-1">
-                        <p class="text-xs text-emerald-700 font-semibold uppercase tracking-wider">No. PO: <span x-text="verifyPurchase.po_number"></span></p>
-                        <p class="text-base font-bold text-emerald-950" x-text="verifyPurchase.material_name"></p>
-                        <p class="text-xs text-emerald-800">Supplier: <span class="font-semibold" x-text="verifyPurchase.supplier_name"></span> | Total PO: Rp <span x-text="verifyPurchase.total_cost"></span></p>
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Jumlah Fisik Diterima (Kuantitas Masuk)</label>
+                        <input type="number" name="qty_received" :value="verifyPurchase.qty_bought" required min="1" class="form-control form-control-sm font-bold">
+                        <small class="text-slate-400 text-[11px]">Jumlah unit fisik yang dihitung di gudang dan akan ditambahkan ke stok aktif.</small>
                     </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Jumlah Fisik Diterima <span class="text-rose-500">*</span></label>
-                            <input type="number" name="qty_received" min="1" required :value="verifyPurchase.qty_bought" class="w-full px-4 py-2 border border-slate-300 rounded-lg text-base font-bold text-slate-900">
-                            <p class="mt-1 text-[11px] text-slate-400">Default sesuai PO Purchasing (<span x-text="verifyPurchase.qty_bought"></span> Unit). Sesuaikan jika ada selisih.</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Catatan Opname Fisik</label>
-                            <textarea name="verification_notes" rows="2" placeholder="Contoh: Barang fisik sesuai, segel aman, siap masuk stok..." class="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
-                        </div>
+
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Catatan Pemeriksaan Fisik Gudang</label>
+                        <textarea name="verification_notes" rows="2" class="form-control form-control-sm" placeholder="e.g. Kemasan mulus, kuantitas lengkap, segel utuh..."></textarea>
                     </div>
                 </div>
-                <div class="bg-slate-50 px-6 py-4 flex flex-row-reverse gap-3 rounded-b-2xl">
-                    <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 transition">
-                        <i class="fa-solid fa-circle-check me-1.5"></i> Terima & Tambahkan ke Stok
-                    </button>
-                    <button type="button" @click="verifyOpen = false" class="inline-flex justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition">Batal</button>
+                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn-odoo-secondary" @click="verifyOpen = false">Batal</button>
+                    <button type="submit" class="btn-odoo-primary">Validasi & Tambahkan ke Stok</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Tolak / Retur -->
-    <div x-show="rejectOpen" class="fixed inset-0 z-50 flex items-center justify-center" x-cloak>
-        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="rejectOpen = false"></div>
-        <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg z-10">
+    <!-- Reject Modal -->
+    <div x-show="rejectOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none;" x-cloak>
+        <div class="bg-white rounded shadow-2xl border w-full max-w-lg overflow-hidden" @click.away="rejectOpen = false">
             <form :action="'/stock/purchases/' + rejectPurchase.id + '/reject'" method="POST">
                 @csrf
-                <div class="bg-white px-6 pb-6 pt-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-rose-900">Tolak & Retur Pengadaan Barang</h3>
-                        <button type="button" @click="rejectOpen = false" class="text-slate-400 hover:text-slate-600">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Alasan Penolakan / Retur <span class="text-rose-500">*</span></label>
-                            <textarea name="verification_notes" rows="3" required placeholder="Contoh: Fisik barang cacat/rusak saat pengiriman, tidak sesuai pesanan..." class="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm"></textarea>
-                        </div>
+                <div class="bg-rose-50 border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fs-6 fw-bold text-rose-800 mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-circle-xmark text-rose-600"></i> Tolak / Retur Barang ke Supplier
+                    </h5>
+                    <button type="button" class="btn-close text-xs" @click="rejectOpen = false"></button>
+                </div>
+                <div class="p-4 space-y-3">
+                    <p class="text-xs text-slate-600">
+                        Anda akan menolak pengadaan <strong x-text="rejectPurchase.po_number"></strong> (<span x-text="rejectPurchase.material_name"></span>). Stok inventaris tidak akan bertambah.
+                    </p>
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Alasan Penolakan / Retur</label>
+                        <textarea name="rejection_reason" rows="3" required class="form-control form-control-sm" placeholder="e.g. Bahan basah, sobek, gramatur kertas tidak sesuai..."></textarea>
                     </div>
                 </div>
-                <div class="bg-slate-50 px-6 py-4 flex flex-row-reverse gap-3 rounded-b-2xl">
-                    <button type="submit" class="inline-flex justify-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-500 transition">Tolak & Record Retur</button>
-                    <button type="button" @click="rejectOpen = false" class="inline-flex justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition">Batal</button>
+                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn-odoo-secondary" @click="rejectOpen = false">Batal</button>
+                    <button type="submit" class="btn btn-sm btn-danger font-semibold">Konfirmasi Tolak</button>
                 </div>
             </form>
         </div>
     </div>
-
 </div>
 @endsection

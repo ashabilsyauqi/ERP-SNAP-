@@ -21,12 +21,12 @@ class SalesReportController extends Controller
 
         if ($user->role !== 'owner') {
             $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id')) {
+        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
             $query->where('branch_id', $request->branch_id);
         }
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
+            $query->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
         }
 
         $salesData = collect();
@@ -34,68 +34,83 @@ class SalesReportController extends Controller
         $chartValues = [];
 
         if ($period === 'daily') {
-            $data = $query->select(
-                DB::raw('DATE(created_at) as date'),
-                DB::raw('COUNT(id) as jumlah_transaksi'),
-                DB::raw('SUM(total_price) as total_penjualan')
+            $data = (clone $query)->select(
+                DB::raw('DATE(created_at) as date_val'),
+                DB::raw('COUNT(id) as total_transactions'),
+                DB::raw('SUM(total_price) as total_sales'),
+                DB::raw("SUM(CASE WHEN payment_method = 'Cash' THEN total_price ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN payment_method = 'QRIS' THEN total_price ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN payment_method = 'Transfer' THEN total_price ELSE 0 END) as transfer_sales")
             )
-            ->groupBy('date')
-            ->orderBy('date', 'desc')
+            ->groupBy('date_val')
+            ->orderBy('date_val', 'desc')
             ->get();
 
             foreach ($data as $row) {
                 $salesData->push((object)[
-                    'label' => Carbon::parse($row->date)->translatedFormat('d F Y'),
-                    'jumlah_transaksi' => $row->jumlah_transaksi,
-                    'total_penjualan' => $row->total_penjualan,
+                    'period_date' => Carbon::parse($row->date_val)->translatedFormat('d F Y'),
+                    'total_transactions' => $row->total_transactions,
+                    'cash_sales' => $row->cash_sales,
+                    'qris_sales' => $row->qris_sales,
+                    'transfer_sales' => $row->transfer_sales,
+                    'total_sales' => $row->total_sales,
                 ]);
-                array_unshift($chartLabels, Carbon::parse($row->date)->format('d/m'));
-                array_unshift($chartValues, $row->total_penjualan);
+                array_unshift($chartLabels, Carbon::parse($row->date_val)->format('d/m'));
+                array_unshift($chartValues, (float) $row->total_sales);
             }
         } elseif ($period === 'monthly') {
-            $data = $query->select(
-                DB::raw('YEAR(created_at) as year'),
-                DB::raw('MONTH(created_at) as month'),
-                DB::raw('COUNT(id) as jumlah_transaksi'),
-                DB::raw('SUM(total_price) as total_penjualan')
+            $data = (clone $query)->select(
+                DB::raw('YEAR(created_at) as year_val'),
+                DB::raw('MONTH(created_at) as month_val'),
+                DB::raw('COUNT(id) as total_transactions'),
+                DB::raw('SUM(total_price) as total_sales'),
+                DB::raw("SUM(CASE WHEN payment_method = 'Cash' THEN total_price ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN payment_method = 'QRIS' THEN total_price ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN payment_method = 'Transfer' THEN total_price ELSE 0 END) as transfer_sales")
             )
-            ->groupBy('year', 'month')
-            ->orderBy('year', 'desc')
-            ->orderBy('month', 'desc')
+            ->groupBy('year_val', 'month_val')
+            ->orderBy('year_val', 'desc')
+            ->orderBy('month_val', 'desc')
             ->get();
 
             foreach ($data as $row) {
-                $monthName = Carbon::createFromDate($row->year, $row->month, 1)->translatedFormat('F Y');
-                $daysInMonth = Carbon::createFromDate($row->year, $row->month, 1)->daysInMonth;
-                $rataHarian = $row->total_penjualan / $daysInMonth;
+                $monthName = Carbon::createFromDate($row->year_val, $row->month_val, 1)->translatedFormat('F Y');
 
                 $salesData->push((object)[
-                    'label' => $monthName,
-                    'jumlah_transaksi' => $row->jumlah_transaksi,
-                    'total_penjualan' => $row->total_penjualan,
-                    'rata_rata_harian' => $rataHarian
+                    'period_date' => $monthName,
+                    'total_transactions' => $row->total_transactions,
+                    'cash_sales' => $row->cash_sales,
+                    'qris_sales' => $row->qris_sales,
+                    'transfer_sales' => $row->transfer_sales,
+                    'total_sales' => $row->total_sales,
                 ]);
-                array_unshift($chartLabels, Carbon::createFromDate($row->year, $row->month, 1)->format('M Y'));
-                array_unshift($chartValues, $row->total_penjualan);
+                array_unshift($chartLabels, Carbon::createFromDate($row->year_val, $row->month_val, 1)->format('M Y'));
+                array_unshift($chartValues, (float) $row->total_sales);
             }
         } elseif ($period === 'yearly') {
-            $data = $query->select(
-                DB::raw('YEAR(created_at) as year'),
-                DB::raw('COUNT(id) as jumlah_transaksi'),
-                DB::raw('SUM(total_price) as total_penjualan')
+            $data = (clone $query)->select(
+                DB::raw('YEAR(created_at) as year_val'),
+                DB::raw('COUNT(id) as total_transactions'),
+                DB::raw('SUM(total_price) as total_sales'),
+                DB::raw("SUM(CASE WHEN payment_method = 'Cash' THEN total_price ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN payment_method = 'QRIS' THEN total_price ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN payment_method = 'Transfer' THEN total_price ELSE 0 END) as transfer_sales")
             )
-            ->groupBy('year')
-            ->orderBy('year', 'desc')
+            ->groupBy('year_val')
+            ->orderBy('year_val', 'desc')
             ->get();
 
             foreach ($data as $row) {
                 $salesData->push((object)[
-                    'label' => 'Tahun ' . $row->year,
-                    'jumlah_transaksi' => $row->jumlah_transaksi,
-                    'total_penjualan' => $row->total_penjualan,
+                    'period_date' => 'Tahun ' . $row->year_val,
+                    'total_transactions' => $row->total_transactions,
+                    'cash_sales' => $row->cash_sales,
+                    'qris_sales' => $row->qris_sales,
+                    'transfer_sales' => $row->transfer_sales,
+                    'total_sales' => $row->total_sales,
                 ]);
-                array_unshift($chartLabels, $row->year);
-                array_unshift($chartValues, $row->total_penjualan);
+                array_unshift($chartLabels, 'Tahun ' . $row->year_val);
+                array_unshift($chartValues, (float) $row->total_sales);
             }
         }
 
@@ -104,7 +119,7 @@ class SalesReportController extends Controller
             'values' => $chartValues
         ];
 
-        $branches = Branch::withTrashed()->get();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
         return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches'));
     }

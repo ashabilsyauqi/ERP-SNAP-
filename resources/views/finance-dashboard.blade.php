@@ -1,198 +1,223 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard Keuangan')
-@section('page-title', 'Overview Keuangan ERP')
+@section('title', 'Accounting Dashboard')
+@section('page-title', 'Overview & Jurnal Finansial (Accounting Dashboard)')
+
+@section('action-buttons')
+<a href="{{ route('kas-masuk.create') }}" class="btn-odoo-primary text-decoration-none">
+    <i class="fa-solid fa-plus"></i>
+    <span>Tambah Kas Masuk</span>
+</a>
+<a href="{{ route('kas-keluar.create') }}" class="btn-odoo-secondary text-decoration-none">
+    <i class="fa-solid fa-arrow-right-from-bracket text-rose-600"></i>
+    <span>Tambah Kas Keluar</span>
+</a>
+@endsection
 
 @section('content')
-
-<!-- Branch Filter (Owner Only) -->
-@if(auth()->user()->isOwner())
-<div class="bg-white border border-slate-200 rounded-lg mb-4 p-3 shadow-sm">
-    <form method="GET" action="{{ route('dashboard') }}" class="row align-items-center g-2 mb-0">
-        <div class="col-auto">
-            <label class="col-form-label fw-bold text-dark text-xs d-flex align-items-center">
-                <i class="fa-solid fa-building text-indigo-600 me-2"></i>
-                <span>Pilih Cabang Analisis:</span>
-            </label>
+<div id="main-view-wrapper" data-view-wrapper>
+    <!-- Top Stat Widgets -->
+    <div class="d-flex align-items-center gap-2 mb-3 overflow-x-auto pb-1">
+        <div class="o_stat_button bg-white shadow-sm">
+            <i class="fa-solid fa-cart-shopping text-blue-600 fs-5"></i>
+            <div>
+                <div class="o_stat_value text-blue-800">Rp {{ number_format($totalPenjualan, 0, ',', '.') }}</div>
+                <div class="o_stat_text">Penjualan Bulan Ini</div>
+            </div>
         </div>
-        <div class="col-auto">
-            <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm fw-semibold border-slate-300 rounded-lg text-xs">
-                <option value="all" {{ request('branch_id') == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
-                @foreach($branches as $branch)
-                    <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
-                        {{ $branch->nama_cabang }} {{ $branch->trashed() ? '(Archived)' : '' }}
-                    </option>
-                @endforeach
-            </select>
+        <div class="o_stat_button bg-white shadow-sm">
+            <i class="fa-solid fa-circle-arrow-down text-emerald-600 fs-5"></i>
+            <div>
+                <div class="o_stat_value text-emerald-700">Rp {{ number_format($totalKasMasuk, 0, ',', '.') }}</div>
+                <div class="o_stat_text">Total Kas Masuk</div>
+            </div>
         </div>
-    </form>
-</div>
-@endif
-
-<div class="o_form_sheet">
-<!-- Stats Row - Bladewind Statistic Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <!-- Penjualan -->
-    <x-bladewind::statistic 
-        number="Rp {{ number_format($totalPenjualan, 0, ',', '.') }}" 
-        label="Total Penjualan (Bulan Ini)" 
-        has_shadow="true">
-        <x-slot name="icon">
-            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-                <i class="fa-solid fa-cart-shopping text-2xl"></i>
+        <div class="o_stat_button bg-white shadow-sm">
+            <i class="fa-solid fa-circle-arrow-up text-rose-500 fs-5"></i>
+            <div>
+                <div class="o_stat_value text-rose-600">Rp {{ number_format($totalKasKeluar, 0, ',', '.') }}</div>
+                <div class="o_stat_text">Total Kas Keluar</div>
             </div>
-        </x-slot>
-    </x-bladewind::statistic>
-
-    <!-- Kas Masuk -->
-    <x-bladewind::statistic 
-        number="Rp {{ number_format($totalKasMasuk, 0, ',', '.') }}" 
-        label="Total Kas Masuk (Bulan Ini)" 
-        has_shadow="true">
-        <x-slot name="icon">
-            <div class="p-3 bg-sky-50 text-sky-600 rounded-2xl">
-                <i class="fa-solid fa-arrow-trend-up text-2xl"></i>
+        </div>
+        <div class="o_stat_button bg-white shadow-sm">
+            <i class="fa-solid fa-vault text-blue-600 fs-5"></i>
+            <div>
+                <div class="o_stat_value text-blue-900">Rp {{ number_format($saldoKas, 0, ',', '.') }}</div>
+                <div class="o_stat_text">Saldo Kas Aktif</div>
             </div>
-        </x-slot>
-    </x-bladewind::statistic>
+        </div>
+    </div>
 
-    <!-- Kas Keluar -->
-    <x-bladewind::statistic 
-        number="Rp {{ number_format($totalKasKeluar, 0, ',', '.') }}" 
-        label="Total Kas Keluar (Bulan Ini)" 
-        has_shadow="true">
-        <x-slot name="icon">
-            <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl">
-                <i class="fa-solid fa-arrow-trend-down text-2xl"></i>
+    <!-- Journal Overview Cards -->
+    <div class="row g-3">
+        <!-- Journal 1: Bank & Cash -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="o_form_sheet p-3 h-100 bg-white" style="border-top: 4px solid #1E3A8A !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-bold text-slate-800 fs-6 mb-0 d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-building-columns text-blue-700 text-sm"></i>
+                        <span>Kas & Bank (Cash Journal)</span>
+                    </h6>
+                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px]">Bank</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-3">Arus kas tunai operasional kasir & rekening utama cabang</p>
+
+                <div class="p-2.5 bg-slate-50 rounded border border-slate-100 mb-3">
+                    <span class="text-slate-500 text-[11px]">Balance in General Ledger:</span>
+                    <h5 class="fw-bold text-blue-900 mb-0 font-mono">Rp {{ number_format($saldoKas, 0, ',', '.') }}</h5>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="{{ route('kas-masuk.index') }}" class="btn-odoo-secondary text-xs flex-1 text-center text-decoration-none">
+                        Kas Masuk
+                    </a>
+                    <a href="{{ route('kas-keluar.index') }}" class="btn-odoo-secondary text-xs flex-1 text-center text-decoration-none">
+                        Kas Keluar
+                    </a>
+                </div>
             </div>
-        </x-slot>
-    </x-bladewind::statistic>
+        </div>
 
-    <!-- Saldo Kas -->
-    <x-bladewind::statistic 
-        number="Rp {{ number_format($saldoKas, 0, ',', '.') }}" 
-        label="Saldo Kas Aktif" 
-        has_shadow="true">
-        <x-slot name="icon">
-            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-                <i class="fa-solid fa-wallet text-2xl"></i>
-            </div>
-        </x-slot>
-    </x-bladewind::statistic>
-</div>
+        <!-- Journal 2: Customer Invoices & POS Sales -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="o_form_sheet p-3 h-100 bg-white" style="border-top: 4px solid #2563EB !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-bold text-slate-800 fs-6 mb-0 d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-cash-register text-blue-600 text-sm"></i>
+                        <span>Customer Invoices (POS)</span>
+                    </h6>
+                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px]">Sales</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-3">Penjualan nota kasir & omset transaksi retail cetak</p>
 
-<!-- Content Area Row -->
-<div class="row">
-    
-    <!-- Recent Transactions Table Card -->
-    <div class="col-lg-8 mb-4">
-        <div class="card shadow-sm border-0 h-100 rounded-4 overflow-hidden">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
-                    <i class="fa-solid fa-money-bill-transfer text-indigo-600 me-2"></i>
-                    <span>Transaksi Kas Terbaru</span>
-                </h5>
-                <a href="{{ route('reports.cash-mutation') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold d-inline-flex align-items-center">
-                    <span>Lihat Mutasi Kas</span>
-                    <i class="fa-solid fa-arrow-right ms-1.5 text-xs"></i>
+                <div class="p-2.5 bg-slate-50 rounded border border-slate-100 mb-3">
+                    <div class="d-flex justify-content-between text-[11px] mb-1">
+                        <span class="text-slate-500">Invoices Processed:</span>
+                        <span class="fw-bold text-slate-800">{{ number_format($jumlahTransaksi) }} Transaksi</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-[11px]">
+                        <span class="text-slate-500">Total Billed:</span>
+                        <span class="fw-bold text-blue-900 font-mono">Rp {{ number_format($totalPenjualan, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+
+                <a href="{{ route('reports.sales') }}" class="btn-odoo-primary text-xs w-100 text-center text-decoration-none d-block">
+                    View Sales Report
                 </a>
             </div>
-            
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-uppercase fs-7 text-muted">
-                            <tr>
-                                <th class="ps-4">Tanggal / Ref</th>
-                                <th>Tipe & Akun</th>
-                                <th class="text-end pe-4">Jumlah (Rp)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentTransactions as $trx)
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="fw-bold text-dark">{{ \Carbon\Carbon::parse($trx->tanggal)->translatedFormat('d M Y') }}</div>
-                                        <div class="text-muted fs-7 font-mono">{{ $trx->nomor_referensi }}</div>
-                                    </td>
-                                    <td>
-                                        <div class="mb-1">
-                                            @if($trx->tipe === 'masuk')
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 d-inline-flex align-items-center">
-                                                    <i class="fa-solid fa-arrow-down me-1 text-success text-[10px]"></i> Masuk
-                                                </span>
-                                            @else
-                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 d-inline-flex align-items-center">
-                                                    <i class="fa-solid fa-arrow-up me-1 text-danger text-[10px]"></i> Keluar
-                                                </span>
-                                            @endif
-                                        </div>
-                                        <div class="text-dark fw-semibold text-truncate" style="max-width: 240px;">{{ $trx->account->nama_akun }}</div>
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        <div class="fw-bold {{ $trx->tipe === 'masuk' ? 'text-success' : 'text-danger' }}">
-                                            {{ $trx->tipe === 'masuk' ? '+' : '-' }} Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="3" class="text-center py-4 text-muted">
-                                        Belum ada transaksi kas tercatat.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+        </div>
+
+        <!-- Journal 3: Vendor Bills & Operational Expenses -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="o_form_sheet p-3 h-100 bg-white" style="border-top: 4px solid #e11d48 !important;">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-bold text-slate-800 fs-6 mb-0 d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-file-invoice text-rose-600 text-sm"></i>
+                        <span>Vendor Bills & Expenses</span>
+                    </h6>
+                    <span class="badge bg-rose-50 text-rose-700 border border-rose-200 text-[10px]">Expenses</span>
                 </div>
+                <p class="text-[11px] text-slate-400 mb-3">Biaya operasional bulanan, gaji, listrik, dan beban sewa</p>
+
+                <div class="p-2.5 bg-slate-50 rounded border border-slate-100 mb-3">
+                    <span class="text-slate-500 text-[11px]">Total Expenses Billed:</span>
+                    <h5 class="fw-bold text-rose-700 mb-0 font-mono">Rp {{ number_format($totalKasKeluar, 0, ',', '.') }}</h5>
+                </div>
+
+                <a href="{{ route('reports.expenses') }}" class="btn-odoo-secondary text-xs w-100 text-center text-decoration-none d-block">
+                    View Expense Analysis
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Right Side Info Cards -->
-    <div class="col-lg-4 mb-4">
-        <div class="space-y-4">
-            
-            <!-- POS Activity Summary Card -->
-            <div class="card shadow-sm border-0 text-bg-dark rounded-4 p-4">
-                <div class="card-body p-0">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="rounded-circle bg-white text-dark p-2 me-3 d-inline-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-                            <i class="fa-solid fa-cash-register fs-5 text-dark"></i>
-                        </div>
-                        <h5 class="card-title fw-bold text-white mb-0">Aktivitas POS (Bulan Ini)</h5>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <p class="text-white-50 text-uppercase font-mono fw-semibold mb-1" style="font-size: 11px;">Jumlah Transaksi Checkout</p>
-                        <h2 class="display-6 fw-bold text-white mb-0">{{ number_format($jumlahTransaksi) }} <small class="fs-6 font-normal">Faktur</small></h2>
-                    </div>
-                    
-                    <div>
-                        <a href="{{ route('reports.sales') }}" class="btn btn-light w-100 rounded-pill fw-bold text-dark shadow-sm">
-                            Lihat Laporan Penjualan
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Active Branch Info Card -->
-            <div class="card shadow-sm border-0 rounded-4 p-4 bg-white">
-                <div class="card-body p-0 d-flex align-items-start">
-                    <div class="rounded-3 bg-primary-subtle text-primary p-3 me-3 d-inline-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                        <i class="fa-solid fa-building fs-4"></i>
-                    </div>
-                    <div>
-                        <small class="text-uppercase text-muted fw-bold font-mono" style="font-size: 11px;">Cabang Operasional</small>
-                        <h5 class="fw-bold text-dark mb-1">{{ Auth::user()->branch->nama_cabang ?? 'Pusat' }}</h5>
-                        <p class="text-muted text-xs mb-0">{{ Auth::user()->branch->alamat ?? 'Semua Lokasi Konsolidasi' }}</p>
-                    </div>
-                </div>
-            </div>
-            
+    <!-- Recent Cash Transactions Table -->
+    <div class="o_form_sheet p-0 overflow-hidden mt-4 bg-white">
+        <div class="p-3 bg-slate-50 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold text-slate-800 mb-0 fs-6 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-book text-slate-600"></i> Mutasi Kas Terbaru (Recent Journal Entries)
+            </h6>
+            <a href="{{ route('reports.cash-mutation') }}" class="btn btn-sm btn-link text-blue-700 text-decoration-none fw-bold text-xs p-0">
+                Buka Buku Besar (General Ledger) &rarr;
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover o_list_table mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-3">Tanggal / No. Referensi</th>
+                        <th>Akun Keuangan & Cabang</th>
+                        <th>Keterangan / Dokumen Referensi</th>
+                        <th>Tipe</th>
+                        <th class="text-end pe-4">Jumlah (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($recentTransactions as $trx)
+                        <tr>
+                            <td class="ps-3">
+                                <div class="fw-bold text-slate-800 font-mono text-xs">{{ $trx->nomor_referensi }}</div>
+                                <span class="text-[11px] text-slate-400">{{ \Carbon\Carbon::parse($trx->tanggal)->format('d M Y') }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-slate-800">{{ $trx->account->nama_akun ?? 'Akun' }}</div>
+                                <span class="text-[10px] text-slate-400">Cabang: {{ $trx->branch->nama_cabang ?? 'Pusat' }}</span>
+                            </td>
+                            <td class="text-xs text-slate-700">
+                                <div>{{ $trx->keterangan ?? '-' }}</div>
+                                @if($trx->transaction)
+                                    @php
+                                        $invItems = $trx->transaction->transactionDetails->map(function($d) {
+                                            return [
+                                                'material_name' => $d->material->material_name ?? 'Bahan Cetak',
+                                                'qty_ordered' => $d->qty_ordered,
+                                                'selling_price' => $d->selling_price,
+                                                'subtotal' => $d->qty_ordered * $d->selling_price,
+                                            ];
+                                        });
+                                        $invPayload = [
+                                            'invoice_number' => $trx->transaction->invoice_number,
+                                            'created_at' => $trx->transaction->created_at->format('d M Y H:i'),
+                                            'cashier_name' => $trx->transaction->user->username ?? 'Kasir',
+                                            'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
+                                            'payment_method' => $trx->transaction->payment_method ?? 'Cash',
+                                            'payment_status' => 'PAID',
+                                            'total_price' => $trx->transaction->total_price,
+                                            'items' => $invItems
+                                        ];
+                                    @endphp
+                                    <button type="button" 
+                                            class="btn btn-sm btn-light border text-[11px] py-0 px-2 mt-1 text-blue-700 d-inline-flex align-items-center gap-1 font-mono"
+                                            onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                        <i class="fa-solid fa-file-invoice text-blue-600"></i>
+                                        <span>Invoice: {{ $trx->transaction->invoice_number }}</span>
+                                        <span class="badge bg-emerald-100 text-emerald-800 text-[9px] px-1 py-0">PAID</span>
+                                    </button>
+                                @endif
+                            </td>
+                            <td>
+                                @if($trx->tipe === 'masuk')
+                                    <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px]">
+                                        <i class="fa-solid fa-circle-arrow-down me-1"></i> Kas Masuk
+                                    </span>
+                                @else
+                                    <span class="badge bg-rose-50 text-rose-700 border border-rose-200 text-[11px]">
+                                        <i class="fa-solid fa-circle-arrow-up me-1"></i> Kas Keluar
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-end pe-4 font-mono fw-bold {{ $trx->tipe === 'masuk' ? 'text-emerald-700' : 'text-rose-700' }}">
+                                {{ $trx->tipe === 'masuk' ? '+' : '-' }} Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">Belum ada transaksi kas terbaru.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
-</div>
-
 @endsection

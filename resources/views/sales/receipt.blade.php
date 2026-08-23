@@ -1,123 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice - {{ $transaction->invoice_number }}</title>
+    <title>Struk POS 58mm - {{ $transaction->invoice_number }}</title>
     <style>
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 14px;
-            color: #000;
-            background: #fff;
+        @page {
+            size: 58mm auto;
             margin: 0;
-            padding: 20px;
-            width: 80mm; /* Typical thermal printer width */
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
+            font-size: 11px;
+            line-height: 1.25;
+            color: #000000;
+            background: #ffffff;
+            width: 58mm;
+            max-width: 58mm;
+            padding: 6px 4px 15px 4px;
             margin: 0 auto;
         }
         @media print {
             body {
-                width: auto;
-                padding: 0;
+                width: 58mm;
+                padding: 4px 2px;
+                margin: 0;
             }
             .no-print {
                 display: none !important;
             }
         }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .fw-bold { font-weight: bold; }
+        
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 6px;
+        }
+        .header img {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 4px;
+            display: inline-block;
         }
         .header h1 {
-            font-size: 20px;
-            margin: 0;
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            margin: 1px 0;
         }
         .header p {
-            margin: 5px 0;
-            font-size: 12px;
+            font-size: 10px;
+            color: #111;
+            margin: 1px 0;
         }
+
         .divider {
             border-top: 1px dashed #000;
-            margin: 10px 0;
+            margin: 6px 0;
         }
-        .meta-info {
-            font-size: 12px;
-            margin-bottom: 10px;
+        .divider-double {
+            border-top: 1px double #000;
+            margin: 6px 0;
         }
-        table {
+
+        .meta-table {
+            width: 100%;
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+        .meta-table td {
+            padding: 1px 0;
+            vertical-align: top;
+        }
+
+        .items-table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 10.5px;
         }
-        th, td {
-            text-align: left;
-            padding: 5px 0;
-            font-size: 12px;
+        .items-table th {
+            border-bottom: 1px dashed #000;
+            padding: 3px 0;
+            font-size: 10px;
         }
-        .text-right {
-            text-align: right;
+        .items-table td {
+            padding: 2.5px 0;
+            vertical-align: top;
         }
-        .font-bold {
+
+        .item-name {
             font-weight: bold;
+            word-break: break-word;
         }
-        .totals {
-            margin-top: 10px;
+        .item-meta {
+            font-size: 9.5px;
+            color: #222;
         }
-        .totals p {
-            display: flex;
-            justify-content: space-between;
-            margin: 5px 0;
-            font-size: 14px;
+
+        .totals-table {
+            width: 100%;
+            font-size: 11px;
         }
+        .totals-table td {
+            padding: 1.5px 0;
+        }
+
+        .stamp-lunas {
+            display: inline-block;
+            border: 1px solid #000;
+            padding: 2px 6px;
+            font-weight: 900;
+            font-size: 11px;
+            letter-spacing: 1px;
+            margin: 4px 0;
+        }
+
         .footer {
             text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
+            margin-top: 8px;
+            font-size: 9.5px;
+            line-height: 1.3;
         }
-        .btn-print {
+
+        .action-buttons {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .btn-action {
             display: block;
             width: 100%;
-            padding: 10px;
-            margin-top: 20px;
-            background: #4f46e5;
-            color: white;
+            padding: 8px;
             text-align: center;
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 4px;
             font-family: sans-serif;
             font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-print {
+            background: #2563EB;
+            color: #ffffff;
+        }
+        .btn-back {
+            background: #64748B;
+            color: #ffffff;
         }
     </style>
 </head>
 <body>
 
+    <!-- Header & Logo -->
     <div class="header">
-        <h1>SNAPRINT ERP</h1>
-        <p>{{ $transaction->branch->nama_cabang ?? 'Pusat' }}</p>
-        <p>{{ $transaction->branch->alamat ?? 'Alamat tidak tersedia' }}</p>
-    </div>
-
-    <div class="meta-info">
-        <div><strong>No:</strong> {{ $transaction->invoice_number }}</div>
-        <div><strong>Tgl:</strong> {{ $transaction->created_at->format('d/m/Y H:i') }}</div>
-        <div><strong>Kasir:</strong> {{ $transaction->user->username ?? 'Unknown' }}</div>
+        <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint">
+        <h1>SNAPRINT</h1>
+        <p>Digital Printing & Adv.</p>
+        <p>Cabang: <strong>{{ $transaction->branch->nama_cabang ?? 'Pusat' }}</strong></p>
+        <p>{{ $transaction->branch->alamat ?? 'Jl. Margonda Raya No. 45' }}</p>
     </div>
 
     <div class="divider"></div>
 
-    <table>
+    <!-- Meta Info -->
+    <table class="meta-table">
+        <tr>
+            <td style="width: 35%;">No. Inv</td>
+            <td>: <strong>{{ $transaction->invoice_number }}</strong></td>
+        </tr>
+        <tr>
+            <td>Waktu</td>
+            <td>: {{ $transaction->created_at->format('d/m/Y H:i') }}</td>
+        </tr>
+        <tr>
+            <td>Kasir</td>
+            <td>: {{ $transaction->user->full_name ?: ($transaction->user->username ?? 'Kasir') }}</td>
+        </tr>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- Line Items Table -->
+    <table class="items-table">
         <thead>
             <tr>
-                <th>Item</th>
-                <th>Qty</th>
+                <th class="text-left">Item / Qty</th>
                 <th class="text-right">Total</th>
             </tr>
         </thead>
         <tbody>
             @foreach($transaction->transactionDetails as $detail)
             <tr>
-                <td>{{ $detail->material->material_name ?? 'Unknown Item' }}<br><small>@ {{ number_format($detail->selling_price, 0, ',', '.') }}</small></td>
-                <td>{{ $detail->qty_ordered }}</td>
-                <td class="text-right">{{ number_format($detail->qty_ordered * $detail->selling_price, 0, ',', '.') }}</td>
+                <td class="text-left">
+                    <div class="item-name">{{ $detail->material->material_name ?? 'Bahan Cetak' }}</div>
+                    <div class="item-meta">{{ $detail->qty_ordered }} x Rp {{ number_format($detail->selling_price, 0, ',', '.') }}</div>
+                </td>
+                <td class="text-right fw-bold" style="white-space: nowrap;">
+                    Rp {{ number_format($detail->qty_ordered * $detail->selling_price, 0, ',', '.') }}
+                </td>
             </tr>
             @endforeach
         </tbody>
@@ -125,21 +217,51 @@
 
     <div class="divider"></div>
 
-    <div class="totals">
-        <p><span>Subtotal:</span> <span>Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span></p>
-        <p><span>Pembayaran:</span> <span>{{ $transaction->payment_method }}</span></p>
-        <p class="font-bold"><span>Total:</span> <span>Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span></p>
-    </div>
+    <!-- Totals Table -->
+    <table class="totals-table">
+        <tr>
+            <td>Subtotal</td>
+            <td class="text-right">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td>Bayar ({{ $transaction->payment_method }})</td>
+            <td class="text-right">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
+        </tr>
+        <tr>
+            <td class="fw-bold" style="font-size: 12px;">TOTAL</td>
+            <td class="text-right fw-bold" style="font-size: 12px;">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
+        </tr>
+    </table>
 
     <div class="divider"></div>
 
-    <div class="footer">
-        <p>Terima kasih atas kunjungan Anda!</p>
-        <p>Barang yang sudah dibeli tidak dapat ditukar/dikembalikan.</p>
+    <!-- Status & Footer -->
+    <div class="text-center">
+        <div class="stamp-lunas">*** LUNAS (PAID) ***</div>
     </div>
 
-    <a href="#" onclick="window.print()" class="btn-print no-print">🖨️ Cetak Struk</a>
-    <a href="javascript:history.back()" class="btn-print no-print" style="background:#64748b; margin-top:10px;">Kembali</a>
+    <div class="footer">
+        <p>Terima kasih atas pesanan Anda!</p>
+        <p>SnapPrint Digital Printing ERP</p>
+    </div>
 
+    <!-- Screen Buttons (Hidden when printing) -->
+    <div class="action-buttons no-print">
+        <button onclick="window.print()" class="btn-action btn-print">
+            🖨️ Cetak Struk 58mm
+        </button>
+        <a href="{{ route('pos.index') }}" class="btn-action btn-back">
+            &larr; Kembali ke Kasir (POS)
+        </a>
+    </div>
+
+    <script>
+        // Auto trigger print dialog when opened
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 300);
+        });
+    </script>
 </body>
 </html>

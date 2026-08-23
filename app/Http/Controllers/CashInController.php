@@ -15,11 +15,11 @@ class CashInController extends Controller
     {
         $user = Auth::user();
         
-        $query = CashTransaction::masuk()->with(['account', 'branch', 'user']);
+        $query = CashTransaction::masuk()->with(['account', 'branch', 'user', 'transaction.transactionDetails.material', 'transaction.user']);
 
         if ($user->role !== 'owner') {
             $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id')) {
+        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
             $query->where('branch_id', $request->branch_id);
         }
 
@@ -32,8 +32,10 @@ class CashInController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('nomor_referensi', 'like', "%{$request->search}%")
+            $query->where(function($q) use ($request) {
+                $q->where('nomor_referensi', 'like', "%{$request->search}%")
                   ->orWhere('keterangan', 'like', "%{$request->search}%");
+            });
         }
 
         $cashTransactions = $query->orderBy('tanggal', 'desc')->orderBy('created_at', 'desc')->paginate(15);

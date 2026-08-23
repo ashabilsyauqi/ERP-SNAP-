@@ -15,11 +15,13 @@ class CashMutationController extends Controller
     {
         $user = Auth::user();
         
-        $query = CashTransaction::with(['account', 'branch'])->orderBy('tanggal', 'asc')->orderBy('created_at', 'asc');
+        $query = CashTransaction::with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('created_at', 'asc');
 
         if ($user->role !== 'owner') {
             $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id')) {
+        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
             $query->where('branch_id', $request->branch_id);
         }
 
@@ -35,13 +37,13 @@ class CashMutationController extends Controller
             $query->where('account_id', $request->account_id);
         }
 
-        // Hitung saldo awal
+        // Hitung saldo awal sebelum start_date
         $saldoAwal = 0;
         if ($request->filled('start_date')) {
             $prevQuery = CashTransaction::where('tanggal', '<', $request->start_date);
             if ($user->role !== 'owner') {
                 $prevQuery->where('branch_id', $user->branch_id);
-            } elseif ($request->filled('branch_id')) {
+            } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
                 $prevQuery->where('branch_id', $request->branch_id);
             }
             if ($request->filled('account_id')) {
@@ -55,41 +57,35 @@ class CashMutationController extends Controller
 
         $allMutations = $query->get();
         
-        $mutations = collect();
+        $mutasi = collect();
         $runningBalance = $saldoAwal;
+        $totalMasuk = 0;
+        $totalKeluar = 0;
 
         foreach ($allMutations as $mut) {
             if ($mut->tipe === 'masuk') {
                 $runningBalance += $mut->jumlah;
+                $totalMasuk += $mut->jumlah;
             } else {
                 $runningBalance -= $mut->jumlah;
+                $totalKeluar += $mut->jumlah;
             }
             
             $mut->running_balance = $runningBalance;
-            $mutations->push($mut);
+            $mutasi->push($mut);
         }
-
-        // For pagination in view, we'll just slice the collection or use manual paginator if needed, 
-        // but for simplicity in reporting, returning all or chunking is fine.
-        // To be safe with memory, let's paginate the result collection manually
-        $perPage = 20;
-        $page = $request->input('page', 1);
-        $paginatedMutations = new \Illuminate\Pagination\LengthAwarePaginator(
-            $mutations->forPage($page, $perPage),
-            $mutations->count(),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
 
         $accounts = Account::active()->orderBy('nama_akun')->get();
         $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
         return view('reports.cash-mutation', [
-            'mutations' => $paginatedMutations,
+            'mutasi' => $mutasi,
             'accounts' => $accounts,
             'branches' => $branches,
-            'saldoAwal' => $saldoAwal
+            'saldoAwal' => $saldoAwal,
+            'totalMasuk' => $totalMasuk,
+            'totalKeluar' => $totalKeluar,
+            'saldoAkhir' => $runningBalance
         ]);
     }
 }

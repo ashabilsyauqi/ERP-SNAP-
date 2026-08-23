@@ -15,11 +15,14 @@ class CashOutReportController extends Controller
     {
         $user = Auth::user();
         
-        $query = CashTransaction::with(['account', 'branch'])->orderBy('tanggal', 'asc')->orderBy('created_at', 'asc');
+        $query = CashTransaction::with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])
+            ->where('tipe', 'keluar')
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('created_at', 'desc');
 
         if ($user->role !== 'owner') {
             $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id')) {
+        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
             $query->where('branch_id', $request->branch_id);
         }
 
@@ -27,68 +30,16 @@ class CashOutReportController extends Controller
             $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
         }
 
-        // Force only Cash Out (keluar)
-        $query->where('tipe', 'keluar');
-
         if ($request->filled('account_id')) {
             $query->where('account_id', $request->account_id);
         }
 
-        // Hitung saldo awal
-        $saldoAwal = 0;
-        if ($request->filled('start_date')) {
-            $prevQuery = CashTransaction::where('tanggal', '<', $request->start_date);
-            if ($user->role !== 'owner') {
-                $prevQuery->where('branch_id', $user->branch_id);
-            } elseif ($request->filled('branch_id')) {
-                $prevQuery->where('branch_id', $request->branch_id);
-            }
-            if ($request->filled('account_id')) {
-                $prevQuery->where('account_id', $request->account_id);
-            }
-            
-            $masukAwal = (clone $prevQuery)->where('tipe', 'masuk')->sum('jumlah');
-            $keluarAwal = (clone $prevQuery)->where('tipe', 'keluar')->sum('jumlah');
-            $saldoAwal = $masukAwal - $keluarAwal;
-        }
+        $cashTransactions = $query->get();
+        $totalKeluar = $cashTransactions->sum('jumlah');
 
-        $allMutations = $query->get();
-        
-        $mutations = collect();
-        $runningBalance = $saldoAwal;
-
-        foreach ($allMutations as $mut) {
-            if ($mut->tipe === 'masuk') {
-                $runningBalance += $mut->jumlah;
-            } else {
-                $runningBalance -= $mut->jumlah;
-            }
-            
-            $mut->running_balance = $runningBalance;
-            $mutations->push($mut);
-        }
-
-        // For pagination in view, we'll just slice the collection or use manual paginator if needed, 
-        // but for simplicity in reporting, returning all or chunking is fine.
-        // To be safe with memory, let's paginate the result collection manually
-        $perPage = 20;
-        $page = $request->input('page', 1);
-        $paginatedMutations = new \Illuminate\Pagination\LengthAwarePaginator(
-            $mutations->forPage($page, $perPage),
-            $mutations->count(),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-
-        $accounts = Account::active()->orderBy('nama_akun')->get();
+        $accounts = Account::where('tipe', 'beban')->active()->orderBy('nama_akun')->get();
         $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
-        return view('reports.cash-out', [
-            'mutations' => $paginatedMutations,
-            'accounts' => $accounts,
-            'branches' => $branches,
-            'saldoAwal' => $saldoAwal
-        ]);
+        return view('reports.cash-out', compact('cashTransactions', 'accounts', 'branches', 'totalKeluar'));
     }
 }

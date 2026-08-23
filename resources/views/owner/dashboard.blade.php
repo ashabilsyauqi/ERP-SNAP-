@@ -225,19 +225,54 @@
                         </thead>
                         <tbody>
                             @forelse($recentTransactions as $tx)
+                                @php
+                                    $invItems = $tx->transactionDetails->map(function($d) {
+                                        return [
+                                            'material_name' => $d->material->material_name ?? 'Bahan Cetak',
+                                            'qty_ordered' => $d->qty_ordered,
+                                            'selling_price' => $d->selling_price,
+                                            'subtotal' => $d->qty_ordered * $d->selling_price,
+                                        ];
+                                    });
+                                    $invPayload = [
+                                        'invoice_number' => $tx->invoice_number,
+                                        'created_at' => $tx->created_at->format('d M Y H:i'),
+                                        'cashier_name' => $tx->user->full_name ?: ($tx->user->username ?? 'Kasir'),
+                                        'branch_name' => $tx->branch->nama_cabang ?? 'Pusat',
+                                        'payment_method' => $tx->payment_method ?? 'Cash',
+                                        'payment_status' => 'PAID',
+                                        'total_price' => $tx->total_price,
+                                        'items' => $invItems
+                                    ];
+                                @endphp
                                 <tr>
-                                    <td class="ps-4 font-mono fw-bold text-primary">#{{ $tx->invoice_number }}</td>
+                                    <td class="ps-4">
+                                        <button type="button" 
+                                                class="btn btn-link p-0 font-mono fw-bold text-blue-700 text-decoration-none d-inline-flex align-items-center gap-1 hover:underline"
+                                                onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                            <i class="fa-solid fa-file-invoice text-blue-600 text-xs"></i>
+                                            <span>{{ $tx->invoice_number }}</span>
+                                        </button>
+                                    </td>
                                     <td class="text-muted fs-7">{{ $tx->created_at->format('d M Y, H:i') }}</td>
                                     <td><span class="badge bg-light text-dark border">{{ $tx->branch->nama_cabang ?? 'Pusat' }}</span></td>
-                                    <td class="fw-semibold text-dark">{{ $tx->user->username ?? 'Kasir' }}</td>
+                                    <td class="fw-semibold text-dark">{{ $tx->user->full_name ?: ($tx->user->username ?? 'Kasir') }}</td>
                                     <td>
-                                        <span class="badge bg-slate-100 text-slate-700 border px-2.5 py-1">{{ $tx->payment_method }}</span>
+                                        <div class="d-inline-flex align-items-center gap-1">
+                                            <span class="badge bg-slate-100 text-slate-700 border px-2 py-0.5 text-[11px]">{{ $tx->payment_method }}</span>
+                                            <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">PAID</span>
+                                        </div>
                                     </td>
-                                    <td class="fw-bold text-emerald-600">Rp {{ number_format($tx->total_price, 0, ',', '.') }}</td>
+                                    <td class="fw-bold text-blue-900 font-mono">Rp {{ number_format($tx->total_price, 0, ',', '.') }}</td>
                                     <td class="text-center">
-                                        <a href="{{ route('sales.receipt', $tx->id) }}" target="_blank" class="btn btn-sm btn-light border rounded-pill px-3 d-inline-flex align-items-center">
-                                            <i class="fa-solid fa-print me-1 text-slate-600"></i> Struk
-                                        </a>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Dokumen Faktur" onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                                <i class="fa-solid fa-file-invoice text-xs"></i>
+                                            </button>
+                                            <a href="{{ route('sales.receipt', $tx->id) }}" target="_blank" class="btn btn-sm btn-light border py-0 px-2" title="Cetak Struk POS">
+                                                <i class="fa-solid fa-receipt text-xs"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -288,7 +323,7 @@
                     borderRadius: 5
                 }
             },
-            colors: ['#4f46e5', '#f43f5e', '#10b981'],
+            colors: ['#714B67', '#e11d48', '#008784'],
             fill: {
                 opacity: [0.85, 0.85, 1],
                 gradient: {
@@ -339,7 +374,7 @@
                 type: 'donut',
                 height: 280
             },
-            colors: ['#10b981', '#3b82f6', '#f59e0b'],
+            colors: ['#008784', '#714B67', '#f59e0b'],
             legend: { position: 'bottom' },
             dataLabels: { enabled: true },
             tooltip: {
@@ -370,10 +405,10 @@
                         barHeight: '60%',
                         distributed: true,
                         horizontal: true,
-                        borderRadius: 6
+                        borderRadius: 4
                     }
                 },
-                colors: ['#6366f1', '#a855f7', '#ec4899', '#f43f5e'],
+                colors: ['#714B67', '#008784', '#3b82f6', '#f59e0b'],
                 dataLabels: {
                     enabled: true,
                     formatter: function (val) {

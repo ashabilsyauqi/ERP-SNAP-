@@ -1,186 +1,185 @@
 @extends('layouts.app')
 
-@section('title', 'Laba Rugi')
-@section('page-title', 'Laporan Laba Rugi')
+@section('title', 'Profit and Loss Statement')
+@section('page-title', 'Laporan Laba & Rugi (Profit & Loss Statement)')
+
+@section('action-buttons')
+<button type="button" onclick="window.print()" class="btn-odoo-primary">
+    <i class="fa-solid fa-print"></i>
+    <span>Cetak Laporan</span>
+</button>
+@endsection
 
 @section('content')
+<div id="main-view-wrapper" data-view-wrapper>
+    <!-- Filter Toolbar -->
+    <div class="o_form_sheet mb-3 p-3 bg-white print:hidden">
+        <form method="GET" action="{{ route('reports.profit-loss') }}" class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Tipe Periode</label>
+                <select name="period_type" id="period_type" class="form-select form-select-sm">
+                    <option value="monthly" {{ $periodType == 'monthly' ? 'selected' : '' }}>Bulanan (Monthly)</option>
+                    <option value="yearly" {{ $periodType == 'yearly' ? 'selected' : '' }}>Tahunan (Yearly)</option>
+                </select>
+            </div>
+            
+            <div class="col-12 col-md-3" id="month_selector" style="display: {{ $periodType == 'monthly' ? 'block' : 'none' }}">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Bulan</label>
+                <select name="month" class="form-select form-select-sm">
+                    @for($i=1; $i<=12; $i++)
+                        <option value="{{ $i }}" {{ request('month', date('n')) == $i ? 'selected' : '' }}>
+                            {{ date('F', mktime(0,0,0,$i,1)) }}
+                        </option>
+                    @endfor
+                </select>
+            </div>
+            
+            <div class="col-12 col-md-2">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Tahun</label>
+                <select name="year" class="form-select form-select-sm">
+                    @php $startYear = date('Y') - 5; @endphp
+                    @for($i = date('Y'); $i >= $startYear; $i--)
+                        <option value="{{ $i }}" {{ request('year', date('Y')) == $i ? 'selected' : '' }}>{{ $i }}</option>
+                    @endfor
+                </select>
+            </div>
 
-<!-- Filter -->
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 print:hidden">
-    <form method="GET" action="{{ route('reports.profit-loss') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Laporan</label>
-            <select name="period_type" id="period_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm">
-                <option value="monthly" {{ $periodType == 'monthly' ? 'selected' : '' }}>Bulanan</option>
-                <option value="yearly" {{ $periodType == 'yearly' ? 'selected' : '' }}>Tahunan</option>
-            </select>
-        </div>
-        
-        <div id="month_selector" style="display: {{ $periodType == 'monthly' ? 'block' : 'none' }}">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Bulan</label>
-            <select name="month" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm">
-                @for($i=1; $i<=12; $i++)
-                    <option value="{{ $i }}" {{ request('month', date('n')) == $i ? 'selected' : '' }}>
-                        {{ date('F', mktime(0,0,0,$i,1)) }}
-                    </option>
-                @endfor
-            </select>
-        </div>
-        
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
-            <select name="year" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm">
-                @php $startYear = date('Y') - 5; @endphp
-                @for($i = date('Y'); $i >= $startYear; $i--)
-                    <option value="{{ $i }}" {{ request('year', date('Y')) == $i ? 'selected' : '' }}>{{ $i }}</option>
-                @endfor
-            </select>
-        </div>
-
-        @if(Auth::user()->role === 'owner')
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Cabang</label>
-            <select name="branch_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm">
-                <option value="">Konsolidasi Semua Cabang</option>
-                @foreach($branches as $branch)
-                    <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }} {{ $branch->trashed() ? '(Archived)' : '' }}</option>
-                @endforeach
-            </select>
-        </div>
-        @else
-        <div class="hidden"></div>
-        @endif
-
-        <div class="flex gap-2">
-            <button type="submit" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                Buat Laporan
-            </button>
-            <button type="button" onclick="window.print()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none" title="Print Laporan">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-            </button>
-        </div>
-    </form>
-</div>
-
-<!-- Laporan Paper -->
-<div class="max-w-4xl mx-auto bg-white rounded-none md:rounded-2xl shadow-sm border border-gray-100 p-8 md:p-12 print:shadow-none print:border-none print:p-0">
-    
-    <!-- Header Laporan -->
-    <div class="text-center mb-10 border-b-2 border-gray-800 pb-6">
-        <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight uppercase">PT Duta Raya Berjaya (Snaprint)</h1>
-        <h2 class="text-xl font-bold text-gray-700 mt-1">LAPORAN LABA RUGI</h2>
-        <p class="text-gray-500 font-medium mt-2">Periode: {{ $periodLabel }}</p>
-        @if(request('branch_id'))
-            @php $b = $branches->firstWhere('id', request('branch_id')); @endphp
-            <p class="text-primary-600 font-semibold mt-1">Cabang: {{ $b ? $b->nama_cabang : '' }}</p>
-        @endif
-    </div>
-
-    <div class="space-y-6 text-sm">
-        
-        <!-- PENDAPATAN -->
-        <div>
-            <h3 class="font-bold text-gray-900 uppercase bg-gray-50 py-2 px-3 border-l-4 border-gray-800 mb-2">I. Pendapatan</h3>
-            <table class="w-full mb-2">
-                <tbody>
-                    @foreach($pendapatan as $p)
-                    <tr class="group hover:bg-gray-50 transition-colors">
-                        <td class="py-2 px-4 text-gray-700 pl-8">{{ $p->nama_akun }}</td>
-                        <td class="py-2 px-4 text-right text-gray-900 w-1/3">Rp {{ number_format($p->jumlah, 0, ',', '.') }}</td>
-                    </tr>
+            @if(Auth::user()->role === 'owner')
+            <div class="col-12 col-md-2">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Cabang</label>
+                <select name="branch_id" class="form-select form-select-sm">
+                    <option value="">Semua Cabang (Konsolidasi)</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
                     @endforeach
-                </tbody>
-            </table>
-            <div class="flex justify-between items-center bg-green-50/50 py-2 px-4 font-bold border-y border-gray-200">
-                <span class="text-gray-900">Total Pendapatan</span>
-                <span class="text-green-700">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</span>
+                </select>
             </div>
-        </div>
+            @endif
 
-        <!-- HPP -->
-        <div>
-            <h3 class="font-bold text-gray-900 uppercase bg-gray-50 py-2 px-3 border-l-4 border-gray-800 mb-2 mt-6">II. Harga Pokok Penjualan (HPP)</h3>
-            <table class="w-full mb-2">
-                <tbody>
-                    @forelse($hpp as $h)
-                    <tr class="group hover:bg-gray-50 transition-colors">
-                        <td class="py-2 px-4 text-gray-700 pl-8">{{ $h->nama_akun }}</td>
-                        <td class="py-2 px-4 text-right text-gray-900 w-1/3">Rp {{ number_format($h->jumlah, 0, ',', '.') }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td class="py-2 px-4 text-gray-400 pl-8 italic">Tidak ada HPP tercatat</td>
-                        <td class="py-2 px-4 text-right text-gray-400 w-1/3">Rp 0</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-            <div class="flex justify-between items-center bg-rose-50/50 py-2 px-4 font-bold border-y border-gray-200">
-                <span class="text-gray-900">Total Harga Pokok Penjualan</span>
-                <span class="text-rose-700">(Rp {{ number_format($totalHpp, 0, ',', '.') }})</span>
+            <div class="col-12 col-md-2">
+                <button type="submit" class="btn-odoo-primary w-100 py-1 text-xs">
+                    <i class="fa-solid fa-filter me-1"></i> Terapkan
+                </button>
             </div>
-        </div>
+        </form>
+    </div>
 
-        <!-- LABA KOTOR -->
-        <div class="flex justify-between items-center bg-gray-100 py-3 px-4 font-extrabold border-y-2 border-gray-800 my-6 text-base">
-            <span class="text-gray-900 uppercase tracking-wide">Laba Kotor</span>
-            <span class="{{ $labaKotor >= 0 ? 'text-green-700' : 'text-rose-700' }}">Rp {{ number_format($labaKotor, 0, ',', '.') }}</span>
-        </div>
-
-        <!-- BEBAN OPERASIONAL -->
-        <div>
-            <h3 class="font-bold text-gray-900 uppercase bg-gray-50 py-2 px-3 border-l-4 border-gray-800 mb-2">III. Beban Operasional</h3>
-            <table class="w-full mb-2">
-                <tbody>
-                    @forelse($bebanOperasional as $b)
-                    <tr class="group hover:bg-gray-50 transition-colors">
-                        <td class="py-2 px-4 text-gray-700 pl-8">{{ $b->nama_akun }}</td>
-                        <td class="py-2 px-4 text-right text-gray-900 w-1/3">Rp {{ number_format($b->jumlah, 0, ',', '.') }}</td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td class="py-2 px-4 text-gray-400 pl-8 italic">Tidak ada beban operasional tercatat</td>
-                        <td class="py-2 px-4 text-right text-gray-400 w-1/3">Rp 0</td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-            <div class="flex justify-between items-center bg-rose-50/50 py-2 px-4 font-bold border-y border-gray-200">
-                <span class="text-gray-900">Total Beban Operasional</span>
-                <span class="text-rose-700">(Rp {{ number_format($totalBebanOperasional, 0, ',', '.') }})</span>
-            </div>
-        </div>
-
-        <!-- LABA BERSIH -->
-        <div class="flex justify-between items-center py-4 px-4 font-extrabold border-y-4 border-double border-gray-900 mt-8 text-lg {{ $labaBersih >= 0 ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800' }}">
-            <span class="uppercase tracking-wide">Laba Bersih {{ $labaBersih >= 0 ? '' : '(Rugi)' }} Operasional</span>
-            <span>Rp {{ number_format($labaBersih, 0, ',', '.') }}</span>
-        </div>
+    <!-- Financial Statement Sheet -->
+    <div class="max-w-4xl mx-auto o_form_sheet p-5 bg-white print:p-0 print:border-0 print:shadow-none">
         
-    </div>
-    
-    <!-- Signatures (Print Only) -->
-    <div class="hidden print:flex mt-24 justify-between px-12">
-        <div class="text-center">
-            <p class="mb-20">Disetujui Oleh,</p>
-            <p class="font-bold border-b border-gray-900 px-8 pb-1 inline-block">Direktur / Owner</p>
+        <!-- Header -->
+        <div class="text-center mb-4 pb-3 border-bottom">
+            <h5 class="fw-bold text-slate-900 uppercase tracking-wide mb-1">PT Duta Raya Berjaya (SnapPrint)</h5>
+            <h4 class="fw-extrabold text-blue-900 mb-1">LAPORAN LABA DAN RUGI KOMPREHENSIF</h4>
+            <p class="text-xs text-slate-500 mb-0">Periode Laporan: <strong>{{ $periodLabel }}</strong></p>
+            @if(request('branch_id'))
+                @php $b = $branches->firstWhere('id', request('branch_id')); @endphp
+                <span class="badge bg-slate-100 text-slate-700 border mt-1">Cabang: {{ $b ? $b->nama_cabang : '' }}</span>
+            @endif
         </div>
-        <div class="text-center">
-            <p class="mb-20">Dibuat Oleh,</p>
-            <p class="font-bold border-b border-gray-900 px-8 pb-1 inline-block">Bagian Keuangan</p>
-        </div>
-    </div>
 
+        <div class="space-y-4 text-sm">
+            <!-- I. Operating Revenue -->
+            <div>
+                <div class="p-2 bg-slate-100 font-bold text-slate-900 text-xs uppercase d-flex justify-content-between align-items-center" style="border-left: 4px solid #1E3A8A;">
+                    <span>I. Pendapatan Usaha (Operating Revenue)</span>
+                </div>
+                <table class="table table-sm table-hover mb-0 mt-1">
+                    <tbody>
+                        @foreach($pendapatan as $p)
+                        <tr>
+                            <td class="ps-4 text-slate-700">{{ $p->nama_akun }}</td>
+                            <td class="text-end font-mono pe-3">Rp {{ number_format($p->jumlah, 0, ',', '.') }}</td>
+                        </tr>
+                        @endforeach
+                        <tr class="fw-bold bg-blue-50/50">
+                            <td class="ps-4 text-blue-900">Total Pendapatan Usaha</td>
+                            <td class="text-end font-mono text-blue-900 pe-3">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- II. Cost of Goods Sold -->
+            <div>
+                <div class="p-2 bg-slate-100 font-bold text-slate-900 text-xs uppercase d-flex justify-content-between align-items-center" style="border-left: 4px solid #f59e0b;">
+                    <span>II. Harga Pokok Penjualan (HPP Bahan / COGS)</span>
+                </div>
+                <table class="table table-sm table-hover mb-0 mt-1">
+                    <tbody>
+                        @forelse($hpp as $h)
+                        <tr>
+                            <td class="ps-4 text-slate-700">{{ $h->nama_akun }}</td>
+                            <td class="text-end font-mono pe-3">Rp {{ number_format($h->jumlah, 0, ',', '.') }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td class="ps-4 text-slate-400 italic">Belum ada pos HPP</td>
+                            <td class="text-end font-mono text-slate-400 pe-3">Rp 0</td>
+                        </tr>
+                        @endforelse
+                        <tr class="fw-bold bg-amber-50/50">
+                            <td class="ps-4 text-amber-900">Total Biaya Pokok Penjualan (HPP)</td>
+                            <td class="text-end font-mono text-amber-800 pe-3">(Rp {{ number_format($totalHpp, 0, ',', '.') }})</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Gross Profit Bar -->
+            <div class="d-flex justify-content-between align-items-center p-3 rounded bg-slate-100 border font-bold">
+                <span class="text-slate-900 uppercase">Laba Kotor (Gross Profit)</span>
+                <span class="fs-6 font-mono {{ $labaKotor >= 0 ? 'text-blue-900' : 'text-rose-700' }}">
+                    Rp {{ number_format($labaKotor, 0, ',', '.') }}
+                </span>
+            </div>
+
+            <!-- III. Operating Expenses -->
+            <div>
+                <div class="p-2 bg-slate-100 font-bold text-slate-900 text-xs uppercase d-flex justify-content-between align-items-center" style="border-left: 4px solid #e11d48;">
+                    <span>III. Beban & Biaya Operasional (Operating Expenses)</span>
+                </div>
+                <table class="table table-sm table-hover mb-0 mt-1">
+                    <tbody>
+                        @forelse($bebanOperasional as $b)
+                        <tr>
+                            <td class="ps-4 text-slate-700">{{ $b->nama_akun }}</td>
+                            <td class="text-end font-mono pe-3">Rp {{ number_format($b->jumlah, 0, ',', '.') }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td class="ps-4 text-slate-400 italic">Belum ada beban operasional</td>
+                            <td class="text-end font-mono text-slate-400 pe-3">Rp 0</td>
+                        </tr>
+                        @endforelse
+                        <tr class="fw-bold bg-rose-50/50">
+                            <td class="ps-4 text-rose-900">Total Beban Operasional</td>
+                            <td class="text-end font-mono text-rose-700 pe-3">(Rp {{ number_format($totalBebanOperasional, 0, ',', '.') }})</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Net Profit Final Box -->
+            <div class="d-flex justify-content-between align-items-center p-3 rounded {{ $labaBersih >= 0 ? 'bg-blue-50 border border-blue-200 text-blue-950' : 'bg-rose-50 border border-rose-200 text-rose-900' }} font-bold fs-6">
+                <span class="uppercase tracking-wide">Laba / (Rugi) Bersih Periode Berjalan</span>
+                <span class="font-mono fs-5">Rp {{ number_format($labaBersih, 0, ',', '.') }}</span>
+            </div>
+        </div>
+
+        <!-- Signatures (Print Only) -->
+        <div class="hidden print:flex mt-20 justify-between px-8">
+            <div class="text-center">
+                <p class="mb-16 text-xs">Disetujui Oleh,</p>
+                <p class="font-bold border-top border-slate-900 pt-1 text-xs">Direktur / Pemilik Toko</p>
+            </div>
+            <div class="text-center">
+                <p class="mb-16 text-xs">Dibuat Oleh,</p>
+                <p class="font-bold border-top border-slate-900 pt-1 text-xs">Staff Finance & Akunting</p>
+            </div>
+        </div>
+    </div>
 </div>
-
-<style>
-    @media print {
-        @page { margin: 1.5cm; }
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white !important; }
-        aside, header { display: none !important; }
-        main { padding: 0 !important; overflow: visible !important; }
-    }
-</style>
 
 <script>
     document.getElementById('period_type').addEventListener('change', function() {
@@ -191,5 +190,4 @@
         }
     });
 </script>
-
 @endsection

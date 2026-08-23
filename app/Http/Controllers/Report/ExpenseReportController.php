@@ -21,7 +21,7 @@ class ExpenseReportController extends Controller
 
         if ($user->role !== 'owner') {
             $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id')) {
+        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
             $query->where('branch_id', $request->branch_id);
         }
 
@@ -29,35 +29,37 @@ class ExpenseReportController extends Controller
             $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
         }
 
-        $expenses = $query->get();
+        $allExpenses = $query->get();
+        $totalExpenses = $allExpenses->sum('jumlah');
         
-        $grouped = $expenses->groupBy('account_id');
-        $totalExpenses = $expenses->sum('jumlah');
-        
-        $expenseData = collect();
+        $grouped = $allExpenses->groupBy('account_id');
+        $expenses = collect();
         $chartLabels = [];
         $chartValues = [];
 
         foreach ($grouped as $accountId => $trans) {
-            $accountName = $trans->first()->account->nama_akun;
-            $total = $trans->sum('jumlah');
+            $first = $trans->first();
+            $accountName = $first->account ? $first->account->nama_akun : 'Beban Operasional';
+            $accountCode = $first->account ? $first->account->kode_akun : '';
+            $totalAmount = $trans->sum('jumlah');
             $count = $trans->count();
-            $percentage = $totalExpenses > 0 ? ($total / $totalExpenses) * 100 : 0;
+            $percentage = $totalExpenses > 0 ? ($totalAmount / $totalExpenses) * 100 : 0;
 
-            $expenseData->push((object)[
+            $expenses->push((object)[
                 'nama_akun' => $accountName,
-                'total' => $total,
-                'count' => $count,
-                'percentage' => round($percentage, 2)
+                'kode_akun' => $accountCode,
+                'total_amount' => $totalAmount,
+                'total_count' => $count,
+                'percentage' => round($percentage, 1)
             ]);
         }
 
         // Sort by highest expense
-        $expenseData = $expenseData->sortByDesc('total')->values();
+        $expenses = $expenses->sortByDesc('total_amount')->values();
 
-        foreach ($expenseData as $data) {
+        foreach ($expenses as $data) {
             $chartLabels[] = $data->nama_akun;
-            $chartValues[] = $data->total;
+            $chartValues[] = $data->total_amount;
         }
 
         $chartData = (object)[
@@ -65,8 +67,8 @@ class ExpenseReportController extends Controller
             'values' => $chartValues
         ];
 
-        $branches = Branch::withTrashed()->get();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
-        return view('reports.expenses', compact('expenseData', 'chartData', 'totalExpenses', 'branches'));
+        return view('reports.expenses', compact('expenses', 'chartData', 'totalExpenses', 'branches'));
     }
 }

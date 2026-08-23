@@ -102,7 +102,7 @@ class OwnerController extends Controller
             $monthlyNetProfit[] = $mSales - $mHpp - $mOpex;
         }
 
-        $recentTransactions = (clone $query)->with(['user', 'branch'])->orderBy('created_at', 'desc')->take(10)->get();
+        $recentTransactions = (clone $query)->with(['user', 'branch', 'transactionDetails.material'])->orderBy('created_at', 'desc')->take(10)->get();
         $branches = Branch::withTrashed()->get();
 
         return view('owner.dashboard', compact(

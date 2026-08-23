@@ -1,105 +1,166 @@
 @extends('layouts.app')
 
-@section('title', 'Kas Masuk')
-@section('page-title', 'Data Kas Masuk')
+@section('title', 'Cash Receipts')
+@section('page-title', 'Penerimaan Kas Masuk (Cash Receipts)')
+
+@section('action-buttons')
+<a href="{{ route('kas-masuk.create') }}" class="btn-odoo-primary text-decoration-none">
+    <i class="fa-solid fa-plus"></i>
+    <span>Tambah Kas Masuk</span>
+</a>
+@endsection
 
 @section('content')
-
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-    <!-- Header / Filter -->
-    <div class="p-6 border-b border-gray-100">
-        <form method="GET" action="{{ route('kas-masuk.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<div id="main-view-wrapper" data-view-wrapper>
+    <!-- Filter Toolbar -->
+    <div class="o_form_sheet mb-3 p-3 bg-white">
+        <form method="GET" action="{{ route('kas-masuk.index') }}" class="row g-2 align-items-end">
+            <div class="col-12 col-md-2">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Dari Tanggal</label>
+                <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-12 col-md-2">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Sampai Tanggal</label>
+                <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
+            </div>
             
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </div>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari referensi/keterangan..." 
-                    class="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm">
+            @if(Auth::user()->role === 'owner')
+            <div class="col-12 col-md-2">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Cabang</label>
+                <select name="branch_id" class="form-select form-select-sm">
+                    <option value="">Semua Cabang</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
+
+            <div class="col-12 col-md-2">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Pilih Akun</label>
+                <select name="account_id" class="form-select form-select-sm">
+                    <option value="">Semua Akun</option>
+                    @foreach($accounts as $acc)
+                        <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>{{ $acc->nama_akun }}</option>
+                    @endforeach
+                </select>
             </div>
 
-            <div>
-                <input type="date" name="start_date" value="{{ request('start_date') }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm" placeholder="Mulai Tanggal">
-            </div>
-            <div>
-                <input type="date" name="end_date" value="{{ request('end_date') }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm" placeholder="Sampai Tanggal">
+            <div class="col-12 col-md-2">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Cari Keterangan / Ref</label>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Ketik kata kunci..." class="form-control form-control-sm">
             </div>
 
-            <div class="flex gap-2">
-                <button type="submit" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                    Filter
+            <div class="col-12 col-md-2 d-flex gap-1">
+                <button type="submit" class="btn-odoo-primary flex-grow-1 py-1 text-xs justify-center">
+                    <i class="fa-solid fa-filter me-1"></i> Filter
                 </button>
-                <a href="{{ route('kas-masuk.create') }}" class="flex-1 text-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 truncate">
-                    + Tambah
+                <a href="{{ route('kas-masuk.index') }}" class="btn-odoo-secondary py-1 text-xs" title="Reset Filter">
+                    <i class="fa-solid fa-rotate-left"></i>
                 </a>
             </div>
         </form>
     </div>
 
-    <!-- Table -->
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-gray-50/50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
-                    <th class="px-6 py-4">Tgl & Ref</th>
-                    <th class="px-6 py-4">Akun</th>
-                    <th class="px-6 py-4">Keterangan</th>
-                    <th class="px-6 py-4 text-right">Jumlah (Rp)</th>
-                    <th class="px-6 py-4 text-right">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @forelse($cashTransactions as $trx)
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <div class="font-medium text-gray-900">{{ \Carbon\Carbon::parse($trx->tanggal)->translatedFormat('d M Y') }}</div>
-                            <div class="text-xs text-gray-500 mt-1">{{ $trx->nomor_referensi }}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="font-medium text-gray-900">{{ $trx->account->nama_akun }}</div>
-                            <div class="text-xs text-gray-500 mt-1">{{ $trx->branch->nama_cabang }}</div>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                            {{ $trx->keterangan }}
-                            @if($trx->transaction_id)
-                                <span class="block mt-1 text-xs text-primary-600 font-medium">Link POS</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <div class="font-bold text-green-600">
-                                {{ number_format($trx->jumlah, 0, ',', '.') }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            @if(!$trx->transaction_id)
-                                <form method="POST" action="{{ route('kas-masuk.destroy', $trx->id) }}" class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transaksi ini?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="inline-flex items-center p-2 text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors" title="Hapus">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
-                                </form>
-                            @else
-                                <span class="text-xs text-gray-400 italic">Auto</span>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                            Tidak ada transaksi kas masuk yang ditemukan.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-    
-    @if($cashTransactions->hasPages())
-        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-            {{ $cashTransactions->links() }}
+    <!-- Main Sheet -->
+    <div class="o_form_sheet p-0 overflow-hidden bg-white">
+        <div class="table-view-container">
+            <div class="table-responsive">
+                <table class="table table-hover o_list_table mb-0" id="main-table">
+                    <thead>
+                        <tr>
+                            <th class="ps-3 sortable">No. Referensi / Tanggal</th>
+                            <th class="sortable">Akun Kas & Bank</th>
+                            <th class="sortable">Cabang Toko</th>
+                            <th class="sortable">Keterangan / Dokumen Terkait</th>
+                            <th class="sortable text-end pe-3">Jumlah Masuk (Rp)</th>
+                            <th class="text-center pe-3" style="width: 70px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($cashTransactions as $trx)
+                            <tr class="search-row">
+                                <td class="ps-3">
+                                    <span class="font-mono fw-bold text-blue-700">{{ $trx->nomor_referensi }}</span>
+                                    <div class="text-[11px] text-slate-400">{{ \Carbon\Carbon::parse($trx->tanggal)->format('d M Y') }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-slate-800">{{ $trx->account->nama_akun ?? 'Akun Kas' }}</div>
+                                    <span class="font-mono text-[10px] text-slate-400">{{ $trx->account->kode_akun ?? '' }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-slate-100 text-slate-700 border text-[11px] font-normal">
+                                        {{ $trx->branch->nama_cabang ?? 'Pusat' }}
+                                    </span>
+                                </td>
+                                <td class="text-slate-700 text-xs">
+                                    <div>{{ $trx->keterangan ?? '-' }}</div>
+                                    @if($trx->transaction)
+                                        @php
+                                            $invItems = $trx->transaction->transactionDetails->map(function($d) {
+                                                return [
+                                                    'material_name' => $d->material->material_name ?? 'Item Cetak',
+                                                    'qty_ordered' => $d->qty_ordered,
+                                                    'selling_price' => $d->selling_price,
+                                                    'subtotal' => $d->qty_ordered * $d->selling_price,
+                                                ];
+                                            });
+                                            $invPayload = [
+                                                'invoice_number' => $trx->transaction->invoice_number,
+                                                'created_at' => $trx->transaction->created_at->format('d M Y H:i'),
+                                                'cashier_name' => $trx->transaction->user->username ?? 'Kasir',
+                                                'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
+                                                'payment_method' => $trx->transaction->payment_method ?? 'Cash',
+                                                'payment_status' => 'PAID',
+                                                'total_price' => $trx->transaction->total_price,
+                                                'items' => $invItems
+                                            ];
+                                        @endphp
+                                        <button type="button" 
+                                                class="btn btn-sm btn-light border text-[11px] py-0 px-2 mt-1 text-blue-700 d-inline-flex align-items-center gap-1 font-mono"
+                                                onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                            <i class="fa-solid fa-file-invoice text-blue-600"></i>
+                                            <span>Invoice: {{ $trx->transaction->invoice_number }}</span>
+                                            <span class="badge bg-emerald-100 text-emerald-800 text-[9px] px-1 py-0">PAID</span>
+                                        </button>
+                                    @endif
+                                </td>
+                                <td class="text-end pe-3 font-mono fw-bold text-emerald-700 fs-6">
+                                    + Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
+                                </td>
+                                <td class="text-center pe-3">
+                                    @if(!$trx->transaction_id)
+                                        <form action="{{ route('kas-masuk.destroy', $trx->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data kas masuk ini?');" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-light text-danger p-1 border" title="Hapus Kas Masuk">
+                                                <i class="fa-solid fa-trash-can text-xs"></i>
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-slate-300" title="Terkunci dari Penjualan POS"><i class="fa-solid fa-lock text-xs"></i></span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <div class="p-4">
+                                        <i class="fa-solid fa-circle-arrow-down fs-1 text-slate-300 mb-2"></i>
+                                        <p class="mb-0">Belum ada transaksi penerimaan kas masuk.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if($cashTransactions->hasPages())
+                <div class="p-3 bg-slate-50 border-top">
+                    {{ $cashTransactions->withQueryString()->links() }}
+                </div>
+            @endif
         </div>
-    @endif
+    </div>
 </div>
-
 @endsection

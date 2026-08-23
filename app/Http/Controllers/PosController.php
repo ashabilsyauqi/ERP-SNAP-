@@ -47,6 +47,8 @@ class PosController extends Controller
                 'payment_method' => $request->payment_method,
             ]);
 
+            $savedItems = [];
+
             foreach ($request->items as $item) {
                 $qty = $item['qty'];
                 $requestedSize = $item['requested_size'] ?? null;
@@ -62,7 +64,7 @@ class PosController extends Controller
                         ->first();
 
                     if (!$materialToDeduct) {
-                        throw new \Exception("Insufficient stock for {$item['material_name_or_type']} with size >= {$requestedSize}m (need $qty units).");
+                        throw new \Exception("Stok tidak mencukupi untuk {$item['material_name_or_type']} ukuran >= {$requestedSize}m (butuh $qty unit).");
                     }
                 } else {
                     $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
@@ -71,7 +73,7 @@ class PosController extends Controller
                         ->first();
                         
                     if (!$materialToDeduct) {
-                        throw new \Exception("Insufficient stock for {$item['material_name_or_type']}.");
+                        throw new \Exception("Stok tidak mencukupi untuk {$item['material_name_or_type']} (butuh $qty unit).");
                     }
                 }
 
@@ -105,6 +107,13 @@ class PosController extends Controller
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
                 ]);
+
+                $savedItems[] = [
+                    'material_name' => $materialToDeduct->material_name,
+                    'qty_ordered' => $qty,
+                    'selling_price' => $unitPrice,
+                    'subtotal' => $totalItemPrice
+                ];
             }
 
             $transaction->total_price = $totalPrice;
@@ -146,15 +155,25 @@ class PosController extends Controller
             DB::commit();
 
             return response()->json([
+                'status' => 'success',
                 'success' => true,
-                'message' => 'Checkout successful. Invoice: ' . $transaction->invoice_number,
+                'message' => 'Transaksi berhasil diproses. Invoice: ' . $transaction->invoice_number,
                 'transaction_id' => $transaction->id,
+                'invoice_number' => $transaction->invoice_number,
+                'total_price' => $transaction->total_price,
+                'payment_method' => $transaction->payment_method,
+                'cashier_name' => auth()->user()->full_name ?: (auth()->user()->username ?? 'Kasir'),
+                'branch_name' => auth()->user()->branch->nama_cabang ?? 'Pusat',
+                'created_at' => $transaction->created_at->format('d M Y H:i'),
+                'items' => $savedItems,
+                'receipt_url' => route('sales.receipt', $transaction->id),
                 'redirect' => route('pos.index')
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
+                'status' => 'error',
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 400);

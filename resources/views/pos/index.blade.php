@@ -1,73 +1,84 @@
 @extends('layouts.app')
 
+@section('title', 'Point of Sale (POS)')
+@section('page-title', 'Terminal Kasir Penjualan (POS)')
+
+@section('action-buttons')
+<a href="{{ route('sales.index') }}" class="btn-odoo-secondary text-decoration-none">
+    <i class="fa-solid fa-receipt me-1 text-blue-600"></i> Riwayat Penjualan
+</a>
+@endsection
+
 @section('content')
-<div class="flex flex-col md:flex-row gap-6 h-[calc(100vh-140px)] animate-fade-in relative pb-16 md:pb-0">
+<div class="flex flex-col md:flex-row gap-4 h-[calc(100vh-125px)] animate-fade-in relative pb-16 md:pb-0 overflow-hidden">
     
-    <!-- Left Column: Products Grid & Search (60%) -->
-    <div class="w-full md:w-3/5 lg:w-2/3 flex flex-col gap-4 min-h-0">
+    <!-- Left Column: Products Grid & Search (60% Desktop) -->
+    <div class="w-full md:w-3/5 lg:w-2/3 flex flex-col gap-3 min-h-0 h-full">
         
         <!-- Products Header & Search -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/60 flex flex-col sm:flex-row justify-between items-center gap-4 flex-shrink-0">
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 flex-shrink-0">
             <div>
-                <h2 class="text-lg font-bold text-slate-950">POS Terminal</h2>
-                <p class="text-xs text-slate-500">Select materials to build the customer's order</p>
+                <h2 class="text-base font-bold text-slate-900 mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-cash-register text-blue-600"></i>
+                    <span>Katalog Bahan Cetak Kasir</span>
+                </h2>
+                <p class="text-[11px] text-slate-500 mb-0">Klik pada kartu bahan baku untuk memasukkan ke keranjang kasir</p>
             </div>
             
             <!-- Live Search Products -->
             <div class="relative w-full sm:w-64">
-                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="Search products..." 
-                    class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/15 focus:border-indigo-500 text-xs transition duration-150">
-                <div class="absolute left-3.5 top-3 text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                    </svg>
+                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="Cari bahan cetak..." 
+                    class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs transition duration-150">
+                <div class="absolute left-3 top-2.5 text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
                 </div>
             </div>
         </div>
         
-        <!-- Products Cards Grid -->
-        <div id="products-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto pr-1 pb-4 flex-grow min-h-0">
+        <!-- Products Cards Grid (Independent Scroll) -->
+        <div id="products-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pr-1 pb-2 flex-grow min-h-0">
             @foreach($materials as $material)
-                <div class="product-card bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm hover:border-indigo-500 hover:shadow-md transition duration-200 cursor-pointer flex flex-col justify-between group relative" 
+                <div class="product-card bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-500 hover:shadow-md transition duration-200 cursor-pointer flex flex-col justify-between group relative" 
                      data-name="{{ strtolower($material->material_name) }}"
                      onclick="addToCart('{{ $material->material_name }}', {{ $material->fixed_size ?? 'null' }}, {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }})">
                     
                     <div class="space-y-1">
-                        <h3 class="font-bold text-slate-900 group-hover:text-indigo-600 transition text-sm sm:text-base leading-snug">{{ $material->material_name }}</h3>
-                        
-                        @if($material->fixed_size)
-                            <div class="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                                Size: {{ $material->fixed_size }}m
-                            </div>
-                        @endif
+                        <div class="d-flex align-items-center gap-1.5">
+                            <span class="font-mono text-slate-400 text-[10px]">#MAT-{{ $material->id }}</span>
+                            @if($material->fixed_size)
+                                <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] py-0.5">
+                                    {{ $material->fixed_size }}m
+                                </span>
+                            @endif
+                        </div>
+                        <h3 class="font-bold text-slate-900 group-hover:text-blue-600 transition text-sm leading-snug mb-1">{{ $material->material_name }}</h3>
                         
                         <!-- Stock Status Badge -->
-                        <div class="mt-1">
+                        <div>
                             @if($material->stock_qty > 0)
-                                <span class="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                                    {{ $material->stock_qty }} available
+                                <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                                    Stok: {{ $material->stock_qty }} Units
                                 </span>
                             @else
-                                <span class="text-[10px] font-medium text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">
-                                    Out of stock
+                                <span class="text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                                    Stok Habis
                                 </span>
                             @endif
                         </div>
                     </div>
                     
-                    <div class="mt-4">
+                    <div class="mt-3 pt-2 border-top border-slate-100">
                         <div class="flex justify-between items-baseline flex-wrap gap-1">
-                            <span class="text-xs text-slate-400 font-medium">Retail Price</span>
-                            <span class="font-bold text-slate-900 text-sm sm:text-base">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</span>
+                            <span class="text-[11px] text-slate-400 font-medium">Harga Eceran</span>
+                            <span class="font-bold font-mono text-blue-900 text-sm">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</span>
                         </div>
                         
                         @if($material->wholesalePrices->count() > 0)
-                            <div class="mt-2 border-t border-slate-100 pt-2 space-y-1">
-                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Wholesale Discounts</span>
+                            <div class="mt-1.5 bg-slate-50 p-1.5 rounded space-y-0.5 border border-slate-100">
                                 @foreach($material->wholesalePrices as $wp)
-                                    <div class="flex justify-between text-[10px] text-emerald-700 bg-emerald-50/50 px-1.5 py-0.5 rounded font-medium">
-                                        <span>Min {{ $wp->min_qty }} units:</span>
-                                        <span class="font-bold">Rp {{ number_format($wp->wholesale_price, 0, ',', '.') }}</span>
+                                    <div class="flex justify-between text-[10px] text-slate-600 font-mono">
+                                        <span>&ge; {{ $wp->min_qty }} pcs:</span>
+                                        <span class="font-bold text-emerald-700">Rp {{ number_format($wp->wholesale_price, 0, ',', '.') }}</span>
                                     </div>
                                 @endforeach
                             </div>
@@ -77,113 +88,125 @@
             @endforeach
         </div>
         
-        <!-- Stock Reference Widget -->
-        <div class="bg-slate-100 p-4 rounded-2xl border border-slate-200/80 flex-shrink-0 overflow-x-auto whitespace-nowrap hidden sm:block">
-            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">In-Stock Reference:</h4>
-            <div class="flex gap-3 text-xs">
-                @foreach($materials as $material)
-                    <div class="bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 flex items-center gap-1.5">
-                        <span class="font-semibold text-slate-700 text-xs">{{ $material->material_name }}</span>
-                        @if($material->fixed_size) 
-                            <span class="text-[10px] text-indigo-500 font-medium">({{ $material->fixed_size }}m)</span> 
-                        @endif
-                        <span class="text-slate-300">|</span>
-                        <span class="font-bold {{ $material->stock_qty > 0 ? 'text-emerald-600' : 'text-rose-600' }}">{{ $material->stock_qty }}</span>
-                    </div>
-                @endforeach
+        <!-- Stock Reference Widget (Docked at Bottom of Left Column) -->
+        <div class="bg-slate-100 p-2.5 rounded-xl border border-slate-200 flex-shrink-0 overflow-x-auto whitespace-nowrap hidden sm:block">
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Stok Real-time:</span>
+                <div class="flex gap-2 text-xs">
+                    @foreach($materials as $material)
+                        <div class="bg-white px-2.5 py-1 rounded-lg shadow-sm border border-slate-200 flex items-center gap-1.5">
+                            <span class="font-medium text-slate-700 text-[11px]">{{ $material->material_name }}</span>
+                            @if($material->fixed_size) 
+                                <span class="text-[10px] text-blue-600">({{ $material->fixed_size }}m)</span> 
+                            @endif
+                            <span class="text-slate-300">|</span>
+                            <span class="font-bold font-mono text-xs {{ $material->stock_qty > 0 ? 'text-emerald-700' : 'text-rose-600' }}">{{ $material->stock_qty }}</span>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Cart & Checkout (Desktop only, 40%) -->
-    <div class="hidden md:flex md:w-2/5 lg:w-1/3 bg-white rounded-2xl border border-slate-200 shadow-lg flex-col overflow-hidden h-full">
+    <!-- Right Column: Cart & Checkout (Desktop 40%, Fits Exact Height) -->
+    <div class="hidden md:flex md:w-2/5 lg:w-1/3 bg-white rounded-2xl border border-slate-200 shadow-sm flex-col overflow-hidden h-full">
         <!-- Cart Header -->
-        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+        <div class="p-3.5 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-2">
-                <svg class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                <h2 class="text-base font-bold">Current Order</h2>
+                <i class="fa-solid fa-cart-shopping text-blue-400"></i>
+                <h2 class="text-sm font-bold mb-0 text-white">Keranjang Order (POS)</h2>
             </div>
-            <span id="cart-item-count-badge" class="bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">0 items</span>
+            <span id="cart-item-count-badge" class="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">0 item</span>
         </div>
         
-        <!-- Cart Items List (Desktop) -->
-        <div class="p-4 flex-grow overflow-y-auto bg-slate-50/50" id="cart-container-desktop">
+        <!-- Cart Items List (Desktop Independent Scroll) -->
+        <div class="p-3.5 flex-grow overflow-y-auto bg-slate-50/50 min-h-0" id="cart-container-desktop">
             <!-- Injected by JS -->
         </div>
 
-        <!-- Checkout Pricing & Action Area -->
-        <div class="p-4 border-t border-slate-200 bg-white space-y-4">
+        <!-- Checkout Pricing & Action Area (Docked at Bottom) -->
+        <div class="p-3.5 border-t border-slate-200 bg-white space-y-3 flex-shrink-0">
             
             <!-- Payment Method Tiles (Desktop) -->
             <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Payment Method</label>
+                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Metode Pembayaran</label>
                 <div class="grid grid-cols-3 gap-2">
                     <!-- Cash Button -->
                     <button type="button" onclick="setPaymentMethod('Cash')" id="pm-desktop-Cash" 
-                        class="pm-tile flex flex-col items-center justify-center py-2.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <svg class="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <span class="text-xs font-bold">Cash</span>
+                        class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                        <i class="fa-solid fa-money-bill-wave text-base mb-1 text-emerald-600"></i>
+                        <span class="text-xs font-bold">Tunai (Cash)</span>
                     </button>
                     <!-- Transfer Button -->
                     <button type="button" onclick="setPaymentMethod('Transfer')" id="pm-desktop-Transfer" 
-                        class="pm-tile flex flex-col items-center justify-center py-2.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <svg class="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
+                        class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                        <i class="fa-solid fa-building-columns text-base mb-1 text-blue-600"></i>
                         <span class="text-xs font-bold">Transfer</span>
                     </button>
                     <!-- QRIS Button -->
                     <button type="button" onclick="setPaymentMethod('QRIS')" id="pm-desktop-QRIS" 
-                        class="pm-tile flex flex-col items-center justify-center py-2.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <svg class="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-16v.01M4 12h16M4 8h16m-4 8h2m-14 4h.01M4 4h4v4H4V4zm0 12h4v4H4v-4zm12 0h4v4h-4v-4zM12 12h.01" />
-                        </svg>
+                        class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                        <i class="fa-solid fa-qrcode text-base mb-1 text-indigo-600"></i>
                         <span class="text-xs font-bold">QRIS</span>
                     </button>
                 </div>
             </div>
 
             <!-- Receipt Breakdown -->
-            <div class="bg-slate-50 p-3 rounded-xl space-y-1.5 text-xs text-slate-500 font-medium">
+            <div class="bg-slate-50 p-2.5 rounded-xl space-y-1 text-xs text-slate-500 font-medium border border-slate-100">
                 <div class="flex justify-between">
                     <span>Subtotal</span>
-                    <span id="receipt-subtotal-desktop">Rp 0</span>
+                    <span id="receipt-subtotal-desktop" class="font-mono">Rp 0</span>
                 </div>
-                <div class="flex justify-between text-slate-800 font-bold border-t border-slate-200/60 pt-1.5 text-sm">
-                    <span>Total Billing</span>
-                    <span id="receipt-total-desktop">Rp 0</span>
+                <div class="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1 text-sm">
+                    <span>Total Tagihan</span>
+                    <span id="receipt-total-desktop" class="font-mono text-blue-900">Rp 0</span>
                 </div>
             </div>
             
-            <div id="checkout-error-desktop" class="hidden bg-rose-50 border border-rose-150 text-rose-700 p-3 rounded-xl text-xs font-semibold"></div>
+            <!-- Success Notification Card (Emerald Green) -->
+            <div id="checkout-success-desktop" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-900 p-3 rounded-xl text-xs space-y-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded">
+                        <i class="fa-solid fa-circle-check me-1"></i> LUNAS (PAID)
+                    </span>
+                    <span class="font-mono font-bold text-blue-900 text-xs" id="success-inv-text">INV-XXXX</span>
+                </div>
+                <div class="text-[11px] text-emerald-800 fw-semibold" id="success-msg-text">
+                    Transaksi berhasil diproses & tercatat pada kasir.
+                </div>
+                <div class="d-flex gap-2 pt-1">
+                    <button type="button" id="btn-print-last-receipt" class="btn btn-sm btn-primary text-xs flex-1 py-1 font-semibold d-inline-flex align-items-center justify-content-center gap-1">
+                        <i class="fa-solid fa-print"></i> Cetak Struk 58mm
+                    </button>
+                    <button type="button" id="btn-open-last-inv" class="btn btn-sm btn-outline-secondary text-xs flex-1 py-1 font-semibold d-inline-flex align-items-center justify-content-center gap-1">
+                        <i class="fa-solid fa-file-invoice text-blue-600"></i> Buka Faktur
+                    </button>
+                </div>
+            </div>
 
-            <button onclick="processCheckout()" id="checkout-btn-desktop" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-emerald-600/10 transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Process Checkout</span>
+            <!-- Error Notification Card (Rose Red) -->
+            <div id="checkout-error-desktop" class="hidden bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-semibold"></div>
+
+            <button onclick="processCheckout()" id="checkout-btn-desktop" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Proses Bayar (Checkout)</span>
             </button>
         </div>
     </div>
 
     <!-- ==================== MOBILE LAYOUT ELEMENTS ==================== -->
     
-    <!-- Mobile Persistent Bottom Bar (shows when items are in cart) -->
-    <div id="mobile-cart-bar" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-4 flex items-center justify-between z-30 shadow-2xl transition duration-300">
+    <!-- Mobile Persistent Bottom Bar -->
+    <div id="mobile-cart-bar" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between z-30 shadow-2xl transition duration-300">
         <div>
-            <p id="mobile-cart-qty-text" class="text-xs font-medium text-slate-500">0 items selected</p>
-            <p id="mobile-cart-total-text" class="text-lg font-extrabold text-slate-900">Rp 0</p>
+            <p id="mobile-cart-qty-text" class="text-xs font-medium text-slate-500 mb-0">0 item terpilih</p>
+            <p id="mobile-cart-total-text" class="text-base font-extrabold text-blue-900 mb-0 font-mono">Rp 0</p>
         </div>
         
-        <button onclick="toggleMobileCartDrawer(true)" id="mobile-cart-review-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-600/10 transition cursor-pointer">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            <span>Review & Pay</span>
+        <button onclick="toggleMobileCartDrawer(true)" id="mobile-cart-review-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition cursor-pointer border-0 text-xs">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>Lihat Keranjang</span>
         </button>
     </div>
 
@@ -192,78 +215,81 @@
         <div id="mobile-drawer-panel" class="bg-white w-full max-h-[85vh] rounded-t-3xl shadow-2xl flex flex-col transform translate-y-full transition-transform duration-300 ease-out overflow-hidden">
             
             <!-- Drawer Header -->
-            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center flex-shrink-0">
+            <div class="px-4 py-3 bg-slate-900 text-white flex justify-between items-center flex-shrink-0">
                 <div class="flex items-center gap-2">
-                    <svg class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                    <span class="font-bold text-base">Your Cart Details</span>
+                    <i class="fa-solid fa-cart-shopping text-blue-400"></i>
+                    <span class="font-bold text-sm text-white">Keranjang Order</span>
                 </div>
                 
-                <button type="button" onclick="toggleMobileCartDrawer(false)" class="text-slate-400 hover:text-white p-1 rounded-full hover:bg-slate-800 transition">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                <button type="button" onclick="toggleMobileCartDrawer(false)" class="text-slate-400 hover:text-white p-1 rounded-full border-0 bg-transparent">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
             
             <!-- Cart Items Mobile Scroll Region -->
-            <div class="p-6 overflow-y-auto bg-slate-50 flex-grow" id="cart-container-mobile">
+            <div class="p-4 overflow-y-auto bg-slate-50 flex-grow" id="cart-container-mobile">
                 <!-- Injected by JS -->
             </div>
 
             <!-- Checkout Section Mobile -->
-            <div class="p-6 border-t border-slate-200 bg-white space-y-5 flex-shrink-0">
+            <div class="p-4 border-t border-slate-200 bg-white space-y-3 flex-shrink-0">
                 <!-- Payment Method Tiles (Mobile) -->
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Payment Method</label>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Metode Pembayaran</label>
                     <div class="grid grid-cols-3 gap-2">
                         <!-- Cash Button Mobile -->
                         <button type="button" onclick="setPaymentMethod('Cash')" id="pm-mobile-Cash" 
-                            class="pm-tile flex flex-col items-center justify-center py-2.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                            <svg class="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
+                            class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            <i class="fa-solid fa-money-bill-wave text-base mb-1 text-emerald-600"></i>
                             <span class="text-xs font-bold">Cash</span>
                         </button>
                         <!-- Transfer Button Mobile -->
                         <button type="button" onclick="setPaymentMethod('Transfer')" id="pm-mobile-Transfer" 
-                            class="pm-tile flex flex-col items-center justify-center py-2.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                            <svg class="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                            </svg>
+                            class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            <i class="fa-solid fa-building-columns text-base mb-1 text-blue-600"></i>
                             <span class="text-xs font-bold">Transfer</span>
                         </button>
                         <!-- QRIS Button Mobile -->
                         <button type="button" onclick="setPaymentMethod('QRIS')" id="pm-mobile-QRIS" 
-                            class="pm-tile flex flex-col items-center justify-center py-2.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                            <svg class="h-5 w-5 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-16v.01M4 12h16M4 8h16m-4 8h2m-14 4h.01M4 4h4v4H4V4zm0 12h4v4H4v-4zm12 0h4v4h-4v-4zM12 12h.01" />
-                            </svg>
+                            class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            <i class="fa-solid fa-qrcode text-base mb-1 text-indigo-600"></i>
                             <span class="text-xs font-bold">QRIS</span>
                         </button>
                     </div>
                 </div>
 
                 <!-- Price summary -->
-                <div class="bg-slate-50 p-4 rounded-xl space-y-1.5 text-xs text-slate-500 font-medium">
+                <div class="bg-slate-50 p-3 rounded-xl space-y-1 text-xs text-slate-500 font-medium">
                     <div class="flex justify-between">
                         <span>Subtotal</span>
-                        <span id="receipt-subtotal-mobile">Rp 0</span>
+                        <span id="receipt-subtotal-mobile" class="font-mono">Rp 0</span>
                     </div>
-                    <div class="flex justify-between text-slate-800 font-bold border-t border-slate-200/60 pt-2 text-base">
-                        <span>Total Billing</span>
-                        <span id="receipt-total-mobile">Rp 0</span>
+                    <div class="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1 text-sm">
+                        <span>Total Tagihan</span>
+                        <span id="receipt-total-mobile" class="font-mono text-blue-900">Rp 0</span>
                     </div>
                 </div>
 
-                <div id="checkout-error-mobile" class="hidden bg-rose-50 border border-rose-150 text-rose-700 p-3 rounded-xl text-xs font-semibold"></div>
+                <!-- Success Alert Mobile -->
+                <div id="checkout-success-mobile" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-900 p-3 rounded-xl text-xs space-y-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded">
+                            <i class="fa-solid fa-circle-check me-1"></i> LUNAS (PAID)
+                        </span>
+                        <span class="font-mono font-bold text-blue-900" id="success-inv-text-mobile"></span>
+                    </div>
+                    <div class="d-flex gap-2 pt-1">
+                        <button type="button" id="btn-print-last-receipt-mobile" class="btn btn-sm btn-primary text-xs flex-1 py-1 font-semibold">
+                            <i class="fa-solid fa-print me-1"></i> Cetak Struk 58mm
+                        </button>
+                    </div>
+                </div>
 
-                <button onclick="processCheckout()" id="checkout-btn-mobile" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/10 transition flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Confirm & Pay Billing</span>
+                <div id="checkout-error-mobile" class="hidden bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-semibold"></div>
+
+                <button onclick="processCheckout()" id="checkout-btn-mobile" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Konfirmasi & Bayar Tagihan</span>
                 </button>
             </div>
         </div>
@@ -299,7 +325,7 @@
         }
     }
 
-    // --- Update Quantities ---
+    // --- Update Quantities by Increment/Decrement ---
     function updateQty(id, delta) {
         const item = cart.find(i => i.id === id);
         if (item) {
@@ -307,6 +333,19 @@
             if (item.qty <= 0) {
                 cart = cart.filter(i => i.id !== id);
             }
+            renderCart();
+        }
+    }
+
+    // --- Set Quantity Directly via Typing ---
+    function setQty(id, val) {
+        let parsed = parseInt(val, 10);
+        if (isNaN(parsed) || parsed <= 0) {
+            parsed = 1;
+        }
+        const item = cart.find(i => i.id === id);
+        if (item) {
+            item.qty = parsed;
             renderCart();
         }
     }
@@ -350,150 +389,99 @@
         const mobileCartQtyText = document.getElementById('mobile-cart-qty-text');
         const mobileCartTotalText = document.getElementById('mobile-cart-total-text');
 
-        const checkoutBtnDesktop = document.getElementById('checkout-btn-desktop');
-        const checkoutBtnMobile = document.getElementById('checkout-btn-mobile');
-
-        // Total count of units in cart
-        let totalItemsCount = cart.reduce((sum, item) => sum + item.qty, 0);
-
         if (cart.length === 0) {
-            const emptyHtml = `
-                <div class="text-center text-slate-400 py-12 flex flex-col items-center justify-center h-full">
-                    <svg class="mx-auto h-12 w-12 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <p class="text-sm font-semibold">Cart is currently empty</p>
-                    <p class="text-xs text-slate-400 mt-1">Click on any products to add them here.</p>
-                </div>`;
-            
-            desktopContainer.innerHTML = emptyHtml;
-            mobileContainer.innerHTML = emptyHtml;
-            
-            badgeCount.innerText = '0 items';
+            const emptyState = `
+                <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                        <i class="fa-solid fa-cart-shopping text-xl text-slate-400"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm mb-1">Keranjang Masih Kosong</p>
+                    <p class="text-xs text-slate-400">Pilih bahan cetak dari katalog di sebelah kiri untuk memulai transaksi.</p>
+                </div>
+            `;
+            desktopContainer.innerHTML = emptyState;
+            mobileContainer.innerHTML = emptyState;
+            badgeCount.innerText = '0 item';
             receiptSubtotalDesktop.innerText = 'Rp 0';
             receiptTotalDesktop.innerText = 'Rp 0';
             receiptSubtotalMobile.innerText = 'Rp 0';
             receiptTotalMobile.innerText = 'Rp 0';
             
-            // Hide bottom mobile bar if empty
-            mobileCartBar.classList.add('translate-y-full');
-            
-            checkoutBtnDesktop.disabled = true;
-            checkoutBtnMobile.disabled = true;
+            mobileCartBar.classList.add('hidden');
             return;
         }
 
-        // Show mobile bottom bar if items present
-        mobileCartBar.classList.remove('translate-y-full');
-        badgeCount.innerText = `${totalItemsCount} ${totalItemsCount === 1 ? 'item' : 'items'}`;
-
-        let total = 0;
-        let itemsHtml = '';
+        let totalQty = 0;
+        let grandTotal = 0;
+        let cartHtml = '<div class="space-y-2.5">';
 
         cart.forEach(item => {
-            let priceDetails = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
-            let itemPrice = priceDetails.price;
-            total += (item.qty * itemPrice);
+            const { price, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
+            const itemTotal = price * item.qty;
+            
+            totalQty += item.qty;
+            grandTotal += itemTotal;
 
-            let sizeBadge = item.requested_size ? `<span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md font-bold">${item.requested_size}m size</span>` : '';
-            let wholesaleBadge = priceDetails.isWholesale ? `<span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wider">Grosir</span>` : '';
-
-            itemsHtml += `
-                <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 mb-3 flex justify-between items-center shadow-sm hover:shadow transition duration-150 animate-fade-in">
-                    <div class="flex-grow space-y-1">
-                        <div class="font-bold text-slate-800 text-sm flex items-center flex-wrap gap-1.5">
-                            <span>${item.material_name_or_type}</span>
-                            ${sizeBadge}
-                            ${wholesaleBadge}
+            cartHtml += `
+                <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-2">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="font-bold text-slate-900 text-xs">${item.material_name_or_type}</span>
+                            ${item.requested_size ? `<span class="block text-[10px] text-blue-600 font-medium">Ukuran: ${item.requested_size}m</span>` : ''}
+                            
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <span class="text-[11px] font-mono text-slate-500">Rp ${Number(price).toLocaleString('id-ID')}</span>
+                                ${isWholesale ? `<span class="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1 rounded">Grosir</span>` : ''}
+                            </div>
                         </div>
-                        <div class="text-xs font-semibold text-slate-500">
-                            Rp ${itemPrice.toLocaleString()} &times; ${item.qty}
+                        
+                        <div class="text-right">
+                            <span class="font-bold font-mono text-xs text-slate-900">Rp ${Number(itemTotal).toLocaleString('id-ID')}</span>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
-                        <button onclick="updateQty(${item.id}, -1)" class="w-7 h-7 flex items-center justify-center bg-white hover:bg-slate-50 rounded-lg text-slate-700 font-bold border border-slate-200/60 shadow-sm cursor-pointer">-</button>
-                        <span class="w-6 text-center text-xs font-extrabold text-slate-800">${item.qty}</span>
-                        <button onclick="updateQty(${item.id}, 1)" class="w-7 h-7 flex items-center justify-center bg-white hover:bg-slate-50 rounded-lg text-slate-700 font-bold border border-slate-200/60 shadow-sm cursor-pointer">+</button>
+                    
+                    <div class="flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
+                        <button onclick="updateQty(${item.id}, -${item.qty})" class="text-[10px] text-rose-500 hover:text-rose-700 font-semibold bg-transparent border-0 cursor-pointer p-0">
+                            <i class="fa-solid fa-trash-can me-0.5"></i> Hapus
+                        </button>
+                        
+                        <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm">
+                            <button type="button" onclick="updateQty(${item.id}, -1)" class="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition font-bold text-xs bg-transparent border-0 cursor-pointer" title="Kurangi 1">-</button>
+                            <input type="number" min="1" value="${item.qty}" onchange="setQty(${item.id}, this.value)" onkeydown="if(event.key === 'Enter'){ this.blur(); }" class="w-12 h-7 text-center font-bold font-mono text-xs text-slate-900 border-x border-slate-200 bg-slate-50 focus:bg-white focus:outline-none p-0" title="Ketik jumlah unit">
+                            <button type="button" onclick="updateQty(${item.id}, 1)" class="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition font-bold text-xs bg-transparent border-0 cursor-pointer" title="Tambah 1">+</button>
+                        </div>
                     </div>
                 </div>
             `;
         });
 
-        // Set content
-        desktopContainer.innerHTML = itemsHtml;
-        mobileContainer.innerHTML = itemsHtml;
+        cartHtml += '</div>';
 
-        const formattedTotal = `Rp ${total.toLocaleString()}`;
+        desktopContainer.innerHTML = cartHtml;
+        mobileContainer.innerHTML = cartHtml;
+
+        badgeCount.innerText = `${totalQty} item`;
+        
+        const formattedTotal = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
         receiptSubtotalDesktop.innerText = formattedTotal;
         receiptTotalDesktop.innerText = formattedTotal;
         receiptSubtotalMobile.innerText = formattedTotal;
         receiptTotalMobile.innerText = formattedTotal;
 
-        mobileCartQtyText.innerText = `${totalItemsCount} items selected`;
+        // Mobile Bottom Bar Data
+        mobileCartBar.classList.remove('hidden');
+        mobileCartQtyText.innerText = `${totalQty} item terpilih`;
         mobileCartTotalText.innerText = formattedTotal;
-
-        checkoutBtnDesktop.disabled = false;
-        checkoutBtnMobile.disabled = false;
     }
 
-    // --- State Toggling for Payment Methods ---
-    function setPaymentMethod(method) {
-        // Set input hidden state
-        document.getElementById('global_payment_method').value = method;
-
-        // Reset all tiles
-        document.querySelectorAll('.pm-tile').forEach(tile => {
-            tile.classList.remove('border-indigo-600', 'bg-indigo-50/50', 'text-indigo-700', 'ring-2', 'ring-indigo-500/10');
-            tile.classList.add('border-slate-200', 'bg-white', 'text-slate-600');
-        });
-
-        // Activate matching desktop and mobile tiles
-        const desktopTile = document.getElementById(`pm-desktop-${method}`);
-        const mobileTile = document.getElementById(`pm-mobile-${method}`);
-
-        if (desktopTile) {
-            desktopTile.classList.remove('border-slate-200', 'bg-white', 'text-slate-600');
-            desktopTile.classList.add('border-indigo-600', 'bg-indigo-50/50', 'text-indigo-700', 'ring-2', 'ring-indigo-500/10');
-        }
-
-        if (mobileTile) {
-            mobileTile.classList.remove('border-slate-200', 'bg-white', 'text-slate-600');
-            mobileTile.classList.add('border-indigo-600', 'bg-indigo-50/50', 'text-indigo-700', 'ring-2', 'ring-indigo-500/10');
-        }
-    }
-
-    // --- Toggle Mobile Slide-up Drawer ---
-    function toggleMobileCartDrawer(open) {
-        const container = document.getElementById('mobile-cart-drawer');
-        const panel = document.getElementById('mobile-drawer-panel');
-
-        if (open) {
-            container.classList.remove('hidden');
-            setTimeout(() => {
-                container.classList.remove('opacity-0');
-                container.classList.add('opacity-100');
-                panel.classList.remove('translate-y-full');
-                panel.classList.add('translate-y-0');
-            }, 10);
-        } else {
-            container.classList.remove('opacity-100');
-            container.classList.add('opacity-0');
-            panel.classList.remove('translate-y-0');
-            panel.classList.add('translate-y-full');
-            setTimeout(() => {
-                container.classList.add('hidden');
-            }, 300);
-        }
-    }
-
-    // --- Filter Products Grid (Live Search) ---
+    // --- Search Products Filtering ---
     function filterProducts() {
-        const searchInput = document.getElementById('product-search').value.toLowerCase();
+        const query = document.getElementById('product-search').value.toLowerCase().trim();
         const cards = document.querySelectorAll('.product-card');
 
         cards.forEach(card => {
             const name = card.getAttribute('data-name');
-            if (name.includes(searchInput)) {
+            if (name.includes(query)) {
                 card.classList.remove('hidden');
             } else {
                 card.classList.add('hidden');
@@ -501,74 +489,187 @@
         });
     }
 
-    // --- Process Checkout Call ---
-    async function processCheckout() {
-        if (cart.length === 0) return;
+    // --- Switch Selected Payment Tile UI ---
+    function setPaymentMethod(method) {
+        document.getElementById('global_payment_method').value = method;
 
-        const btnDesktop = document.getElementById('checkout-btn-desktop');
-        const btnMobile = document.getElementById('checkout-btn-mobile');
-        
-        const errDesktop = document.getElementById('checkout-error-desktop');
-        const errMobile = document.getElementById('checkout-error-mobile');
-        
-        const paymentMethod = document.getElementById('global_payment_method').value;
+        ['Cash', 'Transfer', 'QRIS'].forEach(m => {
+            const btnD = document.getElementById(`pm-desktop-${m}`);
+            const btnM = document.getElementById(`pm-mobile-${m}`);
 
-        // Start Loading State
-        btnDesktop.disabled = true;
-        btnDesktop.innerText = 'Processing...';
-        btnMobile.disabled = true;
-        btnMobile.innerText = 'Processing...';
-        
-        errDesktop.classList.add('hidden');
-        errMobile.classList.add('hidden');
-
-        try {
-            const response = await fetch('{{ route('pos.checkout') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ 
-                    items: cart,
-                    payment_method: paymentMethod
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                alert(data.message);
-                window.location.href = data.redirect;
+            if (m === method) {
+                if (btnD) {
+                    btnD.classList.add('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-2', 'ring-blue-500/20');
+                    btnD.classList.remove('border-slate-200', 'bg-white', 'text-slate-600');
+                }
+                if (btnM) {
+                    btnM.classList.add('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-2', 'ring-blue-500/20');
+                    btnM.classList.remove('border-slate-200', 'bg-white', 'text-slate-600');
+                }
             } else {
-                errDesktop.innerText = data.message || 'Checkout failed.';
-                errDesktop.classList.remove('hidden');
-                
-                errMobile.innerText = data.message || 'Checkout failed.';
-                errMobile.classList.remove('hidden');
-                
-                btnDesktop.disabled = false;
-                btnDesktop.innerText = 'Process Checkout';
-                btnMobile.disabled = false;
-                btnMobile.innerText = 'Confirm & Pay Billing';
+                if (btnD) {
+                    btnD.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-2', 'ring-blue-500/20');
+                    btnD.classList.add('border-slate-200', 'bg-white', 'text-slate-600');
+                }
+                if (btnM) {
+                    btnM.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-2', 'ring-blue-500/20');
+                    btnM.classList.add('border-slate-200', 'bg-white', 'text-slate-600');
+                }
             }
-        } catch (error) {
-            const netError = 'Network error during checkout.';
-            errDesktop.innerText = netError;
-            errDesktop.classList.remove('hidden');
-            
-            errMobile.innerText = netError;
-            errMobile.classList.remove('hidden');
-            
-            btnDesktop.disabled = false;
-            btnDesktop.innerText = 'Process Checkout';
-            btnMobile.disabled = false;
-            btnMobile.innerText = 'Confirm & Pay Billing';
+        });
+    }
+
+    // Initialize Default Payment Method (Cash)
+    setPaymentMethod('Cash');
+
+    // --- Mobile Drawer Animation Controller ---
+    function toggleMobileCartDrawer(open) {
+        const drawer = document.getElementById('mobile-cart-drawer');
+        const panel = document.getElementById('mobile-drawer-panel');
+
+        if (open) {
+            drawer.classList.remove('hidden');
+            setTimeout(() => {
+                drawer.classList.remove('opacity-0');
+                panel.classList.remove('translate-y-full');
+            }, 10);
+        } else {
+            drawer.classList.add('opacity-0');
+            panel.classList.add('translate-y-full');
+            setTimeout(() => {
+                drawer.classList.add('hidden');
+            }, 300);
         }
     }
 
-    // Initialize View with default Cash payment method
-    setPaymentMethod('Cash');
-    renderCart();
+    // --- Checkout Logic via Fetch AJAX ---
+    function processCheckout() {
+        if (cart.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Keranjang Kosong', text: 'Pilih bahan baku terlebih dahulu.' });
+            return;
+        }
+
+        const paymentMethod = document.getElementById('global_payment_method').value;
+        const errContainerDesktop = document.getElementById('checkout-error-desktop');
+        const errContainerMobile = document.getElementById('checkout-error-mobile');
+        const successContainerDesktop = document.getElementById('checkout-success-desktop');
+        const successContainerMobile = document.getElementById('checkout-success-mobile');
+        
+        const btnDesktop = document.getElementById('checkout-btn-desktop');
+        const btnMobile = document.getElementById('checkout-btn-mobile');
+
+        // Disable Buttons
+        btnDesktop.disabled = true;
+        btnMobile.disabled = true;
+        btnDesktop.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...`;
+        btnMobile.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...`;
+
+        errContainerDesktop.classList.add('hidden');
+        errContainerMobile.classList.add('hidden');
+        if (successContainerDesktop) successContainerDesktop.classList.add('hidden');
+        if (successContainerMobile) successContainerMobile.classList.add('hidden');
+
+        // Format items payload for PosController
+        const payloadItems = cart.map(item => ({
+            material_name_or_type: item.material_name_or_type,
+            requested_size: item.requested_size,
+            qty: item.qty
+        }));
+
+        fetch('{{ route("pos.checkout") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                payment_method: paymentMethod,
+                items: payloadItems
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            btnDesktop.disabled = false;
+            btnMobile.disabled = false;
+            btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Proses Bayar (Checkout)`;
+            btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar Tagihan`;
+
+            if (data.status === 'success' || data.success === true) {
+                // Clear cart state
+                cart = [];
+                renderCart();
+                toggleMobileCartDrawer(false);
+
+                // Show Green Success Card in Desktop Cart Panel
+                if (successContainerDesktop) {
+                    document.getElementById('success-inv-text').innerText = '#' + data.invoice_number;
+                    successContainerDesktop.classList.remove('hidden');
+
+                    document.getElementById('btn-print-last-receipt').onclick = function() {
+                        window.open(data.receipt_url, '_blank', 'width=450,height=600');
+                    };
+                    document.getElementById('btn-open-last-inv').onclick = function() {
+                        openSnapPrintInvoice(data);
+                    };
+                }
+
+                // Show Green Success Alert in Mobile
+                if (successContainerMobile) {
+                    document.getElementById('success-inv-text-mobile').innerText = '#' + data.invoice_number;
+                    successContainerMobile.classList.remove('hidden');
+                    document.getElementById('btn-print-last-receipt-mobile').onclick = function() {
+                        window.open(data.receipt_url, '_blank');
+                    };
+                }
+
+                // Show Green Success SweetAlert with Instant 58mm Thermal Print Trigger
+                Swal.fire({
+                    icon: 'success',
+                    title: '<span style="color: #059669; font-weight: 800;">Transaksi LUNAS (PAID)</span>',
+                    html: `
+                        <div class="py-2 text-center">
+                            <span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-400 rounded-md text-xs font-extrabold uppercase mb-2">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> STATUS: PAID (LUNAS)
+                            </span>
+                            <div class="font-mono text-base font-bold text-slate-800 mt-1">#${data.invoice_number}</div>
+                            <div class="text-sm font-extrabold text-blue-900 mt-1 font-mono">Total: Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}</div>
+                            <div class="text-xs text-slate-500 mt-1">Metode: <strong>${data.payment_method}</strong> &bull; Kasir: ${data.cashier_name}</div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    showDenyButton: true,
+                    confirmButtonColor: '#2563eb',
+                    denyButtonColor: '#0f172a',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="fa-solid fa-print me-1"></i> Cetak Struk 58mm',
+                    denyButtonText: '<i class="fa-solid fa-file-invoice me-1"></i> Buka Faktur',
+                    cancelButtonText: 'Selesai (+ Transaksi Baru)'
+                }).then((result) => {
+                    if (result.isConfirmed && data.receipt_url) {
+                        // Open 58mm receipt popup
+                        window.open(data.receipt_url, '_blank', 'width=450,height=600');
+                    } else if (result.isDenied) {
+                        // Open SnapPrint invoice modal
+                        openSnapPrintInvoice(data);
+                    }
+                });
+
+            } else {
+                const errorMsg = data.message || 'Terjadi kesalahan sistem saat memproses transaksi kasir.';
+                errContainerDesktop.innerText = errorMsg;
+                errContainerDesktop.classList.remove('hidden');
+                errContainerMobile.innerText = errorMsg;
+                errContainerMobile.classList.remove('hidden');
+            }
+        })
+        .catch(err => {
+            btnDesktop.disabled = false;
+            btnMobile.disabled = false;
+            btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Proses Bayar (Checkout)`;
+            btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar Tagihan`;
+            
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Koneksi bermasalah atau terjadi error pada server.' });
+        });
+    }
 </script>
 @endsection

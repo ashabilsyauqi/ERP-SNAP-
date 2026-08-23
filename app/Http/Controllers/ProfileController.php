@@ -15,6 +15,36 @@ class ProfileController extends Controller
         return view('profile.index', compact('user'));
     }
 
+    public function updateBiodata(Request $request)
+    {
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'full_name' => 'nullable|string|max:100',
+            'email' => 'nullable|email|max:100',
+            'phone' => 'nullable|string|max:30',
+            'address' => 'nullable|string|max:500',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        $user->full_name = $validated['full_name'] ?? $user->full_name;
+        $user->email = $validated['email'] ?? $user->email;
+        $user->phone = $validated['phone'] ?? $user->phone;
+        $user->address = $validated['address'] ?? $user->address;
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar_path && Storage::disk('public')->exists($user->avatar_path)) {
+                Storage::disk('public')->delete($user->avatar_path);
+            }
+            $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar_path = $avatarPath;
+        }
+
+        $user->save();
+
+        return redirect()->route('profile.index')->with('success', 'Data Profil & Biodata berhasil diperbarui!');
+    }
+
     public function updateSignature(Request $request)
     {
         $request->validate([
