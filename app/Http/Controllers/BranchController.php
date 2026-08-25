@@ -52,4 +52,16 @@ class BranchController extends Controller
 
         return redirect()->route('branches.index')->with('success', 'Cabang dan seluruh data user serta produk di dalamnya berhasil dihapus dan diarsipkan.');
     }
+
+    public function restore($id)
+    {
+        $branch = Branch::withTrashed()->findOrFail($id);
+        $branch->restore();
+
+        // Restore users and materials linked to this branch
+        \App\Models\User::withTrashed()->where('branch_id', $branch->id)->restore();
+        \App\Models\Material::withTrashed()->where('branch_id', $branch->id)->restore();
+
+        return redirect()->route('branches.index')->with('success', "Cabang {$branch->nama_cabang} berhasil diaktifkan kembali.");
+    }
 }
