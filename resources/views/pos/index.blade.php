@@ -14,6 +14,7 @@
 
 @section('content')
 <div class="flex flex-col md:flex-row gap-4 h-[calc(100vh-125px)] animate-fade-in relative pb-16 md:pb-0 overflow-hidden" 
+     id="pos-main-container"
      x-data="{ 
         isDp: false, 
         cartTotal: 0,
@@ -24,13 +25,21 @@
         dpAmount: 0, 
         productionNotes: '',
         get isEligibleForDp() {
-            return this.cartTotal >= this.minDpThreshold;
+            return Number(this.cartTotal) >= this.minDpThreshold;
         },
         setDpPercent(pct) {
-            const total = this.cartTotal || 0;
+            const total = Number(this.cartTotal) || 0;
             this.dpAmount = Math.round(total * (pct / 100));
+        },
+        handleCartTotalUpdate(total) {
+            this.cartTotal = Number(total) || 0;
+            if (this.cartTotal < this.minDpThreshold) {
+                this.isDp = false;
+                this.dpAmount = 0;
+            }
         }
-     }">
+     }"
+     @cart-total-changed.window="handleCartTotalUpdate($event.detail.total)">
     
     <!-- Left Column: Products Grid & Search (60% Desktop) -->
     <div class="w-full md:w-3/5 lg:w-2/3 flex flex-col gap-3 min-h-0 h-full">
@@ -485,17 +494,7 @@
             receiptTotalMobile.innerText = 'Rp 0';
             window.currentGrandTotal = 0;
             
-            const posRoot = document.querySelector('[x-data]');
-            if (posRoot && window.Alpine) {
-                try {
-                    const alpineData = Alpine.$data(posRoot);
-                    if (alpineData) {
-                        alpineData.cartTotal = 0;
-                        alpineData.isDp = false;
-                        alpineData.dpAmount = 0;
-                    }
-                } catch (err) {}
-            }
+            window.dispatchEvent(new CustomEvent('cart-total-changed', { detail: { total: 0 } }));
 
             mobileCartBar.classList.add('hidden');
             return;
@@ -553,21 +552,8 @@
         badgeCount.innerText = `${totalQty} item`;
         window.currentGrandTotal = grandTotal;
         
-        // Sync grandTotal to Alpine state for DP threshold evaluation
-        const posRoot = document.querySelector('[x-data]');
-        if (posRoot && window.Alpine) {
-            try {
-                const alpineData = Alpine.$data(posRoot);
-                if (alpineData) {
-                    alpineData.cartTotal = grandTotal;
-                    // If grandTotal drops below Rp 500.000, automatically disable DP mode and reset DP amount
-                    if (grandTotal < alpineData.minDpThreshold) {
-                        alpineData.isDp = false;
-                        alpineData.dpAmount = 0;
-                    }
-                }
-            } catch (err) {}
-        }
+        // Dispatch cart total changed event for Alpine reactivity
+        window.dispatchEvent(new CustomEvent('cart-total-changed', { detail: { total: grandTotal } }));
 
         const formattedTotal = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
         receiptTotalDesktop.innerText = formattedTotal;
@@ -654,9 +640,10 @@
             return;
         }
 
-        const alpineData = Alpine.$data(document.querySelector('[x-data]'));
+        const posContainer = document.getElementById('pos-main-container');
+        const alpineData = posContainer && window.Alpine ? Alpine.$data(posContainer) : null;
 
-        const isDp = alpineData.isDp && alpineData.isEligibleForDp;
+        const isDp = alpineData ? (alpineData.isDp && alpineData.isEligibleForDp) : false;
         const dpAmount = isDp ? (parseFloat(alpineData.dpAmount) || 0) : 0;
         const customerName = isDp ? alpineData.customerName : null;
         const customerPhone = isDp ? alpineData.customerPhone : null;
