@@ -52,9 +52,9 @@ class OwnerController extends Controller
         $pendingPOCount = (clone $purchaseQuery)->whereIn('status', ['waiting_approval', 'pending_verification'])->count();
 
         // Payment Method Breakdown
-        $cashSales = (clone $query)->where('payment_method', 'cash')->sum('total_price');
-        $qrisSales = (clone $query)->where('payment_method', 'qris')->sum('total_price');
-        $transferSales = (clone $query)->where('payment_method', 'transfer')->sum('total_price');
+        $cashSales = (clone $query)->whereIn('payment_method', ['Cash', 'cash'])->sum('total_price');
+        $qrisSales = (clone $query)->whereIn('payment_method', ['QRIS', 'qris'])->sum('total_price');
+        $transferSales = (clone $query)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('total_price');
 
         // Sales Per Branch Data
         $branchSalesData = Branch::withTrashed()->get()->map(function ($branch) {

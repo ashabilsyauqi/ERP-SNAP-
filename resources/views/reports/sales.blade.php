@@ -18,22 +18,46 @@
 <div id="main-view-wrapper" data-view-wrapper>
     <!-- Filter Toolbar -->
     <div class="o_form_sheet mb-3 p-3 bg-white print:hidden">
+        <!-- Quick Timeframe Pills Buttons -->
+        <div class="d-flex align-items-center gap-1.5 mb-3 flex-wrap border-bottom pb-2.5">
+            <span class="text-xs font-bold text-slate-700 uppercase me-2"><i class="fa-solid fa-clock-rotate-left text-blue-600 me-1"></i> Rentang Waktu:</span>
+            @php
+                $timeframes = [
+                    '1w' => '1 Minggu',
+                    '1m' => '1 Bulan',
+                    '3m' => '3 Bulan',
+                    '6m' => '6 Bulan',
+                    '1y' => '1 Tahun',
+                    '3y' => '3 Tahun',
+                    '5y' => '5 Tahun',
+                ];
+                $activeTf = request('timeframe', $timeframe ?? '6m');
+            @endphp
+            @foreach($timeframes as $k => $lbl)
+                <a href="{{ route('reports.sales', array_merge(request()->except(['start_date', 'end_date', 'page']), ['timeframe' => $k, 'period' => in_array($k, ['1w','1m','3m']) ? 'daily' : (in_array($k, ['5y']) ? 'yearly' : 'monthly')])) }}" 
+                   class="btn btn-sm text-xs font-semibold px-2.5 py-1 rounded-pill text-decoration-none transition {{ $activeTf === $k && !request('start_date') ? 'btn-primary shadow-sm' : 'btn-light border text-slate-600 hover:bg-slate-100' }}">
+                    {{ $lbl }}
+                </a>
+            @endforeach
+        </div>
+
         <form method="GET" action="{{ route('reports.sales') }}" class="row g-2 align-items-end">
-            <div class="col-12 col-md-3">
-                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Kelompokkan Periode</label>
+            <input type="hidden" name="timeframe" value="{{ $activeTf }}">
+            <div class="col-12 col-md-2">
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Kelompokkan</label>
                 <select name="period" class="form-select form-select-sm">
-                    <option value="daily" {{ request('period', 'daily') == 'daily' ? 'selected' : '' }}>Harian (Daily)</option>
-                    <option value="monthly" {{ request('period') == 'monthly' ? 'selected' : '' }}>Bulanan (Monthly)</option>
-                    <option value="yearly" {{ request('period') == 'yearly' ? 'selected' : '' }}>Tahunan (Yearly)</option>
+                    <option value="daily" {{ $period == 'daily' ? 'selected' : '' }}>Harian (Daily)</option>
+                    <option value="monthly" {{ $period == 'monthly' ? 'selected' : '' }}>Bulanan (Monthly)</option>
+                    <option value="yearly" {{ $period == 'yearly' ? 'selected' : '' }}>Tahunan (Yearly)</option>
                 </select>
             </div>
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Dari Tanggal</label>
-                <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm">
+                <input type="date" name="start_date" value="{{ $startDate ?? request('start_date') }}" class="form-control form-control-sm">
             </div>
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Sampai Tanggal</label>
-                <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
+                <input type="date" name="end_date" value="{{ $endDate ?? request('end_date') }}" class="form-control form-control-sm">
             </div>
             
             @if(Auth::user()->role === 'owner')
@@ -48,9 +72,9 @@
             </div>
             @endif
             
-            <div class="col-12 col-md-2">
+            <div class="col-12 col-md-3 d-flex gap-2">
                 <button type="submit" class="btn-odoo-primary w-100 py-1 text-xs">
-                    <i class="fa-solid fa-filter me-1"></i> Terapkan Filter
+                    <i class="fa-solid fa-filter me-1"></i> Terapkan
                 </button>
             </div>
         </form>

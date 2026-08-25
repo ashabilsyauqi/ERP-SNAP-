@@ -150,22 +150,22 @@
                                 <div>{{ $trx->keterangan ?? '-' }}</div>
                                 @if($trx->transaction)
                                     @php
-                                        $invItems = $trx->transaction->transactionDetails->map(function($d) {
+                                        $invItems = $trx->transaction->transactionDetails ? $trx->transaction->transactionDetails->map(function($d) {
                                             return [
                                                 'material_name' => $d->material->material_name ?? 'Bahan Cetak',
-                                                'qty_ordered' => $d->qty_ordered,
-                                                'selling_price' => $d->selling_price,
-                                                'subtotal' => $d->qty_ordered * $d->selling_price,
+                                                'qty_ordered' => $d->qty_ordered ?? 1,
+                                                'selling_price' => $d->selling_price ?? 0,
+                                                'subtotal' => ($d->qty_ordered ?? 1) * ($d->selling_price ?? 0),
                                             ];
-                                        });
+                                        }) : collect();
                                         $invPayload = [
-                                            'invoice_number' => $trx->transaction->invoice_number,
-                                            'created_at' => $trx->transaction->created_at->format('d M Y H:i'),
+                                            'invoice_number' => $trx->transaction->invoice_number ?? 'INV-000',
+                                            'created_at' => $trx->transaction->created_at ? $trx->transaction->created_at->format('d M Y H:i') : '-',
                                             'cashier_name' => $trx->transaction->user->username ?? 'Kasir',
                                             'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
                                             'payment_method' => $trx->transaction->payment_method ?? 'Cash',
-                                            'payment_status' => 'PAID',
-                                            'total_price' => $trx->transaction->total_price,
+                                            'payment_status' => $trx->transaction->payment_status ?? 'PAID',
+                                            'total_price' => (float) ($trx->transaction->total_price ?? $trx->jumlah),
                                             'items' => $invItems
                                         ];
                                     @endphp

@@ -21,6 +21,46 @@ class SalesReportController extends Controller
 
         $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
+        $timeframe = $request->input('timeframe', '6m'); // Default 6 bulan
+        $now = Carbon::now();
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date', $now->toDateString());
+
+        // Apply timeframe presets if custom date range isn't manually specified
+        if (!$request->filled('start_date')) {
+            switch ($timeframe) {
+                case '1w':
+                    $startDate = $now->copy()->subDays(7)->toDateString();
+                    $period = 'daily';
+                    break;
+                case '1m':
+                    $startDate = $now->copy()->subMonth()->toDateString();
+                    $period = 'daily';
+                    break;
+                case '3m':
+                    $startDate = $now->copy()->subMonths(3)->toDateString();
+                    $period = 'daily';
+                    break;
+                case '6m':
+                default:
+                    $startDate = $now->copy()->subMonths(6)->toDateString();
+                    $period = $request->input('period', 'monthly');
+                    break;
+                case '1y':
+                    $startDate = $now->copy()->subYear()->toDateString();
+                    $period = $request->input('period', 'monthly');
+                    break;
+                case '3y':
+                    $startDate = $now->copy()->subYears(3)->toDateString();
+                    $period = $request->input('period', 'monthly');
+                    break;
+                case '5y':
+                    $startDate = $now->copy()->subYears(5)->toDateString();
+                    $period = $request->input('period', 'yearly');
+                    break;
+            }
+        }
+
         $query = Transaction::with('branch');
 
         if ($user->role !== 'owner') {
@@ -31,8 +71,8 @@ class SalesReportController extends Controller
             $query->where('branch_id', $selectedBranchId);
         }
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('created_at', [$request->start_date . ' 00:00:00', $request->end_date . ' 23:59:59']);
+        if ($startDate && $endDate) {
+            $query->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
         }
 
         $salesData = collect();
@@ -224,7 +264,7 @@ class SalesReportController extends Controller
             'datasets' => $chartDatasets
         ];
 
-        return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches', 'branchBreakdown', 'isAllBranches'));
+        return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches', 'branchBreakdown', 'isAllBranches', 'timeframe', 'startDate', 'endDate'));
     }
 }
 
