@@ -51,6 +51,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/purchasing/plans/create', [\App\Http\Controllers\PurchasePlanController::class, 'create'])->name('purchasing.plans.create');
         Route::post('/purchasing/plans', [\App\Http\Controllers\PurchasePlanController::class, 'store'])->name('purchasing.plans.store');
         Route::get('/purchasing/plans/{plan}', [\App\Http\Controllers\PurchasePlanController::class, 'show'])->name('purchasing.plans.show');
+        Route::get('/purchasing/plans/{plan}/edit', [\App\Http\Controllers\PurchasePlanController::class, 'edit'])->name('purchasing.plans.edit');
+        Route::put('/purchasing/plans/{plan}', [\App\Http\Controllers\PurchasePlanController::class, 'update'])->name('purchasing.plans.update');
+        Route::post('/purchasing/plans/{plan}/submit-rfq', [\App\Http\Controllers\PurchasePlanController::class, 'submitRfq'])->name('purchasing.plans.submit-rfq');
+        Route::delete('/purchasing/plans/{plan}', [\App\Http\Controllers\PurchasePlanController::class, 'destroy'])->name('purchasing.plans.destroy');
         Route::post('/purchasing/plans/{plan}/approve', [\App\Http\Controllers\PurchasePlanController::class, 'approve'])->name('purchasing.plans.approve');
         Route::post('/purchasing/plans/{plan}/reject', [\App\Http\Controllers\PurchasePlanController::class, 'reject'])->name('purchasing.plans.reject');
 

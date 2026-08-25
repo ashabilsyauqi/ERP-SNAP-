@@ -151,6 +151,30 @@
                                             <i class="fa-solid fa-eye text-xs"></i>
                                         </button>
 
+                                        @if($plan->status === 'draft' || $plan->status === 'rejected_by_owner')
+                                            <!-- Edit / Lanjutkan Draft Button -->
+                                            <a href="{{ route('purchasing.plans.edit', $plan->id) }}" class="btn btn-sm btn-outline-primary py-0 px-2" title="Edit / Lanjutkan Plan">
+                                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                            </a>
+
+                                            <!-- Ajukan RFQ ke Owner Button -->
+                                            <form action="{{ route('purchasing.plans.submit-rfq', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Ajukan Purchase Plan #{{ $plan->plan_number }} ke Owner untuk persetujuan (RFQ)?');">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Ajukan RFQ ke Owner">
+                                                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                                                </button>
+                                            </form>
+
+                                            <!-- Hapus Draft Button -->
+                                            <form action="{{ route('purchasing.plans.destroy', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus draft Purchase Plan #{{ $plan->plan_number }}?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Hapus Draft">
+                                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+
                                         @if(auth()->user()->isOwner() && $plan->status === 'waiting_owner_approval')
                                             <form action="{{ route('purchasing.plans.approve', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Setujui Purchase Plan #{{ $plan->plan_number }}? Seluruh item bundle akan diterbitkan menjadi PO dan dikirim ke bagian pemeriksaan gudang.');">
                                                 @csrf
@@ -288,11 +312,26 @@
                 </div>
             </div>
 
-            <!-- Modal Footer with Owner Actions -->
+            <!-- Modal Footer with Owner Actions & Draft Actions -->
             <div class="bg-slate-50 px-4 py-3 border-top d-flex justify-content-between align-items-center flex-shrink-0">
                 <button type="button" @click="detailOpen = false" class="btn-odoo-secondary">Tutup</button>
                 
                 <div class="d-flex gap-2" x-if="selectedPlan">
+                    <!-- Actions for Draft or Rejected Plans -->
+                    <template x-if="selectedPlan.status === 'draft' || selectedPlan.status === 'rejected_by_owner'">
+                        <div class="d-flex gap-2">
+                            <a :href="'/purchasing/plans/' + selectedPlan.id + '/edit'" class="btn btn-sm btn-outline-primary font-semibold px-3 text-decoration-none d-inline-flex align-items-center">
+                                <i class="fa-solid fa-pen-to-square me-1.5"></i> Edit / Lanjutkan Plan
+                            </a>
+                            <form :action="'/purchasing/plans/' + selectedPlan.id + '/submit-rfq'" method="POST" onsubmit="return confirm('Ajukan Purchase Plan ini ke Owner untuk persetujuan (RFQ)?');">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-primary font-bold px-3">
+                                    <i class="fa-solid fa-paper-plane me-1.5"></i> Ajukan RFQ ke Owner Sekarang
+                                </button>
+                            </form>
+                        </div>
+                    </template>
+
                     @if(auth()->user()->isOwner())
                         <template x-if="selectedPlan.status === 'waiting_owner_approval'">
                             <div class="d-flex gap-2">
