@@ -133,8 +133,8 @@ class PosController extends Controller
                 ];
             }
 
-            // Determine Payment & Order Status based on DP
-            if ($isDp && $requestedDp < $totalPrice && $requestedDp >= 0) {
+            // Determine Payment & Order Status based on DP (Hanya berlaku untuk transaksi besar >= Rp 500.000)
+            if ($isDp && $totalPrice >= 500000 && $requestedDp < $totalPrice && $requestedDp >= 0) {
                 $paidAmount = $requestedDp;
                 $remainingAmount = max(0, $totalPrice - $paidAmount);
                 $paymentStatus = 'PARTIAL';
@@ -143,7 +143,7 @@ class PosController extends Controller
                 $paidAmount = $totalPrice;
                 $remainingAmount = 0;
                 $paymentStatus = 'PAID';
-                $orderStatus = $isDp ? 'in_production' : 'completed';
+                $orderStatus = ($isDp && $totalPrice >= 500000) ? 'in_production' : 'completed';
             }
 
             $transaction->total_price = $totalPrice;

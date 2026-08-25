@@ -16,13 +16,18 @@
 <div class="flex flex-col md:flex-row gap-4 h-[calc(100vh-125px)] animate-fade-in relative pb-16 md:pb-0 overflow-hidden" 
      x-data="{ 
         isDp: false, 
+        cartTotal: 0,
+        minDpThreshold: 500000,
         customerName: '', 
         customerPhone: '', 
         dueDate: '', 
         dpAmount: 0, 
         productionNotes: '',
+        get isEligibleForDp() {
+            return this.cartTotal >= this.minDpThreshold;
+        },
         setDpPercent(pct) {
-            const total = window.currentGrandTotal || 0;
+            const total = this.cartTotal || 0;
             this.dpAmount = Math.round(total * (pct / 100));
         }
      }">
@@ -142,8 +147,8 @@
         <!-- Checkout Pricing & Action Area (Docked at Bottom) -->
         <div class="p-3 border-t border-slate-200 bg-white space-y-2.5 flex-shrink-0 overflow-y-auto max-h-[55vh]">
             
-            <!-- DP (Down Payment) & Custom Order Toggle -->
-            <div class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2">
+            <!-- DP (Down Payment) & Custom Order Toggle - Hanya Muncul jika Total Tagihan >= Rp 500.000 -->
+            <div x-show="isEligibleForDp" x-cloak class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2 transition-all">
                 <div class="flex items-center justify-between">
                     <label class="flex items-center gap-2 cursor-pointer mb-0">
                         <input type="checkbox" x-model="isDp" id="is_dp_toggle" class="form-check-input text-blue-600 rounded">
@@ -271,7 +276,7 @@
 
             <button onclick="processCheckout()" id="checkout-btn-desktop" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0">
                 <i class="fa-solid fa-circle-check"></i>
-                <span x-text="isDp ? 'Proses Simpan Pesanan DP' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
+                <span x-text="(isDp && isEligibleForDp) ? 'Proses Simpan Pesanan DP' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
             </button>
         </div>
     </div>
@@ -480,6 +485,18 @@
             receiptTotalMobile.innerText = 'Rp 0';
             window.currentGrandTotal = 0;
             
+            const posRoot = document.querySelector('[x-data]');
+            if (posRoot && window.Alpine) {
+                try {
+                    const alpineData = Alpine.$data(posRoot);
+                    if (alpineData) {
+                        alpineData.cartTotal = 0;
+                        alpineData.isDp = false;
+                        alpineData.dpAmount = 0;
+                    }
+                } catch (err) {}
+            }
+
             mobileCartBar.classList.add('hidden');
             return;
         }
@@ -536,6 +553,22 @@
         badgeCount.innerText = `${totalQty} item`;
         window.currentGrandTotal = grandTotal;
         
+        // Sync grandTotal to Alpine state for DP threshold evaluation
+        const posRoot = document.querySelector('[x-data]');
+        if (posRoot && window.Alpine) {
+            try {
+                const alpineData = Alpine.$data(posRoot);
+                if (alpineData) {
+                    alpineData.cartTotal = grandTotal;
+                    // If grandTotal drops below Rp 500.000, automatically disable DP mode and reset DP amount
+                    if (grandTotal < alpineData.minDpThreshold) {
+                        alpineData.isDp = false;
+                        alpineData.dpAmount = 0;
+                    }
+                }
+            } catch (err) {}
+        }
+
         const formattedTotal = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
         receiptTotalDesktop.innerText = formattedTotal;
         receiptTotalMobile.innerText = formattedTotal;
@@ -623,12 +656,12 @@
 
         const alpineData = Alpine.$data(document.querySelector('[x-data]'));
 
-        const isDp = alpineData.isDp;
-        const dpAmount = parseFloat(alpineData.dpAmount) || 0;
-        const customerName = alpineData.customerName;
-        const customerPhone = alpineData.customerPhone;
-        const dueDate = alpineData.dueDate;
-        const productionNotes = alpineData.productionNotes;
+        const isDp = alpineData.isDp && alpineData.isEligibleForDp;
+        const dpAmount = isDp ? (parseFloat(alpineData.dpAmount) || 0) : 0;
+        const customerName = isDp ? alpineData.customerName : null;
+        const customerPhone = isDp ? alpineData.customerPhone : null;
+        const dueDate = isDp ? alpineData.dueDate : null;
+        const productionNotes = isDp ? alpineData.productionNotes : null;
 
         if (isDp && dpAmount <= 0) {
             Swal.fire({ icon: 'warning', title: 'Nominal DP Belum Diisi', text: 'Masukkan nominal uang muka (DP) yang dibayar oleh client.' });
