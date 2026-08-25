@@ -4,6 +4,10 @@
 @section('page-title', 'Laporan Penerimaan Kas Masuk (Inflow)')
 
 @section('action-buttons')
+<button type="button" onclick="window.print()" class="btn-odoo-primary" title="Cetak Laporan PDF / Print">
+    <i class="fa-solid fa-print"></i>
+    <span>Print Laporan</span>
+</button>
 <button type="button" onclick="exportTableToExcel('main-table', 'Cash_Inflow_Report')" class="btn-odoo-secondary">
     <i class="fa-solid fa-file-excel text-emerald-600"></i>
     <span>Export</span>
@@ -13,7 +17,7 @@
 @section('content')
 <div id="main-view-wrapper" data-view-wrapper>
     <!-- Filter Toolbar -->
-    <div class="o_form_sheet mb-3 p-3 bg-white">
+    <div class="o_form_sheet mb-3 p-3 bg-white print:hidden">
         <form method="GET" action="{{ route('reports.cash-in') }}" class="row g-2 align-items-end">
             <div class="col-12 col-md-3">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Dari Tanggal</label>
@@ -55,7 +59,22 @@
     </div>
 
     <!-- Data Sheet -->
-    <div class="o_form_sheet p-0 overflow-hidden bg-white">
+    <div class="o_form_sheet p-0 overflow-hidden bg-white print:p-0 print:border-0 print:shadow-none">
+        
+        <!-- Header Dokumen Cetak (Hanya Tampil Saat Print) -->
+        <div class="d-none d-print-block p-4 text-center border-bottom mb-3">
+            <h4 class="fw-bold text-slate-900 mb-0 uppercase tracking-wide">SNAPPRINT ERP &bull; PERCETAKAN</h4>
+            <h5 class="fw-bold text-emerald-800 mb-1">LAPORAN PENERIMAAN KAS MASUK (INFLOW)</h5>
+            <p class="text-xs text-slate-500 mb-0">
+                Periode: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Awal' }} s/d {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Sekarang' }}
+                @if(request('branch_id') && request('branch_id') !== 'all')
+                    &bull; Cabang: {{ $branches->firstWhere('id', request('branch_id'))->nama_cabang ?? '' }}
+                @else
+                    &bull; Semua Cabang (Konsolidasi)
+                @endif
+            </p>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover o_list_table mb-0" id="main-table">
                 <thead>
@@ -107,15 +126,16 @@
                                         ];
                                     @endphp
                                     <button type="button" 
-                                            class="btn btn-sm btn-light border text-[11px] py-0 px-2 mt-1 text-blue-700 d-inline-flex align-items-center gap-1 font-mono"
+                                            class="btn btn-sm btn-light border text-[11px] py-0 px-2 mt-1 text-blue-700 d-inline-flex align-items-center gap-1 font-mono d-print-none"
                                             onclick='openSnapPrintInvoice(@json($invPayload))'>
                                         <i class="fa-solid fa-file-invoice text-blue-600"></i>
                                         <span>Invoice: {{ $trx->transaction->invoice_number }}</span>
                                         <span class="badge bg-emerald-100 text-emerald-800 text-[9px] px-1 py-0">PAID</span>
                                     </button>
+                                    <span class="d-none d-print-inline text-[11px] font-mono text-slate-500">Ref Invoice: #{{ $trx->transaction->invoice_number }}</span>
                                 @endif
                             </td>
-                            <td class="text-end pe-4 font-mono fw-bold text-emerald-700 fs-6">
+                            <td class="text-end pe-4 font-mono fw-bold text-emerald-600 fs-6">
                                 + Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
                             </td>
                         </tr>
@@ -127,9 +147,9 @@
                 </tbody>
                 @if(count($cashTransactions) > 0)
                 <tfoot>
-                    <tr class="fw-bold bg-slate-100 border-top">
-                        <td colspan="4" class="ps-3 text-uppercase">Total Penerimaan Kas Masuk</td>
-                        <td class="text-end pe-4 font-mono text-emerald-800 fs-6">+ Rp {{ number_format($totalMasuk, 0, ',', '.') }}</td>
+                    <tr class="fw-bold bg-emerald-50 border-top border-emerald-200">
+                        <td colspan="4" class="ps-3 text-uppercase text-emerald-900 fw-bold">TOTAL PENERIMAAN KAS MASUK</td>
+                        <td class="text-end pe-4 font-mono fw-extrabold text-emerald-600 fs-5">+ Rp {{ number_format($totalMasuk, 0, ',', '.') }}</td>
                     </tr>
                 </tfoot>
                 @endif

@@ -320,6 +320,74 @@
         /* Custom Sort Indicator */
         th.sortable { cursor: pointer; }
         .sort-icon { display: inline-block; margin-left: 4px; font-size: 0.7rem; }
+
+        /* Professional Printable Media Styling */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11pt !important;
+            }
+            .o_main_navbar,
+            .o_control_panel,
+            .print\:hidden,
+            .d-print-none,
+            #app-switcher-matrix,
+            .btn,
+            .btn-odoo-primary,
+            .btn-odoo-secondary {
+                display: none !important;
+            }
+            .d-print-block {
+                display: block !important;
+            }
+            .d-print-inline {
+                display: inline !important;
+            }
+            main.o_form_sheet_bg {
+                padding: 0 !important;
+                background-color: #ffffff !important;
+                overflow: visible !important;
+            }
+            .o_form_sheet {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            .table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 10pt !important;
+            }
+            .table th, .table td {
+                border: 1px solid #cbd5e1 !important;
+                padding: 6px 8px !important;
+                color: #000000 !important;
+            }
+            .table thead th {
+                background-color: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .table tfoot tr {
+                background-color: #f8fafc !important;
+                font-weight: bold !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .badge {
+                border: 1px solid #94a3b8 !important;
+                color: #000000 !important;
+                background: transparent !important;
+            }
+            @page {
+                size: A4 auto;
+                margin: 1.5cm 1cm 1.5cm 1cm;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen" x-data="{ showSwitcher: false }">
