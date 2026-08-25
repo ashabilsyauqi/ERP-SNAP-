@@ -168,7 +168,7 @@ class ThreeYearRealisticSimulationSeeder extends Seeder
                 if ($daysInMonth >= 10) {
                     $tgl = $monthDate->copy()->day(10)->setTime(10, 30, 0)->toDateTimeString();
                     $cashBatch[] = [
-                        'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-PLN',
+                        'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-B' . $branch->id . '-PLN-' . strtoupper(Str::random(3)),
                         'tanggal' => Carbon::parse($tgl)->toDateString(),
                         'tipe' => 'keluar',
                         'account_id' => $bebanListrik->id,
@@ -185,7 +185,7 @@ class ThreeYearRealisticSimulationSeeder extends Seeder
                 if ($daysInMonth >= 15) {
                     $tgl = $monthDate->copy()->day(15)->setTime(14, 15, 0)->toDateTimeString();
                     $cashBatch[] = [
-                        'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-OPS',
+                        'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-B' . $branch->id . '-OPS-' . strtoupper(Str::random(3)),
                         'tanggal' => Carbon::parse($tgl)->toDateString(),
                         'tipe' => 'keluar',
                         'account_id' => $bebanOps->id,
@@ -202,7 +202,7 @@ class ThreeYearRealisticSimulationSeeder extends Seeder
                 if ($daysInMonth >= 25) {
                     $tgl = $monthDate->copy()->day(25)->setTime(16, 0, 0)->toDateTimeString();
                     $cashBatch[] = [
-                        'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-PAY',
+                        'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-B' . $branch->id . '-PAY-' . strtoupper(Str::random(3)),
                         'tanggal' => Carbon::parse($tgl)->toDateString(),
                         'tipe' => 'keluar',
                         'account_id' => $bebanGaji->id,
@@ -220,7 +220,7 @@ class ThreeYearRealisticSimulationSeeder extends Seeder
                     if ($daysInMonth >= $tglRestock) {
                         $tgl = $monthDate->copy()->day($tglRestock)->setTime(11, 0, 0)->toDateTimeString();
                         $cashBatch[] = [
-                            'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-PO',
+                            'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-B' . $branch->id . '-PO' . $tglRestock . '-' . strtoupper(Str::random(3)),
                             'tanggal' => Carbon::parse($tgl)->toDateString(),
                             'tipe' => 'keluar',
                             'account_id' => $bebanBahan->id,
@@ -238,7 +238,7 @@ class ThreeYearRealisticSimulationSeeder extends Seeder
                 if ($monthDate->month === 9 && $daysInMonth >= 5) {
                     $tgl = $monthDate->copy()->day(5)->setTime(9, 0, 0)->toDateTimeString();
                     $cashBatch[] = [
-                        'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-SEWA',
+                        'nomor_referensi' => 'KK-' . Carbon::parse($tgl)->format('ymd') . '-B' . $branch->id . '-SEWA-' . strtoupper(Str::random(3)),
                         'tanggal' => Carbon::parse($tgl)->toDateString(),
                         'tipe' => 'keluar',
                         'account_id' => $bebanSewa->id,
