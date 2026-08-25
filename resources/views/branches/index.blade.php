@@ -4,18 +4,14 @@
 @section('page-title', 'Settings / Companies & Branches (Manajemen Cabang)')
 
 @section('action-buttons')
-<button type="button" @click="addOpen = true" class="btn-odoo-primary">
+<button type="button" class="btn-odoo-primary" data-bs-toggle="modal" data-bs-target="#modalAddBranch">
     <i class="fa-solid fa-plus"></i>
     <span>New Branch</span>
 </button>
 @endsection
 
 @section('content')
-<div x-data="{ 
-    addOpen: false, 
-    editOpen: false, 
-    editBranch: { id: '', nama_cabang: '', alamat: '', telepon: '' }
-}" id="main-view-wrapper" data-view-wrapper>
+<div id="main-view-wrapper" data-view-wrapper>
 
     <!-- Main Odoo Sheet -->
     <div class="o_form_sheet p-0 overflow-hidden bg-white">
@@ -71,19 +67,14 @@
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
-                                    <button @click="
-                                        editBranch = {
-                                            id: '{{ $branch->id }}',
-                                            nama_cabang: '{{ addslashes($branch->nama_cabang) }}',
-                                            alamat: '{{ addslashes($branch->alamat ?? '') }}',
-                                            telepon: '{{ addslashes($branch->telepon ?? '') }}'
-                                        };
-                                        editOpen = true;
-                                    " class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit Cabang">
+                                    <button type="button" 
+                                            onclick="openEditBranchModal('{{ $branch->id }}', '{{ addslashes($branch->nama_cabang) }}', '{{ addslashes($branch->alamat ?? '') }}', '{{ addslashes($branch->telepon ?? '') }}')" 
+                                            class="btn btn-sm btn-outline-secondary py-0 px-2" 
+                                            title="Edit Cabang">
                                         <i class="fa-solid fa-pen-to-square text-xs"></i>
                                     </button>
                                     @if(!$branch->trashed())
-                                        <form action="{{ route('branches.destroy', $branch->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Arsipkan cabang ini?');">
+                                        <form action="{{ route('branches.destroy', $branch->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Arsipkan cabang ini? Data transaksi masa lalu tetap tersimpan.');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Arsipkan">
@@ -111,71 +102,90 @@
         </div>
     </div>
 
-    <!-- Modal Tambah Cabang (Odoo Form Style) -->
-    <div x-show="addOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none;" x-cloak>
-        <div class="bg-white rounded shadow-2xl border w-full max-w-lg overflow-hidden" @click.away="addOpen = false">
-            <form action="{{ route('branches.store') }}" method="POST">
-                @csrf
-                <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-building-circle-check text-teal-600"></i> New Company / Branch
-                    </h5>
-                    <button type="button" class="btn-close text-xs" @click="addOpen = false"></button>
-                </div>
-                <div class="p-4 space-y-3">
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Branch Name / Nama Cabang</label>
-                        <input type="text" name="nama_cabang" required class="form-control form-control-sm" placeholder="e.g. Snaprint Margonda">
+    <!-- Bootstrap 5 Modal Tambah Cabang -->
+    <div class="modal fade" id="modalAddBranch" tabindex="-1" aria-labelledby="modalAddBranchLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-3 border shadow-lg overflow-hidden">
+                <form action="{{ route('branches.store') }}" method="POST">
+                    @csrf
+                    <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2" id="modalAddBranchLabel">
+                            <i class="fa-solid fa-building-circle-check text-teal-600"></i> New Company / Branch
+                        </h5>
+                        <button type="button" class="btn-close text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Phone / Telepon</label>
-                        <input type="text" name="telepon" class="form-control form-control-sm" placeholder="e.g. 021-77889900">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Branch Name / Nama Cabang <span class="text-danger">*</span></label>
+                            <input type="text" name="nama_cabang" required class="form-control form-control-sm" placeholder="e.g. Snaprint Margonda / Cabang Depok">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Phone / Telepon</label>
+                            <input type="text" name="telepon" class="form-control form-control-sm" placeholder="e.g. 021-77889900">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Full Address / Alamat Lengkap</label>
+                            <textarea name="alamat" rows="3" class="form-control form-control-sm" placeholder="e.g. Jl. Margonda Raya No. 45, Depok"></textarea>
+                        </div>
                     </div>
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Full Address / Alamat Lengkap</label>
-                        <textarea name="alamat" rows="3" class="form-control form-control-sm" placeholder="e.g. Jl. Margonda Raya No. 45, Depok"></textarea>
+                    <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-odoo-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn-odoo-primary">Save Branch</button>
                     </div>
-                </div>
-                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-odoo-secondary" @click="addOpen = false">Cancel</button>
-                    <button type="submit" class="btn-odoo-primary">Save Branch</button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Modal Edit Cabang -->
-    <div x-show="editOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none;" x-cloak>
-        <div class="bg-white rounded shadow-2xl border w-full max-w-lg overflow-hidden" @click.away="editOpen = false">
-            <form :action="'/branches/' + editBranch.id" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-pen-to-square text-teal-600"></i> Edit Branch
-                    </h5>
-                    <button type="button" class="btn-close text-xs" @click="editOpen = false"></button>
-                </div>
-                <div class="p-4 space-y-3">
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Branch Name / Nama Cabang</label>
-                        <input type="text" name="nama_cabang" x-model="editBranch.nama_cabang" required class="form-control form-control-sm">
+    <!-- Bootstrap 5 Modal Edit Cabang -->
+    <div class="modal fade" id="modalEditBranch" tabindex="-1" aria-labelledby="modalEditBranchLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-3 border shadow-lg overflow-hidden">
+                <form id="formEditBranch" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2" id="modalEditBranchLabel">
+                            <i class="fa-solid fa-pen-to-square text-teal-600"></i> Edit Branch
+                        </h5>
+                        <button type="button" class="btn-close text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Phone / Telepon</label>
-                        <input type="text" name="telepon" x-model="editBranch.telepon" class="form-control form-control-sm">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Branch Name / Nama Cabang <span class="text-danger">*</span></label>
+                            <input type="text" name="nama_cabang" id="edit_nama_cabang" required class="form-control form-control-sm">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Phone / Telepon</label>
+                            <input type="text" name="telepon" id="edit_telepon" class="form-control form-control-sm">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Full Address / Alamat Lengkap</label>
+                            <textarea name="alamat" id="edit_alamat" rows="3" class="form-control form-control-sm"></textarea>
+                        </div>
                     </div>
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Full Address / Alamat Lengkap</label>
-                        <textarea name="alamat" x-model="editBranch.alamat" rows="3" class="form-control form-control-sm"></textarea>
+                    <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-odoo-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn-odoo-primary">Save Changes</button>
                     </div>
-                </div>
-                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-odoo-secondary" @click="editOpen = false">Cancel</button>
-                    <button type="submit" class="btn-odoo-primary">Save Changes</button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+function openEditBranchModal(id, namaCabang, alamat, telepon) {
+    const form = document.getElementById('formEditBranch');
+    form.action = '/branches/' + id;
+    
+    document.getElementById('edit_nama_cabang').value = namaCabang;
+    document.getElementById('edit_alamat').value = alamat;
+    document.getElementById('edit_telepon').value = telepon;
+    
+    const modalEl = document.getElementById('modalEditBranch');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+</script>
 @endsection
