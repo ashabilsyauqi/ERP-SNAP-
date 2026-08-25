@@ -77,10 +77,7 @@ class DatabaseSeeder extends Seeder
             'branch_id' => $pusat->id,
         ]);
 
-        // 3. Seed Realistic Comprehensive Printing Products
+        // 3. Seed Realistic Master Printing Products Catalog
         $this->call(MaterialProductSeeder::class);
-
-        // 4. Seed 3-Year Comprehensive Business Operations (Sales POS, Payroll, Utilities, Rent, Procurements)
-        $this->call(ThreeYearRealisticSimulationSeeder::class);
     }
 }
