@@ -133,8 +133,12 @@ class PosController extends Controller
                 ];
             }
 
-            // Determine Payment & Order Status based on DP (Hanya berlaku untuk transaksi besar >= Rp 500.000)
-            if ($isDp && $totalPrice >= 500000 && $requestedDp < $totalPrice && $requestedDp >= 0) {
+            // Determine Payment & Order Status based on DP (Hanya berlaku untuk transaksi besar >= Rp 500.000 dan minimal DP 50%)
+            if ($isDp && $totalPrice >= 500000) {
+                $minDp = round($totalPrice * 0.5);
+                if ($requestedDp < $minDp) {
+                    throw new \Exception("Nominal Uang Muka (DP) minimal 50% dari total pesanan (Minimal Rp " . number_format($minDp, 0, ',', '.') . ").");
+                }
                 $paidAmount = $requestedDp;
                 $remainingAmount = max(0, $totalPrice - $paidAmount);
                 $paymentStatus = 'PARTIAL';

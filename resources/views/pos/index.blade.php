@@ -24,10 +24,20 @@
         dueDate: '', 
         dpAmount: 0, 
         productionNotes: '',
+        get minDpAmount() {
+            return Math.round((Number(this.cartTotal) || 0) * 0.5);
+        },
         get isEligibleForDp() {
             return Number(this.cartTotal) >= this.minDpThreshold;
         },
+        toggleDp(checked) {
+            this.isDp = checked;
+            if (checked && (!this.dpAmount || this.dpAmount < this.minDpAmount)) {
+                this.dpAmount = this.minDpAmount;
+            }
+        },
         setDpPercent(pct) {
+            if (pct < 50) pct = 50;
             const total = Number(this.cartTotal) || 0;
             this.dpAmount = Math.round(total * (pct / 100));
         },
@@ -36,6 +46,8 @@
             if (this.cartTotal < this.minDpThreshold) {
                 this.isDp = false;
                 this.dpAmount = 0;
+            } else if (this.isDp && (!this.dpAmount || this.dpAmount < this.minDpAmount)) {
+                this.dpAmount = this.minDpAmount;
             }
         }
      }"
@@ -67,51 +79,42 @@
         <!-- Products Cards Grid (Independent Scroll) -->
         <div id="products-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pr-1 pb-2 flex-grow min-h-0">
             @foreach($materials as $material)
-                <div class="product-card bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-500 hover:shadow-md transition duration-200 cursor-pointer flex flex-col justify-between group relative" 
+                <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between"
                      data-name="{{ strtolower($material->material_name) }}"
-                     onclick="addToCart('{{ $material->material_name }}', {{ $material->fixed_size ?? 'null' }}, {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }})">
+                     onclick="addToCart('{{ $material->material_name }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }})">
                     
-                    <div class="space-y-1">
-                        <div class="d-flex align-items-center gap-1.5">
-                            <span class="font-mono text-slate-400 text-[10px]">#MAT-{{ $material->id }}</span>
-                            @if($material->fixed_size)
-                                <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] py-0.5">
-                                    {{ $material->fixed_size }}m
-                                </span>
-                            @endif
-                        </div>
-                        <h3 class="font-bold text-slate-900 group-hover:text-blue-600 transition text-sm leading-snug mb-1">{{ $material->material_name }}</h3>
-                        
-                        <!-- Stock Status Badge -->
-                        <div>
-                            @if($material->stock_qty > 0)
-                                <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                                    Stok: {{ $material->stock_qty }} Units
-                                </span>
-                            @else
-                                <span class="text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
-                                    Stok Habis
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-                    
-                    <div class="mt-3 pt-2 border-top border-slate-100">
-                        <div class="flex justify-between items-baseline flex-wrap gap-1">
-                            <span class="text-[11px] text-slate-400 font-medium">Harga Eceran</span>
-                            <span class="font-bold font-mono text-blue-900 text-sm">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</span>
+                    <div>
+                        <div class="flex justify-between items-start mb-1">
+                            <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                {{ $material->category ?? 'Bahan' }}
+                            </span>
+                            <span class="text-[10px] {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold">
+                                Stok: {{ $material->stock_qty }} {{ $material->unit ?? 'pcs' }}
+                            </span>
                         </div>
                         
-                        @if($material->wholesalePrices->count() > 0)
-                            <div class="mt-1.5 bg-slate-50 p-1.5 rounded space-y-0.5 border border-slate-100">
-                                @foreach($material->wholesalePrices as $wp)
-                                    <div class="flex justify-between text-[10px] text-slate-600 font-mono">
-                                        <span>&ge; {{ $wp->min_qty }} pcs:</span>
-                                        <span class="font-bold text-emerald-700">Rp {{ number_format($wp->wholesale_price, 0, ',', '.') }}</span>
-                                    </div>
-                                @endforeach
+                        <h3 class="font-bold text-slate-900 text-xs line-clamp-2 mb-1">
+                            {{ $material->material_name }}
+                        </h3>
+                        
+                        @if($material->fixed_size)
+                            <div class="text-[11px] text-slate-500 mb-2">
+                                Ukuran: <strong class="text-slate-700">{{ $material->fixed_size }} m</strong>
                             </div>
                         @endif
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100 flex justify-between items-center mt-2">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block leading-tight">Harga Satuan</span>
+                            <span class="font-bold text-blue-900 font-mono text-xs">
+                                Rp {{ number_format($material->retail_price, 0, ',', '.') }}
+                            </span>
+                        </div>
+                        
+                        <button type="button" class="w-7 h-7 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg flex items-center justify-center transition border-0 cursor-pointer text-xs">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
                     </div>
                 </div>
             @endforeach
@@ -160,7 +163,7 @@
             <div x-show="isEligibleForDp" x-cloak class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2 transition-all">
                 <div class="flex items-center justify-between">
                     <label class="flex items-center gap-2 cursor-pointer mb-0">
-                        <input type="checkbox" x-model="isDp" id="is_dp_toggle" class="form-check-input text-blue-600 rounded">
+                        <input type="checkbox" :checked="isDp" @change="toggleDp($event.target.checked)" id="is_dp_toggle" class="form-check-input text-blue-600 rounded">
                         <span class="text-xs font-bold text-blue-950">Pesanan Khusus / DP (Uang Muka)</span>
                     </label>
                     <span class="text-[10px] text-blue-700 font-semibold uppercase tracking-wider" x-show="isDp">Mode DP Aktif</span>
@@ -188,19 +191,22 @@
                                 class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Nominal DP (Rp)</label>
-                            <input type="number" x-model="dpAmount" placeholder="0" 
+                            <div class="flex justify-between items-center mb-0.5">
+                                <label class="text-[10px] font-bold text-slate-600 uppercase">Nominal DP (Rp)</label>
+                                <span class="text-[9px] text-amber-700 font-bold" x-text="'Min. 50%: Rp ' + minDpAmount.toLocaleString('id-ID')"></span>
+                            </div>
+                            <input type="number" x-model="dpAmount" :min="minDpAmount" placeholder="0" 
                                 class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-emerald-800">
                         </div>
                     </div>
 
-                    <!-- Shortcut DP Buttons -->
+                    <!-- Shortcut DP Buttons (Minimal 50%) -->
                     <div class="flex items-center justify-between text-[10px]">
-                        <span class="text-slate-500 font-semibold">Shortcut DP:</span>
+                        <span class="text-slate-500 font-semibold">Pilihan DP (Min 50%):</span>
                         <div class="flex gap-1">
-                            <button type="button" @click="setDpPercent(30)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">30%</button>
-                            <button type="button" @click="setDpPercent(50)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">50%</button>
+                            <button type="button" @click="setDpPercent(50)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">50% (Min)</button>
                             <button type="button" @click="setDpPercent(70)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">70%</button>
+                            <button type="button" @click="setDpPercent(80)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">80%</button>
                         </div>
                     </div>
 
@@ -650,9 +656,16 @@
         const dueDate = isDp ? alpineData.dueDate : null;
         const productionNotes = isDp ? alpineData.productionNotes : null;
 
-        if (isDp && dpAmount <= 0) {
-            Swal.fire({ icon: 'warning', title: 'Nominal DP Belum Diisi', text: 'Masukkan nominal uang muka (DP) yang dibayar oleh client.' });
-            return;
+        if (isDp) {
+            const minAllowedDp = alpineData ? alpineData.minDpAmount : Math.round((window.currentGrandTotal || 0) * 0.5);
+            if (dpAmount < minAllowedDp) {
+                Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'Nominal DP Kurang dari 50%', 
+                    text: 'Nominal uang muka (DP) minimal 50% dari total pesanan (Minimal: Rp ' + Number(minAllowedDp).toLocaleString('id-ID') + ').' 
+                });
+                return;
+            }
         }
 
         const paymentMethod = document.getElementById('global_payment_method').value;
