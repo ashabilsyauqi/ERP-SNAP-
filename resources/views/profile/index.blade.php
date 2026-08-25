@@ -55,7 +55,7 @@
                 </div>
                 <div class="col-12 col-md-6">
                     <label class="form-label font-semibold text-slate-700 text-xs uppercase">Email Resmi</label>
-                    <input type="email" name="email" value="{{ old('email', $user->email) }}" class="form-control form-control-sm" placeholder="e.g. budi@snapprint.id">
+                    <input type="email" name="email" value="{{ old('email', $user->email) }}" class="form-control form-control-sm" placeholder="e.g. budi@snaprint.id">
                 </div>
                 <div class="col-12 col-md-6">
                     <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nomor Telepon / WhatsApp</label>

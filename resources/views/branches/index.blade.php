@@ -125,7 +125,7 @@
                 <div class="p-4 space-y-3">
                     <div>
                         <label class="form-label font-semibold text-slate-700 text-xs uppercase">Branch Name / Nama Cabang</label>
-                        <input type="text" name="nama_cabang" required class="form-control form-control-sm" placeholder="e.g. SnapPrint Margonda">
+                        <input type="text" name="nama_cabang" required class="form-control form-control-sm" placeholder="e.g. Snaprint Margonda">
                     </div>
                     <div>
                         <label class="form-label font-semibold text-slate-700 text-xs uppercase">Phone / Telepon</label>

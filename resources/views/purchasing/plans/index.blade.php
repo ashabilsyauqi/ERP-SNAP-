@@ -259,7 +259,7 @@
             <!-- Modal Header -->
             <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-shrink-0">
                 <div class="d-flex align-items-center gap-2">
-                    <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;">
+                    <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;">
                     <div>
                         <h6 class="fw-bold mb-0 text-white font-mono" x-text="'PURCHASE PLAN: ' + (selectedPlan ? selectedPlan.plan_number : '')"></h6>
                         <span class="text-[11px] text-slate-300">Rincian Bundle Pengadaan & Tagihan Pembayaran Vendor</span>

@@ -67,7 +67,7 @@
                                 <td>
                                     <button type="button" 
                                             class="btn btn-link p-0 fw-bold font-mono text-blue-700 text-decoration-none hover:underline d-inline-flex align-items-center gap-1.5"
-                                            onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                            onclick='openSnaprintInvoice(@json($invPayload))'>
                                         <i class="fa-solid fa-file-invoice text-blue-600 text-xs"></i>
                                         <span>{{ $trx->invoice_number }}</span>
                                     </button>
@@ -119,7 +119,7 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Dokumen Faktur" onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                        <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Dokumen Faktur" onclick='openSnaprintInvoice(@json($invPayload))'>
                                             <i class="fa-solid fa-file-invoice text-xs"></i>
                                         </button>
                                         <a href="{{ route('sales.receipt', $trx->id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Cetak Struk Thermal POS" target="_blank">
@@ -185,7 +185,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <button type="button" 
                                     class="btn btn-link p-0 font-mono fw-bold text-slate-900 text-xs text-decoration-none text-start hover:underline"
-                                    onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                    onclick='openSnaprintInvoice(@json($invPayload))'>
                                 {{ $trx->invoice_number }}
                             </button>
                             @if($trx->isPaid())
@@ -215,7 +215,7 @@
                                 {{ $trx->branch->nama_cabang ?? 'Pusat' }}
                             </span>
                             <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-xs" title="Buka Faktur" onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-xs" title="Buka Faktur" onclick='openSnaprintInvoice(@json($invPayload))'>
                                     <i class="fa-solid fa-file-invoice text-blue-600"></i>
                                 </button>
                                 <a href="{{ route('sales.receipt', $trx->id) }}" class="btn btn-sm btn-light border py-0 px-2 text-xs" title="Cetak Struk" target="_blank">

@@ -249,7 +249,7 @@
                                     <td class="ps-4">
                                         <button type="button" 
                                                 class="btn btn-link p-0 font-mono fw-bold text-blue-700 text-decoration-none d-inline-flex align-items-center gap-1 hover:underline"
-                                                onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                                onclick='openSnaprintInvoice(@json($invPayload))'>
                                             <i class="fa-solid fa-file-invoice text-blue-600 text-xs"></i>
                                             <span>{{ $tx->invoice_number }}</span>
                                         </button>
@@ -266,7 +266,7 @@
                                     <td class="fw-bold text-blue-900 font-mono">Rp {{ number_format($tx->total_price, 0, ',', '.') }}</td>
                                     <td class="text-center">
                                         <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Dokumen Faktur" onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                            <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Dokumen Faktur" onclick='openSnaprintInvoice(@json($invPayload))'>
                                                 <i class="fa-solid fa-file-invoice text-xs"></i>
                                             </button>
                                             <a href="{{ route('sales.receipt', $tx->id) }}" target="_blank" class="btn btn-sm btn-light border py-0 px-2" title="Cetak Struk POS">

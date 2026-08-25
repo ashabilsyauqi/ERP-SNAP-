@@ -165,7 +165,7 @@
 
     <!-- Header & Logo -->
     <div class="header">
-        <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint">
+        <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint">
         <h1>SNAPRINT</h1>
         <p>Digital Printing & Adv.</p>
         <p>Cabang: <strong>{{ $transaction->branch->nama_cabang ?? 'Pusat' }}</strong></p>
@@ -285,7 +285,7 @@
 
     <div class="footer">
         <p>Terima kasih atas pesanan Anda!</p>
-        <p>SnapPrint Digital Printing ERP</p>
+        <p>Snaprint Digital Printing ERP</p>
     </div>
 
     <!-- Screen Buttons (Hidden when printing) -->

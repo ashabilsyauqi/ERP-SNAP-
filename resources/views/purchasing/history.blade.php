@@ -219,7 +219,7 @@
             </head>
             <body>
                 <div class="header">
-                    <div class="brand">SnapPrint ERP</div>
+                    <div class="brand">Snaprint ERP</div>
                     <div class="title">PURCHASE ORDER (PO)<br><small style="font-size:12px; font-weight:normal; color:#64748b;">Standar Odoo Enterprise</small></div>
                 </div>
 

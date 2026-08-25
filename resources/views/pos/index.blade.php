@@ -748,7 +748,7 @@
                         window.open(data.receipt_url, '_blank', 'width=450,height=600');
                     };
                     document.getElementById('btn-open-last-inv').onclick = function() {
-                        openSnapPrintInvoice(data);
+                        openSnaprintInvoice(data);
                     };
                 }
 
@@ -792,7 +792,7 @@
                     if (result.isConfirmed && data.receipt_url) {
                         window.open(data.receipt_url, '_blank', 'width=450,height=600');
                     } else if (result.isDenied) {
-                        openSnapPrintInvoice(data);
+                        openSnaprintInvoice(data);
                     }
                 });
 
