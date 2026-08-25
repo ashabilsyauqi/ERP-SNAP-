@@ -460,11 +460,9 @@
                     'type' => 'dropdown',
                     'role' => 'purchasing,owner,manager',
                     'items' => [
-                        ['title' => 'Rencana Pengadaan (Purchase Plans & RFQ Bundle)', 'route' => 'purchasing.plans.index', 'role' => 'purchasing,owner,manager'],
-                        ['title' => 'Buat Purchase Plan Baru', 'route' => 'purchasing.plans.create', 'role' => 'purchasing,owner,manager'],
-                        ['title' => 'Permintaan Penawaran (Requests for Quotation - RFQ)', 'route' => 'purchasing.index', 'role' => 'purchasing,owner,manager'],
-                        ['title' => 'Riwayat & Log Purchase Orders (PO)', 'route' => 'purchasing.history', 'role' => 'purchasing,owner,manager'],
-                        ['title' => 'Data Supplier (Vendors)', 'route' => 'suppliers.index', 'role' => 'purchasing,owner,manager'],
+                        ['title' => 'Purchase Plans (Rencana Pengadaan / RFQ Bundle)', 'route' => 'purchasing.plans.index', 'role' => 'purchasing,owner,manager'],
+                        ['title' => 'Purchase Orders (Daftar PO & RFQ Satuan)', 'route' => 'purchasing.index', 'role' => 'purchasing,owner,manager'],
+                        ['title' => 'Data Vendor / Supplier', 'route' => 'suppliers.index', 'role' => 'purchasing,owner,manager'],
                     ]
                 ],
                 [
@@ -472,7 +470,7 @@
                     'type' => 'dropdown',
                     'role' => 'purchasing,owner,manager',
                     'items' => [
-                        ['title' => 'Master Bahan Baku Pengadaan', 'route' => 'materials.index', 'role' => 'owner,manager'],
+                        ['title' => 'Katalog Bahan Baku & Produk', 'route' => 'materials.index', 'role' => 'owner,manager'],
                     ]
                 ],
                 [
@@ -480,7 +478,7 @@
                     'type' => 'dropdown',
                     'role' => 'purchasing,owner,manager',
                     'items' => [
-                        ['title' => 'Analisis Pengadaan & Belanja Material', 'route' => 'purchasing.history', 'role' => 'purchasing,owner,manager'],
+                        ['title' => 'Riwayat & Log Belanja Pengadaan', 'route' => 'purchasing.history', 'role' => 'purchasing,owner,manager'],
                     ]
                 ]
             ];
