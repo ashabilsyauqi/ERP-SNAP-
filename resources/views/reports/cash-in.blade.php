@@ -155,6 +155,12 @@
                 @endif
             </table>
         </div>
+        @if($cashTransactions->hasPages())
+            <div class="p-3 border-top bg-slate-50 d-flex justify-content-between align-items-center">
+                <span class="text-xs text-slate-500">Menampilkan {{ $cashTransactions->firstItem() }} - {{ $cashTransactions->lastItem() }} dari {{ $cashTransactions->total() }} data</span>
+                <div>{{ $cashTransactions->links('pagination::bootstrap-4') }}</div>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

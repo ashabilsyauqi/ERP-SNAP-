@@ -196,6 +196,12 @@
                 </tbody>
             </table>
         </div>
+        @if($mutasi->hasPages())
+            <div class="p-3 border-top bg-slate-50 d-flex justify-content-between align-items-center">
+                <span class="text-xs text-slate-500">Menampilkan {{ $mutasi->firstItem() }} - {{ $mutasi->lastItem() }} dari {{ $mutasi->total() }} data</span>
+                <div>{{ $mutasi->links('pagination::bootstrap-4') }}</div>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

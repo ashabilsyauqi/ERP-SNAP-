@@ -25,8 +25,18 @@ class CashMutationController extends Controller
             $query->where('branch_id', $request->branch_id);
         }
 
+        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
+
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+        } elseif ($request->filled('start_date')) {
+            $query->where('tanggal', '>=', $request->start_date);
+        } elseif ($request->filled('end_date')) {
+            $query->where('tanggal', '<=', $request->end_date);
+        } else {
+            // Default current month
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
         }
 
         if ($request->filled('tipe') && $request->tipe !== 'Semua') {
@@ -37,42 +47,36 @@ class CashMutationController extends Controller
             $query->where('account_id', $request->account_id);
         }
 
-        // Hitung saldo awal sebelum start_date
-        $saldoAwal = 0;
-        if ($request->filled('start_date')) {
-            $prevQuery = CashTransaction::where('tanggal', '<', $request->start_date);
-            if ($user->role !== 'owner') {
-                $prevQuery->where('branch_id', $user->branch_id);
-            } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $prevQuery->where('branch_id', $request->branch_id);
-            }
-            if ($request->filled('account_id')) {
-                $prevQuery->where('account_id', $request->account_id);
-            }
-            
-            $masukAwal = (clone $prevQuery)->where('tipe', 'masuk')->sum('jumlah');
-            $keluarAwal = (clone $prevQuery)->where('tipe', 'keluar')->sum('jumlah');
-            $saldoAwal = $masukAwal - $keluarAwal;
+        // Hitung saldo awal sebelum tanggal mulai filter
+        $effectiveStartDate = $request->input('start_date', $startDate);
+        $prevQuery = CashTransaction::where('tanggal', '<', $effectiveStartDate);
+        if ($user->role !== 'owner') {
+            $prevQuery->where('branch_id', $user->branch_id);
+        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
+            $prevQuery->where('branch_id', $request->branch_id);
         }
-
-        $allMutations = $query->get();
+        if ($request->filled('account_id')) {
+            $prevQuery->where('account_id', $request->account_id);
+        }
         
-        $mutasi = collect();
-        $runningBalance = $saldoAwal;
-        $totalMasuk = 0;
-        $totalKeluar = 0;
+        $masukAwal = (clone $prevQuery)->where('tipe', 'masuk')->sum('jumlah');
+        $keluarAwal = (clone $prevQuery)->where('tipe', 'keluar')->sum('jumlah');
+        $saldoAwal = $masukAwal - $keluarAwal;
 
-        foreach ($allMutations as $mut) {
+        $totalMasuk = (clone $query)->where('tipe', 'masuk')->sum('jumlah');
+        $totalKeluar = (clone $query)->where('tipe', 'keluar')->sum('jumlah');
+        $saldoAkhir = $saldoAwal + $totalMasuk - $totalKeluar;
+
+        $mutasi = $query->paginate(50)->withQueryString();
+        $runningBalance = $saldoAwal;
+
+        foreach ($mutasi as $mut) {
             if ($mut->tipe === 'masuk') {
                 $runningBalance += $mut->jumlah;
-                $totalMasuk += $mut->jumlah;
             } else {
                 $runningBalance -= $mut->jumlah;
-                $totalKeluar += $mut->jumlah;
             }
-            
             $mut->running_balance = $runningBalance;
-            $mutasi->push($mut);
         }
 
         $accounts = Account::active()->orderBy('nama_akun')->get();

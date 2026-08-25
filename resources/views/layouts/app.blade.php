@@ -800,10 +800,12 @@
                 <!-- Action Buttons (Left) -->
                 <div class="d-flex align-items-center gap-2 flex-wrap" id="control-panel-actions">
                     @yield('action-buttons')
-                    <button type="button" onclick="exportTableToExcel('main-table', 'Snaprint_Export')" class="btn-odoo-secondary" title="Export Table to Excel (SheetJS)">
+                    @if(!$isDashboardOrReport)
+                    <button type="button" onclick="exportTableToExcel('main-table', 'Snaprint_Export')" class="btn-odoo-secondary" title="Export Data Tabel ke Excel">
                         <i class="fa-solid fa-file-excel text-emerald-600"></i>
                         <span>Export</span>
                     </button>
+                    @endif
                 </div>
 
                 <!-- Pager & View Mode Switcher (Right) -->
