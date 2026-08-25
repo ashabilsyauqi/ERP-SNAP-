@@ -285,7 +285,8 @@
 
     <div class="footer">
         <p>Terima kasih atas pesanan Anda!</p>
-        <p>Snaprint Digital Printing ERP</p>
+        <p class="fw-bold" style="margin-top: 3px; font-size: 10px;">Kunjungi halaman kami: mysnaprint.com</p>
+        <p style="font-size: 8.5px; color: #555;">Snaprint "great spot to print"</p>
     </div>
 
     <!-- Screen Buttons (Hidden when printing) -->

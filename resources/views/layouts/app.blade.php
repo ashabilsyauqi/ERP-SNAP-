@@ -1345,7 +1345,8 @@
                     </table>
 
                     <div class="footer">
-                        Terima kasih atas kepercayaan Anda mencetak di Snaprint. Dokumen ini sah dan diterbitkan secara otomatis oleh sistem Snaprint ERP.
+                        Terima kasih atas kepercayaan Anda mencetak di Snaprint.<br>
+                        <strong>Kunjungi halaman kami: mysnaprint.com</strong> &bull; Snaprint "great spot to print"
                     </div>
 
                     <script>
