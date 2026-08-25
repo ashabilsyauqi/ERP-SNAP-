@@ -576,7 +576,7 @@
 
                         @if($groupAllowed)
                             @if($group['type'] === 'link')
-                                <a href="{{ route($group['route']) }}" class="o_nav_link {{ request()->routeIs($group['route']) ? 'active' : '' }}">
+                                <a href="{{ Route::has($group['route']) ? route($group['route']) : '#' }}" class="o_nav_link {{ (Route::has($group['route']) && request()->routeIs($group['route'])) ? 'active' : '' }}">
                                     {{ $group['title'] }}
                                 </a>
                             @elseif($group['type'] === 'dropdown')
@@ -599,7 +599,7 @@
                                             @endphp
                                             @if($itemAllowed)
                                                 <li>
-                                                    <a class="dropdown-item {{ request()->routeIs($item['route']) ? 'active' : '' }}" href="{{ route($item['route']) }}">
+                                                    <a class="dropdown-item {{ (Route::has($item['route']) && request()->routeIs($item['route'])) ? 'active' : '' }}" href="{{ Route::has($item['route']) ? route($item['route']) : '#' }}">
                                                         {{ $item['title'] }}
                                                     </a>
                                                 </li>
