@@ -80,7 +80,7 @@ class DatabaseSeeder extends Seeder
         // 3. Seed Realistic Comprehensive Printing Products
         $this->call(MaterialProductSeeder::class);
 
-        // 4. Seed 3-Month Realistic Sales Data (2jt-5jt daily, +5% monthly growth)
-        $this->call(ThreeMonthRealisticSalesSeeder::class);
+        // 4. Seed 3-Year Comprehensive Business Operations (Sales POS, Payroll, Utilities, Rent, Procurements)
+        $this->call(ThreeYearRealisticSimulationSeeder::class);
     }
 }
