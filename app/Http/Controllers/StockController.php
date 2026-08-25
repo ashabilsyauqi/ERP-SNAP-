@@ -154,20 +154,40 @@ class StockController extends Controller
             'stock_qty' => 'required|integer|min:0',
             'purchase_price' => 'nullable|numeric|min:0',
             'retail_price' => 'nullable|numeric|min:0',
+            'wholesale' => 'nullable|array',
+            'wholesale.*.min_qty' => 'nullable|integer|min:1',
+            'wholesale.*.price' => 'nullable|numeric|min:0',
         ]);
 
-        $material->stock_qty = $validated['stock_qty'];
+        DB::transaction(function () use ($request, $material, $validated) {
+            $material->stock_qty = $validated['stock_qty'];
 
-        if ($request->filled('purchase_price')) {
-            $material->purchase_price = $validated['purchase_price'];
-        }
-        if ($request->filled('retail_price')) {
-            $material->retail_price = $validated['retail_price'];
-        }
+            if ($request->filled('purchase_price')) {
+                $material->purchase_price = $validated['purchase_price'];
+            }
+            if ($request->filled('retail_price')) {
+                $material->retail_price = $validated['retail_price'];
+            }
 
-        $material->save();
+            $material->save();
 
-        return redirect()->route('stock.index')->with('success', "Stok {$material->material_name} berhasil diperbarui.");
+            // Sync Wholesale Price Tiers
+            if ($request->has('wholesale')) {
+                $material->wholesalePrices()->delete();
+                if (is_array($request->wholesale)) {
+                    foreach ($request->wholesale as $tier) {
+                        if (!empty($tier['min_qty']) && !empty($tier['price'])) {
+                            $material->wholesalePrices()->create([
+                                'min_qty' => (int) $tier['min_qty'],
+                                'wholesale_price' => (float) $tier['price'],
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('stock.index')->with('success', "Stok & Harga Grosir {$material->material_name} berhasil diperbarui.");
     }
 
     /**

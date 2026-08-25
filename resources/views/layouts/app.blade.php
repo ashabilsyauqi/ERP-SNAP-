@@ -460,6 +460,8 @@
                     'type' => 'dropdown',
                     'role' => 'purchasing,owner,manager',
                     'items' => [
+                        ['title' => 'Rencana Pengadaan (Purchase Plans & RFQ Bundle)', 'route' => 'purchasing.plans.index', 'role' => 'purchasing,owner,manager'],
+                        ['title' => 'Buat Purchase Plan Baru', 'route' => 'purchasing.plans.create', 'role' => 'purchasing,owner,manager'],
                         ['title' => 'Permintaan Penawaran (Requests for Quotation - RFQ)', 'route' => 'purchasing.index', 'role' => 'purchasing,owner,manager'],
                         ['title' => 'Riwayat & Log Purchase Orders (PO)', 'route' => 'purchasing.history', 'role' => 'purchasing,owner,manager'],
                         ['title' => 'Data Supplier (Vendors)', 'route' => 'suppliers.index', 'role' => 'purchasing,owner,manager'],

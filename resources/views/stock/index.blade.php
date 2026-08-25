@@ -16,7 +16,14 @@
 @section('content')
 <div x-data="{ 
     editOpen: false, 
-    editMaterial: { id: '', name: '', stock_qty: 0, purchase_price: 0, retail_price: 0 }
+    editMaterial: { id: '', name: '', stock_qty: 0, purchase_price: 0, retail_price: 0, wholesale: [] },
+    addWholesaleTier() {
+        if (!this.editMaterial.wholesale) this.editMaterial.wholesale = [];
+        this.editMaterial.wholesale.push({ min_qty: '', price: '' });
+    },
+    removeWholesaleTier(idx) {
+        this.editMaterial.wholesale.splice(idx, 1);
+    }
 }" id="main-view-wrapper" data-view-wrapper>
 
     <!-- Top Stat Buttons (Odoo Enterprise Stat Widgets) -->
@@ -66,7 +73,7 @@
                             <th class="sortable">Vendor</th>
                             <th class="sortable">Specification / Unit</th>
                             <th class="sortable text-end">Cost Price</th>
-                            <th class="sortable text-end">Sales Price</th>
+                            <th class="sortable text-end">Sales Price & Wholesale</th>
                             <th class="sortable text-center">On Hand Qty</th>
                             <th class="text-center no-sort" style="width: 120px;">Stock Action</th>
                         </tr>
@@ -102,8 +109,15 @@
                                 <td class="text-end font-mono text-slate-700">
                                     Rp {{ number_format($material->purchase_price, 0, ',', '.') }}
                                 </td>
-                                <td class="text-end font-mono fw-bold text-teal-700">
-                                    Rp {{ number_format($material->retail_price, 0, ',', '.') }}
+                                <td class="text-end">
+                                    <div class="font-mono fw-bold text-teal-700">
+                                        Rp {{ number_format($material->retail_price, 0, ',', '.') }}
+                                    </div>
+                                    @if($material->wholesalePrices->count() > 0)
+                                        <div class="text-[10px] text-indigo-600 font-semibold mt-0.5">
+                                            {{ $material->wholesalePrices->count() }} Tier Grosir Aktif
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="text-center">
                                     @if($material->stock_qty <= 0)
@@ -127,8 +141,10 @@
                                             name: '{{ addslashes($material->material_name) }}',
                                             stock_qty: '{{ $material->stock_qty }}',
                                             purchase_price: '{{ $material->purchase_price }}',
-                                            retail_price: '{{ $material->retail_price }}'
+                                            retail_price: '{{ $material->retail_price }}',
+                                            wholesale: {{ json_encode($material->wholesalePrices->map(fn($w) => ['min_qty' => $w->min_qty, 'price' => $w->wholesale_price])) }}
                                         };
+                                        if (!editMaterial.wholesale) editMaterial.wholesale = [];
                                         editOpen = true;
                                     " class="btn btn-sm btn-odoo-secondary py-0.5 px-2 text-xs">
                                         <i class="fa-solid fa-sliders me-1"></i> Opname
@@ -161,18 +177,20 @@
                                 {{ $material->stock_qty }} Units
                             </span>
                         </div>
-                        <h6 class="fw-bold text-slate-900 line-clamp-1 mb-1">{{ $material->material_name }}</h6>
-                        <div class="text-[11px] text-slate-500 mb-2">Vendor: {{ $material->supplier->name ?? '-' }}</div>
-                        <div class="d-flex justify-content-between align-items-center pt-2 border-top border-slate-100">
-                            <span class="fw-bold font-mono text-teal-700 text-xs">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</span>
+                        <h6 class="fw-bold text-slate-900 mb-1 text-xs">{{ $material->material_name }}</h6>
+                        <div class="text-[11px] text-slate-500 mb-2">Cabang: {{ $material->branch->nama_cabang ?? 'Pusat' }}</div>
+                        <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
+                            <span class="font-mono text-xs font-bold text-teal-700">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</span>
                             <button @click="
                                 editMaterial = {
                                     id: '{{ $material->id }}',
                                     name: '{{ addslashes($material->material_name) }}',
                                     stock_qty: '{{ $material->stock_qty }}',
                                     purchase_price: '{{ $material->purchase_price }}',
-                                    retail_price: '{{ $material->retail_price }}'
+                                    retail_price: '{{ $material->retail_price }}',
+                                    wholesale: {{ json_encode($material->wholesalePrices->map(fn($w) => ['min_qty' => $w->min_qty, 'price' => $w->wholesale_price])) }}
                                 };
+                                if (!editMaterial.wholesale) editMaterial.wholesale = [];
                                 editOpen = true;
                             " class="btn btn-sm btn-light py-0 px-2 text-xs">
                                 Opname
@@ -186,42 +204,82 @@
         </div>
     </div>
 
-    <!-- Stock Opname Modal (Odoo Form Style) -->
-    <div x-show="editOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none;" x-cloak>
-        <div class="bg-white rounded-2 shadow-2xl border w-full max-w-lg overflow-hidden" @click.away="editOpen = false">
+    <!-- Stock Opname Modal (Odoo Form Style with Wholesale Tiers) -->
+    <div x-show="editOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
+        <div class="bg-white rounded-xl shadow-2xl border w-full max-w-lg overflow-hidden animate-fade-in" @click.away="editOpen = false">
             <form :action="'/stock/materials/' + editMaterial.id" method="POST">
                 @csrf
                 @method('PUT')
-                <div class="bg-slate-50 border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-sliders text-teal-600"></i> Stock Opname / Inventory Adjustment
+                <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fs-6 fw-bold text-white mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-sliders text-teal-400"></i> Stock Opname & Penyetelan Harga
                     </h5>
-                    <button type="button" class="btn-close text-xs" @click="editOpen = false"></button>
+                    <button type="button" class="btn-close btn-close-white text-xs" @click="editOpen = false"></button>
                 </div>
-                <div class="p-4 space-y-3">
+                <div class="p-4 space-y-3 text-xs">
                     <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Bahan Baku</label>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Nama Bahan Baku</label>
                         <input type="text" x-model="editMaterial.name" class="form-control form-control-sm bg-light" readonly>
                     </div>
                     <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Sisa Stok Fisik (Real On Hand)</label>
-                        <input type="number" name="stock_qty" x-model="editMaterial.stock_qty" class="form-control form-control-sm" required min="0">
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Sisa Stok Fisik (Real On Hand)</label>
+                        <input type="number" name="stock_qty" x-model="editMaterial.stock_qty" class="form-control form-control-sm font-bold" required min="0">
                         <small class="text-slate-400 text-[11px]">Masukkan jumlah fisik aktual hasil perhitungan opname gudang.</small>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Harga Modal HPP (Rp)</label>
-                            <input type="number" name="purchase_price" x-model="editMaterial.purchase_price" class="form-control form-control-sm" required min="0">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Harga Modal HPP (Rp)</label>
+                            <input type="number" name="purchase_price" x-model="editMaterial.purchase_price" class="form-control form-control-sm font-mono" required min="0">
                         </div>
                         <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Harga Jual Eceran (Rp)</label>
-                            <input type="number" name="retail_price" x-model="editMaterial.retail_price" class="form-control form-control-sm" required min="0">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Harga Jual Eceran (Rp)</label>
+                            <input type="number" name="retail_price" x-model="editMaterial.retail_price" class="form-control form-control-sm font-mono font-bold text-teal-800" required min="0">
+                        </div>
+                    </div>
+
+                    <!-- Wholesale Price Tiers (Harga Grosir) -->
+                    <div class="border-t pt-3 space-y-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-0">
+                                <i class="fa-solid fa-tags text-indigo-600 me-1"></i> Tiering Harga Grosir (Wholesale)
+                            </label>
+                            <button type="button" @click="addWholesaleTier()" class="btn btn-sm btn-outline-primary py-0.5 px-2 text-[11px]">
+                                <i class="fa-solid fa-plus me-1"></i> Tambah Tier Grosir
+                            </button>
+                        </div>
+
+                        <template x-if="!editMaterial.wholesale || editMaterial.wholesale.length === 0">
+                            <div class="text-[11px] text-slate-400 italic bg-slate-50 p-2 rounded text-center">
+                                Belum ada tier harga grosir untuk produk ini. Klik tombol di atas untuk menambahkan.
+                            </div>
+                        </template>
+
+                        <div class="space-y-2 max-h-36 overflow-y-auto pr-1">
+                            <template x-for="(tier, idx) in editMaterial.wholesale" :key="idx">
+                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                    <div class="w-1/2">
+                                        <label class="block text-[10px] text-slate-500 font-bold mb-0.5">Min. Beli (Qty/Pcs)</label>
+                                        <input type="number" min="1" :name="'wholesale[' + idx + '][min_qty]'" x-model="tier.min_qty" placeholder="Misal: 10" 
+                                            class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs focus:border-blue-600 focus:outline-none" required>
+                                    </div>
+                                    <div class="w-1/2">
+                                        <label class="block text-[10px] text-slate-500 font-bold mb-0.5">Harga Grosir (Rp)</label>
+                                        <input type="number" min="0" :name="'wholesale[' + idx + '][price]'" x-model="tier.price" placeholder="Misal: 45000" 
+                                            class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono focus:border-blue-600 focus:outline-none" required>
+                                    </div>
+                                    <div class="pt-3">
+                                        <button type="button" @click="removeWholesaleTier(idx)" class="text-rose-500 hover:text-rose-700 p-1 border-0 bg-transparent" title="Hapus Tier">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
                 <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
                     <button type="button" class="btn-odoo-secondary" @click="editOpen = false">Cancel</button>
-                    <button type="submit" class="btn-odoo-primary">Validate Adjustment</button>
+                    <button type="submit" class="btn-odoo-primary">Simpan Opname & Grosir</button>
                 </div>
             </form>
         </div>

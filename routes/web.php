@@ -46,6 +46,14 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/purchasing', [PurchasingController::class, 'store'])->name('purchasing.store');
         Route::post('/purchasing/{purchase}/approve', [PurchasingController::class, 'approve'])->name('purchasing.approve');
         
+        // Purchase Plans (Bundle RFQ & Owner Approval)
+        Route::get('/purchasing/plans', [\App\Http\Controllers\PurchasePlanController::class, 'index'])->name('purchasing.plans.index');
+        Route::get('/purchasing/plans/create', [\App\Http\Controllers\PurchasePlanController::class, 'create'])->name('purchasing.plans.create');
+        Route::post('/purchasing/plans', [\App\Http\Controllers\PurchasePlanController::class, 'store'])->name('purchasing.plans.store');
+        Route::get('/purchasing/plans/{plan}', [\App\Http\Controllers\PurchasePlanController::class, 'show'])->name('purchasing.plans.show');
+        Route::post('/purchasing/plans/{plan}/approve', [\App\Http\Controllers\PurchasePlanController::class, 'approve'])->name('purchasing.plans.approve');
+        Route::post('/purchasing/plans/{plan}/reject', [\App\Http\Controllers\PurchasePlanController::class, 'reject'])->name('purchasing.plans.reject');
+
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
 

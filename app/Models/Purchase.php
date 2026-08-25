@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['po_number', 'vendor_ref', 'branch_id', 'user_id', 'material_id', 'qty_bought', 'total_cost', 'supplier_id', 'status', 'approved_by', 'approved_at', 'approval_notes', 'verified_at', 'verified_by', 'verification_notes'])]
+#[Fillable(['po_number', 'vendor_ref', 'branch_id', 'user_id', 'material_id', 'qty_bought', 'total_cost', 'supplier_id', 'purchase_plan_id', 'status', 'approved_by', 'approved_at', 'approval_notes', 'verified_at', 'verified_by', 'verification_notes'])]
 class Purchase extends Model
 {
     public static function generatePoNumber(): string
@@ -35,6 +35,11 @@ class Purchase extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function purchasePlan(): BelongsTo
+    {
+        return $this->belongsTo(PurchasePlan::class, 'purchase_plan_id');
     }
 
     protected function casts(): array
