@@ -625,6 +625,24 @@
                 : `<div style="border: 1.5px dashed #059669; padding: 4px; color: #047857; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 4px; background: #ecfdf5;">✓ ACC OWNER DISETUJUI<br><small style="font-weight:normal;">${(plan.approved_at || '').substring(0, 10)}</small></div>`)
             : `<div style="height: 45px; line-height: 45px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Menunggu ACC Owner ]</div>`;
 
+        // 3. Signature / Mark Penerima Fisik Gudang (GRN Verification)
+        let warehouseVerifierName = '(...........................)';
+        let warehouseVerifierSigHtml = `<div style="height: 45px; line-height: 45px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Menunggu Fisik Gudang ]</div>`;
+        let warehouseRole = 'Staff Gudang Cabang';
+
+        const verifiedPurchase = (plan.purchases || []).find(p => p.status === 'received' && (p.verified_by || p.verified_by_user));
+        if (verifiedPurchase) {
+            const vUser = verifiedPurchase.verified_by_user || verifiedPurchase.verified_by;
+            const vName = typeof vUser === 'object' && vUser ? (vUser.full_name || vUser.username) : 'Staff Gudang';
+            warehouseVerifierName = vName;
+            const vSig = typeof vUser === 'object' && vUser && vUser.signature_path ? `{{ asset('storage') }}/${vUser.signature_path}` : null;
+            const vDate = verifiedPurchase.verified_at ? String(verifiedPurchase.verified_at).substring(0, 10) : '';
+
+            warehouseVerifierSigHtml = vSig 
+                ? `<img src="${vSig}" style="max-height: 50px; max-width: 120px; margin: 0 auto 4px auto; display: block;">` 
+                : `<div style="border: 1.5px dashed #059669; padding: 4px; color: #047857; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 4px; background: #ecfdf5;">✓ FISIK DITERIMA GUDANG<br><small style="font-weight:normal;">${vDate}</small></div>`;
+        }
+
         printWindow.document.write(`
             <html>
             <head>
@@ -730,10 +748,10 @@
                     <div class="sig-card">
                         <div class="sig-title">Penerimaan Fisik (Gudang):</div>
                         <div style="min-height: 50px; display: flex; align-items: center; justify-content: center;">
-                            <div style="height: 45px; line-height: 45px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Verifikasi Fisik GRN ]</div>
+                            ${warehouseVerifierSigHtml}
                         </div>
-                        <div class="sig-name">(...........................)</div>
-                        <div style="font-size: 10px; color: #64748b;">Staff Gudang Cabang</div>
+                        <div class="sig-name">${warehouseVerifierName}</div>
+                        <div style="font-size: 10px; color: #64748b;">${warehouseRole}</div>
                     </div>
                 </div>
 
