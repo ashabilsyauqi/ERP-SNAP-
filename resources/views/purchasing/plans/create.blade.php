@@ -18,13 +18,13 @@
 @endsection
 
 @section('content')
-<div class="max-w-5xl mx-auto" x-data="purchasePlanForm()">
+<div class="max-w-5xl mx-auto" x-data="purchasePlanForm()" id="plan-form-container">
 
     <!-- Odoo Form Statusbar -->
     <div class="o_form_statusbar mb-3">
         <div class="d-flex align-items-center gap-2">
             <button type="button" @click="submit('submit_rfq')" class="btn-odoo-primary text-xs">
-                <i class="fa-solid fa-paper-plane me-1"></i> Ajukan RFQ ke Owner
+                <i class="fa-solid fa-paper-plane me-1"></i> Confirm & Ajukan RFQ
             </button>
             <button type="button" @click="submit('draft')" class="btn-odoo-secondary text-xs">
                 <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Draft
@@ -111,7 +111,7 @@
                     </button>
                 </div>
 
-                <div class="table-responsive bg-white rounded border">
+                <div class="table-responsive bg-white rounded border" style="overflow: visible !important;">
                     <table class="table table-sm table-bordered mb-0 text-xs align-middle">
                         <thead class="bg-slate-100 text-slate-700">
                             <tr>
@@ -128,19 +128,79 @@
                         <tbody>
                             <template x-for="(item, idx) in items" :key="idx">
                                 <tr>
-                                    <td class="text-center font-bold text-slate-500" x-text="idx + 1"></td>
+                                    <td class="text-center font-bold text-slate-400" x-text="idx + 1"></td>
                                     
-                                    <td>
-                                        <input type="text" :name="'items[' + idx + '][material_name]'" x-model="item.material_name" 
-                                            @input="onMaterialSelect(idx, $event)"
-                                            list="material-suggestions" required placeholder="Pilih / ketik nama bahan..." 
-                                            class="form-control form-control-sm py-1">
+                                    <!-- Material Input with Modern Seamless Floating Dropdown -->
+                                    <td class="position-relative" x-data="{ open: false }" @click.outside="open = false">
+                                        <input type="text" 
+                                               :name="'items[' + idx + '][material_name]'" 
+                                               x-model="item.material_name" 
+                                               @focus="open = true" 
+                                               @input="open = true"
+                                               required 
+                                               autocomplete="off"
+                                               placeholder="Ketik / cari nama bahan..." 
+                                               class="form-control form-control-sm py-1 bg-white focus:border-blue-600">
+                                        
+                                        <!-- Seamless Floating Dropdown Box -->
+                                        <div x-show="open" 
+                                             x-cloak
+                                             class="position-absolute bg-white rounded-2 shadow-lg border p-1 z-3"
+                                             style="top: 100%; left: 0; min-width: 280px; max-height: 240px; overflow-y: auto;">
+                                            
+                                            <template x-for="mat in filteredMaterials(item.material_name)" :key="mat.id">
+                                                <div @click="selectMaterial(idx, mat); open = false" 
+                                                     class="p-2 border-bottom cursor-pointer hover:bg-light transition text-start">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <strong class="text-slate-900 text-xs" x-text="mat.material_name"></strong>
+                                                        <span class="badge bg-light text-secondary text-[10px]" x-text="mat.branch ? mat.branch.nama_cabang : 'Pusat'"></span>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between align-items-center mt-1 text-[10px] text-muted">
+                                                        <span x-text="mat.supplier ? mat.supplier.name : '-'"></span>
+                                                        <span class="font-mono fw-bold text-success" x-text="'Rp ' + Number(mat.purchase_price || 0).toLocaleString('id-ID')"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <div @click="open = false" 
+                                                 class="p-2 bg-light text-primary fw-semibold cursor-pointer text-xs transition">
+                                                <i class="fa-solid fa-plus-circle me-1"></i>
+                                                <span x-text="'Gunakan bahan baru: \'' + (item.material_name || '') + '\''"></span>
+                                            </div>
+                                        </div>
                                     </td>
 
-                                    <td>
-                                        <input type="text" :name="'items[' + idx + '][supplier_name]'" x-model="item.supplier_name" 
-                                            list="supplier-suggestions" placeholder="Vendor / supplier..." 
-                                            class="form-control form-control-sm py-1">
+                                    <!-- Supplier Input with Modern Seamless Floating Dropdown -->
+                                    <td class="position-relative" x-data="{ open: false }" @click.outside="open = false">
+                                        <input type="text" 
+                                               :name="'items[' + idx + '][supplier_name]'" 
+                                               x-model="item.supplier_name" 
+                                               @focus="open = true" 
+                                               @input="open = true"
+                                               autocomplete="off"
+                                               placeholder="Vendor / supplier..." 
+                                               class="form-control form-control-sm py-1 bg-white focus:border-blue-600">
+                                        
+                                        <!-- Seamless Floating Dropdown Box -->
+                                        <div x-show="open" 
+                                             x-cloak
+                                             class="position-absolute bg-white rounded-2 shadow-lg border p-1 z-3"
+                                             style="top: 100%; left: 0; min-width: 240px; max-height: 200px; overflow-y: auto;">
+                                            
+                                            <template x-for="s in filteredSuppliers(item.supplier_name)" :key="s.id">
+                                                <div @click="selectSupplier(idx, s); open = false" 
+                                                     class="p-2 border-bottom cursor-pointer hover:bg-light transition text-start d-flex justify-content-between align-items-center">
+                                                    <strong class="text-slate-800 text-xs" x-text="s.name"></strong>
+                                                    <i class="fa-solid fa-building text-muted text-[10px]"></i>
+                                                </div>
+                                            </template>
+
+                                            <div @click="open = false" 
+                                                 class="p-2 bg-light text-primary fw-semibold cursor-pointer text-xs transition">
+                                                <i class="fa-solid fa-plus-circle me-1"></i>
+                                                <span x-text="'Gunakan vendor baru: \'' + (item.supplier_name || '') + '\''"></span>
+                                            </div>
+                                        </div>
                                     </td>
 
                                     <td>
@@ -161,7 +221,7 @@
                                     <td class="text-end font-mono fw-bold text-slate-800" x-text="'Rp ' + getItemSubtotal(item).toLocaleString('id-ID')"></td>
 
                                     <td class="text-center">
-                                        <button type="button" @click="removeItem(idx)" class="text-rose-500 hover:text-rose-700 border-0 bg-transparent p-0" title="Hapus Baris">
+                                        <button type="button" @click="removeItem(idx)" class="text-danger border-0 bg-transparent p-0" title="Hapus Baris">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </td>
@@ -177,19 +237,6 @@
                         </tfoot>
                     </table>
                 </div>
-
-                <!-- Datalist Autocompletes -->
-                <datalist id="material-suggestions">
-                    @foreach($materials as $m)
-                        <option value="{{ $m->material_name }}">{{ $m->material_name }} ({{ $m->branch->nama_cabang ?? 'Pusat' }})</option>
-                    @endforeach
-                </datalist>
-
-                <datalist id="supplier-suggestions">
-                    @foreach($suppliers as $s)
-                        <option value="{{ $s->name }}">{{ $s->name }}</option>
-                    @endforeach
-                </datalist>
             </div>
 
             <!-- Action Buttons Footer -->
@@ -208,6 +255,7 @@
 
 <script>
     window.rawMaterials = @json($materials);
+    window.rawSuppliers = @json($suppliers);
 
     function purchasePlanForm() {
         return {
@@ -224,16 +272,29 @@
                     alert('Purchase Plan minimal harus memiliki 1 item produk.');
                 }
             },
-            onMaterialSelect(index, event) {
-                const val = event.target.value;
-                const found = window.rawMaterials.find(function(m) { return m.material_name === val; });
-                if (found) {
-                    this.items[index].material_name = found.material_name;
-                    this.items[index].supplier_name = found.supplier ? found.supplier.name : '';
-                    this.items[index].fixed_size = found.fixed_size || '';
-                    this.items[index].estimated_unit_price = found.purchase_price || 0;
-                    this.items[index].retail_price = found.retail_price || 0;
-                }
+            filteredMaterials(query) {
+                const q = (query || '').toLowerCase().trim();
+                if (!q) return window.rawMaterials.slice(0, 8);
+                return window.rawMaterials.filter(function(m) {
+                    return m.material_name.toLowerCase().includes(q);
+                }).slice(0, 10);
+            },
+            filteredSuppliers(query) {
+                const q = (query || '').toLowerCase().trim();
+                if (!q) return window.rawSuppliers.slice(0, 8);
+                return window.rawSuppliers.filter(function(s) {
+                    return s.name.toLowerCase().includes(q);
+                }).slice(0, 10);
+            },
+            selectMaterial(index, mat) {
+                this.items[index].material_name = mat.material_name;
+                this.items[index].supplier_name = mat.supplier ? mat.supplier.name : '';
+                this.items[index].fixed_size = mat.fixed_size || '';
+                this.items[index].estimated_unit_price = mat.purchase_price || 0;
+                this.items[index].retail_price = mat.retail_price || 0;
+            },
+            selectSupplier(index, supp) {
+                this.items[index].supplier_name = supp.name;
             },
             getItemSubtotal(item) {
                 return (Number(item.qty) || 0) * (Number(item.estimated_unit_price) || 0);
