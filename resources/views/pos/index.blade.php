@@ -4,13 +4,28 @@
 @section('page-title', 'Terminal Kasir Penjualan (POS)')
 
 @section('action-buttons')
+<a href="{{ route('sales.receivables') }}" class="btn-odoo-primary text-decoration-none">
+    <i class="fa-solid fa-hand-holding-dollar me-1"></i> Piutang & Pesanan DP
+</a>
 <a href="{{ route('sales.index') }}" class="btn-odoo-secondary text-decoration-none">
     <i class="fa-solid fa-receipt me-1 text-blue-600"></i> Riwayat Penjualan
 </a>
 @endsection
 
 @section('content')
-<div class="flex flex-col md:flex-row gap-4 h-[calc(100vh-125px)] animate-fade-in relative pb-16 md:pb-0 overflow-hidden">
+<div class="flex flex-col md:flex-row gap-4 h-[calc(100vh-125px)] animate-fade-in relative pb-16 md:pb-0 overflow-hidden" 
+     x-data="{ 
+        isDp: false, 
+        customerName: '', 
+        customerPhone: '', 
+        dueDate: '', 
+        dpAmount: 0, 
+        productionNotes: '',
+        setDpPercent(pct) {
+            const total = window.currentGrandTotal || 0;
+            this.dpAmount = Math.round(total * (pct / 100));
+        }
+     }">
     
     <!-- Left Column: Products Grid & Search (60% Desktop) -->
     <div class="w-full md:w-3/5 lg:w-2/3 flex flex-col gap-3 min-h-0 h-full">
@@ -111,7 +126,7 @@
     <!-- Right Column: Cart & Checkout (Desktop 40%, Fits Exact Height) -->
     <div class="hidden md:flex md:w-2/5 lg:w-1/3 bg-white rounded-2xl border border-slate-200 shadow-sm flex-col overflow-hidden h-full">
         <!-- Cart Header -->
-        <div class="p-3.5 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+        <div class="p-3 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-cart-shopping text-blue-400"></i>
                 <h2 class="text-sm font-bold mb-0 text-white">Keranjang Order (POS)</h2>
@@ -120,34 +135,91 @@
         </div>
         
         <!-- Cart Items List (Desktop Independent Scroll) -->
-        <div class="p-3.5 flex-grow overflow-y-auto bg-slate-50/50 min-h-0" id="cart-container-desktop">
+        <div class="p-3 flex-grow overflow-y-auto bg-slate-50/50 min-h-0 space-y-2.5" id="cart-container-desktop">
             <!-- Injected by JS -->
         </div>
 
         <!-- Checkout Pricing & Action Area (Docked at Bottom) -->
-        <div class="p-3.5 border-t border-slate-200 bg-white space-y-3 flex-shrink-0">
+        <div class="p-3 border-t border-slate-200 bg-white space-y-2.5 flex-shrink-0 overflow-y-auto max-h-[55vh]">
             
+            <!-- DP (Down Payment) & Custom Order Toggle -->
+            <div class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer mb-0">
+                        <input type="checkbox" x-model="isDp" id="is_dp_toggle" class="form-check-input text-blue-600 rounded">
+                        <span class="text-xs font-bold text-blue-950">Pesanan Khusus / DP (Uang Muka)</span>
+                    </label>
+                    <span class="text-[10px] text-blue-700 font-semibold uppercase tracking-wider" x-show="isDp">Mode DP Aktif</span>
+                </div>
+
+                <!-- DP Extra Fields (Animated Expand) -->
+                <div x-show="isDp" x-cloak class="space-y-2 pt-1 border-t border-blue-200/60 text-xs">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Nama Client</label>
+                            <input type="text" x-model="customerName" placeholder="Contoh: PT Surya / Bpk Dani" 
+                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">No. WhatsApp</label>
+                            <input type="text" x-model="customerPhone" placeholder="08123456789" 
+                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Estimasi Selesai (DL)</label>
+                            <input type="date" x-model="dueDate" 
+                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Nominal DP (Rp)</label>
+                            <input type="number" x-model="dpAmount" placeholder="0" 
+                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-emerald-800">
+                        </div>
+                    </div>
+
+                    <!-- Shortcut DP Buttons -->
+                    <div class="flex items-center justify-between text-[10px]">
+                        <span class="text-slate-500 font-semibold">Shortcut DP:</span>
+                        <div class="flex gap-1">
+                            <button type="button" @click="setDpPercent(30)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">30%</button>
+                            <button type="button" @click="setDpPercent(50)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">50%</button>
+                            <button type="button" @click="setDpPercent(70)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">70%</button>
+                        </div>
+                    </div>
+
+                    <!-- Notes & Specs -->
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Catatan Produksi / Finishing</label>
+                        <textarea x-model="productionNotes" rows="1" placeholder="Misal: Finishing mata ayam 4 pojok, bahan matte..." 
+                            class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs"></textarea>
+                    </div>
+                </div>
+            </div>
+
             <!-- Payment Method Tiles (Desktop) -->
             <div>
-                <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Metode Pembayaran</label>
-                <div class="grid grid-cols-3 gap-2">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Metode Pembayaran (DP / Full)</label>
+                <div class="grid grid-cols-3 gap-1.5">
                     <!-- Cash Button -->
                     <button type="button" onclick="setPaymentMethod('Cash')" id="pm-desktop-Cash" 
-                        class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <i class="fa-solid fa-money-bill-wave text-base mb-1 text-emerald-600"></i>
-                        <span class="text-xs font-bold">Tunai (Cash)</span>
+                        class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                        <i class="fa-solid fa-money-bill-wave text-sm mb-0.5 text-emerald-600"></i>
+                        <span class="text-[11px] font-bold">Tunai</span>
                     </button>
                     <!-- Transfer Button -->
                     <button type="button" onclick="setPaymentMethod('Transfer')" id="pm-desktop-Transfer" 
-                        class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <i class="fa-solid fa-building-columns text-base mb-1 text-blue-600"></i>
-                        <span class="text-xs font-bold">Transfer</span>
+                        class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                        <i class="fa-solid fa-building-columns text-sm mb-0.5 text-blue-600"></i>
+                        <span class="text-[11px] font-bold">Transfer</span>
                     </button>
                     <!-- QRIS Button -->
                     <button type="button" onclick="setPaymentMethod('QRIS')" id="pm-desktop-QRIS" 
-                        class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <i class="fa-solid fa-qrcode text-base mb-1 text-indigo-600"></i>
-                        <span class="text-xs font-bold">QRIS</span>
+                        class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                        <i class="fa-solid fa-qrcode text-sm mb-0.5 text-indigo-600"></i>
+                        <span class="text-[11px] font-bold">QRIS</span>
                     </button>
                 </div>
             </div>
@@ -155,19 +227,28 @@
             <!-- Receipt Breakdown -->
             <div class="bg-slate-50 p-2.5 rounded-xl space-y-1 text-xs text-slate-500 font-medium border border-slate-100">
                 <div class="flex justify-between">
-                    <span>Subtotal</span>
-                    <span id="receipt-subtotal-desktop" class="font-mono">Rp 0</span>
+                    <span>Total Tagihan Pesanan</span>
+                    <span id="receipt-total-desktop" class="font-mono font-bold text-slate-900">Rp 0</span>
                 </div>
-                <div class="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1 text-sm">
-                    <span>Total Tagihan</span>
-                    <span id="receipt-total-desktop" class="font-mono text-blue-900">Rp 0</span>
-                </div>
+                
+                <template x-if="isDp">
+                    <div class="space-y-1 pt-1 border-t border-slate-200">
+                        <div class="flex justify-between text-emerald-700 font-semibold">
+                            <span>Uang Muka (DP) Dibayar</span>
+                            <span class="font-mono" x-text="'Rp ' + Number(dpAmount || 0).toLocaleString('id-ID')"></span>
+                        </div>
+                        <div class="flex justify-between text-amber-800 font-extrabold">
+                            <span>Sisa Piutang (Pelunasan Nanti)</span>
+                            <span class="font-mono text-amber-700" x-text="'Rp ' + Math.max(0, (window.currentGrandTotal || 0) - Number(dpAmount || 0)).toLocaleString('id-ID')"></span>
+                        </div>
+                    </div>
+                </template>
             </div>
             
             <!-- Success Notification Card (Emerald Green) -->
             <div id="checkout-success-desktop" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-900 p-3 rounded-xl text-xs space-y-2">
                 <div class="d-flex justify-content-between align-items-center">
-                    <span class="badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded">
+                    <span class="badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded" id="success-badge-tag">
                         <i class="fa-solid fa-circle-check me-1"></i> LUNAS (PAID)
                     </span>
                     <span class="font-mono font-bold text-blue-900 text-xs" id="success-inv-text">INV-XXXX</span>
@@ -177,7 +258,7 @@
                 </div>
                 <div class="d-flex gap-2 pt-1">
                     <button type="button" id="btn-print-last-receipt" class="btn btn-sm btn-primary text-xs flex-1 py-1 font-semibold d-inline-flex align-items-center justify-content-center gap-1">
-                        <i class="fa-solid fa-print"></i> Cetak Struk 58mm
+                        <i class="fa-solid fa-print"></i> Struk 58mm
                     </button>
                     <button type="button" id="btn-open-last-inv" class="btn btn-sm btn-outline-secondary text-xs flex-1 py-1 font-semibold d-inline-flex align-items-center justify-content-center gap-1">
                         <i class="fa-solid fa-file-invoice text-blue-600"></i> Buka Faktur
@@ -190,7 +271,7 @@
 
             <button onclick="processCheckout()" id="checkout-btn-desktop" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0">
                 <i class="fa-solid fa-circle-check"></i>
-                <span>Proses Bayar (Checkout)</span>
+                <span x-text="isDp ? 'Proses Simpan Pesanan DP' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
             </button>
         </div>
     </div>
@@ -260,10 +341,6 @@
 
                 <!-- Price summary -->
                 <div class="bg-slate-50 p-3 rounded-xl space-y-1 text-xs text-slate-500 font-medium">
-                    <div class="flex justify-between">
-                        <span>Subtotal</span>
-                        <span id="receipt-subtotal-mobile" class="font-mono">Rp 0</span>
-                    </div>
                     <div class="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1 text-sm">
                         <span>Total Tagihan</span>
                         <span id="receipt-total-mobile" class="font-mono text-blue-900">Rp 0</span>
@@ -274,7 +351,7 @@
                 <div id="checkout-success-mobile" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-900 p-3 rounded-xl text-xs space-y-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded">
-                            <i class="fa-solid fa-circle-check me-1"></i> LUNAS (PAID)
+                            <i class="fa-solid fa-circle-check me-1"></i> STATUS SUKSES
                         </span>
                         <span class="font-mono font-bold text-blue-900" id="success-inv-text-mobile"></span>
                     </div>
@@ -302,6 +379,7 @@
 <script>
     let cart = [];
     let cartCounter = 0;
+    window.currentGrandTotal = 0;
 
     // --- Add items to Cart ---
     function addToCart(materialName, fixedSize, retailPrice, wholesalePrices) {
@@ -378,11 +456,7 @@
         const mobileContainer = document.getElementById('cart-container-mobile');
         
         const badgeCount = document.getElementById('cart-item-count-badge');
-        
-        const receiptSubtotalDesktop = document.getElementById('receipt-subtotal-desktop');
         const receiptTotalDesktop = document.getElementById('receipt-total-desktop');
-        
-        const receiptSubtotalMobile = document.getElementById('receipt-subtotal-mobile');
         const receiptTotalMobile = document.getElementById('receipt-total-mobile');
         
         const mobileCartBar = document.getElementById('mobile-cart-bar');
@@ -402,10 +476,9 @@
             desktopContainer.innerHTML = emptyState;
             mobileContainer.innerHTML = emptyState;
             badgeCount.innerText = '0 item';
-            receiptSubtotalDesktop.innerText = 'Rp 0';
             receiptTotalDesktop.innerText = 'Rp 0';
-            receiptSubtotalMobile.innerText = 'Rp 0';
             receiptTotalMobile.innerText = 'Rp 0';
+            window.currentGrandTotal = 0;
             
             mobileCartBar.classList.add('hidden');
             return;
@@ -461,11 +534,10 @@
         mobileContainer.innerHTML = cartHtml;
 
         badgeCount.innerText = `${totalQty} item`;
+        window.currentGrandTotal = grandTotal;
         
         const formattedTotal = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
-        receiptSubtotalDesktop.innerText = formattedTotal;
         receiptTotalDesktop.innerText = formattedTotal;
-        receiptSubtotalMobile.innerText = formattedTotal;
         receiptTotalMobile.innerText = formattedTotal;
 
         // Mobile Bottom Bar Data
@@ -549,6 +621,20 @@
             return;
         }
 
+        const alpineData = Alpine.$data(document.querySelector('[x-data]'));
+
+        const isDp = alpineData.isDp;
+        const dpAmount = parseFloat(alpineData.dpAmount) || 0;
+        const customerName = alpineData.customerName;
+        const customerPhone = alpineData.customerPhone;
+        const dueDate = alpineData.dueDate;
+        const productionNotes = alpineData.productionNotes;
+
+        if (isDp && dpAmount <= 0) {
+            Swal.fire({ icon: 'warning', title: 'Nominal DP Belum Diisi', text: 'Masukkan nominal uang muka (DP) yang dibayar oleh client.' });
+            return;
+        }
+
         const paymentMethod = document.getElementById('global_payment_method').value;
         const errContainerDesktop = document.getElementById('checkout-error-desktop');
         const errContainerMobile = document.getElementById('checkout-error-mobile');
@@ -584,14 +670,20 @@
             },
             body: JSON.stringify({
                 payment_method: paymentMethod,
-                items: payloadItems
+                items: payloadItems,
+                is_dp: isDp,
+                dp_amount: dpAmount,
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                due_date: dueDate,
+                production_notes: productionNotes
             })
         })
         .then(response => response.json())
         .then(data => {
             btnDesktop.disabled = false;
             btnMobile.disabled = false;
-            btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Proses Bayar (Checkout)`;
+            btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${isDp ? 'Proses Simpan Pesanan DP' : 'Proses Bayar (Checkout)'}`;
             btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar Tagihan`;
 
             if (data.status === 'success' || data.success === true) {
@@ -600,9 +692,23 @@
                 renderCart();
                 toggleMobileCartDrawer(false);
 
-                // Show Green Success Card in Desktop Cart Panel
+                const isPartial = data.payment_status === 'PARTIAL';
+
+                // Show Green / Amber Success Card in Desktop Cart Panel
                 if (successContainerDesktop) {
                     document.getElementById('success-inv-text').innerText = '#' + data.invoice_number;
+                    
+                    const badgeEl = document.getElementById('success-badge-tag');
+                    if (isPartial) {
+                        badgeEl.className = 'badge bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded';
+                        badgeEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-1"></i> DP (UANG MUKA)';
+                        document.getElementById('success-msg-text').innerText = `DP Rp ${Number(data.paid_amount).toLocaleString('id-ID')} diterima. Sisa Piutang: Rp ${Number(data.remaining_amount).toLocaleString('id-ID')}`;
+                    } else {
+                        badgeEl.className = 'badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded';
+                        badgeEl.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> LUNAS (PAID)';
+                        document.getElementById('success-msg-text').innerText = 'Transaksi lunas berhasil diproses & tercatat pada kasir.';
+                    }
+
                     successContainerDesktop.classList.remove('hidden');
 
                     document.getElementById('btn-print-last-receipt').onclick = function() {
@@ -613,26 +719,31 @@
                     };
                 }
 
-                // Show Green Success Alert in Mobile
-                if (successContainerMobile) {
-                    document.getElementById('success-inv-text-mobile').innerText = '#' + data.invoice_number;
-                    successContainerMobile.classList.remove('hidden');
-                    document.getElementById('btn-print-last-receipt-mobile').onclick = function() {
-                        window.open(data.receipt_url, '_blank');
-                    };
-                }
+                // Show Success SweetAlert with Instant 58mm Thermal Print Trigger
+                const titleHtml = isPartial 
+                    ? '<span style="color: #d97706; font-weight: 800;">Pesanan DP Tercatat!</span>'
+                    : '<span style="color: #059669; font-weight: 800;">Transaksi LUNAS (PAID)</span>';
 
-                // Show Green Success SweetAlert with Instant 58mm Thermal Print Trigger
+                const statusBadge = isPartial
+                    ? `<span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 border border-amber-400 rounded-md text-xs font-extrabold uppercase mb-2">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> STATUS: DP (PARSIAL) &bull; SISA PIUTANG: Rp ${Number(data.remaining_amount || 0).toLocaleString('id-ID')}
+                       </span>`
+                    : `<span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-400 rounded-md text-xs font-extrabold uppercase mb-2">
+                        <i class="fa-solid fa-circle-check text-emerald-600"></i> STATUS: PAID (LUNAS)
+                       </span>`;
+
                 Swal.fire({
                     icon: 'success',
-                    title: '<span style="color: #059669; font-weight: 800;">Transaksi LUNAS (PAID)</span>',
+                    title: titleHtml,
                     html: `
                         <div class="py-2 text-center">
-                            <span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-400 rounded-md text-xs font-extrabold uppercase mb-2">
-                                <i class="fa-solid fa-circle-check text-emerald-600"></i> STATUS: PAID (LUNAS)
-                            </span>
+                            ${statusBadge}
                             <div class="font-mono text-base font-bold text-slate-800 mt-1">#${data.invoice_number}</div>
-                            <div class="text-sm font-extrabold text-blue-900 mt-1 font-mono">Total: Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}</div>
+                            ${data.customer_name ? `<div class="text-xs text-slate-700 font-semibold mt-1">Client: <strong>${data.customer_name}</strong></div>` : ''}
+                            <div class="text-sm font-extrabold text-blue-900 mt-1 font-mono">
+                                Total: Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}
+                                ${isPartial ? `<br><span class="text-emerald-700 text-xs">DP Masuk: Rp ${Number(data.paid_amount || 0).toLocaleString('id-ID')}</span>` : ''}
+                            </div>
                             <div class="text-xs text-slate-500 mt-1">Metode: <strong>${data.payment_method}</strong> &bull; Kasir: ${data.cashier_name}</div>
                         </div>
                     `,
@@ -642,14 +753,12 @@
                     denyButtonColor: '#0f172a',
                     cancelButtonColor: '#64748b',
                     confirmButtonText: '<i class="fa-solid fa-print me-1"></i> Cetak Struk 58mm',
-                    denyButtonText: '<i class="fa-solid fa-file-invoice me-1"></i> Buka Faktur',
+                    denyButtonText: '<i class="fa-solid fa-file-invoice me-1"></i> Buka Faktur / SPK',
                     cancelButtonText: 'Selesai (+ Transaksi Baru)'
                 }).then((result) => {
                     if (result.isConfirmed && data.receipt_url) {
-                        // Open 58mm receipt popup
                         window.open(data.receipt_url, '_blank', 'width=450,height=600');
                     } else if (result.isDenied) {
-                        // Open SnapPrint invoice modal
                         openSnapPrintInvoice(data);
                     }
                 });
@@ -665,8 +774,8 @@
         .catch(err => {
             btnDesktop.disabled = false;
             btnMobile.disabled = false;
-            btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Proses Bayar (Checkout)`;
-            btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar Tagihan`;
+            btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Proses Bayar`;
+            btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar`;
             
             Swal.fire({ icon: 'error', title: 'Gagal', text: 'Koneksi bermasalah atau terjadi error pada server.' });
         });

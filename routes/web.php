@@ -55,8 +55,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/cashier-shift/open', [\App\Http\Controllers\CashierShiftController::class, 'openShift'])->name('cashier-shift.open');
         Route::post('/cashier-shift/close', [\App\Http\Controllers\CashierShiftController::class, 'closeShift'])->name('cashier-shift.close');
         
-        // Cashier and Owner sales views
+        // Cashier, Manager, and Owner sales views & Receivables
         Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
+        Route::get('/sales/receivables', [SalesController::class, 'receivables'])->name('sales.receivables');
+        Route::post('/sales/{id}/settle', [SalesController::class, 'settle'])->name('sales.settle');
+        Route::patch('/sales/{id}/status', [SalesController::class, 'updateOrderStatus'])->name('sales.status');
         Route::get('/sales/{id}/receipt', [SalesController::class, 'receipt'])->name('sales.receipt');
     });
 

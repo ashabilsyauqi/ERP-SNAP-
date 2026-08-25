@@ -12,6 +12,7 @@ class AccountSeeder extends Seeder
             ['kode_akun' => '1-1000', 'nama_akun' => 'Kas', 'tipe' => 'aset'],
             ['kode_akun' => '1-1100', 'nama_akun' => 'Kas Kecil', 'tipe' => 'aset'],
             ['kode_akun' => '1-1200', 'nama_akun' => 'Bank', 'tipe' => 'aset'],
+            ['kode_akun' => '1-1300', 'nama_akun' => 'Piutang Usaha', 'tipe' => 'aset'],
             ['kode_akun' => '4-1000', 'nama_akun' => 'Pendapatan Penjualan', 'tipe' => 'pendapatan'],
             ['kode_akun' => '4-2000', 'nama_akun' => 'Pendapatan Lain-lain', 'tipe' => 'pendapatan'],
             ['kode_akun' => '5-1000', 'nama_akun' => 'Beban Bahan Baku', 'tipe' => 'beban'],

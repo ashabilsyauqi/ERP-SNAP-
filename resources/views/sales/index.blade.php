@@ -49,8 +49,14 @@
                                     'cashier_name' => $trx->user->full_name ?: ($trx->user->username ?? 'Kasir'),
                                     'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
                                     'payment_method' => $trx->payment_method ?? 'Cash',
-                                    'payment_status' => 'PAID',
+                                    'payment_status' => $trx->payment_status,
                                     'total_price' => $trx->total_price,
+                                    'paid_amount' => $trx->paid_amount,
+                                    'remaining_amount' => $trx->remaining_amount,
+                                    'customer_name' => $trx->customer_name,
+                                    'customer_phone' => $trx->customer_phone,
+                                    'due_date' => $trx->due_date ? $trx->due_date->format('d M Y') : null,
+                                    'production_notes' => $trx->production_notes,
                                     'items' => $invItems
                                 ];
                             @endphp
@@ -65,6 +71,11 @@
                                         <i class="fa-solid fa-file-invoice text-blue-600 text-xs"></i>
                                         <span>{{ $trx->invoice_number }}</span>
                                     </button>
+                                    @if($trx->customer_name)
+                                        <div class="text-[10px] text-slate-500 font-medium">
+                                            <i class="fa-solid fa-user text-slate-400 me-0.5"></i> {{ $trx->customer_name }}
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="text-slate-600 text-xs">
                                     {{ $trx->created_at->format('d M Y, H:i') }}
@@ -80,15 +91,30 @@
                                 </td>
                                 <td class="text-end font-mono fw-bold text-blue-900">
                                     Rp {{ number_format($trx->total_price, 0, ',', '.') }}
+                                    @if($trx->remaining_amount > 0)
+                                        <div class="text-[10px] text-amber-700 font-normal">
+                                            Sisa: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="text-center">
                                     <div class="d-inline-flex align-items-center gap-1">
                                         <span class="badge bg-light text-slate-800 border px-2 py-0.5 text-[11px] font-mono">
                                             {{ strtoupper($trx->payment_method) }}
                                         </span>
-                                        <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 text-[10px] font-bold">
-                                            PAID
-                                        </span>
+                                        @if($trx->isPaid())
+                                            <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 text-[10px] font-bold">
+                                                PAID
+                                            </span>
+                                        @elseif($trx->isPartial())
+                                            <span class="badge bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 text-[10px] font-bold">
+                                                DP
+                                            </span>
+                                        @else
+                                            <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-1.5 py-0.5 text-[10px] font-bold">
+                                                UNPAID
+                                            </span>
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="text-center">
@@ -144,8 +170,14 @@
                             'cashier_name' => $trx->user->full_name ?: ($trx->user->username ?? 'Kasir'),
                             'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
                             'payment_method' => $trx->payment_method ?? 'Cash',
-                            'payment_status' => 'PAID',
+                            'payment_status' => $trx->payment_status,
                             'total_price' => $trx->total_price,
+                            'paid_amount' => $trx->paid_amount,
+                            'remaining_amount' => $trx->remaining_amount,
+                            'customer_name' => $trx->customer_name,
+                            'customer_phone' => $trx->customer_phone,
+                            'due_date' => $trx->due_date ? $trx->due_date->format('d M Y') : null,
+                            'production_notes' => $trx->production_notes,
                             'items' => $invItems
                         ];
                     @endphp
@@ -156,23 +188,37 @@
                                     onclick='openSnapPrintInvoice(@json($invPayload))'>
                                 {{ $trx->invoice_number }}
                             </button>
-                            <span class="badge bg-emerald-100 text-emerald-800 text-[10px]">
-                                PAID
+                            @if($trx->isPaid())
+                                <span class="badge bg-emerald-100 text-emerald-800 text-[10px]">
+                                    PAID
+                                </span>
+                            @elseif($trx->isPartial())
+                                <span class="badge bg-amber-100 text-amber-800 text-[10px]">
+                                    DP
+                                </span>
+                            @else
+                                <span class="badge bg-rose-100 text-rose-800 text-[10px]">
+                                    UNPAID
+                                </span>
+                            @endif
+                        </div>
+                        <div class="text-xs text-slate-500 mb-1">
+                            {{ $trx->created_at->format('d M Y, H:i') }}
+                        </div>
+                        @if($trx->customer_name)
+                            <div class="text-xs font-semibold text-slate-800 mb-1">
+                                Client: {{ $trx->customer_name }}
+                            </div>
+                        @endif
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                            <span class="badge bg-slate-100 text-slate-600 text-[10px]">
+                                {{ $trx->branch->nama_cabang ?? 'Pusat' }}
                             </span>
-                        </div>
-                        <div class="text-[11px] text-slate-500 mb-1">
-                            <i class="fa-solid fa-clock me-1 opacity-70"></i> {{ $trx->created_at->format('d M Y, H:i') }}
-                        </div>
-                        <div class="text-[11px] text-slate-500 mb-2">
-                            <i class="fa-solid fa-building me-1 opacity-70"></i> {{ $trx->branch->nama_cabang ?? 'Pusat' }} &bull; {{ $trx->user->username ?? 'Kasir' }}
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center pt-2 border-top border-slate-100 mt-2">
-                            <span class="fw-bold font-mono text-blue-900 text-xs">Rp {{ number_format($trx->total_price, 0, ',', '.') }}</span>
                             <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-sm btn-light py-0 px-2 text-xs" onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-xs" title="Buka Faktur" onclick='openSnapPrintInvoice(@json($invPayload))'>
                                     <i class="fa-solid fa-file-invoice text-blue-600"></i>
                                 </button>
-                                <a href="{{ route('sales.receipt', $trx->id) }}" class="btn btn-sm btn-light py-0 px-2 text-xs" target="_blank">
+                                <a href="{{ route('sales.receipt', $trx->id) }}" class="btn btn-sm btn-light border py-0 px-2 text-xs" title="Cetak Struk" target="_blank">
                                     <i class="fa-solid fa-receipt"></i>
                                 </a>
                             </div>

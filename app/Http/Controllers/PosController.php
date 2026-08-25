@@ -30,6 +30,12 @@ class PosController extends Controller
             'items.*.requested_size' => 'nullable|numeric|min:0', // for banners
             'items.*.qty' => 'required|integer|min:1',
             'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
+            'is_dp' => 'nullable|boolean',
+            'dp_amount' => 'nullable|numeric|min:0',
+            'customer_name' => 'nullable|string|max:150',
+            'customer_phone' => 'nullable|string|max:50',
+            'due_date' => 'nullable|date',
+            'production_notes' => 'nullable|string',
         ]);
 
         try {
@@ -38,13 +44,24 @@ class PosController extends Controller
             $totalPrice = 0;
             $totalHpp = 0;
 
+            $isDp = $request->boolean('is_dp');
+            $requestedDp = $isDp ? (float) $request->input('dp_amount', 0) : 0;
+
             $transaction = Transaction::create([
                 'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
                 'user_id' => auth()->id(),
                 'branch_id' => auth()->user()->branch_id,
+                'customer_name' => $request->customer_name,
+                'customer_phone' => $request->customer_phone,
                 'total_price' => 0,
                 'total_hpp' => 0,
                 'payment_method' => $request->payment_method,
+                'payment_status' => 'PAID',
+                'paid_amount' => 0,
+                'remaining_amount' => 0,
+                'order_status' => 'completed',
+                'due_date' => $request->due_date,
+                'production_notes' => $request->production_notes,
             ]);
 
             $savedItems = [];
@@ -116,29 +133,52 @@ class PosController extends Controller
                 ];
             }
 
+            // Determine Payment & Order Status based on DP
+            if ($isDp && $requestedDp < $totalPrice && $requestedDp >= 0) {
+                $paidAmount = $requestedDp;
+                $remainingAmount = max(0, $totalPrice - $paidAmount);
+                $paymentStatus = 'PARTIAL';
+                $orderStatus = 'in_production';
+            } else {
+                $paidAmount = $totalPrice;
+                $remainingAmount = 0;
+                $paymentStatus = 'PAID';
+                $orderStatus = $isDp ? 'in_production' : 'completed';
+            }
+
             $transaction->total_price = $totalPrice;
             $transaction->total_hpp = $totalHpp;
+            $transaction->paid_amount = $paidAmount;
+            $transaction->remaining_amount = $remainingAmount;
+            $transaction->payment_status = $paymentStatus;
+            $transaction->order_status = $orderStatus;
             $transaction->save();
 
-            // Record Cash Inflow (Sales)
-            $salesAccount = \App\Models\Account::where('kode_akun', '4-1000')->first();
-            if ($salesAccount) {
-                \App\Models\CashTransaction::create([
-                    'branch_id' => auth()->user()->branch_id,
-                    'account_id' => $salesAccount->id,
-                    'user_id' => auth()->id(),
-                    'tipe' => 'masuk',
-                    'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('masuk'),
-                    'tanggal' => now()->toDateString(),
-                    'jumlah' => $totalPrice,
-                    'keterangan' => 'Pemasukan POS dari invoice ' . $transaction->invoice_number,
-                    'transaction_id' => $transaction->id,
-                ]);
+            // Record Cash Inflow for the actual paid amount (DP or Full)
+            if ($paidAmount > 0) {
+                $salesAccount = \App\Models\Account::where('kode_akun', '4-1000')->first();
+                if ($salesAccount) {
+                    $keterangan = ($paymentStatus === 'PARTIAL') 
+                        ? "Penerimaan DP Uang Muka (#{$transaction->invoice_number}) dari " . ($transaction->customer_name ?: 'Pelanggan') . " (Sisa Piutang: Rp " . number_format($remainingAmount, 0, ',', '.') . ")"
+                        : "Pemasukan Penjualan POS (#{$transaction->invoice_number}) dari " . ($transaction->customer_name ?: 'Pelanggan');
+
+                    \App\Models\CashTransaction::create([
+                        'branch_id' => auth()->user()->branch_id,
+                        'account_id' => $salesAccount->id,
+                        'user_id' => auth()->id(),
+                        'tipe' => 'masuk',
+                        'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('masuk'),
+                        'tanggal' => now()->toDateString(),
+                        'jumlah' => $paidAmount,
+                        'keterangan' => $keterangan,
+                        'transaction_id' => $transaction->id,
+                    ]);
+                }
             }
 
             // Record HPP Outflow (COGS)
             $hppAccount = \App\Models\Account::where('kode_akun', '6-1000')->first();
-            if ($hppAccount) {
+            if ($hppAccount && $totalHpp > 0) {
                 \App\Models\CashTransaction::create([
                     'branch_id' => auth()->user()->branch_id,
                     'account_id' => $hppAccount->id,
@@ -157,11 +197,21 @@ class PosController extends Controller
             return response()->json([
                 'status' => 'success',
                 'success' => true,
-                'message' => 'Transaksi berhasil diproses. Invoice: ' . $transaction->invoice_number,
+                'message' => ($paymentStatus === 'PARTIAL') 
+                    ? "Pesanan DP tercatat! Uang muka Rp " . number_format($paidAmount, 0, ',', '.') . " diterima, sisa piutang Rp " . number_format($remainingAmount, 0, ',', '.') 
+                    : "Transaksi lunas berhasil diproses. Invoice: " . $transaction->invoice_number,
                 'transaction_id' => $transaction->id,
                 'invoice_number' => $transaction->invoice_number,
+                'customer_name' => $transaction->customer_name,
+                'customer_phone' => $transaction->customer_phone,
                 'total_price' => $transaction->total_price,
+                'paid_amount' => $transaction->paid_amount,
+                'remaining_amount' => $transaction->remaining_amount,
+                'payment_status' => $transaction->payment_status,
+                'order_status' => $transaction->order_status,
                 'payment_method' => $transaction->payment_method,
+                'due_date' => $transaction->due_date ? $transaction->due_date->format('d M Y') : null,
+                'production_notes' => $transaction->production_notes,
                 'cashier_name' => auth()->user()->full_name ?: (auth()->user()->username ?? 'Kasir'),
                 'branch_name' => auth()->user()->branch->nama_cabang ?? 'Pusat',
                 'created_at' => $transaction->created_at->format('d M Y H:i'),

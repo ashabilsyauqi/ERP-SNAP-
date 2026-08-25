@@ -120,8 +120,8 @@
             border: 1px solid #000;
             padding: 2px 6px;
             font-weight: 900;
-            font-size: 11px;
-            letter-spacing: 1px;
+            font-size: 10.5px;
+            letter-spacing: 0.5px;
             margin: 4px 0;
         }
 
@@ -188,6 +188,24 @@
             <td>Kasir</td>
             <td>: {{ $transaction->user->full_name ?: ($transaction->user->username ?? 'Kasir') }}</td>
         </tr>
+        @if($transaction->customer_name)
+        <tr>
+            <td>Client</td>
+            <td>: <strong>{{ $transaction->customer_name }}</strong></td>
+        </tr>
+        @endif
+        @if($transaction->customer_phone)
+        <tr>
+            <td>WhatsApp</td>
+            <td>: {{ $transaction->customer_phone }}</td>
+        </tr>
+        @endif
+        @if($transaction->due_date)
+        <tr>
+            <td>Deadline</td>
+            <td>: <strong>{{ $transaction->due_date->format('d/m/Y') }}</strong></td>
+        </tr>
+        @endif
     </table>
 
     <div class="divider"></div>
@@ -220,24 +238,49 @@
     <!-- Totals Table -->
     <table class="totals-table">
         <tr>
-            <td>Subtotal</td>
-            <td class="text-right">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
+            <td>Total Tagihan</td>
+            <td class="text-right fw-bold">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
         </tr>
+        
+        @if($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
+        <tr>
+            <td>DP Masuk ({{ $transaction->payment_method }})</td>
+            <td class="text-right">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</td>
+        </tr>
+        <tr style="font-weight: bold; border-top: 1px dashed #000;">
+            <td style="padding-top: 2px;">SISA PIUTANG</td>
+            <td class="text-right" style="padding-top: 2px;">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</td>
+        </tr>
+        @else
         <tr>
             <td>Bayar ({{ $transaction->payment_method }})</td>
-            <td class="text-right">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
+            <td class="text-right">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</td>
         </tr>
-        <tr>
-            <td class="fw-bold" style="font-size: 12px;">TOTAL</td>
-            <td class="text-right fw-bold" style="font-size: 12px;">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
+        <tr style="font-weight: bold;">
+            <td>STATUS</td>
+            <td class="text-right">LUNAS</td>
         </tr>
+        @endif
     </table>
+
+    @if($transaction->production_notes)
+    <div class="divider"></div>
+    <div style="font-size: 9.5px; margin: 2px 0;">
+        <strong>Catatan Produksi:</strong><br>
+        {{ $transaction->production_notes }}
+    </div>
+    @endif
 
     <div class="divider"></div>
 
     <!-- Status & Footer -->
     <div class="text-center">
-        <div class="stamp-lunas">*** LUNAS (PAID) ***</div>
+        @if($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
+            <div class="stamp-lunas">*** BUKTI DP / UANG MUKA ***</div>
+            <div style="font-size: 9px; color: #333;">Sisa tagihan wajib dilunasi saat pengambilan.</div>
+        @else
+            <div class="stamp-lunas">*** LUNAS (PAID) ***</div>
+        @endif
     </div>
 
     <div class="footer">

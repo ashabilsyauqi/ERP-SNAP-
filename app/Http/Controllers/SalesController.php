@@ -7,6 +7,9 @@ use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\Material;
 use App\Models\MaterialWholesalePrice;
+use App\Models\CashTransaction;
+use App\Models\Account;
+use App\Models\Branch;
 use Illuminate\Support\Facades\DB;
 
 class SalesController extends Controller
@@ -21,19 +24,162 @@ class SalesController extends Controller
             ->orderBy('created_at', 'desc');
 
         if ($user->isOwner()) {
-            // Owner can see all history, or filter by branch
             if ($request->filled('branch_id') && $request->branch_id !== 'all') {
                 $query->where('branch_id', $request->branch_id);
             }
         } else {
-            // Cashier can only see transactions from their own branch
             $query->where('branch_id', $user->branch_id);
         }
 
+        if ($request->filled('payment_status') && $request->payment_status !== 'all') {
+            $query->where('payment_status', $request->payment_status);
+        }
+
         $transactions = $query->get();
-        $branches = \App\Models\Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
         return view('sales.index', compact('transactions', 'branches'));
+    }
+
+    /**
+     * Display a listing of Accounts Receivable & Down Payment orders.
+     */
+    public function receivables(Request $request)
+    {
+        $user = auth()->user();
+        $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])
+            ->orderBy('created_at', 'desc');
+
+        if ($user->isOwner()) {
+            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+                $query->where('branch_id', $request->branch_id);
+            }
+        } else {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        // Filter tab: 'unpaid' (default: partial or unpaid), 'production', 'ready', 'all'
+        $tab = $request->input('tab', 'unpaid');
+        if ($tab === 'unpaid') {
+            $query->where(function($q) {
+                $q->where('payment_status', 'PARTIAL')
+                  ->orWhere('payment_status', 'UNPAID')
+                  ->orWhere('remaining_amount', '>', 0);
+            });
+        } elseif ($tab === 'production') {
+            $query->where('order_status', 'in_production');
+        } elseif ($tab === 'ready') {
+            $query->where('order_status', 'ready');
+        } elseif ($tab === 'paid') {
+            $query->where('payment_status', 'PAID');
+        }
+
+        $transactions = $query->get();
+        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+
+        // Calculate KPI Statistics
+        $baseStatQuery = Transaction::query();
+        if ($user->isOwner()) {
+            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+                $baseStatQuery->where('branch_id', $request->branch_id);
+            }
+        } else {
+            $baseStatQuery->where('branch_id', $user->branch_id);
+        }
+
+        $totalPiutang = (clone $baseStatQuery)->where('remaining_amount', '>', 0)->sum('remaining_amount');
+        $totalDpDiterima = (clone $baseStatQuery)->where('payment_status', 'PARTIAL')->sum('paid_amount');
+        $countInProduction = (clone $baseStatQuery)->where('order_status', 'in_production')->count();
+        $countReady = (clone $baseStatQuery)->where('order_status', 'ready')->count();
+
+        return view('sales.receivables', compact(
+            'transactions',
+            'branches',
+            'totalPiutang',
+            'totalDpDiterima',
+            'countInProduction',
+            'countReady',
+            'tab'
+        ));
+    }
+
+    /**
+     * Settle remaining receivables / Pelunasan Piutang.
+     */
+    public function settle(Request $request, $id)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $transaction = Transaction::findOrFail($id);
+
+            if ($transaction->remaining_amount <= 0) {
+                return back()->with('error', 'Transaksi ini sudah lunas sepenuhnya.');
+            }
+
+            $settleAmount = min((float) $request->amount, (float) $transaction->remaining_amount);
+            $newPaidAmount = $transaction->paid_amount + $settleAmount;
+            $newRemainingAmount = max(0, $transaction->total_price - $newPaidAmount);
+
+            $transaction->paid_amount = $newPaidAmount;
+            $transaction->remaining_amount = $newRemainingAmount;
+
+            if ($newRemainingAmount <= 0) {
+                $transaction->payment_status = 'PAID';
+                if ($transaction->order_status === 'in_production' || $transaction->order_status === 'ready') {
+                    $transaction->order_status = 'completed';
+                }
+            } else {
+                $transaction->payment_status = 'PARTIAL';
+            }
+
+            $transaction->save();
+
+            // Record Inflow Cash Transaction for Settlement
+            $salesAccount = Account::where('kode_akun', '4-1000')->first() ?? Account::where('kode_akun', '1-1300')->first();
+            
+            CashTransaction::create([
+                'branch_id' => $transaction->branch_id,
+                'account_id' => $salesAccount ? $salesAccount->id : 1,
+                'user_id' => auth()->id(),
+                'tipe' => 'masuk',
+                'nomor_referensi' => CashTransaction::generateNomorReferensi('masuk'),
+                'tanggal' => now()->toDateString(),
+                'jumlah' => $settleAmount,
+                'keterangan' => "Pelunasan Piutang (#{$transaction->invoice_number}) dari " . ($transaction->customer_name ?: 'Pelanggan') . " (Sisa: Rp " . number_format($newRemainingAmount, 0, ',', '.') . ")",
+                'transaction_id' => $transaction->id,
+            ]);
+
+            DB::commit();
+
+            return back()->with('success', "Pelunasan sebesar Rp " . number_format($settleAmount, 0, ',', '.') . " berhasil dicatat. Sisa piutang: Rp " . number_format($newRemainingAmount, 0, ',', '.'));
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal memproses pelunasan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update order production status.
+     */
+    public function updateOrderStatus(Request $request, $id)
+    {
+        $request->validate([
+            'order_status' => 'required|string|in:in_production,ready,completed,cancelled'
+        ]);
+
+        $transaction = Transaction::findOrFail($id);
+        $transaction->order_status = $request->order_status;
+        $transaction->save();
+
+        return back()->with('success', "Status pengerjaan pesanan #{$transaction->invoice_number} berhasil diperbarui menjadi: " . $transaction->order_status_label);
     }
 
     /**
@@ -82,13 +228,11 @@ class SalesController extends Controller
 
                     if ($material) {
                         if ($diff > 0) {
-                            // Increasing quantity ordered -> deduct stock
                             if ($material->stock_qty < $diff) {
                                 throw new \Exception("Insufficient stock for {$material->material_name}. Need {$diff} more, but only {$material->stock_qty} left.");
                             }
                             $material->stock_qty -= $diff;
                         } else {
-                            // Decreasing quantity ordered -> restore stock (diff is negative)
                             $material->stock_qty += abs($diff);
                         }
                         $material->save();
@@ -108,7 +252,6 @@ class SalesController extends Controller
             foreach ($transaction->transactionDetails as $d) {
                 $unitPrice = $d->material->retail_price;
                 
-                // Fetch the highest min_qty tier for the updated qty
                 $applicableTier = MaterialWholesalePrice::where('material_id', $d->material_id)
                     ->where('min_qty', '<=', $d->qty_ordered)
                     ->orderBy('min_qty', 'desc')
@@ -127,6 +270,15 @@ class SalesController extends Controller
 
             $transaction->total_price = $totalPrice;
             $transaction->total_hpp = $totalHpp;
+            
+            // Adjust remaining amount based on new total price and current paid amount
+            $transaction->remaining_amount = max(0, $totalPrice - $transaction->paid_amount);
+            if ($transaction->remaining_amount <= 0) {
+                $transaction->payment_status = 'PAID';
+            } else {
+                $transaction->payment_status = 'PARTIAL';
+            }
+
             $transaction->save();
 
             DB::commit();
@@ -162,7 +314,6 @@ class SalesController extends Controller
                 }
             }
 
-            // Deleting the transaction cascades details deletions
             $invoiceNumber = $transaction->invoice_number;
             $transaction->delete();
 

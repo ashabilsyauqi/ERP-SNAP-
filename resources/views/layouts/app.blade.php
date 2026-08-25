@@ -376,6 +376,7 @@
                     'type' => 'dropdown',
                     'role' => 'owner,manager',
                     'items' => [
+                        ['title' => 'Piutang & Pesanan DP', 'route' => 'sales.receivables', 'role' => 'owner,manager'],
                         ['title' => 'Penerimaan Kas (Cash Receipts)', 'route' => 'kas-masuk.index', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Kas Masuk', 'route' => 'reports.cash-in', 'role' => 'owner,manager'],
                         ['title' => 'Riwayat Transaksi Penjualan POS', 'route' => 'reports.sales', 'role' => 'owner,manager'],
@@ -491,6 +492,7 @@
                     'role' => 'cashier,owner,manager',
                     'items' => [
                         ['title' => 'Terminal Kasir Checkout (POS)', 'route' => 'pos.index', 'role' => 'cashier,owner,manager'],
+                        ['title' => 'Piutang & Monitoring Pesanan DP', 'route' => 'sales.receivables', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Riwayat Transaksi Penjualan', 'route' => 'sales.index', 'role' => 'cashier,owner,manager'],
                     ]
                 ],
@@ -877,7 +879,7 @@
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" @click="printSnapPrintInvoice(inv)" class="btn btn-sm btn-primary py-1 px-2.5 text-xs font-semibold">
-                        <i class="fa-solid fa-print me-1"></i> Cetak Invoice
+                        <i class="fa-solid fa-print me-1"></i> Cetak Invoice / SPK
                     </button>
                     <button type="button" class="btn-close btn-close-white text-xs" @click="open = false"></button>
                 </div>
@@ -900,9 +902,14 @@
                     <div class="text-end">
                         <!-- Payment Status Stamp Badge -->
                         <div class="mb-2">
-                            <template x-if="inv.payment_status === 'PAID' || !inv.payment_status">
+                            <template x-if="inv.payment_status === 'PAID' || (!inv.payment_status && (!inv.remaining_amount || inv.remaining_amount <= 0))">
                                 <span class="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-500 rounded-md text-xs font-extrabold uppercase tracking-wider">
                                     <i class="fa-solid fa-circle-check text-emerald-600"></i> PAID (LUNAS)
+                                </span>
+                            </template>
+                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0)">
+                                <span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-800 border border-amber-500 rounded-md text-xs font-extrabold uppercase tracking-wider">
+                                    <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> DP (PARSIAL)
                                 </span>
                             </template>
                             <template x-if="inv.payment_status === 'UNPAID'">
@@ -913,6 +920,30 @@
                         </div>
                         <div class="text-xs text-slate-500 font-mono" x-text="'Tgl: ' + (inv.created_at || '-')"></div>
                         <div class="text-xs text-slate-500" x-text="'Kasir: ' + (inv.cashier_name || 'Kasir')"></div>
+                    </div>
+                </div>
+
+                <!-- Client & Production Info (If Available) -->
+                <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-200 mb-3 text-xs" x-show="inv.customer_name || inv.customer_phone || inv.due_date || inv.production_notes">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div x-show="inv.customer_name">
+                            <span class="text-slate-500 text-[11px]">Client / Pemesan:</span>
+                            <div class="font-bold text-slate-900" x-text="inv.customer_name"></div>
+                        </div>
+                        <div x-show="inv.customer_phone">
+                            <span class="text-slate-500 text-[11px]">Kontak WhatsApp:</span>
+                            <div class="font-mono text-emerald-700 font-bold" x-text="inv.customer_phone"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-1 pt-1 border-t border-slate-200/80" x-show="inv.due_date || inv.production_notes">
+                        <div x-show="inv.due_date">
+                            <span class="text-slate-500 text-[11px]">Estimasi Selesai (DL):</span>
+                            <div class="font-bold text-indigo-700" x-text="inv.due_date"></div>
+                        </div>
+                        <div x-show="inv.production_notes">
+                            <span class="text-slate-500 text-[11px]">Catatan Produksi:</span>
+                            <div class="text-slate-800" x-text="inv.production_notes"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -955,9 +986,21 @@
                         </tbody>
                         <tfoot class="bg-slate-50">
                             <tr>
-                                <td colspan="4" class="text-end fw-bold text-slate-700">Total Tagihan:</td>
+                                <td colspan="4" class="text-end fw-bold text-slate-700">Total Nilai Pesanan:</td>
                                 <td class="text-end fw-bold font-mono text-blue-900 fs-6" x-text="'Rp ' + Number(inv.total_price || 0).toLocaleString('id-ID')"></td>
                             </tr>
+                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0)">
+                                <tr>
+                                    <td colspan="4" class="text-end fw-bold text-emerald-700 text-xs">Uang Muka (DP) Diterima:</td>
+                                    <td class="text-end font-mono font-bold text-emerald-700 text-xs" x-text="'Rp ' + Number(inv.paid_amount || 0).toLocaleString('id-ID')"></td>
+                                </tr>
+                            </template>
+                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0)">
+                                <tr class="bg-amber-50">
+                                    <td colspan="4" class="text-end fw-bold text-amber-800 text-xs">Sisa Piutang (Pelunasan):</td>
+                                    <td class="text-end font-mono font-extrabold text-amber-700 text-xs" x-text="'Rp ' + Number(inv.remaining_amount || 0).toLocaleString('id-ID')"></td>
+                                </tr>
+                            </template>
                             <tr>
                                 <td colspan="4" class="text-end text-slate-500 text-[11px]">Metode Pembayaran:</td>
                                 <td class="text-end text-slate-700 text-[11px] font-semibold" x-text="inv.payment_method || 'Cash / Kas Masuk'"></td>
@@ -976,7 +1019,7 @@
             <div class="bg-slate-50 px-4 py-2.5 border-top d-flex justify-content-end gap-2">
                 <button type="button" @click="open = false" class="btn-odoo-secondary">Tutup</button>
                 <button type="button" @click="printSnapPrintInvoice(inv)" class="btn-odoo-primary">
-                    <i class="fa-solid fa-print me-1"></i> Cetak Invoice
+                    <i class="fa-solid fa-print me-1"></i> Cetak Invoice / SPK
                 </button>
             </div>
         </div>
@@ -1113,6 +1156,8 @@
         window.printSnapPrintInvoice = function(inv) {
             const printWindow = window.open('', '_blank');
             const logoUrl = "{{ asset('images/logosnaprint.jpeg') }}";
+            const isPartial = inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0);
+            
             const itemsHtml = (inv.items && inv.items.length > 0) ? inv.items.map((it, idx) => `
                 <tr>
                     <td style="text-align: center; padding: 8px; border: 1px solid #cbd5e1;">${idx + 1}</td>
@@ -1140,18 +1185,20 @@
                     <title>Invoice - ${inv.invoice_number || 'Document'}</title>
                     <style>
                         body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #1e293b; font-size: 13px; }
-                        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 25px; align-items: center; }
+                        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 20px; align-items: center; }
                         .brand-container { display: flex; align-items: center; gap: 14px; }
                         .brand-logo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
                         .brand { font-size: 22px; font-weight: bold; color: #1e3a8a; }
                         .title { font-size: 18px; font-weight: bold; text-align: right; color: #0f172a; }
-                        .stamp { display: inline-block; padding: 4px 12px; border: 2px solid #059669; color: #059669; font-weight: 800; border-radius: 6px; text-transform: uppercase; margin-bottom: 8px; font-size: 12px; }
-                        .info-table { width: 100%; margin-bottom: 25px; }
+                        .stamp { display: inline-block; padding: 4px 12px; border: 2px solid ${isPartial ? '#d97706' : '#059669'}; color: ${isPartial ? '#d97706' : '#059669'}; font-weight: 800; border-radius: 6px; text-transform: uppercase; margin-bottom: 8px; font-size: 12px; }
+                        .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 20px; }
+                        .info-table { width: 100%; margin-bottom: 20px; }
                         .info-table td { padding: 4px 0; font-size: 13px; }
-                        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+                        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                         .items-table th { background: #f1f5f9; padding: 10px; border: 1px solid #cbd5e1; text-align: left; font-size: 12px; }
-                        .total-box { text-align: right; font-size: 16px; font-weight: bold; color: #1e3a8a; margin-top: 15px; }
-                        .footer { margin-top: 50px; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 15px; font-size: 11px; color: #64748b; }
+                        .totals-table { width: 100%; margin-top: 15px; border-collapse: collapse; }
+                        .totals-table td { padding: 6px 10px; text-align: right; }
+                        .footer { margin-top: 40px; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 15px; font-size: 11px; color: #64748b; }
                     </style>
                 </head>
                 <body>
@@ -1165,11 +1212,26 @@
                             </div>
                         </div>
                         <div class="title">
-                            <div class="stamp">✓ ${inv.payment_status || 'PAID (LUNAS)'}</div>
-                            <div>FAKTUR / INVOICE</div>
+                            <div class="stamp">${isPartial ? '⚠ DP / UANG MUKA' : '✓ PAID (LUNAS)'}</div>
+                            <div>FAKTUR / INVOICE ${isPartial ? '& SPK' : ''}</div>
                             <div style="font-size: 12px; font-weight: normal; color: #64748b; font-family: monospace;">No: ${inv.invoice_number || '-'}</div>
                         </div>
                     </div>
+
+                    ${(inv.customer_name || inv.customer_phone || inv.due_date || inv.production_notes) ? `
+                    <div class="client-box">
+                        <table style="width: 100%; font-size: 12px;">
+                            <tr>
+                                <td style="width: 50%;"><strong>Client:</strong> ${inv.customer_name || 'Pelanggan Umum'}</td>
+                                <td><strong>WhatsApp:</strong> ${inv.customer_phone || '-'}</td>
+                            </tr>
+                            ${(inv.due_date || inv.production_notes) ? `
+                            <tr>
+                                <td style="padding-top: 6px;"><strong>Deadline:</strong> ${inv.due_date || '-'}</td>
+                                <td style="padding-top: 6px;"><strong>Catatan Produksi:</strong> ${inv.production_notes || '-'}</td>
+                            </tr>` : ''}
+                        </table>
+                    </div>` : ''}
 
                     <table class="info-table">
                         <tr>
@@ -1178,7 +1240,7 @@
                         </tr>
                         <tr>
                             <td><strong>Petugas Kasir:</strong> ${inv.cashier_name || 'Kasir'}</td>
-                            <td style="text-align: right;"><strong>Status:</strong> Resmi Terverifikasi</td>
+                            <td style="text-align: right;"><strong>Status:</strong> Dokumen Resmi Terverifikasi</td>
                         </tr>
                     </table>
 
@@ -1197,9 +1259,22 @@
                         </tbody>
                     </table>
 
-                    <div class="total-box">
-                        Total Pembayaran: Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}
-                    </div>
+                    <table class="totals-table">
+                        <tr>
+                            <td colspan="4" style="font-weight: bold;">Total Nilai Pesanan:</td>
+                            <td style="font-weight: bold; font-family: monospace; font-size: 15px; color: #1e3a8a; width: 140px;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
+                        </tr>
+                        ${isPartial ? `
+                        <tr>
+                            <td colspan="4" style="font-weight: bold; color: #059669;">Uang Muka (DP) Dibayar:</td>
+                            <td style="font-weight: bold; font-family: monospace; color: #059669;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td colspan="4" style="font-weight: bold; color: #b45309;">Sisa Piutang (Pelunasan):</td>
+                            <td style="font-weight: bold; font-family: monospace; font-size: 15px; color: #b45309;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
+                        </tr>
+                        ` : ''}
+                    </table>
 
                     <div class="footer">
                         Terima kasih atas kepercayaan Anda mencetak di SnapPrint. Dokumen ini sah dan diterbitkan secara otomatis oleh sistem SnapPrint ERP.
