@@ -267,16 +267,7 @@
 <script>
     window.rawMaterials = @json($materials);
     window.rawSuppliers = @json($suppliers);
-    window.initialPlanItems = @json($plan->items->map(function($it) {
-        return [
-            'material_name' => $it->material_name,
-            'supplier_name' => $it->supplier_name,
-            'fixed_size' => $it->fixed_size,
-            'qty' => $it->qty,
-            'estimated_unit_price' => $it->estimated_unit_price,
-            'retail_price' => $it->retail_price,
-        ];
-    }));
+    window.initialPlanItems = @json($initialPlanItems ?? []);
 
     function purchasePlanForm() {
         return {

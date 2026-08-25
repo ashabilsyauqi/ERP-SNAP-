@@ -304,7 +304,18 @@ class PurchasePlanController extends Controller
         $suppliers = Supplier::orderBy('name', 'asc')->get();
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        return view('purchasing.plans.edit', compact('plan', 'materials', 'suppliers', 'branches'));
+        $initialPlanItems = $plan->items->map(function ($it) {
+            return [
+                'material_name' => $it->material_name,
+                'supplier_name' => $it->supplier_name,
+                'fixed_size' => $it->fixed_size,
+                'qty' => $it->qty,
+                'estimated_unit_price' => (float) $it->estimated_unit_price,
+                'retail_price' => (float) $it->retail_price,
+            ];
+        })->values()->all();
+
+        return view('purchasing.plans.edit', compact('plan', 'materials', 'suppliers', 'branches', 'initialPlanItems'));
     }
 
     public function update(Request $request, PurchasePlan $plan)
