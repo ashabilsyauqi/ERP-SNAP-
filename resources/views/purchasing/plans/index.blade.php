@@ -33,9 +33,9 @@
     <!-- Top KPI Stat Cards -->
     <div class="d-flex align-items-center gap-2 mb-3 overflow-x-auto pb-1">
         <div class="o_stat_button bg-white shadow-sm">
-            <i class="fa-solid fa-wallet text-blue-600 fs-5"></i>
+            <i class="fa-solid fa-wallet text-teal-600 fs-5"></i>
             <div>
-                <div class="o_stat_value text-blue-700">Rp {{ number_format($totalPlannedCost, 0, ',', '.') }}</div>
+                <div class="o_stat_value text-teal-700">Rp {{ number_format($totalPlannedCost, 0, ',', '.') }}</div>
                 <div class="o_stat_text">Total Anggaran Pengadaan</div>
             </div>
         </div>
@@ -89,9 +89,9 @@
                                     <input type="checkbox" class="form-check-input">
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-link p-0 fw-bold font-mono text-blue-700 text-decoration-none hover:underline d-inline-flex align-items-center gap-1.5"
-                                            @click="openPlanDetail(@json($plan))">
-                                        <i class="fa-solid fa-box-archive text-blue-600 text-xs"></i>
+                                    <button type="button" class="btn btn-link p-0 fw-bold font-mono text-indigo-700 text-decoration-none hover:underline d-inline-flex align-items-center gap-1.5"
+                                            onclick="showPlanById({{ $plan->id }})">
+                                        <i class="fa-solid fa-box-archive text-indigo-600 text-xs"></i>
                                         <span>{{ $plan->plan_number }}</span>
                                     </button>
                                     <div class="text-[10px] text-slate-400">
@@ -113,11 +113,11 @@
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge bg-blue-50 text-blue-800 border border-blue-200 font-bold px-2 py-0.5 text-[11px]">
+                                    <span class="badge bg-sky-50 text-sky-800 border border-sky-200 font-bold px-2 py-0.5 text-[11px]">
                                         {{ $plan->items->count() }} Produk
                                     </span>
                                 </td>
-                                <td class="text-end font-mono fw-bold text-blue-900">
+                                <td class="text-end font-mono fw-bold text-slate-800">
                                     Rp {{ number_format($plan->total_estimated_cost, 0, ',', '.') }}
                                 </td>
                                 <td class="text-center">
@@ -146,8 +146,8 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Rincian Bundle"
-                                                @click="openPlanDetail(@json($plan))">
+                                        <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-indigo-700" title="Buka Rincian Bundle"
+                                                onclick="showPlanById({{ $plan->id }})">
                                             <i class="fa-solid fa-eye text-xs"></i>
                                         </button>
 
@@ -172,7 +172,7 @@
                                     <div class="p-4">
                                         <i class="fa-solid fa-box-archive fs-1 text-slate-300 mb-2"></i>
                                         <p class="mb-0">Belum ada data rencana pengadaan (Purchase Plan).</p>
-                                        <a href="{{ route('purchasing.plans.create') }}" class="btn btn-sm btn-odoo-primary mt-2">
+                                        <a href="{{ route('purchasing.plans.create') }}" class="btn btn-sm btn-odoo-primary mt-2 text-decoration-none">
                                             <i class="fa-solid fa-plus me-1"></i> Buat Purchase Plan Baru
                                         </a>
                                     </div>
@@ -210,7 +210,7 @@
                 <!-- Info Header -->
                 <div class="d-flex justify-content-between align-items-start border-bottom pb-3">
                     <div>
-                        <h5 class="fw-bold text-blue-900 mb-1" x-text="selectedPlan.title"></h5>
+                        <h5 class="fw-bold text-slate-900 mb-1" x-text="selectedPlan.title"></h5>
                         <div class="text-slate-500">
                             Cabang: <strong class="text-slate-800" x-text="selectedPlan.branch ? selectedPlan.branch.nama_cabang : 'Pusat'"></strong> &bull; 
                             Dibuat Oleh: <strong class="text-slate-800" x-text="selectedPlan.user ? selectedPlan.user.username : 'Purchasing'"></strong>
@@ -234,8 +234,8 @@
                 </div>
 
                 <!-- Justification / Notes -->
-                <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-200/60" x-show="selectedPlan.notes">
-                    <div class="font-bold text-blue-950 mb-0.5">Catatan / Justifikasi Kebutuhan:</div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200" x-show="selectedPlan.notes">
+                    <div class="font-bold text-slate-800 mb-0.5">Catatan / Justifikasi Kebutuhan:</div>
                     <div class="text-slate-700" x-text="selectedPlan.notes"></div>
                 </div>
 
@@ -263,7 +263,7 @@
                             <tbody>
                                 <template x-for="(item, idx) in (selectedPlan.items || [])" :key="idx">
                                     <tr>
-                                        <td class="text-center" x-text="idx + 1"></td>
+                                        <td class="text-center font-bold text-slate-400" x-text="idx + 1"></td>
                                         <td>
                                             <strong class="text-slate-900" x-text="item.material_name"></strong>
                                             <div class="text-[10px] text-slate-400" x-show="item.fixed_size" x-text="'Ukuran: ' + item.fixed_size + 'm'"></div>
@@ -272,15 +272,15 @@
                                             <span class="badge bg-slate-100 text-slate-700 border" x-text="item.supplier_name || '-'"></span>
                                         </td>
                                         <td class="text-center fw-bold font-mono" x-text="item.qty + ' unit'"></td>
-                                        <td class="text-end font-mono" x-text="'Rp ' + Number(item.estimated_unit_price || 0).toLocaleString('id-ID')"></td>
-                                        <td class="text-end font-mono fw-bold text-blue-900" x-text="'Rp ' + Number(item.subtotal || 0).toLocaleString('id-ID')"></td>
+                                        <td class="text-end font-mono text-slate-700" x-text="'Rp ' + Number(item.estimated_unit_price || 0).toLocaleString('id-ID')"></td>
+                                        <td class="text-end font-mono fw-bold text-slate-900" x-text="'Rp ' + Number(item.subtotal || 0).toLocaleString('id-ID')"></td>
                                     </tr>
                                 </template>
                             </tbody>
-                            <tfoot class="bg-slate-50">
+                            <tfoot class="bg-slate-50 font-bold">
                                 <tr>
-                                    <td colspan="5" class="text-end fw-bold text-slate-700 fs-6">Total Estimasi Biaya Pengadaan:</td>
-                                    <td class="text-end fw-bold font-mono text-blue-900 fs-6" x-text="'Rp ' + Number(selectedPlan.total_estimated_cost || 0).toLocaleString('id-ID')"></td>
+                                    <td colspan="5" class="text-end text-slate-700 fs-6">Total Estimasi Biaya Pengadaan:</td>
+                                    <td class="text-end font-mono text-teal-800 fs-6" x-text="'Rp ' + Number(selectedPlan.total_estimated_cost || 0).toLocaleString('id-ID')"></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -336,4 +336,21 @@
     </div>
 
 </div>
+
+<script>
+    window.allPlansData = @json($plans);
+
+    function showPlanById(id) {
+        const found = window.allPlansData.find(function(p) { return p.id == id; });
+        if (found) {
+            const root = document.getElementById('main-view-wrapper');
+            if (root && window.Alpine) {
+                const data = Alpine.$data(root);
+                if (data) {
+                    data.openPlanDetail(found);
+                }
+            }
+        }
+    }
+</script>
 @endsection
