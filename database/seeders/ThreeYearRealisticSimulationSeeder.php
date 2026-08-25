@@ -292,7 +292,7 @@ class ThreeYearRealisticSimulationSeeder extends Seeder
 
                 // E. Beban Sewa Ruko / Gedung (Tahunan setiap bulan September)
                 if ($monthDate->month === 9 && $daysInMonth >= 5) {
-                    $tglSewa = $monthDate->copy()->day(5)->setTime(09, 0, 0);
+                    $tglSewa = $monthDate->copy()->day(5)->setTime(9, 0, 0);
                     CashTransaction::create([
                         'nomor_referensi' => 'KK-' . $tglSewa->format('ymd') . '-SEWA',
                         'tanggal' => $tglSewa->toDateString(),
