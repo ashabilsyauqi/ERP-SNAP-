@@ -9,8 +9,8 @@ return new class extends Migration {
         Schema::create('branches', function (Blueprint $table) {
             $table->id();
             $table->string('nama_cabang', 100);
-            $table->text('alamat');
-            $table->string('telepon', 15);
+            $table->text('alamat')->nullable();
+            $table->string('telepon', 50)->nullable();
             $table->timestamps();
         });
     }

@@ -21,6 +21,9 @@ class BranchController extends Controller
             'telepon' => 'nullable|string|max:50',
         ]);
 
+        $validated['alamat'] = $validated['alamat'] ?? '-';
+        $validated['telepon'] = $validated['telepon'] ?? '-';
+
         Branch::create($validated);
 
         return redirect()->route('branches.index')->with('success', 'Cabang baru berhasil ditambahkan.');
