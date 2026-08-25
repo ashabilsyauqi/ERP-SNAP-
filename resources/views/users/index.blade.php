@@ -4,19 +4,14 @@
 @section('page-title', 'Settings / Users & Companies / Users (Hak Akses Pengguna)')
 
 @section('action-buttons')
-<button type="button" @click="addOpen = true; addRole = 'cashier'" class="btn-odoo-primary">
+<button type="button" class="btn-odoo-primary" data-bs-toggle="modal" data-bs-target="#modalAddUser">
     <i class="fa-solid fa-plus"></i>
     <span>New User</span>
 </button>
 @endsection
 
 @section('content')
-<div x-data="{ 
-    addOpen: false, 
-    editOpen: false, 
-    addRole: 'cashier',
-    editUser: { id: '', username: '', role: '', branch_id: '' }
-}" id="main-view-wrapper" data-view-wrapper>
+<div id="main-view-wrapper" data-view-wrapper>
 
     <!-- Main Odoo Sheet -->
     <div class="o_form_sheet p-0 overflow-hidden bg-white">
@@ -93,15 +88,8 @@
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
-                                    <button @click="
-                                        editUser = {
-                                            id: '{{ $user->id }}',
-                                            username: '{{ addslashes($user->username) }}',
-                                            role: '{{ $user->role }}',
-                                            branch_id: '{{ $user->branch_id ?? '' }}'
-                                        };
-                                        editOpen = true;
-                                    " class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit User">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit User" 
+                                            onclick="openEditUserModal('{{ $user->id }}', '{{ addslashes($user->username) }}', '{{ $user->role }}', '{{ $user->branch_id ?? '' }}')">
                                         <i class="fa-solid fa-pen-to-square text-xs"></i>
                                     </button>
                                     @if(auth()->id() !== $user->id)
@@ -126,99 +114,138 @@
         </div>
     </div>
 
-    <!-- Modal Tambah User (Odoo Form Style) -->
-    <div x-show="addOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none;" x-cloak>
-        <div class="bg-white rounded shadow-2xl border w-full max-w-lg overflow-hidden" @click.away="addOpen = false">
-            <form action="{{ route('users.store') }}" method="POST">
-                @csrf
-                <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-user-plus text-teal-600"></i> New User Account
-                    </h5>
-                    <button type="button" class="btn-close text-xs" @click="addOpen = false"></button>
-                </div>
-                <div class="p-4 space-y-3">
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Username / Login ID</label>
-                        <input type="text" name="username" required class="form-control form-control-sm" placeholder="e.g. johan_kasir">
+    <!-- Bootstrap 5 Modal Tambah User -->
+    <div class="modal fade" id="modalAddUser" tabindex="-1" aria-labelledby="modalAddUserLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-3 border shadow-lg overflow-hidden">
+                <form action="{{ route('users.store') }}" method="POST">
+                    @csrf
+                    <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2" id="modalAddUserLabel">
+                            <i class="fa-solid fa-user-plus text-blue-600"></i> Tambah Pengguna Baru
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Password</label>
-                        <input type="password" name="password" required class="form-control form-control-sm" placeholder="Min. 6 karakter">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Username / Login ID <span class="text-danger">*</span></label>
+                            <input type="text" name="username" required class="form-control form-control-sm" placeholder="e.g. johan_kasir">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Password <span class="text-danger">*</span></label>
+                            <input type="password" name="password" required class="form-control form-control-sm" placeholder="Min. 6 karakter">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Role Akses <span class="text-danger">*</span></label>
+                            <select name="role" id="add_user_role" required class="form-select form-select-sm" onchange="toggleBranchInput('add')">
+                                <option value="cashier">Kasir (Point of Sale)</option>
+                                <option value="purchasing">Purchasing (Pengadaan)</option>
+                                <option value="manager">Manager Toko (Approval & QC)</option>
+                                <option value="owner">Owner / Administrator (Full Access)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="add_branch_container">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang <span class="text-danger">*</span></label>
+                            <select name="branch_id" id="add_user_branch_id" class="form-select form-select-sm">
+                                <option value="">-- Pilih Cabang --</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">User Role (Access Level)</label>
-                        <select name="role" x-model="addRole" required class="form-select form-select-sm">
-                            <option value="cashier">Kasir (Point of Sale)</option>
-                            <option value="purchasing">Purchasing (Pengadaan)</option>
-                            <option value="manager">Manager Toko (Approval & QC)</option>
-                            <option value="owner">Owner / Administrator (Full Access)</option>
-                        </select>
+                    <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-odoo-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn-odoo-primary">Simpan User</button>
                     </div>
-                    <div x-show="addRole !== 'owner'">
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang</label>
-                        <select name="branch_id" class="form-select form-select-sm">
-                            <option value="">-- Pilih Cabang --</option>
-                            @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-odoo-secondary" @click="addOpen = false">Cancel</button>
-                    <button type="submit" class="btn-odoo-primary">Save User</button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Modal Edit User -->
-    <div x-show="editOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none;" x-cloak>
-        <div class="bg-white rounded shadow-2xl border w-full max-w-lg overflow-hidden" @click.away="editOpen = false">
-            <form :action="'/users/' + editUser.id" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-pen-to-square text-teal-600"></i> Edit User Access
-                    </h5>
-                    <button type="button" class="btn-close text-xs" @click="editOpen = false"></button>
-                </div>
-                <div class="p-4 space-y-3">
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Username</label>
-                        <input type="text" name="username" x-model="editUser.username" required class="form-control form-control-sm">
+    <!-- Bootstrap 5 Modal Edit User -->
+    <div class="modal fade" id="modalEditUser" tabindex="-1" aria-labelledby="modalEditUserLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-3 border shadow-lg overflow-hidden">
+                <form id="formEditUser" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fs-6 fw-bold text-slate-800 mb-0 d-flex align-items-center gap-2" id="modalEditUserLabel">
+                            <i class="fa-solid fa-pen-to-square text-blue-600"></i> Edit Pengguna
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Password (Kosongkan jika tidak diubah)</label>
-                        <input type="password" name="password" class="form-control form-control-sm" placeholder="••••••••">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Username <span class="text-danger">*</span></label>
+                            <input type="text" name="username" id="edit_username" required class="form-control form-control-sm">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Password (Kosongkan jika tidak diubah)</label>
+                            <input type="password" name="password" class="form-control form-control-sm" placeholder="••••••••">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Role Akses <span class="text-danger">*</span></label>
+                            <select name="role" id="edit_user_role" required class="form-select form-select-sm" onchange="toggleBranchInput('edit')">
+                                <option value="cashier">Kasir (Point of Sale)</option>
+                                <option value="purchasing">Purchasing (Pengadaan)</option>
+                                <option value="manager">Manager Toko (Approval & QC)</option>
+                                <option value="owner">Owner / Administrator (Full Access)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="edit_branch_container">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang</label>
+                            <select name="branch_id" id="edit_user_branch_id" class="form-select form-select-sm">
+                                <option value="">-- Pilih Cabang --</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">User Role</label>
-                        <select name="role" x-model="editUser.role" required class="form-select form-select-sm">
-                            <option value="cashier">Kasir (Point of Sale)</option>
-                            <option value="purchasing">Purchasing (Pengadaan)</option>
-                            <option value="manager">Manager Toko (Approval & QC)</option>
-                            <option value="owner">Owner / Administrator (Full Access)</option>
-                        </select>
+                    <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-odoo-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn-odoo-primary">Simpan Perubahan</button>
                     </div>
-                    <div x-show="editUser.role !== 'owner'">
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang</label>
-                        <select name="branch_id" x-model="editUser.branch_id" class="form-select form-select-sm">
-                            <option value="">-- Pilih Cabang --</option>
-                            @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-odoo-secondary" @click="editOpen = false">Cancel</button>
-                    <button type="submit" class="btn-odoo-primary">Save Changes</button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+function toggleBranchInput(mode) {
+    const roleSelect = document.getElementById(mode + '_user_role');
+    const branchContainer = document.getElementById(mode + '_branch_container');
+    const branchSelect = document.getElementById(mode + '_user_branch_id');
+    
+    if (roleSelect.value === 'owner') {
+        branchContainer.style.display = 'none';
+        if (branchSelect) branchSelect.removeAttribute('required');
+    } else {
+        branchContainer.style.display = 'block';
+        if (branchSelect) branchSelect.setAttribute('required', 'required');
+    }
+}
+
+function openEditUserModal(id, username, role, branchId) {
+    const form = document.getElementById('formEditUser');
+    form.action = '/users/' + id;
+    
+    document.getElementById('edit_username').value = username;
+    document.getElementById('edit_user_role').value = role;
+    document.getElementById('edit_user_branch_id').value = branchId;
+    
+    toggleBranchInput('edit');
+    
+    const modalEl = document.getElementById('modalEditUser');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    toggleBranchInput('add');
+});
+</script>
 @endsection
