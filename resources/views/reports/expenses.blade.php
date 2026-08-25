@@ -8,10 +8,6 @@
     <i class="fa-solid fa-print"></i>
     <span>Print Laporan</span>
 </button>
-<button type="button" onclick="exportTableToExcel('main-table', 'Expenses_Analysis_Report')" class="btn-odoo-secondary">
-    <i class="fa-solid fa-file-excel text-emerald-600"></i>
-    <span>Export</span>
-</button>
 @endsection
 
 @section('content')
