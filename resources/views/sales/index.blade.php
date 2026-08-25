@@ -11,7 +11,158 @@
 @endsection
 
 @section('content')
-<div id="main-view-wrapper" data-view-wrapper>
+<div id="main-view-wrapper" data-view-wrapper class="space-y-3">
+
+    <!-- Top KPI Summary Cards (Ringkasan Metode Pembayaran Real-time) -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <!-- 1. Total Omset -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm col-span-2 md:col-span-1" style="border-left: 4px solid #1e40af !important;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Total Omset</span>
+                    <div class="fs-6 font-extrabold text-blue-900 font-mono mt-0.5">
+                        Rp {{ number_format($paymentSummary['total_omset'] ?? 0, 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 d-flex align-items-center justify-content-center flex-shrink-0">
+                    <i class="fa-solid fa-chart-line text-xs"></i>
+                </div>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2 d-flex align-items-center gap-1 font-medium">
+                <span class="badge bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 font-bold">{{ $paymentSummary['total_trx'] ?? 0 }} Trx</span>
+                <span>tercatat</span>
+            </div>
+        </div>
+
+        <!-- 2. Cash / Tunai -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm" style="border-left: 4px solid #059669 !important;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">💵 Tunai (Cash)</span>
+                    <div class="fs-6 font-extrabold text-emerald-900 font-mono mt-0.5">
+                        Rp {{ number_format($paymentSummary['cash_total'] ?? 0, 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 d-flex align-items-center justify-content-center flex-shrink-0">
+                    <i class="fa-solid fa-money-bill-wave text-xs"></i>
+                </div>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2 d-flex align-items-center gap-1 font-medium">
+                <span class="badge bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.5 font-bold">{{ $paymentSummary['cash_count'] ?? 0 }} Trx</span>
+                <span>uang fisik</span>
+            </div>
+        </div>
+
+        <!-- 3. QRIS -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm" style="border-left: 4px solid #6366f1 !important;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">📱 QRIS Instant</span>
+                    <div class="fs-6 font-extrabold text-indigo-900 font-mono mt-0.5">
+                        Rp {{ number_format($paymentSummary['qris_total'] ?? 0, 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 d-flex align-items-center justify-content-center flex-shrink-0">
+                    <i class="fa-solid fa-qrcode text-xs"></i>
+                </div>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2 d-flex align-items-center gap-1 font-medium">
+                <span class="badge bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0.5 font-bold">{{ $paymentSummary['qris_count'] ?? 0 }} Trx</span>
+                <span>scan barcode</span>
+            </div>
+        </div>
+
+        <!-- 4. Transfer Bank -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm" style="border-left: 4px solid #0284c7 !important;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">🏦 Transfer Bank</span>
+                    <div class="fs-6 font-extrabold text-sky-900 font-mono mt-0.5">
+                        Rp {{ number_format($paymentSummary['transfer_total'] ?? 0, 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 d-flex align-items-center justify-content-center flex-shrink-0">
+                    <i class="fa-solid fa-building-columns text-xs"></i>
+                </div>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2 d-flex align-items-center gap-1 font-medium">
+                <span class="badge bg-sky-100 text-sky-800 text-[10px] px-1.5 py-0.5 font-bold">{{ $paymentSummary['transfer_count'] ?? 0 }} Trx</span>
+                <span>rekening BCA/Bank</span>
+            </div>
+        </div>
+
+        <!-- 5. Sisa Piutang -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm" style="border-left: 4px solid #d97706 !important;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">⏳ Sisa Piutang (DP)</span>
+                    <div class="fs-6 font-extrabold text-amber-900 font-mono mt-0.5">
+                        Rp {{ number_format($paymentSummary['total_receivables'] ?? 0, 0, ',', '.') }}
+                    </div>
+                </div>
+                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 d-flex align-items-center justify-content-center flex-shrink-0">
+                    <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                </div>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2 d-flex align-items-center gap-1 font-medium">
+                <a href="{{ route('sales.receivables') }}" class="text-amber-700 hover:underline font-bold text-[10px]">
+                    Lihat Buku Piutang &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Control Toolbar -->
+    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <!-- Timeframe Preset Buttons -->
+        <div class="d-flex flex-wrap align-items-center gap-1">
+            <span class="text-xs font-bold text-slate-500 me-1 uppercase text-[10px]">Periode:</span>
+            
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['period' => 'today', 'date_from' => null, 'date_to' => null])) }}" 
+               class="btn btn-sm {{ ($period === 'today' || empty($period)) ? 'btn-primary font-bold' : 'btn-light border text-slate-700' }} py-1 px-2.5 text-xs rounded-pill">
+                📅 Hari Ini
+            </a>
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['period' => 'yesterday', 'date_from' => null, 'date_to' => null])) }}" 
+               class="btn btn-sm {{ $period === 'yesterday' ? 'btn-primary font-bold' : 'btn-light border text-slate-700' }} py-1 px-2.5 text-xs rounded-pill">
+                Kemarin
+            </a>
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['period' => '7days', 'date_from' => null, 'date_to' => null])) }}" 
+               class="btn btn-sm {{ $period === '7days' ? 'btn-primary font-bold' : 'btn-light border text-slate-700' }} py-1 px-2.5 text-xs rounded-pill">
+                7 Hari Terakhir
+            </a>
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['period' => 'this_month', 'date_from' => null, 'date_to' => null])) }}" 
+               class="btn btn-sm {{ $period === 'this_month' ? 'btn-primary font-bold' : 'btn-light border text-slate-700' }} py-1 px-2.5 text-xs rounded-pill">
+                Bulan Ini
+            </a>
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['period' => 'all', 'date_from' => null, 'date_to' => null])) }}" 
+               class="btn btn-sm {{ $period === 'all' ? 'btn-primary font-bold' : 'btn-light border text-slate-700' }} py-1 px-2.5 text-xs rounded-pill">
+                Semua Riwayat
+            </a>
+        </div>
+
+        <!-- Filter Dropdowns (Payment Method, Branch) -->
+        <form method="GET" action="{{ route('sales.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
+            <input type="hidden" name="period" value="{{ $period }}">
+
+            <!-- Filter Metode Pembayaran -->
+            <select name="payment_method" onchange="this.form.submit()" class="form-select form-select-sm text-xs font-semibold py-1" style="width: auto;">
+                <option value="all" {{ request('payment_method') === 'all' || !request('payment_method') ? 'selected' : '' }}>Semua Metode (Cash, QRIS, TF)</option>
+                <option value="Cash" {{ request('payment_method') === 'Cash' ? 'selected' : '' }}>💵 Cash (Tunai)</option>
+                <option value="QRIS" {{ request('payment_method') === 'QRIS' ? 'selected' : '' }}>📱 QRIS</option>
+                <option value="Transfer" {{ request('payment_method') === 'Transfer' ? 'selected' : '' }}>🏦 Transfer Bank</option>
+            </select>
+
+            @if(auth()->user()->isOwner())
+                <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm text-xs font-semibold py-1" style="width: auto;">
+                    <option value="all" {{ request('branch_id') === 'all' || !request('branch_id') ? 'selected' : '' }}>Semua Cabang Toko</option>
+                    @foreach($branches as $b)
+                        <option value="{{ $b->id }}" {{ request('branch_id') == $b->id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
+                    @endforeach
+                </select>
+            @endif
+        </form>
+    </div>
+
     <!-- Main Sheet -->
     <div class="o_form_sheet p-0 overflow-hidden bg-white">
         <!-- View Mode 1: Table List View -->
@@ -38,6 +189,7 @@
                                 $invItems = $trx->transactionDetails->map(function($d) {
                                     return [
                                         'material_name' => $d->material->material_name ?? 'Bahan Cetak',
+                                        'dimension_text' => $d->dimension_text ?? ($d->fixed_length_m ? ($d->fixed_length_m . 'm x ' . $d->custom_width_cm . 'cm') : null),
                                         'qty_ordered' => $d->qty_ordered,
                                         'selling_price' => $d->selling_price,
                                         'subtotal' => $d->qty_ordered * $d->selling_price,
@@ -100,7 +252,15 @@
                                 <td class="text-center">
                                     <div class="d-inline-flex align-items-center gap-1">
                                         <span class="badge bg-light text-slate-800 border px-2 py-0.5 text-[11px] font-mono">
-                                            {{ strtoupper($trx->payment_method) }}
+                                            @if($trx->payment_method === 'Cash')
+                                                💵 CASH
+                                            @elseif($trx->payment_method === 'QRIS')
+                                                📱 QRIS
+                                            @elseif($trx->payment_method === 'Transfer')
+                                                🏦 TF BANK
+                                            @else
+                                                {{ strtoupper($trx->payment_method) }}
+                                            @endif
                                         </span>
                                         @if($trx->isPaid())
                                             <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 text-[10px] font-bold">
@@ -141,7 +301,7 @@
                                 <td colspan="8" class="text-center py-5 text-muted">
                                     <div class="p-4">
                                         <i class="fa-solid fa-receipt fs-1 text-slate-300 mb-2"></i>
-                                        <p class="mb-0">Belum ada data transaksi penjualan POS.</p>
+                                        <p class="mb-0 fw-semibold">Tidak ada data transaksi pada filter periode ini.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -159,6 +319,7 @@
                         $invItems = $trx->transactionDetails->map(function($d) {
                             return [
                                 'material_name' => $d->material->material_name ?? 'Bahan Cetak',
+                                'dimension_text' => $d->dimension_text ?? ($d->fixed_length_m ? ($d->fixed_length_m . 'm x ' . $d->custom_width_cm . 'cm') : null),
                                 'qty_ordered' => $d->qty_ordered,
                                 'selling_price' => $d->selling_price,
                                 'subtotal' => $d->qty_ordered * $d->selling_price,
@@ -225,7 +386,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="col-12 text-center py-5 text-muted">Belum ada transaksi.</div>
+                    <div class="col-12 text-center py-5 text-muted">Belum ada transaksi pada periode ini.</div>
                 @endforelse
             </div>
         </div>

@@ -31,14 +31,67 @@ class SalesController extends Controller
             $query->where('branch_id', $user->branch_id);
         }
 
+        // Period filter (today, yesterday, 7days, this_month, all, or custom date range)
+        $period = $request->input('period', 'today');
+        if ($request->filled('date_from') && $request->filled('date_to')) {
+            $query->whereDate('created_at', '>=', $request->date_from)
+                  ->whereDate('created_at', '<=', $request->date_to);
+            $period = 'custom';
+        } elseif ($period === 'today') {
+            $query->whereDate('created_at', now()->toDateString());
+        } elseif ($period === 'yesterday') {
+            $query->whereDate('created_at', now()->subDay()->toDateString());
+        } elseif ($period === '7days') {
+            $query->where('created_at', '>=', now()->subDays(6)->startOfDay());
+        } elseif ($period === 'this_month') {
+            $query->whereMonth('created_at', now()->month)
+                  ->whereYear('created_at', now()->year);
+        }
+
+        // Payment Method Filter
+        if ($request->filled('payment_method') && $request->payment_method !== 'all') {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        // Payment Status Filter
         if ($request->filled('payment_status') && $request->payment_status !== 'all') {
             $query->where('payment_status', $request->payment_status);
         }
 
+        // Calculate Summary Statistics for current filtered scope
+        $summaryQuery = clone $query;
+        $cashTotal = (clone $summaryQuery)->where('payment_method', 'Cash')->sum('paid_amount');
+        $cashCount = (clone $summaryQuery)->where('payment_method', 'Cash')->count();
+
+        $qrisTotal = (clone $summaryQuery)->where('payment_method', 'QRIS')->sum('paid_amount');
+        $qrisCount = (clone $summaryQuery)->where('payment_method', 'QRIS')->count();
+
+        $transferTotal = (clone $summaryQuery)->where('payment_method', 'Transfer')->sum('paid_amount');
+        $transferCount = (clone $summaryQuery)->where('payment_method', 'Transfer')->count();
+
+        $totalOmset = (clone $summaryQuery)->sum('total_price');
+        $totalPaid = (clone $summaryQuery)->sum('paid_amount');
+        $totalReceivables = (clone $summaryQuery)->sum('remaining_amount');
+        $totalTrx = (clone $summaryQuery)->count();
+
         $transactions = $query->get();
         $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
-        return view('sales.index', compact('transactions', 'branches'));
+        $paymentSummary = [
+            'period' => $period,
+            'cash_total' => $cashTotal,
+            'cash_count' => $cashCount,
+            'qris_total' => $qrisTotal,
+            'qris_count' => $qrisCount,
+            'transfer_total' => $transferTotal,
+            'transfer_count' => $transferCount,
+            'total_omset' => $totalOmset,
+            'total_paid' => $totalPaid,
+            'total_receivables' => $totalReceivables,
+            'total_trx' => $totalTrx,
+        ];
+
+        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period'));
     }
 
     /**

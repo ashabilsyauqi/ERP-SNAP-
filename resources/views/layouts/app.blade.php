@@ -1035,6 +1035,7 @@
                                     <td class="text-center" x-text="idx + 1"></td>
                                     <td>
                                         <strong class="text-slate-800" x-text="item.material_name || item.name || '-'"></strong>
+                                        <div class="text-[10px] text-blue-700 font-bold font-mono" x-show="item.dimension_text" x-text="'[' + item.dimension_text + ']'"></div>
                                         <div class="text-[10px] text-slate-400" x-show="item.specs" x-text="item.specs"></div>
                                     </td>
                                     <td class="text-center fw-semibold" x-text="item.qty_ordered || item.qty"></td>
@@ -1233,6 +1234,7 @@
                     <td style="text-align: center; padding: 8px; border: 1px solid #cbd5e1;">${idx + 1}</td>
                     <td style="padding: 8px; border: 1px solid #cbd5e1;">
                         <strong>${it.material_name || it.name || '-'}</strong>
+                        ${it.dimension_text ? `<br><small style="color: #1e40af; font-weight: bold;">[${it.dimension_text}]</small>` : ''}
                         ${it.specs ? `<br><small style="color: #64748b;">${it.specs}</small>` : ''}
                     </td>
                     <td style="text-align: center; padding: 8px; border: 1px solid #cbd5e1;">${it.qty_ordered || it.qty || 1}</td>

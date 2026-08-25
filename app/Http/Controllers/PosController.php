@@ -27,7 +27,11 @@ class PosController extends Controller
         $request->validate([
             'items' => 'required|array|min:1',
             'items.*.material_name_or_type' => 'required|string',
-            'items.*.requested_size' => 'nullable|numeric|min:0', // for banners
+            'items.*.requested_size' => 'nullable|numeric|min:0',
+            'items.*.fixed_length_m' => 'nullable|numeric|min:0',
+            'items.*.custom_width_cm' => 'nullable|numeric|min:0',
+            'items.*.area_m2' => 'nullable|numeric|min:0',
+            'items.*.dimension_text' => 'nullable|string|max:100',
             'items.*.qty' => 'required|integer|min:1',
             'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
             'is_dp' => 'nullable|boolean',
@@ -68,54 +72,71 @@ class PosController extends Controller
 
             foreach ($request->items as $item) {
                 $qty = $item['qty'];
-                $requestedSize = $item['requested_size'] ?? null;
+                $fixedLength = !empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : (!empty($item['requested_size']) ? (float)$item['requested_size'] : null);
+                $customWidth = !empty($item['custom_width_cm']) ? (float)$item['custom_width_cm'] : null;
+                $areaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : null;
                 
-                $materialToDeduct = null;
+                // Find material by name & branch
+                $materialQuery = Material::where('branch_id', auth()->user()->branch_id)
+                    ->where('material_name', 'like', '%' . $item['material_name_or_type'] . '%');
 
-                if ($requestedSize) {
-                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
-                        ->where('material_name', 'like', '%' . $item['material_name_or_type'] . '%')
-                        ->where('fixed_size', '>=', $requestedSize)
-                        ->where('stock_qty', '>=', $qty)
+                if ($fixedLength) {
+                    $materialToDeduct = (clone $materialQuery)
+                        ->where(function($q) use ($fixedLength) {
+                            $q->where('fixed_size', '>=', $fixedLength)
+                              ->orWhereNull('fixed_size');
+                        })
                         ->orderBy('fixed_size', 'asc')
                         ->first();
-
-                    if (!$materialToDeduct) {
-                        throw new \Exception("Stok tidak mencukupi untuk {$item['material_name_or_type']} ukuran >= {$requestedSize}m (butuh $qty unit).");
-                    }
                 } else {
-                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
-                        ->where('material_name', 'like', '%' . $item['material_name_or_type'] . '%')
-                        ->where('stock_qty', '>=', $qty)
-                        ->first();
-                        
+                    $materialToDeduct = $materialQuery->first();
+                }
+
+                if (!$materialToDeduct) {
+                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)->first();
                     if (!$materialToDeduct) {
-                        throw new \Exception("Stok tidak mencukupi untuk {$item['material_name_or_type']} (butuh $qty unit).");
+                        throw new \Exception("Bahan {$item['material_name_or_type']} tidak ditemukan di cabang ini.");
                     }
                 }
 
-                // Wholesale Auto-Calculation Logic
-                $unitPrice = $materialToDeduct->retail_price;
-                
-                // Fetch the highest min_qty tier that the requested qty satisfies
+                // Calculate dimensions if it is a banner with custom size
+                $isCustomBanner = ($fixedLength && $customWidth);
+                if ($isCustomBanner) {
+                    if (!$areaM2) {
+                        $areaM2 = round($fixedLength * ($customWidth / 100), 3);
+                    }
+                    $dimensionText = $item['dimension_text'] ?? "{$fixedLength}m x {$customWidth}cm ({$areaM2} m²)";
+                } else {
+                    $dimensionText = $item['dimension_text'] ?? ($fixedLength ? "Ukuran: {$fixedLength}m" : null);
+                }
+
+                // Wholesale tier price lookup based on qty
+                $baseUnitPrice = $materialToDeduct->retail_price;
                 $applicableTier = MaterialWholesalePrice::where('material_id', $materialToDeduct->id)
                      ->where('min_qty', '<=', $qty)
                      ->orderBy('min_qty', 'desc')
                      ->first();
 
                 if ($applicableTier) {
-                    $unitPrice = $applicableTier->wholesale_price;
+                    $baseUnitPrice = $applicableTier->wholesale_price;
+                }
+
+                // Price calculation
+                if ($isCustomBanner && $areaM2 > 0) {
+                    $unitPrice = round($areaM2 * $baseUnitPrice);
+                    $itemHpp = round($areaM2 * $materialToDeduct->purchase_price) * $qty;
+                } else {
+                    $unitPrice = $baseUnitPrice;
+                    $itemHpp = $materialToDeduct->purchase_price * $qty;
                 }
 
                 $totalItemPrice = $qty * $unitPrice;
                 $totalPrice += $totalItemPrice;
-
-                // HPP Calculation
-                $itemHpp = $materialToDeduct->purchase_price * $qty;
                 $totalHpp += $itemHpp;
 
                 // Deduct stock
-                $materialToDeduct->stock_qty -= $qty;
+                $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($areaM2 * $qty)) : $qty;
+                $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $stockDeductUnits);
                 $materialToDeduct->save();
 
                 TransactionDetail::create([
@@ -123,12 +144,17 @@ class PosController extends Controller
                     'material_id' => $materialToDeduct->id,
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
+                    'fixed_length_m' => $fixedLength,
+                    'custom_width_cm' => $customWidth,
+                    'area_m2' => $areaM2,
+                    'dimension_text' => $dimensionText,
                 ]);
 
                 $savedItems[] = [
                     'material_name' => $materialToDeduct->material_name,
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
+                    'dimension_text' => $dimensionText,
                     'subtotal' => $totalItemPrice
                 ];
             }

@@ -81,7 +81,7 @@
             @foreach($materials as $material)
                 <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between"
                      data-name="{{ strtolower($material->material_name) }}"
-                     onclick="addToCart('{{ $material->material_name }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }})">
+                     onclick="handleProductClick('{{ addslashes($material->material_name) }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }})">
                     
                     <div>
                         <div class="flex justify-between items-start mb-1">
@@ -396,17 +396,302 @@
 <!-- Input holds global payment selection state -->
 <input type="hidden" id="global_payment_method" value="Cash">
 
+<!-- Modal Custom Dimension Banner (Panjang Fixed & Lebar Custom dalam CM) -->
+<div class="modal fade" id="modalBannerDimension" tabindex="-1" aria-labelledby="modalBannerDimensionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 border shadow-2xl overflow-hidden">
+            <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-ruler-combined text-blue-400"></i>
+                    <h5 class="fs-6 fw-bold mb-0 text-white" id="modalBannerDimensionLabel">Kustomisasi Ukuran Banner</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="p-4 space-y-4 bg-slate-50">
+                <!-- Product Info Card -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="text-[11px] font-semibold text-slate-500 uppercase">Produk Bahan Cetak</div>
+                    <div class="font-bold text-slate-900 text-sm" id="dim_product_name">-</div>
+                    <div class="text-xs text-blue-700 font-mono font-bold mt-0.5">
+                        Harga Dasar: <span id="dim_product_price">Rp 0</span> / m²
+                    </div>
+                </div>
+
+                <!-- Input Dimension Form -->
+                <div class="space-y-3">
+                    <!-- 1. Panjang (Fixed Size / Roll) -->
+                    <div>
+                        <label class="form-label font-bold text-slate-700 text-xs uppercase d-flex justify-content-between align-items-center">
+                            <span>1. Panjang Bahan (Fixed Roll) <span class="text-rose-600">*</span></span>
+                            <span class="badge bg-blue-100 text-blue-800 text-[10px]">Ukuran Standar Meter</span>
+                        </label>
+                        <div class="input-group input-group-sm mb-1">
+                            <select id="dim_fixed_length_select" onchange="onFixedLengthSelectChange(this.value)" class="form-select form-select-sm font-semibold">
+                                <option value="1.0">1.0 Meter (100 cm)</option>
+                                <option value="1.2">1.2 Meter (120 cm)</option>
+                                <option value="1.5">1.5 Meter (150 cm)</option>
+                                <option value="2.0">2.0 Meter (200 cm)</option>
+                                <option value="2.5">2.5 Meter (250 cm)</option>
+                                <option value="3.0">3.0 Meter (300 cm)</option>
+                                <option value="3.2">3.2 Meter (320 cm)</option>
+                                <option value="custom">Custom Panjang Roll (Meter)...</option>
+                            </select>
+                            <span class="input-group-text font-bold text-xs bg-slate-100">Meter</span>
+                        </div>
+                        <div id="dim_custom_length_container" class="hidden mt-1">
+                            <input type="number" step="0.1" min="0.1" id="dim_fixed_length_custom" oninput="calculateDimensionPreview()" class="form-control form-control-sm font-bold" placeholder="Contoh: 2.2">
+                        </div>
+                    </div>
+
+                    <!-- 2. Lebar (Custom dalam CM) -->
+                    <div>
+                        <label class="form-label font-bold text-slate-700 text-xs uppercase d-flex justify-content-between align-items-center">
+                            <span>2. Lebar Cetak (Customize dalam CM) <span class="text-rose-600">*</span></span>
+                            <span class="badge bg-emerald-100 text-emerald-800 text-[10px]">Satuan Centimeter (CM)</span>
+                        </label>
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="number" id="dim_custom_width_cm" min="10" step="1" value="150" oninput="calculateDimensionPreview()" class="form-control form-control-sm font-bold font-mono text-base text-blue-900" placeholder="contoh: 150">
+                            <span class="input-group-text font-bold text-xs bg-slate-100">CM</span>
+                        </div>
+                        <!-- Quick Width Chips -->
+                        <div class="d-flex flex-wrap gap-1.5 align-items-center">
+                            <span class="text-[10px] text-slate-500 font-semibold me-1">Pilihan Cepat:</span>
+                            <button type="button" onclick="setDimWidth(50)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">50 cm</button>
+                            <button type="button" onclick="setDimWidth(100)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">100 cm</button>
+                            <button type="button" onclick="setDimWidth(150)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">150 cm</button>
+                            <button type="button" onclick="setDimWidth(200)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">200 cm</button>
+                            <button type="button" onclick="setDimWidth(250)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">250 cm</button>
+                            <button type="button" onclick="setDimWidth(300)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">300 cm</button>
+                            <button type="button" onclick="setDimWidth(400)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">400 cm</button>
+                            <button type="button" onclick="setDimWidth(500)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">500 cm</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. Jumlah Cetak (Qty Lembar) -->
+                    <div>
+                        <label class="form-label font-bold text-slate-700 text-xs uppercase">3. Jumlah Lembar (Qty Pcs)</label>
+                        <div class="input-group input-group-sm">
+                            <button type="button" onclick="changeDimQty(-1)" class="btn btn-outline-secondary font-bold">-</button>
+                            <input type="number" id="dim_qty" min="1" value="1" oninput="calculateDimensionPreview()" class="form-control form-control-sm text-center font-bold font-mono">
+                            <button type="button" onclick="changeDimQty(1)" class="btn btn-outline-secondary font-bold">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Calculation Result Card -->
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-1.5">
+                    <div class="d-flex justify-content-between text-xs text-blue-900">
+                        <span>Ukuran Cetak:</span>
+                        <strong id="dim_preview_size" class="font-mono">2.0m x 150cm</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-xs text-blue-900">
+                        <span>Luas per Lembar:</span>
+                        <strong id="dim_preview_area" class="font-mono text-emerald-700">3.00 m²</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-xs text-blue-900 border-t border-blue-200 pt-1">
+                        <span>Harga Satuan per Lembar:</span>
+                        <strong id="dim_preview_unit_price" class="font-mono">Rp 75.000</strong>
+                    </div>
+                    <div class="d-flex justify-content-between text-sm text-blue-950 font-bold border-t border-blue-200 pt-1">
+                        <span>Total Subtotal:</span>
+                        <span id="dim_preview_subtotal" class="font-mono fs-6 text-blue-800">Rp 75.000</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-100 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                <button type="button" onclick="confirmBannerDimensionAddToCart()" class="btn btn-primary btn-sm font-bold">
+                    <i class="fa-solid fa-cart-plus me-1"></i> Masukkan ke Keranjang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let cart = [];
     let cartCounter = 0;
     window.currentGrandTotal = 0;
 
-    // --- Add items to Cart ---
+    // Active state for dimension modal
+    let activeDimProduct = {
+        name: '',
+        fixedSize: null,
+        retailPrice: 0,
+        wholesalePrices: [],
+        editCartId: null
+    };
+
+    // --- Check if product is banner or custom media ---
+    function isBannerProduct(name, fixedSize) {
+        return /banner|flexi|spanduk|kain|backlite|textile|korea|china/i.test(name) || (fixedSize && parseFloat(fixedSize) > 0);
+    }
+
+    // --- Handle product card click ---
+    function handleProductClick(materialName, fixedSize, retailPrice, wholesalePrices) {
+        if (isBannerProduct(materialName, fixedSize)) {
+            openBannerDimensionModal(materialName, fixedSize, retailPrice, wholesalePrices);
+        } else {
+            addToCart(materialName, fixedSize, retailPrice, wholesalePrices);
+        }
+    }
+
+    // --- Open Banner Dimension Modal ---
+    function openBannerDimensionModal(materialName, fixedSize, retailPrice, wholesalePrices, editCartItem = null) {
+        activeDimProduct = {
+            name: materialName,
+            fixedSize: fixedSize,
+            retailPrice: retailPrice,
+            wholesalePrices: wholesalePrices || [],
+            editCartId: editCartItem ? editCartItem.id : null
+        };
+
+        document.getElementById('dim_product_name').innerText = materialName;
+        document.getElementById('dim_product_price').innerText = 'Rp ' + Number(retailPrice).toLocaleString('id-ID');
+
+        // Set Fixed Length
+        const selectFixed = document.getElementById('dim_fixed_length_select');
+        const customContainer = document.getElementById('dim_custom_length_container');
+        const customInput = document.getElementById('dim_fixed_length_custom');
+
+        let targetFixed = editCartItem ? String(editCartItem.fixed_length_m) : (fixedSize ? String(fixedSize) : '2.0');
+        
+        let optionFound = false;
+        for (let i = 0; i < selectFixed.options.length; i++) {
+            if (selectFixed.options[i].value === targetFixed) {
+                selectFixed.selectedIndex = i;
+                optionFound = true;
+                break;
+            }
+        }
+
+        if (!optionFound) {
+            selectFixed.value = 'custom';
+            customContainer.classList.remove('hidden');
+            customInput.value = targetFixed;
+        } else {
+            customContainer.classList.add('hidden');
+        }
+
+        // Set Custom Width CM
+        const widthVal = editCartItem ? editCartItem.custom_width_cm : 150;
+        document.getElementById('dim_custom_width_cm').value = widthVal;
+
+        // Set Qty
+        const qtyVal = editCartItem ? editCartItem.qty : 1;
+        document.getElementById('dim_qty').value = qtyVal;
+
+        calculateDimensionPreview();
+
+        const modalEl = document.getElementById('modalBannerDimension');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+
+    function onFixedLengthSelectChange(val) {
+        const customContainer = document.getElementById('dim_custom_length_container');
+        if (val === 'custom') {
+            customContainer.classList.remove('hidden');
+        } else {
+            customContainer.classList.add('hidden');
+        }
+        calculateDimensionPreview();
+    }
+
+    function setDimWidth(val) {
+        document.getElementById('dim_custom_width_cm').value = val;
+        calculateDimensionPreview();
+    }
+
+    function changeDimQty(delta) {
+        const input = document.getElementById('dim_qty');
+        let val = (parseInt(input.value, 10) || 1) + delta;
+        if (val < 1) val = 1;
+        input.value = val;
+        calculateDimensionPreview();
+    }
+
+    function getActiveFixedLength() {
+        const select = document.getElementById('dim_fixed_length_select').value;
+        if (select === 'custom') {
+            return parseFloat(document.getElementById('dim_fixed_length_custom').value) || 2.0;
+        }
+        return parseFloat(select) || 2.0;
+    }
+
+    function calculateDimensionPreview() {
+        const fixedLength = getActiveFixedLength();
+        const customWidthCm = parseFloat(document.getElementById('dim_custom_width_cm').value) || 100;
+        const qty = parseInt(document.getElementById('dim_qty').value, 10) || 1;
+
+        const areaM2 = (fixedLength * (customWidthCm / 100));
+        const roundedArea = Math.round(areaM2 * 1000) / 1000;
+
+        const { price: baseUnitPrice } = getUnitPrice(activeDimProduct.retailPrice, activeDimProduct.wholesalePrices, qty);
+        const unitPricePerLembar = Math.round(roundedArea * baseUnitPrice);
+        const subtotal = unitPricePerLembar * qty;
+
+        document.getElementById('dim_preview_size').innerText = `${fixedLength}m x ${customWidthCm}cm`;
+        document.getElementById('dim_preview_area').innerText = `${roundedArea.toFixed(2)} m²`;
+        document.getElementById('dim_preview_unit_price').innerText = 'Rp ' + Number(unitPricePerLembar).toLocaleString('id-ID');
+        document.getElementById('dim_preview_subtotal').innerText = 'Rp ' + Number(subtotal).toLocaleString('id-ID');
+    }
+
+    function confirmBannerDimensionAddToCart() {
+        const fixedLength = getActiveFixedLength();
+        const customWidthCm = parseFloat(document.getElementById('dim_custom_width_cm').value) || 100;
+        const qty = parseInt(document.getElementById('dim_qty').value, 10) || 1;
+        const areaM2 = Math.round((fixedLength * (customWidthCm / 100)) * 1000) / 1000;
+
+        if (activeDimProduct.editCartId !== null) {
+            // Edit existing cart item
+            const item = cart.find(i => i.id === activeDimProduct.editCartId);
+            if (item) {
+                item.fixed_length_m = fixedLength;
+                item.custom_width_cm = customWidthCm;
+                item.area_m2 = areaM2;
+                item.qty = qty;
+                item.dimension_text = `${fixedLength}m x ${customWidthCm}cm (${areaM2.toFixed(2)} m²)`;
+            }
+        } else {
+            // Add new custom banner item to cart
+            const dimensionText = `${fixedLength}m x ${customWidthCm}cm (${areaM2.toFixed(2)} m²)`;
+            
+            // Check if exact dimension already in cart
+            const existing = cart.find(i => i.material_name_or_type === activeDimProduct.name 
+                                          && i.fixed_length_m === fixedLength 
+                                          && i.custom_width_cm === customWidthCm);
+            if (existing) {
+                existing.qty += qty;
+            } else {
+                cart.push({
+                    id: cartCounter++,
+                    material_name_or_type: activeDimProduct.name,
+                    fixed_length_m: fixedLength,
+                    custom_width_cm: customWidthCm,
+                    area_m2: areaM2,
+                    dimension_text: dimensionText,
+                    requested_size: fixedLength,
+                    is_custom_banner: true,
+                    qty: qty,
+                    retail_price: activeDimProduct.retailPrice,
+                    wholesale_prices: activeDimProduct.wholesalePrices
+                });
+            }
+        }
+
+        renderCart();
+
+        const modalEl = document.getElementById('modalBannerDimension');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+    }
+
+    // --- Add regular non-banner items to Cart ---
     function addToCart(materialName, fixedSize, retailPrice, wholesalePrices) {
         let size = fixedSize;
 
-        // Check if item already exists in cart
-        let existingItem = cart.find(i => i.material_name_or_type === materialName && i.requested_size === size);
+        let existingItem = cart.find(i => i.material_name_or_type === materialName && !i.is_custom_banner);
 
         if (existingItem) {
             updateQty(existingItem.id, 1);
@@ -415,6 +700,7 @@
                 id: cartCounter++,
                 material_name_or_type: materialName,
                 requested_size: size,
+                is_custom_banner: false,
                 qty: 1,
                 retail_price: retailPrice,
                 wholesale_prices: wholesalePrices
@@ -511,8 +797,14 @@
         let cartHtml = '<div class="space-y-2.5">';
 
         cart.forEach(item => {
-            const { price, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
-            const itemTotal = price * item.qty;
+            const { price: basePrice, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
+            
+            let finalUnitPrice = basePrice;
+            if (item.is_custom_banner && item.area_m2) {
+                finalUnitPrice = Math.round(item.area_m2 * basePrice);
+            }
+
+            const itemTotal = finalUnitPrice * item.qty;
             
             totalQty += item.qty;
             grandTotal += itemTotal;
@@ -522,10 +814,20 @@
                     <div class="flex justify-between items-start">
                         <div>
                             <span class="font-bold text-slate-900 text-xs">${item.material_name_or_type}</span>
-                            ${item.requested_size ? `<span class="block text-[10px] text-blue-600 font-medium">Ukuran: ${item.requested_size}m</span>` : ''}
                             
-                            <div class="flex items-center gap-1.5 mt-0.5">
-                                <span class="text-[11px] font-mono text-slate-500">Rp ${Number(price).toLocaleString('id-ID')}</span>
+                            ${item.is_custom_banner ? `
+                                <div class="mt-0.5">
+                                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-semibold py-0.5 px-1.5 rounded">
+                                        <i class="fa-solid fa-ruler-combined me-1"></i>${item.dimension_text || (item.fixed_length_m + 'm x ' + item.custom_width_cm + 'cm')}
+                                    </span>
+                                </div>
+                            ` : (item.requested_size ? `<span class="block text-[10px] text-blue-600 font-medium">Ukuran: ${item.requested_size}m</span>` : '')}
+                            
+                            <div class="flex items-center gap-1.5 mt-1">
+                                <span class="text-[11px] font-mono text-slate-600">
+                                    @ Rp ${Number(finalUnitPrice).toLocaleString('id-ID')}
+                                    ${item.is_custom_banner ? `<small class="text-slate-400">(${Number(basePrice).toLocaleString('id-ID')}/m²)</small>` : ''}
+                                </span>
                                 ${isWholesale ? `<span class="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1 rounded">Grosir</span>` : ''}
                             </div>
                         </div>
@@ -536,9 +838,16 @@
                     </div>
                     
                     <div class="flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
-                        <button onclick="updateQty(${item.id}, -${item.qty})" class="text-[10px] text-rose-500 hover:text-rose-700 font-semibold bg-transparent border-0 cursor-pointer p-0">
-                            <i class="fa-solid fa-trash-can me-0.5"></i> Hapus
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <button onclick="updateQty(${item.id}, -${item.qty})" class="text-[10px] text-rose-500 hover:text-rose-700 font-semibold bg-transparent border-0 cursor-pointer p-0">
+                                <i class="fa-solid fa-trash-can me-0.5"></i> Hapus
+                            </button>
+                            ${item.is_custom_banner ? `
+                                <button onclick="openBannerDimensionModal('${item.material_name_or_type}', '${item.fixed_length_m}', ${item.retail_price}, ${JSON.stringify(item.wholesale_prices)}, cart.find(i=>i.id===${item.id}))" class="text-[10px] text-blue-600 hover:text-blue-800 font-semibold bg-transparent border-0 cursor-pointer p-0">
+                                    <i class="fa-solid fa-pen-ruler me-0.5"></i> Ubah Ukuran
+                                </button>
+                            ` : ''}
+                        </div>
                         
                         <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm">
                             <button type="button" onclick="updateQty(${item.id}, -1)" class="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition font-bold text-xs bg-transparent border-0 cursor-pointer" title="Kurangi 1">-</button>
@@ -692,6 +1001,10 @@
         const payloadItems = cart.map(item => ({
             material_name_or_type: item.material_name_or_type,
             requested_size: item.requested_size,
+            fixed_length_m: item.fixed_length_m || null,
+            custom_width_cm: item.custom_width_cm || null,
+            area_m2: item.area_m2 || null,
+            dimension_text: item.dimension_text || null,
             qty: item.qty
         }));
 

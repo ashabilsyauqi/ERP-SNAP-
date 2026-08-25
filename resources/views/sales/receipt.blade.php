@@ -223,6 +223,11 @@
             <tr>
                 <td class="text-left">
                     <div class="item-name">{{ $detail->material->material_name ?? 'Bahan Cetak' }}</div>
+                    @if($detail->dimension_text || ($detail->fixed_length_m && $detail->custom_width_cm))
+                        <div class="item-meta" style="color: #000; font-weight: bold;">
+                            [{{ $detail->dimension_text ?: ($detail->fixed_length_m . 'm x ' . $detail->custom_width_cm . 'cm (' . ($detail->area_m2 ?: round($detail->fixed_length_m * ($detail->custom_width_cm / 100), 2)) . ' m²)') }}]
+                        </div>
+                    @endif
                     <div class="item-meta">{{ $detail->qty_ordered }} x Rp {{ number_format($detail->selling_price, 0, ',', '.') }}</div>
                 </td>
                 <td class="text-right fw-bold" style="white-space: nowrap;">
