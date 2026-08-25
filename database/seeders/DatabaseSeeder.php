@@ -76,5 +76,8 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
             'branch_id' => $pusat->id,
         ]);
+
+        // 3. Seed Realistic Comprehensive Printing Products
+        $this->call(MaterialProductSeeder::class);
     }
 }
