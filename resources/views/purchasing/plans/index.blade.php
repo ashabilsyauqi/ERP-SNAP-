@@ -178,7 +178,7 @@
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-indigo-700" title="Buka Rincian Bundle & Tagihan"
-                                                onclick="showPlanById({{ $plan->id }})">
+                                                @click="openPlanDetail({{ json_encode($plan) }})">
                                             <i class="fa-solid fa-eye text-xs"></i>
                                         </button>
 
@@ -219,9 +219,9 @@
                                                     <i class="fa-solid fa-xmark text-xs"></i>
                                                 </button>
                                             @elseif($plan->isApproved() && $plan->payment_status !== 'paid')
-                                                <!-- Tombol Bayar Tagihan untuk Owner -->
-                                                <button type="button" class="btn btn-sm btn-primary py-0 px-2" title="Bayar Tagihan Supplier (Transfer)"
-                                                        onclick="showPayModalById({{ $plan->id }})">
+                                                <!-- Tombol Bayar Tagihan untuk Owner (Langsung Membuka Pop-Up Bayar) -->
+                                                <button type="button" class="btn btn-sm btn-primary py-0 px-2 fw-bold" title="Bayar Tagihan Supplier (Transfer)"
+                                                        @click="openPayModal({{ json_encode($plan) }})">
                                                     <i class="fa-solid fa-credit-card text-xs me-1"></i> Bayar
                                                 </button>
                                             @endif
