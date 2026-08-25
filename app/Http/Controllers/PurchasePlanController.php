@@ -61,6 +61,7 @@ class PurchasePlanController extends Controller
         $draftCount = $plans->where('status', 'draft')->count();
 
         $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $paymentAccounts = \App\Models\Account::where('tipe', 'aset')->where('is_active', true)->orderBy('kode_akun')->get();
 
         return view('purchasing.plans.index', compact(
             'plans',
@@ -69,7 +70,8 @@ class PurchasePlanController extends Controller
             'approvedCount',
             'rejectedCount',
             'draftCount',
-            'branches'
+            'branches',
+            'paymentAccounts'
         ));
     }
 
@@ -455,6 +457,64 @@ class PurchasePlanController extends Controller
         $plan->delete();
 
         return redirect()->route('purchasing.plans.index')->with('success', "Draft Purchase Plan #{$planNumber} berhasil dihapus.");
+    }
+
+    public function pay(Request $request, PurchasePlan $plan)
+    {
+        $user = Auth::user();
+
+        if (!$user->isOwner()) {
+            abort(403, 'Hanya Owner yang berhak mencatat/melakukan pembayaran tagihan supplier.');
+        }
+
+        if ($plan->status !== 'approved_by_owner' && $plan->status !== 'completed') {
+            return redirect()->back()->with('error', 'Tagihan hanya dapat dibayar jika Purchase Plan telah disetujui (ACC) oleh Owner.');
+        }
+
+        $request->validate([
+            'account_id' => 'nullable|exists:accounts,id',
+            'payment_method' => 'required|string|max:100',
+            'payment_reference' => 'nullable|string|max:255',
+            'payment_notes' => 'nullable|string|max:500',
+        ]);
+
+        DB::transaction(function () use ($request, $plan, $user) {
+            $plan->update([
+                'payment_status' => 'paid',
+                'paid_at' => now(),
+                'paid_by' => $user->id,
+                'payment_method' => $request->payment_method,
+                'account_id' => $request->account_id,
+                'payment_reference' => $request->payment_reference,
+                'payment_notes' => $request->payment_notes,
+            ]);
+
+            // Update linked purchases
+            $plan->purchases()->update([
+                'payment_status' => 'paid',
+                'paid_at' => now(),
+                'paid_by' => $user->id,
+                'payment_method' => $request->payment_method,
+                'account_id' => $request->account_id,
+                'payment_reference' => $request->payment_reference,
+            ]);
+
+            // If an asset account is selected (Cash / Bank), record a cash transaction (Kas Keluar)
+            if ($request->filled('account_id')) {
+                \App\Models\CashTransaction::create([
+                    'branch_id' => $plan->branch_id,
+                    'account_id' => $request->account_id,
+                    'user_id' => $user->id,
+                    'tipe' => 'keluar',
+                    'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('keluar'),
+                    'tanggal' => now()->toDateString(),
+                    'jumlah' => $plan->total_estimated_cost,
+                    'keterangan' => "Pembayaran Tagihan Supplier untuk Purchase Plan #{$plan->plan_number} (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
+                ]);
+            }
+        });
+
+        return redirect()->back()->with('success', "Tagihan Purchase Plan #{$plan->plan_number} BERHASIL DIBAYAR! Status tagihan supplier kini telah LUNAS.");
     }
 
     public function reject(Request $request, PurchasePlan $plan)

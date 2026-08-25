@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
 @section('title', 'Vendors & Suppliers')
-@section('page-title', 'Vendors (Data Supplier & Pemasok)')
+@section('page-title', 'Vendors (Data Supplier & Rekening Pemasok)')
 
 @section('action-buttons')
 <button type="button" onclick="document.getElementById('modal-add').classList.remove('hidden')" class="btn-odoo-primary">
-    <i class="fa-solid fa-plus"></i>
+    <i class="fa-solid fa-plus me-1"></i>
     <span>Tambah Vendor Baru</span>
 </button>
 @endsection
@@ -26,6 +26,7 @@
                             <th class="sortable">Nama Kontak / PIC</th>
                             <th class="sortable">Nama Perusahaan</th>
                             <th class="sortable">Nomor Kontak / WA</th>
+                            <th class="sortable">Rekening Bank Pembayaran</th>
                             <th class="sortable">Alamat Gudang / Kantor</th>
                             <th class="text-center no-sort" style="width: 100px;">Aksi</th>
                         </tr>
@@ -61,12 +62,27 @@
                                         <span class="text-slate-400 italic text-[11px]">-</span>
                                     @endif
                                 </td>
+                                <td>
+                                    @if($supplier->bank_name || $supplier->bank_account_number)
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold px-2 py-0.5 text-[11px]">
+                                                {{ $supplier->bank_name ?? 'Bank' }}
+                                            </span>
+                                            <span class="font-mono fw-bold text-slate-800 text-xs">{{ $supplier->bank_account_number }}</span>
+                                        </div>
+                                        @if($supplier->bank_account_name)
+                                            <div class="text-[10px] text-slate-500 mt-0.5">a/n: <strong>{{ $supplier->bank_account_name }}</strong></div>
+                                        @endif
+                                    @else
+                                        <span class="text-slate-400 italic text-[11px]">Belum diatur</span>
+                                    @endif
+                                </td>
                                 <td class="text-slate-600 text-xs line-clamp-1">
                                     {{ $supplier->alamat ?? '-' }}
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        <button onclick="openEditModal({{ $supplier->toJson() }})" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit Vendor">
+                                        <button onclick="openEditModal({{ $supplier->toJson() }})" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Edit Data & Rekening Vendor">
                                             <i class="fa-solid fa-pen-to-square text-xs"></i>
                                         </button>
                                         <form action="{{ route('suppliers.destroy', $supplier->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus supplier ini?');">
@@ -81,7 +97,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     <div class="p-4">
                                         <i class="fa-solid fa-building fs-1 text-slate-300 mb-2"></i>
                                         <p class="mb-0">Belum ada data supplier / vendor.</p>
@@ -111,6 +127,12 @@
                         <div class="text-[11px] text-slate-600 mb-1">
                             <i class="fa-solid fa-phone me-1 opacity-70"></i> {{ $supplier->kontak ?? '-' }}
                         </div>
+                        @if($supplier->bank_account_number)
+                            <div class="text-[11px] text-indigo-700 bg-indigo-50 rounded p-1.5 mb-2 font-mono">
+                                <i class="fa-solid fa-credit-card me-1"></i> {{ $supplier->bank_name }}: <strong>{{ $supplier->bank_account_number }}</strong>
+                                <div class="text-[10px] text-slate-500 font-sans">a/n {{ $supplier->bank_account_name }}</div>
+                            </div>
+                        @endif
                         <div class="text-[11px] text-slate-500 line-clamp-1 mb-3">
                             <i class="fa-solid fa-location-dot me-1 opacity-70"></i> {{ $supplier->alamat ?? '-' }}
                         </div>
@@ -150,18 +172,43 @@
                 <button type="button" class="btn-close text-xs" onclick="document.getElementById('modal-add').classList.add('hidden')"></button>
             </div>
             <div class="p-4 space-y-3">
-                <div>
-                    <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Kontak / PIC</label>
-                    <input type="text" name="name" required class="form-control form-control-sm" placeholder="e.g. Bintang Terang">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Kontak / PIC <span class="text-rose-500">*</span></label>
+                        <input type="text" name="name" required class="form-control form-control-sm" placeholder="e.g. Budi Santoso">
+                    </div>
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Perusahaan / Toko</label>
+                        <input type="text" name="perusahaan" class="form-control form-control-sm" placeholder="e.g. PT. Bintang Terang Media">
+                    </div>
                 </div>
-                <div>
-                    <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Perusahaan</label>
-                    <input type="text" name="perusahaan" class="form-control form-control-sm" placeholder="e.g. PT. Bintang Terang Media">
-                </div>
+
                 <div>
                     <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nomor Kontak / WhatsApp</label>
                     <input type="text" name="kontak" class="form-control form-control-sm" placeholder="e.g. 08123456789">
                 </div>
+
+                <!-- Rekening Bank Fields -->
+                <div class="p-3 bg-slate-50 rounded-2 border space-y-2.5">
+                    <div class="text-xs font-bold text-slate-800 uppercase d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-credit-card text-indigo-600"></i> Informasi Rekening Bank (Untuk Pembayaran Tagihan)
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div>
+                            <label class="form-label text-slate-600 text-[11px] mb-1">Nama Bank</label>
+                            <input type="text" name="bank_name" class="form-control form-control-sm" placeholder="BCA / Mandiri / BRI">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="form-label text-slate-600 text-[11px] mb-1">Nomor Rekening</label>
+                            <input type="text" name="bank_account_number" class="form-control form-control-sm font-mono" placeholder="e.g. 8820192831">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label text-slate-600 text-[11px] mb-1">Atas Nama (Nama Pemilik Rekening)</label>
+                        <input type="text" name="bank_account_name" class="form-control form-control-sm" placeholder="e.g. PT Bintang Terang Media / Budi Santoso">
+                    </div>
+                </div>
+
                 <div>
                     <label class="form-label font-semibold text-slate-700 text-xs uppercase">Alamat Kantor / Gudang</label>
                     <textarea name="alamat" rows="2" class="form-control form-control-sm" placeholder="e.g. Jl. Industri No. 12, Bekasi"></textarea>
@@ -183,23 +230,48 @@
             @method('PUT')
             <div class="bg-slate-50 px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
                 <h5 class="fs-6 font-bold text-slate-800 d-flex align-items-center gap-2 mb-0">
-                    <i class="fa-solid fa-pen-to-square text-blue-700"></i> Edit Data Vendor
+                    <i class="fa-solid fa-pen-to-square text-blue-700"></i> Edit Data Vendor & Rekening
                 </h5>
                 <button type="button" class="btn-close text-xs" onclick="document.getElementById('modal-edit').classList.add('hidden')"></button>
             </div>
             <div class="p-4 space-y-3">
-                <div>
-                    <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Kontak / PIC</label>
-                    <input type="text" id="edit-name" name="name" required class="form-control form-control-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Kontak / PIC <span class="text-rose-500">*</span></label>
+                        <input type="text" id="edit-name" name="name" required class="form-control form-control-sm">
+                    </div>
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Perusahaan / Toko</label>
+                        <input type="text" id="edit-perusahaan" name="perusahaan" class="form-control form-control-sm">
+                    </div>
                 </div>
-                <div>
-                    <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nama Perusahaan</label>
-                    <input type="text" id="edit-perusahaan" name="perusahaan" class="form-control form-control-sm">
-                </div>
+
                 <div>
                     <label class="form-label font-semibold text-slate-700 text-xs uppercase">Nomor Kontak</label>
                     <input type="text" id="edit-kontak" name="kontak" class="form-control form-control-sm">
                 </div>
+
+                <!-- Rekening Bank Fields -->
+                <div class="p-3 bg-slate-50 rounded-2 border space-y-2.5">
+                    <div class="text-xs font-bold text-slate-800 uppercase d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-credit-card text-indigo-600"></i> Informasi Rekening Bank (Untuk Pembayaran Tagihan)
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <div>
+                            <label class="form-label text-slate-600 text-[11px] mb-1">Nama Bank</label>
+                            <input type="text" id="edit-bank-name" name="bank_name" class="form-control form-control-sm" placeholder="BCA / Mandiri / BRI">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="form-label text-slate-600 text-[11px] mb-1">Nomor Rekening</label>
+                            <input type="text" id="edit-bank-account-number" name="bank_account_number" class="form-control form-control-sm font-mono" placeholder="e.g. 8820192831">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label text-slate-600 text-[11px] mb-1">Atas Nama (Nama Pemilik Rekening)</label>
+                        <input type="text" id="edit-bank-account-name" name="bank_account_name" class="form-control form-control-sm" placeholder="e.g. PT Bintang Terang Media / Budi Santoso">
+                    </div>
+                </div>
+
                 <div>
                     <label class="form-label font-semibold text-slate-700 text-xs uppercase">Alamat</label>
                     <textarea id="edit-alamat" name="alamat" rows="2" class="form-control form-control-sm"></textarea>
@@ -220,6 +292,9 @@
         document.getElementById('edit-perusahaan').value = supplier.perusahaan || '';
         document.getElementById('edit-kontak').value = supplier.kontak || '';
         document.getElementById('edit-alamat').value = supplier.alamat || '';
+        document.getElementById('edit-bank-name').value = supplier.bank_name || '';
+        document.getElementById('edit-bank-account-number').value = supplier.bank_account_number || '';
+        document.getElementById('edit-bank-account-name').value = supplier.bank_account_name || '';
         document.getElementById('modal-edit').classList.remove('hidden');
     }
 </script>

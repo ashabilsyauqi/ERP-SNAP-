@@ -57,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/purchasing/plans/{plan}', [\App\Http\Controllers\PurchasePlanController::class, 'destroy'])->name('purchasing.plans.destroy');
         Route::post('/purchasing/plans/{plan}/approve', [\App\Http\Controllers\PurchasePlanController::class, 'approve'])->name('purchasing.plans.approve');
         Route::post('/purchasing/plans/{plan}/reject', [\App\Http\Controllers\PurchasePlanController::class, 'reject'])->name('purchasing.plans.reject');
+        Route::post('/purchasing/plans/{plan}/pay', [\App\Http\Controllers\PurchasePlanController::class, 'pay'])->name('purchasing.plans.pay');
 
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });

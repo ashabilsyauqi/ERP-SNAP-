@@ -20,10 +20,13 @@ class SupplierController extends Controller
             'perusahaan' => 'nullable|string|max:255',
             'kontak' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
+            'bank_name' => 'nullable|string|max:100',
+            'bank_account_number' => 'nullable|string|max:100',
+            'bank_account_name' => 'nullable|string|max:255',
         ]);
 
         Supplier::create($validated);
-        return redirect()->route('suppliers.index')->with('success', 'Supplier berhasil ditambahkan.');
+        return redirect()->route('suppliers.index')->with('success', 'Supplier & data rekening berhasil ditambahkan.');
     }
 
     public function update(Request $request, Supplier $supplier)
@@ -33,10 +36,13 @@ class SupplierController extends Controller
             'perusahaan' => 'nullable|string|max:255',
             'kontak' => 'nullable|string|max:255',
             'alamat' => 'nullable|string',
+            'bank_name' => 'nullable|string|max:100',
+            'bank_account_number' => 'nullable|string|max:100',
+            'bank_account_name' => 'nullable|string|max:255',
         ]);
 
         $supplier->update($validated);
-        return redirect()->route('suppliers.index')->with('success', 'Supplier berhasil diperbarui.');
+        return redirect()->route('suppliers.index')->with('success', 'Data Supplier & rekening berhasil diperbarui.');
     }
 
     public function destroy(Supplier $supplier)
