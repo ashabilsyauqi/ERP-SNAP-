@@ -46,7 +46,7 @@
                 <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint Logo" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
             <h3 class="fw-bold text-white mb-1" style="letter-spacing: -0.5px;">SnapPrint <span style="color: #93c5fd;">ERP</span></h3>
-            <p class="mb-0 text-white" style="font-size: 13px; font-weight: 500; opacity: 0.9;">Digital Printing Enterprise Management System</p>
+            <p class="mb-0 text-white" style="font-size: 13px; font-weight: 500; opacity: 0.9;">"great spot to print"</p>
         </div>
 
         <!-- Login Form Card -->

@@ -871,8 +871,8 @@
          <!-- SnapPrint Brand Logo & Title in Switcher -->
          <div class="text-center mt-6 mb-2">
              <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint Logo" class="rounded-circle shadow-2xl mb-3 border-2 border-white/50" style="width: 72px; height: 72px; object-fit: cover;">
-             <h2 class="text-3xl font-extrabold text-white tracking-tight drop-shadow">SnapPrint ERP</h2>
-             <p class="text-blue-200 text-xs mt-0.5">Enterprise Management System & Modules</p>
+             <h2 class="text-3xl font-extrabold text-white tracking-tight drop-shadow">SnapPrint</h2>
+             <p class="text-blue-200 text-xs mt-0.5 font-medium tracking-wide">"great spot to print"</p>
          </div>
 
          <!-- Search Apps Input -->
