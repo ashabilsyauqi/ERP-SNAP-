@@ -3,28 +3,36 @@ from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 )
 from reportlab.pdfgen import canvas
 import fitz
 
-# Palette SnapPrint
-NAVY_DARK = colors.HexColor('#0B132B')
-NAVY_CARD = colors.HexColor('#1E293B')
-BLUE_PRIMARY = colors.HexColor('#1D4ED8')
-BLUE_LIGHT = colors.HexColor('#EFF6FF')
-BLUE_BORDER = colors.HexColor('#93C5FD')
-TEAL_ACCENT = colors.HexColor('#0D9488')
-EMERALD_GREEN = colors.HexColor('#059669')
-EMERALD_LIGHT = colors.HexColor('#ECFDF5')
-AMBER_ACCENT = colors.HexColor('#D97706')
-AMBER_LIGHT = colors.HexColor('#FFFBEB')
-SLATE_900 = colors.HexColor('#0F172A')
-SLATE_700 = colors.HexColor('#334155')
-SLATE_500 = colors.HexColor('#64748B')
-SLATE_200 = colors.HexColor('#CBD5E1')
+# === CMYK & CREATIVE PRINTING PALETTE ===
+CYAN = colors.HexColor('#00A3E0')       # Vivid Cyan
+CYAN_LIGHT = colors.HexColor('#E0F2FE')
+CYAN_DARK = colors.HexColor('#0284C7')
+
+MAGENTA = colors.HexColor('#E11D48')    # Vivid Magenta / Rose
+MAGENTA_LIGHT = colors.HexColor('#FFE4E6')
+MAGENTA_DARK = colors.HexColor('#BE123C')
+
+YELLOW = colors.HexColor('#F59E0B')     # Warm Print Yellow
+YELLOW_LIGHT = colors.HexColor('#FEF3C7')
+
+KEY_DARK = colors.HexColor('#0B1120')   # Deep Midnight Navy / Black
+KEY_SURFACE = colors.HexColor('#1E293B')# Slate Card Dark
+KEY_LIGHT = colors.HexColor('#F8FAFC')  # Crisp Off-White
+
+EMERALD = colors.HexColor('#10B981')    # Profit Emerald
+EMERALD_LIGHT = colors.HexColor('#D1FAE5')
+PURPLE = colors.HexColor('#8B5CF6')     # Tech Violet
+
+SLATE_800 = colors.HexColor('#1E293B')
+SLATE_600 = colors.HexColor('#475569')
+SLATE_400 = colors.HexColor('#94A3B8')
+SLATE_200 = colors.HexColor('#E2E8F0')
 SLATE_100 = colors.HexColor('#F1F5F9')
-SLATE_50 = colors.HexColor('#F8FAFC')
 WHITE = colors.HexColor('#FFFFFF')
 
 PAGE_WIDTH, PAGE_HEIGHT = landscape(A4) # 841.89 x 595.27 pt
@@ -33,7 +41,8 @@ OUTPUT_PDF = '/Users/kingashabil/Desktop/Skirpsi/public/SnapPrint_Franchise_Pitc
 ARTIFACT_DIR = '/Users/kingashabil/.gemini/antigravity/brain/80681852-77f3-4bf7-8c4f-4ff7a3e38580'
 ARTIFACT_PDF = os.path.join(ARTIFACT_DIR, 'SnapPrint_Franchise_Pitch_Deck.pdf')
 
-class NumberedCanvas(canvas.Canvas):
+class CreativePrintCanvas(canvas.Canvas):
+    """Custom canvas that draws CMYK bars, registration marks, crop marks, and sleek headers."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._saved_page_states = []
@@ -50,170 +59,251 @@ class NumberedCanvas(canvas.Canvas):
             canvas.Canvas.showPage(self)
         canvas.Canvas.save(self)
 
+    def draw_cmyk_bar(self, x, y, width=64, height=6):
+        """Draws 4-color CMYK test patch"""
+        w4 = width / 4.0
+        self.setFillColor(CYAN)
+        self.rect(x, y, w4, height, fill=True, stroke=False)
+        self.setFillColor(MAGENTA)
+        self.rect(x + w4, y, w4, height, fill=True, stroke=False)
+        self.setFillColor(YELLOW)
+        self.rect(x + w4*2, y, w4, height, fill=True, stroke=False)
+        self.setFillColor(KEY_DARK)
+        self.rect(x + w4*3, y, w4, height, fill=True, stroke=False)
+
+    def draw_registration_mark(self, x, y, r=5):
+        """Draws a printer registration crosshair mark"""
+        self.setStrokeColor(SLATE_400)
+        self.setLineWidth(0.6)
+        self.circle(x, y, r, stroke=True, fill=False)
+        self.circle(x, y, r*0.5, stroke=True, fill=False)
+        self.line(x - r - 3, y, x + r + 3, y)
+        self.line(x, y - r - 3, x, y + r + 3)
+
     def draw_decorations(self, page_count):
         if self._pageNumber == 1:
-            return  # Cover slide has custom layout
-        
-        # Header Line
-        self.setStrokeColor(SLATE_200)
-        self.setLineWidth(0.75)
-        self.line(40, PAGE_HEIGHT - 38, PAGE_WIDTH - 40, PAGE_HEIGHT - 38)
+            # Cover Slide: Creative dark background decorations
+            # Top gradient accent bar
+            self.setFillColor(CYAN)
+            self.rect(0, PAGE_HEIGHT - 6, PAGE_WIDTH / 3, 6, fill=True, stroke=False)
+            self.setFillColor(MAGENTA)
+            self.rect(PAGE_WIDTH / 3, PAGE_HEIGHT - 6, PAGE_WIDTH / 3, 6, fill=True, stroke=False)
+            self.setFillColor(YELLOW)
+            self.rect((PAGE_WIDTH / 3) * 2, PAGE_HEIGHT - 6, PAGE_WIDTH / 3, 6, fill=True, stroke=False)
 
-        # Header Logo & Brand
+            # Registration marks at corners
+            self.draw_registration_mark(25, PAGE_HEIGHT - 25, 6)
+            self.draw_registration_mark(PAGE_WIDTH - 25, PAGE_HEIGHT - 25, 6)
+            self.draw_registration_mark(25, 25, 6)
+            self.draw_registration_mark(PAGE_WIDTH - 25, 25, 6)
+
+            # CMYK bottom bar
+            self.draw_cmyk_bar(PAGE_WIDTH / 2 - 40, 16, width=80, height=7)
+            return
+
+        # Inner Slides Header
+        # Top CMYK thin accent bar
+        self.setFillColor(CYAN)
+        self.rect(0, PAGE_HEIGHT - 4, PAGE_WIDTH / 4, 4, fill=True, stroke=False)
+        self.setFillColor(MAGENTA)
+        self.rect(PAGE_WIDTH / 4, PAGE_HEIGHT - 4, PAGE_WIDTH / 4, 4, fill=True, stroke=False)
+        self.setFillColor(YELLOW)
+        self.rect((PAGE_WIDTH / 4) * 2, PAGE_HEIGHT - 4, PAGE_WIDTH / 4, 4, fill=True, stroke=False)
+        self.setFillColor(KEY_DARK)
+        self.rect((PAGE_WIDTH / 4) * 3, PAGE_HEIGHT - 4, PAGE_WIDTH / 4, 4, fill=True, stroke=False)
+
+        # Header Logo & Subtitle
         if os.path.exists(LOGO_PATH):
             try:
-                self.drawImage(LOGO_PATH, 42, PAGE_HEIGHT - 34, width=22, height=22, preserveAspectRatio=True, mask='auto')
+                self.drawImage(LOGO_PATH, 38, PAGE_HEIGHT - 34, width=22, height=22, preserveAspectRatio=True, mask='auto')
             except Exception:
                 pass
-        self.setFont("Helvetica-Bold", 10)
-        self.setFillColor(NAVY_DARK)
-        self.drawString(70, PAGE_HEIGHT - 28, "SNAPPRINT")
-        self.setFont("Helvetica", 9)
-        self.setFillColor(SLATE_500)
-        self.drawString(138, PAGE_HEIGHT - 28, "|   Franchise & Business Opportunity Pitch Deck 2026")
-
-        # Top Right Confidential Tag
+        
+        self.setFont("Helvetica-Bold", 10.5)
+        self.setFillColor(KEY_DARK)
+        self.drawString(66, PAGE_HEIGHT - 27, "SNAPPRINT")
+        
         self.setFont("Helvetica-Bold", 8)
-        self.setFillColor(TEAL_ACCENT)
-        self.drawRightString(PAGE_WIDTH - 42, PAGE_HEIGHT - 28, "CONFIDENTIAL & PROPRIETARY")
+        self.setFillColor(WHITE)
+        # Digital Print Badge
+        self.setFillColor(CYAN)
+        self.roundRect(138, PAGE_HEIGHT - 32, 70, 14, 3, fill=True, stroke=False)
+        self.setFillColor(WHITE)
+        self.drawString(143, PAGE_HEIGHT - 27, "DIGITAL PRINT")
 
-        # Footer Line
-        self.line(40, 35, PAGE_WIDTH - 40, 35)
+        self.setFont("Helvetica", 8.5)
+        self.setFillColor(SLATE_600)
+        self.drawString(218, PAGE_HEIGHT - 27, "•  Franchise & Business Pitch Deck 2026")
 
-        # Footer Text & Page Number
+        # Top Right CMYK patch & confidential badge
+        self.draw_cmyk_bar(PAGE_WIDTH - 190, PAGE_HEIGHT - 28, width=45, height=6)
+        self.draw_registration_mark(PAGE_WIDTH - 130, PAGE_HEIGHT - 25, 4.5)
+
+        self.setFillColor(KEY_DARK)
+        self.roundRect(PAGE_WIDTH - 115, PAGE_HEIGHT - 33, 75, 15, 3, fill=True, stroke=False)
+        self.setFillColor(YELLOW)
+        self.setFont("Helvetica-Bold", 7.5)
+        self.drawString(PAGE_WIDTH - 108, PAGE_HEIGHT - 27, "CONFIDENTIAL")
+
+        # Top Divider Line
+        self.setStrokeColor(SLATE_200)
+        self.setLineWidth(0.75)
+        self.line(36, PAGE_HEIGHT - 39, PAGE_WIDTH - 36, PAGE_HEIGHT - 39)
+
+        # Bottom Footer Divider & Text
+        self.line(36, 32, PAGE_WIDTH - 36, 32)
+        
         self.setFont("Helvetica", 8)
-        self.setFillColor(SLATE_500)
-        self.drawString(42, 22, "PT SNAPPRINT DIGITAL NUSANTARA   •   www.snaprint.co.id   •   Sistem Ekosistem ERP Terintegrasi")
-        page_str = f"Halaman {self._pageNumber} dari {page_count}"
-        self.drawRightString(PAGE_WIDTH - 42, 22, page_str)
+        self.setFillColor(SLATE_600)
+        self.drawString(38, 18, "PT SNAPPRINT DIGITAL NUSANTARA   •   www.snaprint.co.id   •   Sistem Ekosistem ERP Terintegrasi")
+
+        # Bottom Right Page Number in Badge
+        self.setFillColor(SLATE_100)
+        self.roundRect(PAGE_WIDTH - 110, 12, 72, 16, 4, fill=True, stroke=False)
+        self.setFont("Helvetica-Bold", 8)
+        self.setFillColor(KEY_DARK)
+        page_str = f"Slide {self._pageNumber} / {page_count}"
+        self.drawRightString(PAGE_WIDTH - 48, 18, page_str)
 
 def build_pdf():
     doc = SimpleDocTemplate(
         OUTPUT_PDF,
         pagesize=landscape(A4),
-        leftMargin=40,
-        rightMargin=40,
-        topMargin=50,
-        bottomMargin=45
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=46,
+        bottomMargin=40
     )
 
-    styles = getSampleStyleSheet()
-
+    # Typography Styles
     style_cover_title = ParagraphStyle(
         'CoverTitle',
         fontName='Helvetica-Bold',
-        fontSize=26,
-        leading=32,
+        fontSize=27,
+        leading=33,
         textColor=WHITE
     )
     style_cover_desc = ParagraphStyle(
         'CoverDesc',
         fontName='Helvetica',
-        fontSize=10,
-        leading=14,
-        textColor=colors.HexColor('#E2E8F0')
+        fontSize=9,
+        leading=13,
+        textColor=colors.HexColor('#CBD5E1')
     )
-
     style_section_title = ParagraphStyle(
         'SectionTitle',
         fontName='Helvetica-Bold',
-        fontSize=16,
-        leading=20,
-        textColor=NAVY_DARK,
-        spaceAfter=3
+        fontSize=15,
+        leading=18,
+        textColor=KEY_DARK,
+        spaceAfter=2
     )
     style_section_subtitle = ParagraphStyle(
         'SectionSubtitle',
         fontName='Helvetica',
-        fontSize=9.5,
-        leading=13,
-        textColor=SLATE_500,
-        spaceAfter=8
+        fontSize=9,
+        leading=12,
+        textColor=SLATE_600,
+        spaceAfter=7
     )
-
     style_card_title = ParagraphStyle(
         'CardTitle',
         fontName='Helvetica-Bold',
-        fontSize=10.5,
-        leading=14,
-        textColor=NAVY_DARK
+        fontSize=10,
+        leading=13,
+        textColor=KEY_DARK
     )
     style_table_header = ParagraphStyle(
         'TableHeader',
         fontName='Helvetica-Bold',
-        fontSize=9,
-        leading=12,
+        fontSize=8.5,
+        leading=11.5,
         textColor=WHITE
     )
     style_card_body = ParagraphStyle(
         'CardBody',
         fontName='Helvetica',
-        fontSize=8.5,
-        leading=12,
-        textColor=SLATE_700
+        fontSize=8,
+        leading=11.5,
+        textColor=SLATE_800
     )
     style_card_bullet = ParagraphStyle(
         'CardBullet',
         fontName='Helvetica',
-        fontSize=8,
-        leading=11.5,
-        textColor=SLATE_700
+        fontSize=7.8,
+        leading=11,
+        textColor=SLATE_800
     )
 
     story = []
 
     # =========================================================================
-    # SLIDE 1: COVER SLIDE
+    # SLIDE 1: COVER SLIDE (CREATIVE CMYK DIGITAL PRINTING VIBE)
     # =========================================================================
+    logo_img = Image(LOGO_PATH, width=75, height=75) if os.path.exists(LOGO_PATH) else Paragraph("", style_cover_desc)
+    
+    right_box_data = [
+        [logo_img],
+        [Paragraph("<font color='#38BDF8' size='10.5'><b>PT SNAPPRINT DIGITAL NUSANTARA</b></font>", ParagraphStyle('R1', fontName='Helvetica-Bold', alignment=1, textColor=WHITE))],
+        [Paragraph("<font color='#94A3B8' size='8'>Legalitas Badan Usaha Resmi • Standar ISO 9001 SOP</font>", ParagraphStyle('R2', fontName='Helvetica', alignment=1, textColor=SLATE_400))],
+        [Spacer(1, 4)],
+        [Paragraph("<font color='#10B981' size='9'><b>✓ RETURN ON INVESTMENT 34% / TAHUN</b></font>", ParagraphStyle('R3', fontName='Helvetica-Bold', alignment=1))],
+        [Paragraph("<font color='#38BDF8' size='8.5'><b>✓ INTEGRASI SNAPPRINT CLOUD ERP</b></font>", ParagraphStyle('R4', fontName='Helvetica-Bold', alignment=1))],
+        [Paragraph("<font color='#F43F5E' size='8.5'><b>✓ JARINGAN SUPPLY CHAIN PUSAT</b></font>", ParagraphStyle('R5', fontName='Helvetica-Bold', alignment=1))],
+    ]
+    right_box_table = Table(right_box_data, colWidths=[250])
+    right_box_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('PADDING', (0, 0), (-1, -1), 2),
+    ]))
+
     cover_data = [
         [
             Paragraph("""
-            <font color="#38BDF8"><b>FRANCHISE INVESTMENT PROPOSAL 2026</b></font><br/><br/>
-            <b>SNAPPRINT DIGITAL PRINTING</b><br/>
-            <font size="17" color="#94A3B8">Ekosistem Percetakan Modern Berbasis ERP</font><br/><br/>
-            <font color="#E2E8F0" size="10">Peluang kemitraan bisnis percetakan ritel & korporat dengan sistem otomasi cerdas, kepastian rantai pasok terpusat, dan <b>Return on Investment (ROI) teruji 34% per tahun</b>.</font>
+            <font color="#38BDF8"><b>SNAPPRINT DIGITAL PRINTING • BUSINESS PROPOSAL 2026</b></font><br/><br/>
+            <b>PENAWARAN KEMITRAAN FRANCHISE</b><br/>
+            <font size="16" color="#FACC15">Ekosistem Percetakan Modern Berbasis Smart ERP</font><br/><br/>
+            <font color="#E2E8F0" size="9.5">Solusi bisnis percetakan komersial & retail generasi baru dengan otomasi kalkulasi harga instan, rantai pasok terpusat, dan <b>Return on Investment (ROI) teruji 34% per tahun</b>.</font>
             """, style_cover_title),
-            Paragraph(f"""
-            <div align="center">
-                <img src="{LOGO_PATH}" width="110" height="110"/><br/><br/>
-                <font color="#38BDF8" size="11"><b>PT SNAPPRINT DIGITAL NUSANTARA</b></font><br/>
-                <font color="#94A3B8" size="8.5">Legalitas Badan Usaha Resmi • Standar ISO 9001 SOP</font><br/><br/>
-                <font color="#10B981" size="9.5"><b>✓ ROI TERUJI 34% / TAHUN</b></font><br/>
-                <font color="#FBBF24" size="8.5"><b>✓ INTEGRASI SNAPPRINT CLOUD ERP</b></font>
-            </div>
-            """, style_cover_desc)
+            right_box_table
         ]
     ]
 
-    cover_table = Table(cover_data, colWidths=[480, 280])
+    cover_table = Table(cover_data, colWidths=[495, 270])
     cover_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), NAVY_DARK),
+        ('BACKGROUND', (0, 0), (-1, -1), KEY_DARK),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('PADDING', (0, 0), (-1, -1), 28),
+        ('PADDING', (0, 0), (-1, -1), 18),
         ('ROUNDEDCORNERS', [14, 14, 14, 14]),
     ]))
 
-    # Highlight metric cards at bottom of cover
+    # Bottom metric highlight badges with vibrant CMYK accents
     metric_cards = [
         [
-            Paragraph("<b>TARGET PAYBACK PERIOD</b><br/><font size='13' color='#1D4ED8'><b>~ 2.9 Tahun (35 Bln)</b></font><br/><font size='7.5' color='#64748B'>Arus kas positif sejak bulan ke-3</font>", style_card_body),
-            Paragraph("<b>ESTIMASI ANNUAL ROI</b><br/><font size='13' color='#059669'><b>34.0% per Tahun</b></font><br/><font size='7.5' color='#64748B'>Skenario moderat teruji</font>", style_card_body),
-            Paragraph("<b>SISTEM DIGITAL ERP</b><br/><font size='13' color='#7C3AED'><b>100% Terintegrasi</b></font><br/><font size='7.5' color='#64748B'>POS, Inventory, Accounting COA</font>", style_card_body),
-            Paragraph("<b>REPEAT ORDER RATE</b><br/><font size='13' color='#D97706'><b>72% Pelanggan B2B</b></font><br/><font size='7.5' color='#64748B'>Kontrak korporat & UMKM lokal</font>", style_card_body),
+            Paragraph("<font color='#0284C7'><b>TARGET BALIK MODAL</b></font><br/><font size='13' color='#0F172A'><b>~ 2.9 Tahun</b></font><br/><font size='7' color='#64748B'>35 Bulan (Arus Kas Positif Bln-3)</font>", style_card_body),
+            Paragraph("<font color='#059669'><b>ANNUAL NET ROI</b></font><br/><font size='13' color='#059669'><b>34.0% / Tahun</b></font><br/><font size='7' color='#64748B'>Laba Bersih Rp 85 Jt/Thn (Moderat)</font>", style_card_body),
+            Paragraph("<font color='#8B5CF6'><b>SNAPPRINT SMART ERP</b></font><br/><font size='13' color='#0F172A'><b>100% Terintegrasi</b></font><br/><font size='7' color='#64748B'>POS, Antrean Cetak, Jurnal COA</font>", style_card_body),
+            Paragraph("<font color='#E11D48'><b>CUSTOMER RETENTION</b></font><br/><font size='13' color='#E11D48'><b>72% Repeat Order</b></font><br/><font size='7' color='#64748B'>Pelanggan Komersial & UMKM Lokal</font>", style_card_body),
         ]
     ]
-    metric_table = Table(metric_cards, colWidths=[185, 185, 185, 185])
+    metric_table = Table(metric_cards, colWidths=[188, 188, 188, 188])
     metric_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), WHITE),
-        ('BOX', (0, 0), (-1, -1), 1, SLATE_200),
-        ('INNERGRID', (0, 0), (-1, -1), 1, SLATE_200),
-        ('PADDING', (0, 0), (-1, -1), 10),
+        ('BACKGROUND', (0, 0), (0, 0), CYAN_LIGHT),
+        ('BACKGROUND', (1, 0), (1, 0), EMERALD_LIGHT),
+        ('BACKGROUND', (2, 0), (2, 0), colors.HexColor('#F3E8FF')),
+        ('BACKGROUND', (3, 0), (3, 0), MAGENTA_LIGHT),
+        ('BOX', (0, 0), (0, 0), 1, CYAN),
+        ('BOX', (1, 0), (1, 0), 1, EMERALD),
+        ('BOX', (2, 0), (2, 0), 1, PURPLE),
+        ('BOX', (3, 0), (3, 0), 1, MAGENTA),
+        ('PADDING', (0, 0), (-1, -1), 9),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
 
     story.append(cover_table)
-    story.append(Spacer(1, 14))
+    story.append(Spacer(1, 10))
     story.append(metric_table)
     story.append(PageBreak())
 
@@ -221,20 +311,20 @@ def build_pdf():
     # SLIDE 2: 1. EXECUTIVE SUMMARY & NILAI UNIK BRAND (USP)
     # =========================================================================
     story.append(Paragraph("1. Executive Summary & Nilai Unik Brand (USP)", style_section_title))
-    story.append(Paragraph("Fondasi bisnis solid, legalitas resmi, dan keunggulan kompetitif dibanding percetakan ritel konvensional.", style_section_subtitle))
+    story.append(Paragraph("Fondasi bisnis solid, legalitas PT resmi, dan keunggulan kompetitif dibanding percetakan ritel konvensional.", style_section_subtitle))
 
     slide2_data = [
         [
             Paragraph("""
-            <b>PROFIL BRAND & VISI PERUSAHAAN</b><br/><br/>
+            <font color="#0284C7"><b>■ PROFIL BRAND & VISI PERUSAHAAN</b></font><br/><br/>
             <b>SnapPrint</b> adalah jaringan modern digital printing & merchandise hub yang menghadirkan pengalaman cetak cepat, presisi tinggi, dan transparan bagi pelanggan ritel maupun korporasi.<br/><br/>
             • <b>Visi:</b> Menjadi jaringan percetakan digital terdepan di Indonesia yang terstandardisasi melalui otomasi teknologi ERP dan kepuasan pelanggan prima.<br/>
             • <b>Misi:</b> Menyediakan solusi cetak dokumen, promosi, dan kemasan dengan harga kompetitif, QC terjaga, dan SLA pengerjaan tercepat.<br/>
             • <b>Legalitas:</b> PT SnapPrint Digital Nusantara (NIB, NPWP Badan, Hak Cipta Merek Kemenkumham terdaftar resmi).
             """, style_card_body),
             Paragraph("""
-            <b>UNIQUE SELLING PROPOSITION (USP)</b><br/><br/>
-            Mengapa SnapPrint unggul telak dari kompetitor percetakan lokal konvensional:<br/><br/>
+            <font color="#E11D48"><b>■ UNIQUE SELLING PROPOSITION (USP)</b></font><br/><br/>
+            Keunggulan mutlak SnapPrint dibanding percetakan lokal konvensional:<br/><br/>
             <b>1. SnapPrint Cloud ERP & Auto-Quote:</b><br/>
             Kalkulasi harga otomatis instan per meter persegi atau per lembar, antrean cetak digital (Work Order), dan eliminasi salah hitung kasir.<br/><br/>
             <b>2. Jaminan Garansi Cetak 100% (QC SLA):</b><br/>
@@ -245,25 +335,26 @@ def build_pdf():
         ]
     ]
 
-    slide2_table = Table(slide2_data, colWidths=[365, 385])
+    slide2_table = Table(slide2_data, colWidths=[370, 395])
     slide2_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, 0), SLATE_50),
-        ('BACKGROUND', (1, 0), (1, 0), BLUE_LIGHT),
+        ('BACKGROUND', (0, 0), (0, 0), KEY_LIGHT),
+        ('BACKGROUND', (1, 0), (1, 0), CYAN_LIGHT),
         ('BOX', (0, 0), (0, 0), 1, SLATE_200),
-        ('BOX', (1, 0), (1, 0), 1, BLUE_BORDER),
-        ('PADDING', (0, 0), (-1, -1), 14),
+        ('BOX', (1, 0), (1, 0), 1.5, CYAN_DARK),
+        ('PADDING', (0, 0), (-1, -1), 13),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ROUNDEDCORNERS', [8, 8, 8, 8]),
     ]))
     story.append(slide2_table)
 
     summary_pillars = [
         [
-            Paragraph("<font color='#1D4ED8'><b>1. Kecepatan Layanan (SLA)</b></font><br/><font size='7.5' color='#475569'>Print A3+ & Banner kilat 15-30 menit selesai berkat alur file RIP otomatis.</font>", style_card_body),
-            Paragraph("<font color='#059669'><b>2. Akuntansi & Kas Terpadu</b></font><br/><font size='7.5' color='#475569'>Owner memantau omset, mutasi kas/bank COA, dan laba bersih dari smartphone.</font>", style_card_body),
-            Paragraph("<font color='#7C3AED'><b>3. Proteksi Wilayah Eksklusif</b></font><br/><font size='7.5' color='#475569'>Radius proteksi teritori kemitraan min. 3-5 km antar cabang outlet SnapPrint.</font>", style_card_body),
+            Paragraph("<font color='#0284C7'><b>⚡ 1. Kecepatan Layanan (SLA Kilat)</b></font><br/><font size='7.5' color='#475569'>Print A3+ & Banner kilat 15-30 menit selesai berkat alur file RIP otomatis.</font>", style_card_body),
+            Paragraph("<font color='#059669'><b>📱 2. Akuntansi & Kas Terpadu</b></font><br/><font size='7.5' color='#475569'>Owner memantau omset, mutasi kas/bank COA, dan laba bersih dari smartphone.</font>", style_card_body),
+            Paragraph("<font color='#8B5CF6'><b>🛡️ 3. Proteksi Wilayah Eksklusif</b></font><br/><font size='7.5' color='#475569'>Radius proteksi teritori kemitraan min. 3-5 km antar cabang outlet SnapPrint.</font>", style_card_body),
         ]
     ]
-    summary_table = Table(summary_pillars, colWidths=[245, 245, 260])
+    summary_table = Table(summary_pillars, colWidths=[248, 248, 269])
     summary_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), WHITE),
         ('BOX', (0, 0), (-1, -1), 1, SLATE_200),
@@ -271,7 +362,7 @@ def build_pdf():
         ('PADDING', (0, 0), (-1, -1), 9),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
     story.append(summary_table)
     story.append(PageBreak())
 
@@ -279,24 +370,27 @@ def build_pdf():
     # SLIDE 3: 2. PELUANG PASAR & TARGET KONSUMEN
     # =========================================================================
     story.append(Paragraph("2. Peluang Pasar & Karakteristik Konsumen", style_section_title))
-    story.append(Paragraph("Permintaan cetak yang tidak pernah mati dengan basis repeat order tinggi di sektor komersial dan ritel.", style_section_subtitle))
+    story.append(Paragraph("Permintaan cetak yang berkelanjutan dengan basis repeat order tinggi di sektor komersial dan ritel.", style_section_subtitle))
 
     slide3_cards = [
         [
             Paragraph("""
-            <b>SEKTOR B2B & KORPORAT (45% REVENUE)</b><br/><br/>
+            <font color="#0284C7"><b>SEKTOR B2B & KORPORAT</b></font><br/>
+            <font size="11" color="#0F172A"><b>45% REVENUE SHARE</b></font><br/><br/>
             • <b>UMKM & Brand Lokal:</b> Stiker label kemasan, standing pouch, paper bag, kartu nama, hangtag baju.<br/>
             • <b>Perkantoran & Institusi:</b> Kop surat, amplop, map folder, form continuous, brosur company profile.<br/>
             • <b>Sifat Belanja:</b> Volume besar, repeat order rutin 2–4 kali per bulan, sensitif terhadap ketepatan waktu.
             """, style_card_body),
             Paragraph("""
-            <b>SEKTOR EVENT & PENDIDIKAN (30% REVENUE)</b><br/><br/>
+            <font color="#D97706"><b>SEKTOR EVENT & PENDIDIKAN</b></font><br/>
+            <font size="11" color="#0F172A"><b>30% REVENUE SHARE</b></font><br/><br/>
             • <b>Event Organizer & Komunitas:</b> Backdrop, roll-up banner, photobooth, wristband, lanyard, ID card.<br/>
             • <b>Kampus & Sekolah:</b> Cetak modul, jilid skripsi kilat, sertifikat berhologram, buku tahunan siswa.<br/>
             • <b>Sifat Belanja:</b> Musiman dengan lonjakan omset signifikan (*seasonal peak*) pada masa kelulusan & event.
             """, style_card_body),
             Paragraph("""
-            <b>SEKTOR B2C / PERORANGAN (25% REVENUE)</b><br/><br/>
+            <font color="#E11D48"><b>SEKTOR B2C / RETAIL</b></font><br/>
+            <font size="11" color="#0F172A"><b>25% REVENUE SHARE</b></font><br/><br/>
             • <b>Personal & Freelancer:</b> Print foto, cetak dokumen PDF, sablon kaos satuan DTF, tumbler kustom.<br/>
             • <b>Keluarga & Pernikahan:</b> Undangan pernikahan, souvenir mug, banner ucapan selamat, stempel flash.<br/>
             • <b>Sifat Belanja:</b> Margin retail tebal (markup 60%–70%), pembayaran tunai/QRIS instan di kasir.
@@ -304,20 +398,24 @@ def build_pdf():
         ]
     ]
 
-    slide3_table = Table(slide3_cards, colWidths=[245, 245, 260])
+    slide3_table = Table(slide3_cards, colWidths=[248, 248, 269])
     slide3_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), WHITE),
-        ('BOX', (0, 0), (-1, -1), 1, SLATE_200),
-        ('INNERGRID', (0, 0), (-1, -1), 1, SLATE_200),
-        ('PADDING', (0, 0), (-1, -1), 12),
+        ('BACKGROUND', (0, 0), (0, 0), CYAN_LIGHT),
+        ('BACKGROUND', (1, 0), (1, 0), YELLOW_LIGHT),
+        ('BACKGROUND', (2, 0), (2, 0), MAGENTA_LIGHT),
+        ('BOX', (0, 0), (0, 0), 1, CYAN),
+        ('BOX', (1, 0), (1, 0), 1, YELLOW),
+        ('BOX', (2, 0), (2, 0), 1, MAGENTA),
+        ('PADDING', (0, 0), (-1, -1), 11),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
     ]))
     story.append(slide3_table)
 
     season_data = [
         [
             Paragraph("""
-            <b>DINAMIKA SIKLUS BELANJA & REPEAT ORDER SEPANJANG TAHUN:</b><br/>
+            <font color="#92400E"><b>📅 SIKLUS BELANJA REPEAT ORDER TAHUNAN:</b></font><br/>
             • <b>Q1 (Jan–Mar):</b> Laporan tahunan korporat, materi promosi awal tahun, kalender susulan, dan pameran niaga.<br/>
             • <b>Q2 (Apr–Jun):</b> Musim kelulusan sekolah/kampus, skripsi, cetak sertifikat, event seminar, dan merchandise reuni.<br/>
             • <b>Q3 (Jul–Sep):</b> Masa Orientasi Siswa/MABA (lanyard, kaos, booklet), promosi HUT RI (banner & umbul-umbul masif).<br/>
@@ -325,14 +423,14 @@ def build_pdf():
             """, style_card_body)
         ]
     ]
-    season_table = Table(season_data, colWidths=[750])
+    season_table = Table(season_data, colWidths=[765])
     season_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), AMBER_LIGHT),
+        ('BACKGROUND', (0, 0), (-1, -1), WHITE),
         ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#FDE68A')),
-        ('PADDING', (0, 0), (-1, -1), 10),
+        ('PADDING', (0, 0), (-1, -1), 9),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
     story.append(season_table)
     story.append(PageBreak())
 
@@ -345,24 +443,24 @@ def build_pdf():
     slide4_data = [
         [
             Paragraph("""
-            <b>1. DIGITAL PRINT & DOKUMEN</b><br/>
-            <font size='7.5' color='#64748B'><i>Mesin Digital Laser A3+ High-Definition</i></font><br/><br/>
+            <font color="#0284C7"><b>1. DIGITAL PRINT & DOKUMEN</b></font><br/>
+            <font size='7' color='#64748B'><i>Mesin Digital Laser A3+ High-Definition</i></font><br/><br/>
             • <b>Print Lembaran A3+:</b> Art Paper (150-260g), Ivory, Matte Paper, Kraft, Linen, Concorde.<br/>
             • <b>Packaging & Retail Print:</b> Label stiker chromo/vinyl kiss-cut, kartu nama, flyer, brosur lipat.<br/>
             • <b>Jilid & Finishing:</b> Hardcover skripsi mewah berlogo emas, softcover laminasi doff/glossy, jilid spiral kawat, booklet jahitan tengah.<br/>
             • <b>Dokumen Korporasi:</b> Buku panduan, proposal tender, sertifikat berhologram anti-pemalsuan.
             """, style_card_body),
             Paragraph("""
-            <b>2. LARGE FORMAT & OUTDOOR</b><br/>
-            <font size='7.5' color='#64748B'><i>Plotter Eco-Solvent / UV 1.8m – 3.2m</i></font><br/><br/>
+            <font color="#D97706"><b>2. LARGE FORMAT & OUTDOOR</b></font><br/>
+            <font size='7' color='#64748B'><i>Plotter Eco-Solvent / UV 1.8m – 3.2m</i></font><br/><br/>
             • <b>Spanduk & Banner:</b> Flexi China 280g/340g, Flexi Korea 440g, Flexi Jerman (anti robek tahan cuaca).<br/>
             • <b>Media Indoor Premium:</b> Albatros matte, Luster Silk berkilau, Duratrans backlit neon box.<br/>
             • <b>Sticker & Decal:</b> Stiker vinyl Ritrama/Orajet laminasi, stiker one-way vision kaca mobil/toko.<br/>
             • <b>Display Hardware:</b> X-Banner, Y-Banner, Roll-up Aluminium, Event Desk, Tripod Poster, Plang Toko.
             """, style_card_body),
             Paragraph("""
-            <b>3. MERCHANDISE & PACKAGING</b><br/>
-            <font size='7.5' color='#64748B'><i>Sablon Digital DTF, UV Flatbed, Press</i></font><br/><br/>
+            <font color="#E11D48"><b>3. MERCHANDISE & PACKAGING</b></font><br/>
+            <font size='7' color='#64748B'><i>Sablon Digital DTF, UV Flatbed, Press</i></font><br/><br/>
             • <b>Apparel Sablon DTF:</b> Kaos katun combed 24s/30s, polo shirt, jaket hoodie, totebag canvas, topi.<br/>
             • <b>Souvenir & Drinkware:</b> Tumbler vacuum flask gravir/print UV, mug keramik sublim, gantungan kunci akrilik.<br/>
             • <b>Office Accessories:</b> Tali lanyard printing satin stopper, ID card PVC tebal (mirip kartu ATM).<br/>
@@ -371,27 +469,28 @@ def build_pdf():
         ]
     ]
 
-    slide4_table = Table(slide4_data, colWidths=[245, 245, 260])
+    slide4_table = Table(slide4_data, colWidths=[248, 248, 269])
     slide4_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, 0), SLATE_50),
-        ('BACKGROUND', (1, 0), (1, 0), BLUE_LIGHT),
-        ('BACKGROUND', (2, 0), (2, 0), EMERALD_LIGHT),
-        ('BOX', (0, 0), (0, 0), 1, SLATE_200),
-        ('BOX', (1, 0), (1, 0), 1, BLUE_BORDER),
-        ('BOX', (2, 0), (2, 0), 1, colors.HexColor('#6EE7B7')),
-        ('PADDING', (0, 0), (-1, -1), 11),
+        ('BACKGROUND', (0, 0), (0, 0), CYAN_LIGHT),
+        ('BACKGROUND', (1, 0), (1, 0), YELLOW_LIGHT),
+        ('BACKGROUND', (2, 0), (2, 0), MAGENTA_LIGHT),
+        ('BOX', (0, 0), (0, 0), 1, CYAN),
+        ('BOX', (1, 0), (1, 0), 1, YELLOW),
+        ('BOX', (2, 0), (2, 0), 1, MAGENTA),
+        ('PADDING', (0, 0), (-1, -1), 10),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
     ]))
     story.append(slide4_table)
 
     margin_cards = [
         [
-            Paragraph("<b>Gross Margin Digital A3+:</b> <font color='#1D4ED8'><b>60% – 70%</b></font>", style_card_body),
-            Paragraph("<b>Gross Margin Banner / Outdoor:</b> <font color='#059669'><b>50% – 60%</b></font>", style_card_body),
-            Paragraph("<b>Gross Margin Merchandise DTF:</b> <font color='#7C3AED'><b>65% – 75%</b></font>", style_card_body),
+            Paragraph("<b>Gross Margin Digital A3+:</b> <font color='#0284C7'><b>60% – 70%</b></font>", style_card_body),
+            Paragraph("<b>Gross Margin Banner / Outdoor:</b> <font color='#D97706'><b>50% – 60%</b></font>", style_card_body),
+            Paragraph("<b>Gross Margin Merchandise DTF:</b> <font color='#E11D48'><b>65% – 75%</b></font>", style_card_body),
         ]
     ]
-    margin_table = Table(margin_cards, colWidths=[245, 245, 260])
+    margin_table = Table(margin_cards, colWidths=[248, 248, 269])
     margin_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), WHITE),
         ('BOX', (0, 0), (-1, -1), 1, SLATE_200),
@@ -400,7 +499,7 @@ def build_pdf():
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
     story.append(margin_table)
     story.append(PageBreak())
 
@@ -413,13 +512,13 @@ def build_pdf():
     erp_modules = [
         [
             Paragraph("""
-            <b>1. SMART POS & AUTO-CALCULATOR</b><br/><br/>
+            <font color="#0284C7"><b>1. SMART POS & AUTO-CALCULATOR</b></font><br/><br/>
             • <b>Kalkulasi Otomatis Luas & Satuan:</b> Kasir cukup menginput panjang $\\times$ lebar dan memilih bahan; sistem otomatis menghitung HPP dan harga jual tanpa risiko salah hitung.<br/>
             • <b>Tiering Wholesale Otomatis:</b> Diskon kuantiti dinamis untuk pelanggan partai besar.<br/>
             • <b>Pembayaran Multi-Metode:</b> QRIS, Transfer Bank, Tunai, dan Down Payment (DP min 50%) dengan sistem Piutang terdata otomatis.
             """, style_card_body),
             Paragraph("""
-            <b>2. INVENTORY & WORK ORDER MANAGEMENT</b><br/><br/>
+            <font color="#8B5CF6"><b>2. INVENTORY & WORK ORDER MANAGEMENT</b></font><br/><br/>
             • <b>Live Stock Decrement:</b> Stok kertas lembaran, meteran banner, dan tinta berkurang otomatis per pesanan cetak selesai.<br/>
             • <b>Stock Opname Digital:</b> Verifikasi fisik stok berkala dengan pencatatan selisih otomatis.<br/>
             • <b>Antrean Cetak Mesin (Work Order):</b> Desainer & operator melihat antrean status cetak secara realtime di layar produksi.
@@ -427,13 +526,13 @@ def build_pdf():
         ],
         [
             Paragraph("""
-            <b>3. CENTRAL PURCHASING & BILLS</b><br/><br/>
+            <font color="#D97706"><b>3. CENTRAL PURCHASING & BILLS</b></font><br/><br/>
             • <b>Purchase Plan Bundle:</b> Pengajuan rencana belanja multi-produk cabang ke Owner via sistem RFQ.<br/>
             • <b>Tagihan Supplier & Rekening Otomatis:</b> Rincian rekening bank vendor dan nominal tagihan muncul otomatis saat di-ACC Owner.<br/>
             • <b>Pemeriksaan Gudang (GRN):</b> Verifikasi fisik kedatangan barang sebelum stok ditambahkan.
             """, style_card_body),
             Paragraph("""
-            <b>4. EXECUTIVE FINANCIAL DASHBOARD</b><br/><br/>
+            <font color="#059669"><b>4. EXECUTIVE FINANCIAL DASHBOARD</b></font><br/><br/>
             • <b>Laporan Laba Rugi Real-Time:</b> Pendapatan harian dikurangi HPP bahan dan beban operasional.<br/>
             • <b>Mutasi Kas/Bank (COA Akuntansi):</b> Setiap rupiah keluar/masuk tercatat ke buku kas besar.<br/>
             • <b>Mobile Accessibility:</b> Owner dapat memantau performa toko, menyetujui PO, dan memeriksa omset dari mana saja.
@@ -441,13 +540,14 @@ def build_pdf():
         ]
     ]
 
-    erp_table = Table(erp_modules, colWidths=[365, 385])
+    erp_table = Table(erp_modules, colWidths=[370, 395])
     erp_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), WHITE),
         ('BOX', (0, 0), (-1, -1), 1, SLATE_200),
         ('INNERGRID', (0, 0), (-1, -1), 1, SLATE_200),
-        ('PADDING', (0, 0), (-1, -1), 10),
+        ('PADDING', (0, 0), (-1, -1), 9.5),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
     ]))
     story.append(erp_table)
     story.append(PageBreak())
@@ -460,14 +560,14 @@ def build_pdf():
 
     packages_data = [
         [
-            Paragraph("<b>TIER 1: COMPACT EXPRESS</b><br/><font size='7.5' color='#64748B'>Format Kios Kampus / Ruko Mini</font>", style_card_title),
-            Paragraph("<b>TIER 2: STANDARD STUDIO [POPULAR]</b><br/><font size='7.5' color='#1D4ED8'><b>Paling Populer & Ideal</b></font>", style_card_title),
-            Paragraph("<b>TIER 3: FULL PRODUCTION HUB</b><br/><font size='7.5' color='#64748B'>Pusat Produksi Wilayah / B2B</font>", style_card_title),
+            Paragraph("<font color='#0284C7'><b>TIER 1: COMPACT EXPRESS</b></font><br/><font size='7' color='#64748B'>Format Kios Kampus / Ruko Mini</font>", style_card_title),
+            Paragraph("<font color='#059669'><b>TIER 2: STANDARD STUDIO [REKOMENDASI]</b></font><br/><font size='7' color='#059669'><b>Paling Populer & Ideal</b></font>", style_card_title),
+            Paragraph("<font color='#8B5CF6'><b>TIER 3: FULL PRODUCTION HUB</b></font><br/><font size='7' color='#64748B'>Pusat Produksi Wilayah / B2B</font>", style_card_title),
         ],
         [
-            Paragraph("<font size='13' color='#1D4ED8'><b>Rp 120.000.000</b></font>", style_card_body),
-            Paragraph("<font size='13' color='#059669'><b>Rp 250.000.000</b></font>", style_card_body),
-            Paragraph("<font size='13' color='#7C3AED'><b>Rp 450.000.000</b></font>", style_card_body),
+            Paragraph("<font size='12' color='#0284C7'><b>Rp 120.000.000</b></font>", style_card_body),
+            Paragraph("<font size='12' color='#059669'><b>Rp 250.000.000</b></font>", style_card_body),
+            Paragraph("<font size='12' color='#8B5CF6'><b>Rp 450.000.000</b></font>", style_card_body),
         ],
         [
             Paragraph("""
@@ -514,19 +614,20 @@ def build_pdf():
         ]
     ]
 
-    packages_table = Table(packages_data, colWidths=[245, 245, 260])
+    packages_table = Table(packages_data, colWidths=[248, 248, 269])
     packages_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, 1), SLATE_50),
-        ('BACKGROUND', (1, 0), (1, 1), BLUE_LIGHT),
-        ('BACKGROUND', (2, 0), (2, 1), SLATE_50),
+        ('BACKGROUND', (0, 0), (0, 1), CYAN_LIGHT),
+        ('BACKGROUND', (1, 0), (1, 1), EMERALD_LIGHT),
+        ('BACKGROUND', (2, 0), (2, 1), colors.HexColor('#F3E8FF')),
         ('BACKGROUND', (0, 2), (0, 2), WHITE),
-        ('BACKGROUND', (1, 2), (1, 2), colors.HexColor('#F8FAFC')),
+        ('BACKGROUND', (1, 2), (1, 2), WHITE),
         ('BACKGROUND', (2, 2), (2, 2), WHITE),
-        ('BOX', (0, 0), (0, -1), 1, SLATE_200),
-        ('BOX', (1, 0), (1, -1), 2, BLUE_PRIMARY),
-        ('BOX', (2, 0), (2, -1), 1, SLATE_200),
-        ('PADDING', (0, 0), (-1, -1), 8),
+        ('BOX', (0, 0), (0, -1), 1, CYAN),
+        ('BOX', (1, 0), (1, -1), 2, EMERALD),
+        ('BOX', (2, 0), (2, -1), 1, PURPLE),
+        ('PADDING', (0, 0), (-1, -1), 7.5),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
     ]))
     story.append(packages_table)
     story.append(PageBreak())
@@ -541,7 +642,7 @@ def build_pdf():
         [
             Paragraph("<b>KOMPONEN LAPORAN KEUANGAN (BULANAN)</b>", style_table_header),
             Paragraph("<b>KONSERVATIF</b>", style_table_header),
-            Paragraph("<b>MODERAT (REALISTIS)</b>", style_table_header),
+            Paragraph("<b>MODERAT (REALISTIS) ⭐</b>", style_table_header),
             Paragraph("<b>AGRESIF (OPTIMAL)</b>", style_table_header),
         ],
         [
@@ -594,9 +695,9 @@ def build_pdf():
         ],
         [
             Paragraph("<b>LABA BERSIH BULANAN (NET PROFIT / EBITDA)</b>", style_card_title),
-            Paragraph("<font color='#1D4ED8'><b>Rp 6.550.000</b></font>", style_card_body),
-            Paragraph("<font color='#059669' size='10'><b>Rp 7.083.333</b></font>", style_card_body),
-            Paragraph("<font color='#7C3AED'><b>Rp 17.800.000</b></font>", style_card_body),
+            Paragraph("<font color='#0284C7'><b>Rp 6.550.000</b></font>", style_card_body),
+            Paragraph("<font color='#059669' size='9.5'><b>Rp 7.083.333</b></font>", style_card_body),
+            Paragraph("<font color='#8B5CF6'><b>Rp 17.800.000</b></font>", style_card_body),
         ],
         [
             Paragraph("<b>PROYEKSI LABA BERSIH TAHUNAN</b>", style_card_title),
@@ -607,7 +708,7 @@ def build_pdf():
         [
             Paragraph("<b>ANNUAL RETURN ON INVESTMENT (ROI)</b>", style_card_title),
             Paragraph("31.4% / thn", style_card_body),
-            Paragraph("<font color='#059669' size='11'><b>34.0% / TAHUN</b></font>", style_card_body),
+            Paragraph("<font color='#059669' size='10.5'><b>34.0% / TAHUN</b></font>", style_card_body),
             Paragraph("85.4% / thn", style_card_body),
         ],
         [
@@ -618,14 +719,14 @@ def build_pdf():
         ]
     ]
 
-    fin_table = Table(fin_table_data, colWidths=[290, 150, 165, 145])
+    fin_table = Table(fin_table_data, colWidths=[295, 150, 170, 150])
     fin_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), NAVY_DARK),
+        ('BACKGROUND', (0, 0), (-1, 0), KEY_DARK),
         ('BACKGROUND', (2, 1), (2, -1), EMERALD_LIGHT),
         ('BOX', (0, 0), (-1, -1), 1, SLATE_200),
         ('INNERGRID', (0, 0), (-1, -1), 0.5, SLATE_200),
-        ('LINEBELOW', (0, 3), (-1, 3), 1.5, SLATE_700),
-        ('LINEBELOW', (0, 9), (-1, 9), 1.5, SLATE_700),
+        ('LINEBELOW', (0, 3), (-1, 3), 1.5, SLATE_800),
+        ('LINEBELOW', (0, 9), (-1, 9), 1.5, SLATE_800),
         ('PADDING', (0, 0), (-1, -1), 4.5),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
@@ -636,10 +737,10 @@ def build_pdf():
             Paragraph("<b>BREAK EVEN POINT (BEP) OPERASIONAL:</b> Titik impas berada pada omset <b>Rp 42.083.333 / bulan</b> (hanya butuh ~18 order banner + 40 lembar A3+ per hari untuk mencapai titik aman operasional).", style_card_body)
         ]
     ]
-    bep_table = Table(bep_note, colWidths=[750])
+    bep_table = Table(bep_note, colWidths=[765])
     bep_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), BLUE_LIGHT),
-        ('BOX', (0, 0), (-1, -1), 1, BLUE_BORDER),
+        ('BACKGROUND', (0, 0), (-1, -1), CYAN_LIGHT),
+        ('BOX', (0, 0), (-1, -1), 1, CYAN),
         ('PADDING', (0, 0), (-1, -1), 6),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ]))
@@ -656,13 +757,13 @@ def build_pdf():
     slide7_support = [
         [
             Paragraph("""
-            <b>1. PELATIHAN SDM & ACADEMY (14 HARI)</b><br/><br/>
+            <font color="#0284C7"><b>🎓 1. PELATIHAN SDM & ACADEMY (14 HARI)</b></font><br/><br/>
             • <b>Operator Mesin:</b> SOP kalibrasi warna, perawatan harian printhead, setting ICC profile media cetak, dan penanganan problem kertas/tinta.<br/>
             • <b>Desainer Grafis:</b> Prepress check (CMYK vs RGB, resolusi 300 DPI, bleed potong), software RIP otomatis, dan katalog template desain siap pakai.<br/>
             • <b>Kasir / Front Officer:</b> Pelatihan software SnapPrint ERP POS, upselling paket jilid, kalkulasi pesanan kustom, dan etika ramah melayani pelanggan.
             """, style_card_body),
             Paragraph("""
-            <b>2. MARKETING NASIONAL & LOKAL</b><br/><br/>
+            <font color="#E11D48"><b>🚀 2. MARKETING NASIONAL & LOKAL</b></font><br/><br/>
             • <b>Optimasi Digital Lokal:</b> Setup Google Business Profile (Google Maps) dengan SEO lokal agar outlet menduduki ranking #1 pencarian percetakan di wilayah sekitar.<br/>
             • <b>Kampanye Digital Terarah:</b> Iklan berbayar Meta Ads (Instagram/FB) & TikTok radius 5–10 km di sekitar outlet mitra pada masa grand opening.<br/>
             • <b>Materi Pemasaran Siap Pakai:</b> Brosur fisik, katalog harga B2B, spanduk opening, dan konten media sosial berkala dari tim kreatif pusat.
@@ -670,13 +771,13 @@ def build_pdf():
         ],
         [
             Paragraph("""
-            <b>3. TEKNISI & MAINTENANCE BERKALA</b><br/><br/>
+            <font color="#D97706"><b>🔧 3. TEKNISI & MAINTENANCE BERKALA</b></font><br/><br/>
             • <b>Preventive Maintenance:</b> Kunjungan audit dan servis berkala mesin setiap bulan oleh tim teknisi bersertifikasi pusat.<br/>
             • <b>Emergency Response Hotline:</b> Bantuan teknis cepat & penyediaan mesin cadangan (backup) jika terjadi kendala produksi mendesak.<br/>
             • <b>Jaminan Suku Cadang Resmi:</b> Ketersediaan printhead, motor servo, belt, dan modul elektronik asli dengan harga khusus mitra.
             """, style_card_body),
             Paragraph("""
-            <b>4. SUPPLY CHAIN & JAMINAN HARGA</b><br/><br/>
+            <font color="#059669"><b>📦 4. SUPPLY CHAIN & JAMINAN HARGA</b></font><br/><br/>
             • <b>Gudang Bahan Baku Terpusat:</b> Kepastian suplai kertas A3+, banner flexi, albatros, sticker vinyl, tinta, dan blank merchandise tanpa putus.<br/>
             • <b>Harga Beli Skala Distributor:</b> Mitra mendapatkan harga modal tier-1 sehingga profit margin tetap tinggi meski bersaing ketat di pasar lokal.<br/>
             • <b>Pemesanan Otomatis di ERP:</b> Restok bahan dilakukan langsung via menu Purchase Plan di sistem ERP tanpa repot manual.
@@ -684,13 +785,14 @@ def build_pdf():
         ]
     ]
 
-    slide7_table = Table(slide7_support, colWidths=[365, 385])
+    slide7_table = Table(slide7_support, colWidths=[370, 395])
     slide7_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), WHITE),
         ('BOX', (0, 0), (-1, -1), 1, SLATE_200),
         ('INNERGRID', (0, 0), (-1, -1), 1, SLATE_200),
         ('PADDING', (0, 0), (-1, -1), 10),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
     ]))
     story.append(slide7_table)
     story.append(PageBreak())
@@ -704,7 +806,7 @@ def build_pdf():
     slide8_data = [
         [
             Paragraph("""
-            <b>SPESIFIKASI LOKASI OUTLET IDEAL:</b><br/><br/>
+            <font color="#0284C7"><b>■ SPESIFIKASI LOKASI OUTLET IDEAL:</b></font><br/><br/>
             • <b>Luas Bangunan:</b> Min. 30 m² – 60 m² (Lebar muka ruko minimal 4 meter agar display mesin & kasir leluasa).<br/>
             • <b>Kebutuhan Daya Listrik:</b><br/>
               - Paket Compact: Min. 5.500 VA (1 Phase stabil)<br/>
@@ -714,7 +816,7 @@ def build_pdf():
             • <b>Aksesibilitas:</b> Memiliki area parkir motor & mobil yang memadai untuk bongkar muat bahan dan kenyamanan pelanggan.
             """, style_card_body),
             Paragraph("""
-            <b>6-STEP ONBOARDING ROADMAP MENUJU OPENING:</b><br/><br/>
+            <font color="#E11D48"><b>■ 6-STEP ONBOARDING ROADMAP MENUJU OPENING:</b></font><br/><br/>
             <b>Step 1: Pendaftaran & Diskusi Awal</b><br/>
             Pengisian formulir minat kemitraan dan seleksi profil calon mitra.<br/><br/>
             <b>Step 2: Survei Lokasi & Studi Kelayakan</b><br/>
@@ -731,33 +833,34 @@ def build_pdf():
         ]
     ]
 
-    slide8_table = Table(slide8_data, colWidths=[330, 420])
+    slide8_table = Table(slide8_data, colWidths=[335, 430])
     slide8_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, 0), SLATE_50),
+        ('BACKGROUND', (0, 0), (0, 0), KEY_LIGHT),
         ('BACKGROUND', (1, 0), (1, 0), WHITE),
         ('BOX', (0, 0), (-1, -1), 1, SLATE_200),
         ('INNERGRID', (0, 0), (-1, -1), 1, SLATE_200),
         ('PADDING', (0, 0), (-1, -1), 10),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('ROUNDEDCORNERS', [6, 6, 6, 6]),
     ]))
     story.append(slide8_table)
 
-    # CTA Contact Banner
+    # CTA Contact Banner with Creative CMYK Colors
     cta_data = [
         [
             Paragraph("""
             <div align="center">
                 <font color="#FFFFFF" size="11"><b>MARI BERGABUNG MENJADI BAGIAN DARI KELUARGA BESAR SNAPPRINT DIGITAL PRINTING!</b></font><br/>
                 <font color="#93C5FD" size="8.5">Konsultasikan pilihan paket kemitraan dan jadwal survei lokasi bersama Tim Business Expansion kami:</font><br/>
-                <font color="#FBBF24" size="9"><b>WhatsApp: +62 812-9988-7766   •   Email: franchise@snaprint.co.id   •   Website: www.snaprint.co.id</b></font>
+                <font color="#FACC15" size="9.5"><b>WhatsApp: +62 812-9988-7766   •   Email: franchise@snaprint.co.id   •   Website: www.snaprint.co.id</b></font>
             </div>
             """, style_card_body)
         ]
     ]
-    cta_table = Table(cta_data, colWidths=[750])
+    cta_table = Table(cta_data, colWidths=[765])
     cta_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), NAVY_DARK),
-        ('BOX', (0, 0), (-1, -1), 1, NAVY_CARD),
+        ('BACKGROUND', (0, 0), (-1, -1), KEY_DARK),
+        ('BOX', (0, 0), (-1, -1), 1, KEY_SURFACE),
         ('PADDING', (0, 0), (-1, -1), 10),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ROUNDEDCORNERS', [8, 8, 8, 8]),
@@ -765,7 +868,7 @@ def build_pdf():
     story.append(Spacer(1, 8))
     story.append(cta_table)
 
-    doc.build(story, canvasmaker=NumberedCanvas)
+    doc.build(story, canvasmaker=CreativePrintCanvas)
 
     # Copy to artifacts directory
     os.system(f"cp '{OUTPUT_PDF}' '{ARTIFACT_PDF}'")
@@ -776,7 +879,7 @@ def build_pdf():
         pix = page.get_pixmap(dpi=150)
         pix.save(os.path.join(ARTIFACT_DIR, f'slide_{i+1}.png'))
 
-    print(f"Successfully generated Franchise Pitch Deck PDF & slide previews at:\n1. {OUTPUT_PDF}\n2. {ARTIFACT_PDF}")
+    print(f"Successfully generated CMYK Creative Franchise Pitch Deck PDF & slide previews at:\n1. {OUTPUT_PDF}\n2. {ARTIFACT_PDF}")
 
 if __name__ == '__main__':
     build_pdf()
