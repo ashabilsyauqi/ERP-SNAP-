@@ -55,6 +55,7 @@ class RealStoreProductsSeeder extends Seeder
                     ],
                     [
                         'supplier_id' => $supplier->id,
+                        'category' => $prod['category'] ?? 'Lainnya',
                         'purchase_price' => $hpp,
                         'retail_price' => $retail,
                         'fixed_size' => $fixedSize,

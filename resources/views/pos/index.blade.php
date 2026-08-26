@@ -61,19 +61,59 @@
             <div>
                 <h2 class="text-base font-bold text-slate-900 mb-0 d-flex align-items-center gap-2">
                     <i class="fa-solid fa-cash-register text-blue-600"></i>
-                    <span>Katalog Bahan Cetak Kasir</span>
+                    <span>Katalog Bahan & Produk Kasir</span>
                 </h2>
-                <p class="text-[11px] text-slate-500 mb-0">Klik pada kartu bahan baku untuk memasukkan ke keranjang kasir</p>
+                <p class="text-[11px] text-slate-500 mb-0">Klik pada kartu produk untuk memasukkan ke keranjang kasir</p>
             </div>
             
             <!-- Live Search Products -->
             <div class="relative w-full sm:w-64">
-                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="Cari bahan cetak..." 
+                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="Cari 112 produk & bahan cetak..." 
                     class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs transition duration-150">
                 <div class="absolute left-3 top-2.5 text-slate-400">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
                 </div>
             </div>
+        </div>
+
+        <!-- Categories Pill Filter Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 flex-shrink-0 no-scrollbar" id="category-filter-container">
+            <button type="button" 
+                    onclick="filterCategory('all', this)" 
+                    class="category-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 border bg-blue-600 text-white border-blue-600 shadow-sm cursor-pointer flex items-center gap-1.5 active"
+                    data-cat="all">
+                <i class="fa-solid fa-layer-group text-[11px]"></i>
+                <span>Semua Produk</span>
+                <span class="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">{{ $materials->count() }}</span>
+            </button>
+
+            @php
+                $catIcons = [
+                    'Print Dokumen dan Sticker' => ['icon' => 'fa-file-lines', 'color' => 'text-sky-500'],
+                    'Cetak Outdoor dan Indoor' => ['icon' => 'fa-panorama', 'color' => 'text-amber-500'],
+                    'Finishing' => ['icon' => 'fa-scissors', 'color' => 'text-indigo-500'],
+                    'Merchandise Custom' => ['icon' => 'fa-gift', 'color' => 'text-rose-500'],
+                    'Stampel' => ['icon' => 'fa-stamp', 'color' => 'text-purple-500'],
+                    'Nota' => ['icon' => 'fa-receipt', 'color' => 'text-blue-500'],
+                    'Brosur' => ['icon' => 'fa-newspaper', 'color' => 'text-emerald-500'],
+                    'Tumbler' => ['icon' => 'fa-mug-hot', 'color' => 'text-teal-500'],
+                ];
+            @endphp
+
+            @foreach($categories as $cat)
+                @php
+                    $catCount = $materials->where('category', $cat)->count();
+                    $info = $catIcons[$cat] ?? ['icon' => 'fa-tag', 'color' => 'text-slate-500'];
+                @endphp
+                <button type="button" 
+                        onclick="filterCategory('{{ addslashes($cat) }}', this)" 
+                        class="category-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all duration-150 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm cursor-pointer flex items-center gap-1.5"
+                        data-cat="{{ $cat }}">
+                    <i class="fa-solid {{ $info['icon'] }} {{ $info['color'] }} text-[11px]"></i>
+                    <span>{{ $cat }}</span>
+                    <span class="bg-slate-100 text-slate-600 text-[10px] px-1.5 py-0.2 rounded-full font-mono">{{ $catCount }}</span>
+                </button>
+            @endforeach
         </div>
         
         <!-- Products Cards Grid (Independent Scroll) -->
@@ -81,14 +121,28 @@
             @foreach($materials as $material)
                 <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between"
                      data-name="{{ strtolower($material->material_name) }}"
+                     data-category="{{ $material->category ?? 'Lainnya' }}"
                      onclick="handleProductClick('{{ addslashes($material->material_name) }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }})">
                     
                     <div>
-                        <div class="flex justify-between items-start mb-1">
-                            <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                        <div class="flex justify-between items-start mb-1 gap-1">
+                            @php
+                                $badgeStyle = match($material->category) {
+                                    'Print Dokumen dan Sticker' => 'bg-sky-50 text-sky-700 border-sky-200',
+                                    'Cetak Outdoor dan Indoor' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'Finishing' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                    'Merchandise Custom' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                    'Stampel' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                    'Nota' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                    'Brosur' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    'Tumbler' => 'bg-teal-50 text-teal-700 border-teal-200',
+                                    default => 'bg-slate-50 text-slate-700 border-slate-200'
+                                };
+                            @endphp
+                            <span class="badge {{ $badgeStyle }} border text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[130px]" title="{{ $material->category ?? 'Bahan' }}">
                                 {{ $material->category ?? 'Bahan' }}
                             </span>
-                            <span class="text-[10px] {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold">
+                            <span class="text-[10px] {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold flex-shrink-0">
                                 Stok: {{ $material->stock_qty }} {{ $material->unit ?? 'pcs' }}
                             </span>
                         </div>
@@ -100,6 +154,12 @@
                         @if($material->fixed_size)
                             <div class="text-[11px] text-slate-500 mb-2">
                                 Ukuran: <strong class="text-slate-700">{{ $material->fixed_size }} m</strong>
+                            </div>
+                        @endif
+
+                        @if($material->wholesalePrices->count() > 0)
+                            <div class="text-[10px] text-blue-600 font-medium mb-1">
+                                <i class="fa-solid fa-tags me-1"></i>{{ $material->wholesalePrices->count() }} Tier Grosir
                             </div>
                         @endif
                     </div>
@@ -118,6 +178,15 @@
                     </div>
                 </div>
             @endforeach
+
+            <!-- Empty State for Filter/Search -->
+            <div id="products-empty-state" class="col-span-2 lg:col-span-3 py-12 text-center hidden">
+                <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-2 text-xl">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <h4 class="text-sm font-bold text-slate-700 mb-1">Produk Tidak Ditemukan</h4>
+                <p class="text-xs text-slate-400 mb-0">Coba ubah kata kunci pencarian atau pilih kategori lain.</p>
+            </div>
         </div>
         
         <!-- Stock Reference Widget (Docked at Bottom of Left Column) -->
@@ -880,19 +949,68 @@
         mobileCartTotalText.innerText = formattedTotal;
     }
 
-    // --- Search Products Filtering ---
+    // --- Category & Search Combined Filtering ---
+    let currentCategory = 'all';
+
+    function filterCategory(category, btnElement) {
+        currentCategory = category;
+
+        // Update Button Active Styles
+        document.querySelectorAll('.category-filter-btn').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'active', 'font-semibold');
+            btn.classList.add('bg-white', 'text-slate-700', 'border-slate-200', 'font-medium');
+            const countBadge = btn.querySelector('span:last-child');
+            if (countBadge) {
+                countBadge.classList.remove('bg-white/20', 'text-white');
+                countBadge.classList.add('bg-slate-100', 'text-slate-600');
+            }
+        });
+
+        if (btnElement) {
+            btnElement.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'font-medium');
+            btnElement.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'active', 'font-semibold');
+            const countBadge = btnElement.querySelector('span:last-child');
+            if (countBadge) {
+                countBadge.classList.remove('bg-slate-100', 'text-slate-600');
+                countBadge.classList.add('bg-white/20', 'text-white');
+            }
+        }
+
+        applyCombinedFilter();
+    }
+
     function filterProducts() {
-        const query = document.getElementById('product-search').value.toLowerCase().trim();
+        applyCombinedFilter();
+    }
+
+    function applyCombinedFilter() {
+        const query = (document.getElementById('product-search')?.value || '').toLowerCase().trim();
         const cards = document.querySelectorAll('.product-card');
+        let visibleCount = 0;
 
         cards.forEach(card => {
-            const name = card.getAttribute('data-name');
-            if (name.includes(query)) {
+            const name = (card.getAttribute('data-name') || '').toLowerCase();
+            const cat = card.getAttribute('data-category') || '';
+
+            const matchQuery = !query || name.includes(query);
+            const matchCat = (currentCategory === 'all') || (cat === currentCategory);
+
+            if (matchQuery && matchCat) {
                 card.classList.remove('hidden');
+                visibleCount++;
             } else {
                 card.classList.add('hidden');
             }
         });
+
+        const emptyState = document.getElementById('products-empty-state');
+        if (emptyState) {
+            if (visibleCount === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+        }
     }
 
     // --- Switch Selected Payment Tile UI ---

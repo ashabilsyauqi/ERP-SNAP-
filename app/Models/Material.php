@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['branch_id', 'supplier_id', 'material_name', 'fixed_size', 'purchase_price', 'stock_qty', 'retail_price'])]
+#[Fillable(['branch_id', 'supplier_id', 'material_name', 'category', 'fixed_size', 'purchase_price', 'stock_qty', 'retail_price'])]
 class Material extends Model
 {
     use SoftDeletes;

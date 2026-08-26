@@ -14,12 +14,24 @@ class PosController extends Controller
 {
     public function index()
     {
+        $branchId = auth()->user()->branch_id;
+
         // Exclude Tinta (OPEX) from POS, filter by branch
         $materials = Material::with('wholesalePrices')
-            ->where('branch_id', auth()->user()->branch_id)
+            ->where('branch_id', $branchId)
             ->where('material_name', 'not like', '%tinta%')
+            ->orderBy('category', 'asc')
+            ->orderBy('material_name', 'asc')
             ->get();
-        return view('pos.index', compact('materials'));
+
+        $categories = Material::where('branch_id', $branchId)
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->where('material_name', 'not like', '%tinta%')
+            ->distinct()
+            ->pluck('category');
+
+        return view('pos.index', compact('materials', 'categories'));
     }
 
     public function checkout(Request $request)
