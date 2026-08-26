@@ -58,6 +58,41 @@
         </div>
     </div>
 
+    <!-- Category Filter Tabs (Pill Buttons) -->
+    <div class="d-flex align-items-center gap-1.5 mb-3 overflow-x-auto pb-1 no-scrollbar">
+        <a href="{{ route('stock.index', array_merge(request()->except(['category', 'page']), ['category' => 'all'])) }}" 
+           class="btn btn-sm text-xs rounded-pill px-3 py-1 text-decoration-none d-flex align-items-center gap-1.5 fw-semibold transition {{ ($selectedCategory === 'all' || !$selectedCategory) ? 'btn-primary shadow-sm' : 'btn-outline-secondary bg-white text-slate-700' }}">
+            <i class="fa-solid fa-layer-group text-xs"></i>
+            <span>Semua Kategori</span>
+            <span class="badge {{ ($selectedCategory === 'all' || !$selectedCategory) ? 'bg-white text-primary' : 'bg-slate-100 text-slate-600' }} rounded-pill text-[10px]">{{ $totalItems }}</span>
+        </a>
+
+        @php
+            $catIcons = [
+                'Print Dokumen dan Sticker' => ['icon' => 'fa-file-lines', 'badge' => 'bg-sky-50 text-sky-700 border-sky-200'],
+                'Cetak Outdoor dan Indoor' => ['icon' => 'fa-panorama', 'badge' => 'bg-amber-50 text-amber-700 border-amber-200'],
+                'Finishing' => ['icon' => 'fa-scissors', 'badge' => 'bg-indigo-50 text-indigo-700 border-indigo-200'],
+                'Merchandise Custom' => ['icon' => 'fa-gift', 'badge' => 'bg-rose-50 text-rose-700 border-rose-200'],
+                'Stampel' => ['icon' => 'fa-stamp', 'badge' => 'bg-purple-50 text-purple-700 border-purple-200'],
+                'Nota' => ['icon' => 'fa-receipt', 'badge' => 'bg-blue-50 text-blue-700 border-blue-200'],
+                'Brosur' => ['icon' => 'fa-newspaper', 'badge' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+                'Tumbler' => ['icon' => 'fa-mug-hot', 'badge' => 'bg-teal-50 text-teal-700 border-teal-200'],
+            ];
+        @endphp
+
+        @foreach($categories as $cat)
+            @php
+                $isActive = ($selectedCategory === $cat);
+                $info = $catIcons[$cat] ?? ['icon' => 'fa-tag', 'badge' => 'bg-slate-50 text-slate-700 border-slate-200'];
+            @endphp
+            <a href="{{ route('stock.index', array_merge(request()->except(['category', 'page']), ['category' => $cat])) }}" 
+               class="btn btn-sm text-xs rounded-pill px-3 py-1 text-decoration-none d-flex align-items-center gap-1.5 transition {{ $isActive ? 'btn-primary shadow-sm fw-bold' : 'btn-outline-secondary bg-white text-slate-700' }}">
+                <i class="fa-solid {{ $info['icon'] }} text-xs"></i>
+                <span>{{ $cat }}</span>
+            </a>
+        @endforeach
+    </div>
+
     <!-- Main Odoo Sheet -->
     <div class="o_form_sheet p-0 overflow-hidden">
         <!-- View Mode 1: Table List View (Odoo Tree View) -->
@@ -70,6 +105,7 @@
                                 <input type="checkbox" class="form-check-input">
                             </th>
                             <th class="sortable">Product (Nama Bahan)</th>
+                            <th class="sortable">Kategori</th>
                             <th class="sortable">Vendor</th>
                             <th class="sortable">Specification / Unit</th>
                             <th class="sortable text-end">Cost Price</th>
@@ -80,6 +116,19 @@
                     </thead>
                     <tbody>
                         @forelse($materials as $material)
+                            @php
+                                $badgeStyle = match($material->category) {
+                                    'Print Dokumen dan Sticker' => 'bg-sky-50 text-sky-700 border-sky-200',
+                                    'Cetak Outdoor dan Indoor' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'Finishing' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                    'Merchandise Custom' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                    'Stampel' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                    'Nota' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                    'Brosur' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    'Tumbler' => 'bg-teal-50 text-teal-700 border-teal-200',
+                                    default => 'bg-slate-50 text-slate-700 border-slate-200'
+                                };
+                            @endphp
                             <tr class="search-row">
                                 <td class="ps-3 text-center">
                                     <input type="checkbox" class="form-check-input">
@@ -87,6 +136,11 @@
                                 <td>
                                     <div class="fw-bold text-slate-800">{{ $material->material_name }}</div>
                                     <span class="text-slate-400 font-mono text-[10px]">#MAT-{{ $material->id }} &bull; {{ $material->branch->nama_cabang ?? 'Pusat' }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge {{ $badgeStyle }} border text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                                        {{ $material->category ?? 'Lainnya' }}
+                                    </span>
                                 </td>
                                 <td>
                                     @if($material->supplier)
@@ -139,6 +193,7 @@
                                         editMaterial = {
                                             id: '{{ $material->id }}',
                                             name: '{{ addslashes($material->material_name) }}',
+                                            category: '{{ addslashes($material->category ?? '') }}',
                                             stock_qty: '{{ $material->stock_qty }}',
                                             purchase_price: '{{ $material->purchase_price }}',
                                             retail_price: '{{ $material->retail_price }}',
@@ -153,10 +208,10 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-5 text-muted">
+                                <td colspan="9" class="text-center py-5 text-muted">
                                     <div class="p-4">
                                         <i class="fa-solid fa-boxes-stacked fs-1 text-slate-300 mb-2"></i>
-                                        <p class="mb-0">Belum ada data stok bahan baku.</p>
+                                        <p class="mb-0">Belum ada data stok bahan baku untuk filter ini.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -172,19 +227,22 @@
                 @forelse($materials as $material)
                     <div class="o_kanban_record bg-white border rounded p-3 shadow-sm hover:shadow transition search-card" style="border-left: 4px solid {{ $material->stock_qty <= 5 ? '#e11d48' : '#008784' }} !important;">
                         <div class="d-flex justify-content-between align-items-start mb-1">
-                            <span class="font-mono text-slate-400 text-[10px]">#MAT-{{ $material->id }}</span>
+                            <span class="badge bg-slate-100 text-slate-700 border text-[10px]">{{ $material->category ?? 'Bahan' }}</span>
                             <span class="badge {{ $material->stock_qty <= 5 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700' }} text-[10px]">
                                 {{ $material->stock_qty }} Units
                             </span>
                         </div>
                         <h6 class="fw-bold text-slate-900 mb-1 text-xs">{{ $material->material_name }}</h6>
-                        <div class="text-[11px] text-slate-500 mb-2">Cabang: {{ $material->branch->nama_cabang ?? 'Pusat' }}</div>
-                        <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
-                            <span class="font-mono text-xs font-bold text-teal-700">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</span>
+                        <div class="text-[11px] text-slate-500 mb-2">
+                            <span>Harga: <strong class="text-teal-700">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</strong></span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                            <span class="text-slate-400 font-mono text-[10px]">#MAT-{{ $material->id }}</span>
                             <button @click="
                                 editMaterial = {
                                     id: '{{ $material->id }}',
                                     name: '{{ addslashes($material->material_name) }}',
+                                    category: '{{ addslashes($material->category ?? '') }}',
                                     stock_qty: '{{ $material->stock_qty }}',
                                     purchase_price: '{{ $material->purchase_price }}',
                                     retail_price: '{{ $material->retail_price }}',
@@ -192,8 +250,8 @@
                                 };
                                 if (!editMaterial.wholesale) editMaterial.wholesale = [];
                                 editOpen = true;
-                            " class="btn btn-sm btn-light py-0 px-2 text-xs">
-                                Opname
+                            " class="btn btn-xs btn-odoo-secondary py-0.5 px-2 text-[10px]">
+                                <i class="fa-solid fa-sliders me-1"></i> Opname
                             </button>
                         </div>
                     </div>
@@ -217,9 +275,20 @@
                     <button type="button" class="btn-close btn-close-white text-xs" @click="editOpen = false"></button>
                 </div>
                 <div class="p-4 space-y-3 text-xs">
-                    <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Nama Bahan Baku</label>
-                        <input type="text" x-model="editMaterial.name" class="form-control form-control-sm bg-light" readonly>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Nama Produk / Bahan</label>
+                            <input type="text" x-model="editMaterial.name" class="form-control form-control-sm bg-light" readonly>
+                        </div>
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Kategori Produk</label>
+                            <input type="text" name="category" x-model="editMaterial.category" list="category-options" class="form-control form-control-sm font-semibold">
+                            <datalist id="category-options">
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat }}"></option>
+                                @endforeach
+                            </datalist>
+                        </div>
                     </div>
                     <div>
                         <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Sisa Stok Fisik (Real On Hand)</label>

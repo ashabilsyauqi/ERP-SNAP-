@@ -28,6 +28,10 @@ class StockController extends Controller
             $query->where('branch_id', $user->branch_id);
         }
 
+        if ($request->filled('category') && $request->category !== 'all') {
+            $query->where('category', $request->category);
+        }
+
         if ($request->filled('search')) {
             $query->where('material_name', 'like', "%{$request->search}%");
         }
@@ -52,6 +56,16 @@ class StockController extends Controller
 
         $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
 
+        $catQuery = Material::query();
+        if (!$user->isOwner()) {
+            $catQuery->where('branch_id', $user->branch_id);
+        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
+            $catQuery->where('branch_id', $request->branch_id);
+        }
+        $categories = $catQuery->whereNotNull('category')->where('category', '!=', '')->distinct()->pluck('category');
+
+        $selectedCategory = $request->get('category', 'all');
+
         return view('stock.index', compact(
             'materials',
             'totalItems',
@@ -59,7 +73,9 @@ class StockController extends Controller
             'totalAssetValue',
             'lowStockCount',
             'pendingCount',
-            'branches'
+            'branches',
+            'categories',
+            'selectedCategory'
         ));
     }
 
@@ -151,6 +167,7 @@ class StockController extends Controller
         }
 
         $validated = $request->validate([
+            'category' => 'nullable|string|max:100',
             'stock_qty' => 'required|integer|min:0',
             'purchase_price' => 'nullable|numeric|min:0',
             'retail_price' => 'nullable|numeric|min:0',
@@ -162,6 +179,9 @@ class StockController extends Controller
         DB::transaction(function () use ($request, $material, $validated) {
             $material->stock_qty = $validated['stock_qty'];
 
+            if ($request->filled('category')) {
+                $material->category = $validated['category'];
+            }
             if ($request->filled('purchase_price')) {
                 $material->purchase_price = $validated['purchase_price'];
             }
