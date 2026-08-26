@@ -188,7 +188,7 @@
                                     @endphp
                                     <button type="button" 
                                             class="btn btn-sm btn-light border text-[11px] py-0 px-2 mt-1 text-blue-700 d-inline-flex align-items-center gap-1 font-mono"
-                                            onclick='openSnapPrintInvoice(@json($invPayload))'>
+                                            onclick='openSnaprintInvoice(@json($invPayload))'>
                                         <i class="fa-solid fa-file-invoice text-blue-600"></i>
                                         <span>Invoice: {{ $trx->transaction->invoice_number }}</span>
                                         <span class="badge bg-emerald-100 text-emerald-800 text-[9px] px-1 py-0">PAID</span>

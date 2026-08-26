@@ -31,6 +31,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Branch Management (Owner Only - No Manager Access)
         Route::resource('branches', \App\Http\Controllers\BranchController::class)->except(['create', 'show', 'edit']);
+        Route::post('branches/{id}/restore', [\App\Http\Controllers\BranchController::class, 'restore'])->name('branches.restore');
     });
 
     // Profile & Digital Signature

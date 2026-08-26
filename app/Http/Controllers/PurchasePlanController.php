@@ -19,7 +19,7 @@ class PurchasePlanController extends Controller
     {
         $user = Auth::user();
 
-        $query = PurchasePlan::with(['branch', 'user', 'approvedBy', 'rejectedBy', 'items.material', 'items.supplier', 'purchases'])
+        $query = PurchasePlan::with(['branch', 'user', 'approvedBy', 'rejectedBy', 'items.material', 'items.supplier', 'purchases.verifiedBy'])
             ->orderBy('created_at', 'desc');
 
         if ($user->isOwner()) {

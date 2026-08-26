@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Dashboard') | SnapPrint ERP</title>
+    <title>@yield('title', 'Dashboard') | Snaprint ERP</title>
 
     <!-- Google Font: Plus Jakarta Sans & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +26,7 @@
     <link href="{{ asset('vendor/bladewind/css/animate.min.css') }}" rel="stylesheet" />
     <link href="{{ asset('vendor/bladewind/css/bladewind-ui.min.css') }}" rel="stylesheet" />
 
-    <!-- Tailwind CSS CDN Engine with SnapPrint Blue Palette -->
+    <!-- Tailwind CSS CDN Engine with Snaprint Blue Palette -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -36,7 +36,7 @@
             theme: {
                 extend: {
                     colors: {
-                        snapprint: {
+                        snaprint: {
                             navy: '#0F172A',
                             royal: '#1E3A8A',
                             blue: '#2563EB',
@@ -90,7 +90,7 @@
             vertical-align: middle;
         }
         
-        /* SnapPrint Brand Top Main Navbar */
+        /* Snaprint Brand Top Main Navbar */
         .o_main_navbar {
             background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 40%, #1e40af 100%) !important;
             height: 46px !important;
@@ -163,7 +163,7 @@
             font-weight: 700;
         }
         
-        /* SnapPrint Two-Tier Control Panel */
+        /* Snaprint Two-Tier Control Panel */
         .o_control_panel {
             background-color: #ffffff;
             border-bottom: 1px solid var(--o-border-color);
@@ -320,6 +320,74 @@
         /* Custom Sort Indicator */
         th.sortable { cursor: pointer; }
         .sort-icon { display: inline-block; margin-left: 4px; font-size: 0.7rem; }
+
+        /* Professional Printable Media Styling */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11pt !important;
+            }
+            .o_main_navbar,
+            .o_control_panel,
+            .print\:hidden,
+            .d-print-none,
+            #app-switcher-matrix,
+            .btn,
+            .btn-odoo-primary,
+            .btn-odoo-secondary {
+                display: none !important;
+            }
+            .d-print-block {
+                display: block !important;
+            }
+            .d-print-inline {
+                display: inline !important;
+            }
+            main.o_form_sheet_bg {
+                padding: 0 !important;
+                background-color: #ffffff !important;
+                overflow: visible !important;
+            }
+            .o_form_sheet {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            .table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 10pt !important;
+            }
+            .table th, .table td {
+                border: 1px solid #cbd5e1 !important;
+                padding: 6px 8px !important;
+                color: #000000 !important;
+            }
+            .table thead th {
+                background-color: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .table tfoot tr {
+                background-color: #f8fafc !important;
+                font-weight: bold !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .badge {
+                border: 1px solid #94a3b8 !important;
+                color: #000000 !important;
+                background: transparent !important;
+            }
+            @page {
+                size: A4 auto;
+                margin: 1.5cm 1cm 1.5cm 1cm;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen" x-data="{ showSwitcher: false }">
@@ -538,7 +606,7 @@
 
     <div class="flex flex-col h-screen overflow-hidden">
         
-        <!-- SnapPrint Brand Top Main Navbar -->
+        <!-- Snaprint Brand Top Main Navbar -->
         <nav class="o_main_navbar flex-shrink-0">
             <div class="d-flex align-items-center h-100 flex-nowrap" style="overflow: visible;">
                 <!-- App Switcher Matrix Button -->
@@ -546,7 +614,7 @@
                     <i class="fa-solid fa-table-cells fs-5"></i>
                 </button>
 
-                <!-- SnapPrint Brand Logo Emblem in Navbar -->
+                <!-- Snaprint Brand Logo Emblem in Navbar -->
                 <div class="d-flex align-items-center gap-2 border-end pe-3 ps-1 me-1 border-white/20 h-75">
                     <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;">
                     <span class="fw-bold tracking-wide text-white text-xs d-none d-sm-inline">Snaprint</span>
@@ -701,7 +769,7 @@
             </div>
         </nav>
 
-        <!-- SnapPrint Two-Tier Control Panel -->
+        <!-- Snaprint Two-Tier Control Panel -->
         <header class="o_control_panel flex-shrink-0">
             @php
                 $isDashboardOrReport = request()->routeIs('owner.dashboard', 'dashboard', 'reports.*', 'profile.*', 'pos', 'pos.*');
@@ -732,16 +800,18 @@
                 <!-- Action Buttons (Left) -->
                 <div class="d-flex align-items-center gap-2 flex-wrap" id="control-panel-actions">
                     @yield('action-buttons')
-                    <button type="button" onclick="exportTableToExcel('main-table', 'SnapPrint_Export')" class="btn-odoo-secondary" title="Export Table to Excel (SheetJS)">
+                    @if(!$isDashboardOrReport)
+                    <button type="button" onclick="exportTableToExcel('main-table', 'Snaprint_Export')" class="btn-odoo-secondary" title="Export Data Tabel ke Excel">
                         <i class="fa-solid fa-file-excel text-emerald-600"></i>
                         <span>Export</span>
                     </button>
+                    @endif
                 </div>
 
                 <!-- Pager & View Mode Switcher (Right) -->
                 <div class="d-flex align-items-center gap-3">
                     <span class="text-xs text-slate-500 font-mono d-none d-sm-inline">
-                        <i class="fa-solid fa-shield-halved text-[10px] me-1 text-blue-600"></i> SnapPrint ERP
+                        <i class="fa-solid fa-shield-halved text-[10px] me-1 text-blue-600"></i> Snaprint ERP
                     </span>
 
                     @if(!$isDashboardOrReport)
@@ -782,7 +852,7 @@
         </main>
     </div>
 
-    <!-- SnapPrint Solid Blue Gradient App Switcher Modal (Fullscreen overlay above all navbars) -->
+    <!-- Snaprint Solid Blue Gradient App Switcher Modal (Fullscreen overlay above all navbars) -->
     <div x-show="showSwitcher" 
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 scale-95"
@@ -800,11 +870,11 @@
              <i class="fa-solid fa-xmark text-lg"></i>
          </button>
 
-         <!-- SnapPrint Brand Logo & Title in Switcher -->
+         <!-- Snaprint Brand Logo & Title in Switcher -->
          <div class="text-center mt-6 mb-2">
-             <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint Logo" class="rounded-circle shadow-2xl mb-3 border-2 border-white/50" style="width: 72px; height: 72px; object-fit: cover;">
-             <h2 class="text-3xl font-extrabold text-white tracking-tight drop-shadow">SnapPrint ERP</h2>
-             <p class="text-blue-200 text-xs mt-0.5">Enterprise Management System & Modules</p>
+             <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint Logo" class="rounded-circle shadow-2xl mb-3 border-2 border-white/50" style="width: 72px; height: 72px; object-fit: cover;">
+             <h2 class="text-3xl font-extrabold text-white tracking-tight drop-shadow">Snaprint</h2>
+             <p class="text-blue-200 text-xs mt-0.5 font-medium tracking-wide">"great spot to print"</p>
          </div>
 
          <!-- Search Apps Input -->
@@ -856,7 +926,7 @@
          </div>
     </div>
 
-    <!-- SnapPrint Universal Interactive Invoice Modal -->
+    <!-- Snaprint Universal Interactive Invoice Modal -->
     <div x-data="{ 
         open: false, 
         inv: { invoice_number: '', created_at: '', cashier_name: '', branch_name: '', payment_method: '', payment_status: 'PAID', total_price: 0, items: [] } 
@@ -871,14 +941,14 @@
             <!-- Modal Header -->
             <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
-                    <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint Logo" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;">
+                    <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint Logo" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;">
                     <div>
                         <h6 class="fw-bold mb-0 text-white font-mono" x-text="'INVOICE: ' + (inv.invoice_number || 'TRX-000')"></h6>
-                        <span class="text-[11px] text-slate-300">SnapPrint Digital Printing ERP Official Invoice</span>
+                        <span class="text-[11px] text-slate-300">Snaprint Digital Printing ERP Official Invoice</span>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" @click="printSnapPrintInvoice(inv)" class="btn btn-sm btn-primary py-1 px-2.5 text-xs font-semibold">
+                    <button type="button" @click="printSnaprintInvoice(inv)" class="btn btn-sm btn-primary py-1 px-2.5 text-xs font-semibold">
                         <i class="fa-solid fa-print me-1"></i> Cetak Invoice / SPK
                     </button>
                     <button type="button" class="btn-close btn-close-white text-xs" @click="open = false"></button>
@@ -890,9 +960,9 @@
                 <!-- Invoice Header with Company Logo -->
                 <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
                     <div class="d-flex align-items-center gap-3">
-                        <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint Logo" class="rounded-circle border" style="width: 52px; height: 52px; object-fit: cover;">
+                        <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint Logo" class="rounded-circle border" style="width: 52px; height: 52px; object-fit: cover;">
                         <div>
-                            <h4 class="fw-bold text-blue-900 mb-0 tracking-tight">SnapPrint</h4>
+                            <h4 class="fw-bold text-blue-900 mb-0 tracking-tight">Snaprint</h4>
                             <p class="text-xs text-slate-500 mb-0">Digital Printing & Advertising Solutions</p>
                             <div class="text-[11px] text-slate-500 mt-0.5">
                                 Cabang: <strong class="text-slate-800" x-text="inv.branch_name || 'Pusat'"></strong>
@@ -965,6 +1035,7 @@
                                     <td class="text-center" x-text="idx + 1"></td>
                                     <td>
                                         <strong class="text-slate-800" x-text="item.material_name || item.name || '-'"></strong>
+                                        <div class="text-[10px] text-blue-700 font-bold font-mono" x-show="item.dimension_text" x-text="'[' + item.dimension_text + ']'"></div>
                                         <div class="text-[10px] text-slate-400" x-show="item.specs" x-text="item.specs"></div>
                                     </td>
                                     <td class="text-center fw-semibold" x-text="item.qty_ordered || item.qty"></td>
@@ -1011,14 +1082,14 @@
 
                 <!-- Footer notes -->
                 <div class="p-2.5 bg-slate-50 rounded border text-center text-[11px] text-slate-500">
-                    Terima kasih telah mencetak di <strong>SnapPrint</strong>. Simpan invoice ini sebagai bukti transaksi resmi.
+                    Terima kasih telah mencetak di <strong>Snaprint</strong>. Simpan invoice ini sebagai bukti transaksi resmi.
                 </div>
             </div>
 
             <!-- Modal Action Footer -->
             <div class="bg-slate-50 px-4 py-2.5 border-top d-flex justify-content-end gap-2">
                 <button type="button" @click="open = false" class="btn-odoo-secondary">Tutup</button>
-                <button type="button" @click="printSnapPrintInvoice(inv)" class="btn-odoo-primary">
+                <button type="button" @click="printSnaprintInvoice(inv)" class="btn-odoo-primary">
                     <i class="fa-solid fa-print me-1"></i> Cetak Invoice / SPK
                 </button>
             </div>
@@ -1041,7 +1112,7 @@
             const driverObj = driver.js.driver({
                 showProgress: true,
                 steps: [
-                    { element: '#tour-button', popover: { title: 'Navigasi SnapPrint ERP', description: 'Gunakan panduan ini kapan saja untuk melihat fitur di SnapPrint ERP.', side: "bottom" } },
+                    { element: '#tour-button', popover: { title: 'Navigasi Snaprint ERP', description: 'Gunakan panduan ini kapan saja untuk melihat fitur di Snaprint ERP.', side: "bottom" } },
                     { element: '.fa-table-cells', popover: { title: 'App Switcher (Home)', description: 'Buka App Matrix full-screen untuk berpindah modul secara cepat.', side: "right" } },
                     { element: '.o_searchview', popover: { title: 'Live Search View', description: 'Filter data tabel secara langsung dengan mengetik kata kunci.', side: "bottom" } }
                 ]
@@ -1133,7 +1204,7 @@
         }
 
         // Global Excel Export Engine (SheetJS)
-        function exportTableToExcel(tableId, filename = 'SnapPrint_Export') {
+        function exportTableToExcel(tableId, filename = 'Snaprint_Export') {
             const table = document.getElementById(tableId);
             if (!table) {
                 alert('Tabel tidak ditemukan untuk diekspor.');
@@ -1148,12 +1219,12 @@
         }
 
         // Global Invoice Viewer Helper
-        window.openSnapPrintInvoice = function(invData) {
+        window.openSnaprintInvoice = function(invData) {
             window.dispatchEvent(new CustomEvent('open-invoice-modal', { detail: invData }));
         };
 
         // Global Printable Invoice Generator
-        window.printSnapPrintInvoice = function(inv) {
+        window.printSnaprintInvoice = function(inv) {
             const printWindow = window.open('', '_blank');
             const logoUrl = "{{ asset('images/logosnaprint.jpeg') }}";
             const isPartial = inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0);
@@ -1163,6 +1234,7 @@
                     <td style="text-align: center; padding: 8px; border: 1px solid #cbd5e1;">${idx + 1}</td>
                     <td style="padding: 8px; border: 1px solid #cbd5e1;">
                         <strong>${it.material_name || it.name || '-'}</strong>
+                        ${it.dimension_text ? `<br><small style="color: #1e40af; font-weight: bold;">[${it.dimension_text}]</small>` : ''}
                         ${it.specs ? `<br><small style="color: #64748b;">${it.specs}</small>` : ''}
                     </td>
                     <td style="text-align: center; padding: 8px; border: 1px solid #cbd5e1;">${it.qty_ordered || it.qty || 1}</td>
@@ -1204,9 +1276,9 @@
                 <body>
                     <div class="header">
                         <div class="brand-container">
-                            <img src="${logoUrl}" alt="SnapPrint" class="brand-logo">
+                            <img src="${logoUrl}" alt="Snaprint" class="brand-logo">
                             <div>
-                                <div class="brand">SnapPrint</div>
+                                <div class="brand">Snaprint</div>
                                 <div style="font-size: 12px; color: #64748b;">Digital Printing & Advertising Solutions</div>
                                 <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Cabang: <strong>${inv.branch_name || 'Pusat'}</strong></div>
                             </div>
@@ -1277,7 +1349,8 @@
                     </table>
 
                     <div class="footer">
-                        Terima kasih atas kepercayaan Anda mencetak di SnapPrint. Dokumen ini sah dan diterbitkan secara otomatis oleh sistem SnapPrint ERP.
+                        Terima kasih atas kepercayaan Anda mencetak di Snaprint.<br>
+                        <strong>Kunjungi halaman kami: mysnaprint.com</strong> &bull; Snaprint "great spot to print"
                     </div>
 
                     <script>

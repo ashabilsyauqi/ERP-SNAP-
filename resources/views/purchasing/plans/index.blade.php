@@ -142,12 +142,12 @@
                                             <i class="fa-solid fa-clock me-1"></i> Menunggu ACC Owner
                                         </span>
                                     @elseif($plan->status === 'approved_by_owner' || $plan->status === 'completed')
-                                        <span class="badge bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-semibold">
-                                            <i class="fa-solid fa-circle-check me-1"></i> Disetujui (PO Terbit)
+                                        <span class="badge bg-blue-50 text-blue-800 border border-blue-300 text-[11px] font-semibold">
+                                            <i class="fa-solid fa-file-circle-check me-1"></i> PO Disetujui (PO Terbit)
                                         </span>
                                         @if($plan->approvedBy)
-                                            <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">
-                                                ✓ Oleh: {{ $plan->approvedBy->username }}
+                                            <div class="text-[10px] text-blue-700 font-semibold mt-0.5">
+                                                ✓ ACC: {{ $plan->approvedBy->username }}
                                             </div>
                                         @endif
                                     @elseif($plan->status === 'rejected_by_owner')
@@ -178,7 +178,7 @@
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
                                         <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-indigo-700" title="Buka Rincian Bundle & Tagihan"
-                                                onclick="showPlanById({{ $plan->id }})">
+                                                @click="openPlanDetail({{ json_encode($plan) }})">
                                             <i class="fa-solid fa-eye text-xs"></i>
                                         </button>
 
@@ -219,9 +219,9 @@
                                                     <i class="fa-solid fa-xmark text-xs"></i>
                                                 </button>
                                             @elseif($plan->isApproved() && $plan->payment_status !== 'paid')
-                                                <!-- Tombol Bayar Tagihan untuk Owner -->
-                                                <button type="button" class="btn btn-sm btn-primary py-0 px-2" title="Bayar Tagihan Supplier (Transfer)"
-                                                        onclick="showPayModalById({{ $plan->id }})">
+                                                <!-- Tombol Bayar Tagihan untuk Owner (Langsung Membuka Pop-Up Bayar) -->
+                                                <button type="button" class="btn btn-sm btn-primary py-0 px-2 fw-bold" title="Bayar Tagihan Supplier (Transfer)"
+                                                        @click="openPayModal({{ json_encode($plan) }})">
                                                     <i class="fa-solid fa-credit-card text-xs me-1"></i> Bayar
                                                 </button>
                                             @endif
@@ -259,7 +259,7 @@
             <!-- Modal Header -->
             <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-shrink-0">
                 <div class="d-flex align-items-center gap-2">
-                    <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;">
+                    <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;">
                     <div>
                         <h6 class="fw-bold mb-0 text-white font-mono" x-text="'PURCHASE PLAN: ' + (selectedPlan ? selectedPlan.plan_number : '')"></h6>
                         <span class="text-[11px] text-slate-300">Rincian Bundle Pengadaan & Tagihan Pembayaran Vendor</span>
@@ -420,7 +420,12 @@
 
             <!-- Modal Footer with Owner Actions & Draft Actions -->
             <div class="bg-slate-50 px-4 py-3 border-top d-flex justify-content-between align-items-center flex-shrink-0">
-                <button type="button" @click="detailOpen = false" class="btn-odoo-secondary">Tutup</button>
+                <div class="d-flex gap-2">
+                    <button type="button" @click="detailOpen = false" class="btn-odoo-secondary">Tutup</button>
+                    <button type="button" @click="printPurchasePlan(selectedPlan)" class="btn btn-sm btn-light border font-semibold px-3 text-slate-700">
+                        <i class="fa-solid fa-print me-1.5 text-blue-600"></i> Cetak SPK / Nota PO
+                    </button>
+                </div>
                 
                 <div class="d-flex gap-2" x-if="selectedPlan">
                     <!-- Actions for Draft or Rejected Plans -->
@@ -577,32 +582,191 @@
 </div>
 
 <script>
-    window.allPlansData = @json($plans);
+    function printPurchasePlan(plan) {
+        if (!plan) return;
+        const printWindow = window.open('', '_blank');
+        const logoUrl = "{{ asset('images/logosnaprint.jpeg') }}";
+        const isPaid = plan.payment_status === 'paid';
+        const isApproved = plan.status === 'approved_by_owner' || plan.status === 'completed';
 
-    function showPlanById(id) {
-        const found = window.allPlansData.find(function(p) { return p.id == id; });
-        if (found) {
-            const root = document.getElementById('main-view-wrapper');
-            if (root && window.Alpine) {
-                const data = Alpine.$data(root);
-                if (data) {
-                    data.openPlanDetail(found);
-                }
-            }
-        }
-    }
+        let itemsHtml = '';
+        (plan.items || []).forEach((it, idx) => {
+            itemsHtml += `
+                <tr>
+                    <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${idx + 1}</td>
+                    <td style="border: 1px solid #cbd5e1; padding: 8px;">
+                        <strong>${it.material_name || '-'}</strong>
+                        ${it.fixed_size ? `<div style="font-size: 11px; color: #64748b;">Ukuran: ${it.fixed_size}m</div>` : ''}
+                    </td>
+                    <td style="border: 1px solid #cbd5e1; padding: 8px;">${it.supplier_name || '-'}</td>
+                    <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px; font-weight: bold;">${it.qty || 0} unit</td>
+                    <td style="text-align: right; border: 1px solid #cbd5e1; padding: 8px; font-family: monospace;">Rp ${Number(it.estimated_unit_price || 0).toLocaleString('id-ID')}</td>
+                    <td style="text-align: right; border: 1px solid #cbd5e1; padding: 8px; font-family: monospace; font-weight: bold;">Rp ${Number(it.subtotal || 0).toLocaleString('id-ID')}</td>
+                </tr>
+            `;
+        });
 
-    function showPayModalById(id) {
-        const found = window.allPlansData.find(function(p) { return p.id == id; });
-        if (found) {
-            const root = document.getElementById('main-view-wrapper');
-            if (root && window.Alpine) {
-                const data = Alpine.$data(root);
-                if (data) {
-                    data.openPayModal(found);
-                }
-            }
+        // 1. Signature / Mark Pemohon (Manager / Purchasing Staff)
+        const creatorName = plan.user ? (plan.user.full_name || plan.user.username) : 'Pembuat Pengajuan';
+        const creatorRole = plan.user && plan.user.role === 'manager' ? 'Manajer Toko / Cabang' : 'Staf Purchasing';
+        const creatorSig = plan.user && plan.user.signature_path ? `{{ asset('storage') }}/${plan.user.signature_path}` : null;
+        
+        const creatorSigHtml = creatorSig 
+            ? `<img src="${creatorSig}" style="max-height: 50px; max-width: 120px; margin: 0 auto 4px auto; display: block;">` 
+            : `<div style="border: 1.5px dashed #2563eb; padding: 4px; color: #1e40af; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 4px; background: #eff6ff;">✓ DIAJUKAN RESMI<br><small style="font-weight:normal;">${(plan.created_at || '').substring(0, 10)}</small></div>`;
+
+        // 2. Signature / Mark ACC Owner
+        const approverName = plan.approved_by_user ? (plan.approved_by_user.full_name || plan.approved_by_user.username) : (plan.approved_by ? 'Owner Snaprint' : 'Owner');
+        const approverSig = plan.approved_by_user && plan.approved_by_user.signature_path ? `{{ asset('storage') }}/${plan.approved_by_user.signature_path}` : null;
+        
+        const approverSigHtml = isApproved 
+            ? (approverSig 
+                ? `<img src="${approverSig}" style="max-height: 50px; max-width: 120px; margin: 0 auto 4px auto; display: block;">` 
+                : `<div style="border: 1.5px dashed #059669; padding: 4px; color: #047857; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 4px; background: #ecfdf5;">✓ ACC OWNER DISETUJUI<br><small style="font-weight:normal;">${(plan.approved_at || '').substring(0, 10)}</small></div>`)
+            : `<div style="height: 45px; line-height: 45px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Menunggu ACC Owner ]</div>`;
+
+        // 3. Signature / Mark Penerima Fisik Gudang (GRN Verification)
+        let warehouseVerifierName = '(...........................)';
+        let warehouseVerifierSigHtml = `<div style="height: 45px; line-height: 45px; font-style: italic; color: #94a3b8; font-size: 11px;">[ Menunggu Fisik Gudang ]</div>`;
+        let warehouseRole = 'Staff Gudang Cabang';
+
+        const verifiedPurchase = (plan.purchases || []).find(p => p.status === 'received' && (p.verified_by || p.verified_by_user));
+        if (verifiedPurchase) {
+            const vUser = verifiedPurchase.verified_by_user || verifiedPurchase.verified_by;
+            const vName = typeof vUser === 'object' && vUser ? (vUser.full_name || vUser.username) : 'Staff Gudang';
+            warehouseVerifierName = vName;
+            const vSig = typeof vUser === 'object' && vUser && vUser.signature_path ? `{{ asset('storage') }}/${vUser.signature_path}` : null;
+            const vDate = verifiedPurchase.verified_at ? String(verifiedPurchase.verified_at).substring(0, 10) : '';
+
+            warehouseVerifierSigHtml = vSig 
+                ? `<img src="${vSig}" style="max-height: 50px; max-width: 120px; margin: 0 auto 4px auto; display: block;">` 
+                : `<div style="border: 1.5px dashed #059669; padding: 4px; color: #047857; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 4px; background: #ecfdf5;">✓ FISIK DITERIMA GUDANG<br><small style="font-weight:normal;">${vDate}</small></div>`;
         }
+
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Purchase Plan & SPK - ${plan.plan_number}</title>
+                <style>
+                    body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 35px; color: #1e293b; font-size: 12px; }
+                    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 18px; align-items: center; }
+                    .brand-container { display: flex; align-items: center; gap: 12px; }
+                    .brand-logo { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+                    .brand { font-size: 20px; font-weight: bold; color: #1e3a8a; }
+                    .title { font-size: 16px; font-weight: bold; text-align: right; color: #0f172a; }
+                    .stamp-approved { display: inline-block; padding: 3px 10px; border: 2px solid #059669; color: #059669; font-weight: 800; border-radius: 6px; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; }
+                    .stamp-waiting { display: inline-block; padding: 3px 10px; border: 2px solid #d97706; color: #d97706; font-weight: 800; border-radius: 6px; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; }
+                    .info-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; }
+                    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11.5px; }
+                    .items-table th { background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1; text-align: left; font-size: 11px; }
+                    .totals-table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+                    .totals-table td { padding: 5px 8px; text-align: right; }
+                    .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 30px; text-align: center; }
+                    .sig-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; background: #fafafa; }
+                    .sig-title { font-size: 11px; font-weight: bold; color: #475569; margin-bottom: 8px; }
+                    .sig-name { font-size: 11.5px; font-weight: bold; color: #0f172a; border-top: 1px solid #cbd5e1; padding-top: 5px; margin-top: 5px; }
+                    .footer { margin-top: 30px; text-align: center; border-top: 1px solid #cbd5e1; padding-top: 12px; font-size: 10.5px; color: #64748b; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="brand-container">
+                        <img src="${logoUrl}" alt="Snaprint" class="brand-logo">
+                        <div>
+                            <div class="brand">Snaprint</div>
+                            <div style="font-size: 11px; color: #64748b;">Digital Printing & Procurement Management</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Cabang: <strong>${plan.branch ? plan.branch.nama_cabang : 'Pusat'}</strong></div>
+                        </div>
+                    </div>
+                    <div class="title">
+                        <div>${isApproved ? '<span class="stamp-approved">✓ PO DISETUJUI OWNER</span>' : '<span class="stamp-waiting">⏳ MENUNGGU ACC OWNER</span>'}</div>
+                        <div>SURAT PERINTAH KERJA & PENGADAAN (SPK/RFQ)</div>
+                        <div style="font-size: 11.5px; font-weight: normal; color: #64748b; font-family: monospace;">No: ${plan.plan_number}</div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <table style="width: 100%; font-size: 11.5px;">
+                        <tr>
+                            <td style="width: 50%;"><strong>Judul Pengadaan:</strong> ${plan.title || '-'}</td>
+                            <td><strong>Target Realisasi:</strong> ${plan.target_date || 'Segera'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 4px;"><strong>Diajukan Oleh:</strong> ${creatorName} (${creatorRole})</td>
+                            <td style="padding-top: 4px;"><strong>Status Tagihan:</strong> ${isPaid ? '<strong style="color: #059669;">LUNAS (PAID)</strong>' : '<strong style="color: #d97706;">BELUM DIBAYAR</strong>'}</td>
+                        </tr>
+                        ${plan.notes ? `
+                        <tr>
+                            <td colspan="2" style="padding-top: 6px; color: #475569;"><strong>Catatan Kebutuhan:</strong> ${plan.notes}</td>
+                        </tr>` : ''}
+                    </table>
+                </div>
+
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px; text-align: center;">No</th>
+                            <th>Nama Produk / Bahan Baku Cetak</th>
+                            <th>Supplier / Vendor</th>
+                            <th style="width: 70px; text-align: center;">Qty</th>
+                            <th style="width: 130px; text-align: right;">Estimasi Harga Satuan</th>
+                            <th style="width: 140px; text-align: right;">Subtotal Biaya</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+
+                <table class="totals-table">
+                    <tr>
+                        <td colspan="4" style="font-weight: bold; font-size: 13px;">Total Estimasi Biaya Pengadaan:</td>
+                        <td style="font-weight: bold; font-family: monospace; font-size: 14px; color: #1e3a8a; width: 150px;">Rp ${Number(plan.total_estimated_cost || 0).toLocaleString('id-ID')}</td>
+                    </tr>
+                </table>
+
+                <!-- 3 Signatures: Creator / Manager, ACC Owner, and Penerima Gudang -->
+                <div class="signatures">
+                    <div class="sig-card">
+                        <div class="sig-title">Diajukan Oleh (Pembuat / Manager):</div>
+                        <div style="min-height: 50px; display: flex; align-items: center; justify-content: center;">
+                            ${creatorSigHtml}
+                        </div>
+                        <div class="sig-name">${creatorName}</div>
+                        <div style="font-size: 10px; color: #64748b;">${creatorRole}</div>
+                    </div>
+
+                    <div class="sig-card">
+                        <div class="sig-title">Disetujui Oleh (Owner):</div>
+                        <div style="min-height: 50px; display: flex; align-items: center; justify-content: center;">
+                            ${approverSigHtml}
+                        </div>
+                        <div class="sig-name">${isApproved ? (plan.approved_by_user ? (plan.approved_by_user.full_name || plan.approved_by_user.username) : 'SWANTO / KINGAshabil') : '(...........................)'}</div>
+                        <div style="font-size: 10px; color: #64748b;">Owner Snaprint</div>
+                    </div>
+
+                    <div class="sig-card">
+                        <div class="sig-title">Penerimaan Fisik (Gudang):</div>
+                        <div style="min-height: 50px; display: flex; align-items: center; justify-content: center;">
+                            ${warehouseVerifierSigHtml}
+                        </div>
+                        <div class="sig-name">${warehouseVerifierName}</div>
+                        <div style="font-size: 10px; color: #64748b;">${warehouseRole}</div>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    Terima kasih atas kerja sama Anda.<br>
+                    <strong>Kunjungi halaman kami: mysnaprint.com</strong> &bull; Snaprint "great spot to print"
+                </div>
+
+                <script>
+                    window.onload = function() { window.print(); }
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
     }
 </script>
 @endsection

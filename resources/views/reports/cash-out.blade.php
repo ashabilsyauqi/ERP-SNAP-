@@ -4,16 +4,16 @@
 @section('page-title', 'Laporan Pengeluaran Kas Keluar (Disbursements)')
 
 @section('action-buttons')
-<button type="button" onclick="exportTableToExcel('main-table', 'Cash_Outflow_Report')" class="btn-odoo-secondary">
-    <i class="fa-solid fa-file-excel text-emerald-600"></i>
-    <span>Export</span>
+<button type="button" onclick="window.print()" class="btn-odoo-primary" title="Cetak Laporan PDF / Print">
+    <i class="fa-solid fa-print"></i>
+    <span>Print Laporan</span>
 </button>
 @endsection
 
 @section('content')
 <div id="main-view-wrapper" data-view-wrapper>
     <!-- Filter Toolbar -->
-    <div class="o_form_sheet mb-3 p-3 bg-white">
+    <div class="o_form_sheet mb-3 p-3 bg-white print:hidden">
         <form method="GET" action="{{ route('reports.cash-out') }}" class="row g-2 align-items-end">
             <div class="col-12 col-md-3">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Dari Tanggal</label>
@@ -55,7 +55,22 @@
     </div>
 
     <!-- Data Sheet -->
-    <div class="o_form_sheet p-0 overflow-hidden bg-white">
+    <div class="o_form_sheet p-0 overflow-hidden bg-white print:p-0 print:border-0 print:shadow-none">
+        
+        <!-- Header Dokumen Cetak (Hanya Tampil Saat Print) -->
+        <div class="d-none d-print-block p-4 text-center border-bottom mb-3">
+            <h4 class="fw-bold text-slate-900 mb-0 uppercase tracking-wide">SNAPPRINT ERP &bull; PERCETAKAN</h4>
+            <h5 class="fw-bold text-rose-800 mb-1">LAPORAN PENGELUARAN KAS KELUAR (DISBURSEMENTS)</h5>
+            <p class="text-xs text-slate-500 mb-0">
+                Periode: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Awal' }} s/d {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Sekarang' }}
+                @if(request('branch_id') && request('branch_id') !== 'all')
+                    &bull; Cabang: {{ $branches->firstWhere('id', request('branch_id'))->nama_cabang ?? '' }}
+                @else
+                    &bull; Semua Cabang (Konsolidasi)
+                @endif
+            </p>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-hover o_list_table mb-0" id="main-table">
                 <thead>
@@ -98,14 +113,20 @@
                 </tbody>
                 @if(count($cashTransactions) > 0)
                 <tfoot>
-                    <tr class="fw-bold bg-slate-100 border-top">
-                        <td colspan="4" class="ps-3 text-uppercase">Total Pengeluaran Kas Keluar</td>
-                        <td class="text-end pe-4 font-mono text-rose-800 fs-6">- Rp {{ number_format($totalKeluar, 0, ',', '.') }}</td>
+                    <tr class="fw-bold bg-rose-50 border-top border-rose-200">
+                        <td colspan="4" class="ps-3 text-uppercase text-rose-900 fw-bold">TOTAL PENGELUARAN KAS KELUAR</td>
+                        <td class="text-end pe-4 font-mono fw-extrabold text-emerald-600 fs-5">- Rp {{ number_format($totalKeluar, 0, ',', '.') }}</td>
                     </tr>
                 </tfoot>
                 @endif
             </table>
         </div>
+        @if($cashTransactions->hasPages())
+            <div class="p-3 border-top bg-slate-50 d-flex justify-content-between align-items-center">
+                <span class="text-xs text-slate-500">Menampilkan {{ $cashTransactions->firstItem() }} - {{ $cashTransactions->lastItem() }} dari {{ $cashTransactions->total() }} data</span>
+                <div>{{ $cashTransactions->links('pagination::bootstrap-4') }}</div>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

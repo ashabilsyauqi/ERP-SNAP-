@@ -6,7 +6,7 @@
 @section('action-buttons')
 <a href="{{ route('kas-keluar.create') }}" class="btn-odoo-primary text-decoration-none">
     <i class="fa-solid fa-plus"></i>
-    <span>Tambah Kas Keluar</span>
+    <span>Tambah Pengeluaran biaya</span>
 </a>
 @endsection
 

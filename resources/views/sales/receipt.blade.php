@@ -165,7 +165,7 @@
 
     <!-- Header & Logo -->
     <div class="header">
-        <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint">
+        <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint">
         <h1>SNAPRINT</h1>
         <p>Digital Printing & Adv.</p>
         <p>Cabang: <strong>{{ $transaction->branch->nama_cabang ?? 'Pusat' }}</strong></p>
@@ -223,6 +223,11 @@
             <tr>
                 <td class="text-left">
                     <div class="item-name">{{ $detail->material->material_name ?? 'Bahan Cetak' }}</div>
+                    @if($detail->dimension_text || ($detail->fixed_length_m && $detail->custom_width_cm))
+                        <div class="item-meta" style="color: #000; font-weight: bold;">
+                            [{{ $detail->dimension_text ?: ($detail->fixed_length_m . 'm x ' . $detail->custom_width_cm . 'cm (' . ($detail->area_m2 ?: round($detail->fixed_length_m * ($detail->custom_width_cm / 100), 2)) . ' m²)') }}]
+                        </div>
+                    @endif
                     <div class="item-meta">{{ $detail->qty_ordered }} x Rp {{ number_format($detail->selling_price, 0, ',', '.') }}</div>
                 </td>
                 <td class="text-right fw-bold" style="white-space: nowrap;">
@@ -285,7 +290,8 @@
 
     <div class="footer">
         <p>Terima kasih atas pesanan Anda!</p>
-        <p>SnapPrint Digital Printing ERP</p>
+        <p class="fw-bold" style="margin-top: 3px; font-size: 10px;">Kunjungi halaman kami: mysnaprint.com</p>
+        <p style="font-size: 8.5px; color: #555;">Snaprint "great spot to print"</p>
     </div>
 
     <!-- Screen Buttons (Hidden when printing) -->

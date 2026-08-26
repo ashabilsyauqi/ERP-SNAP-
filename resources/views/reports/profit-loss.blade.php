@@ -69,7 +69,7 @@
         
         <!-- Header -->
         <div class="text-center mb-4 pb-3 border-bottom">
-            <h5 class="fw-bold text-slate-900 uppercase tracking-wide mb-1">PT Duta Raya Berjaya (SnapPrint)</h5>
+            <h5 class="fw-bold text-slate-900 uppercase tracking-wide mb-1">PT Duta Raya Berjaya (Snaprint)</h5>
             <h4 class="fw-extrabold text-blue-900 mb-1">LAPORAN LABA DAN RUGI KOMPREHENSIF</h4>
             <p class="text-xs text-slate-500 mb-0">Periode Laporan: <strong>{{ $periodLabel }}</strong></p>
             @if(request('branch_id'))

@@ -157,7 +157,7 @@
                         <!-- Invoice & Date -->
                         <td>
                             <button type="button" 
-                                onclick='openSnapPrintInvoice(@json($invData))'
+                                onclick='openSnaprintInvoice(@json($invData))'
                                 class="font-mono font-bold text-xs text-blue-600 hover:text-blue-800 hover:underline bg-transparent border-0 p-0 text-start cursor-pointer d-flex align-items-center gap-1.5"
                                 title="Klik untuk membuka faktur resmi">
                                 <i class="fa-solid fa-file-invoice text-blue-500"></i>
@@ -181,7 +181,7 @@
                                         $cleanPhone = '62' . substr($cleanPhone, 1);
                                     }
                                 @endphp
-                                <a href="https://wa.me/{{ $cleanPhone }}?text=Halo%20{{ urlencode($t->customer_name ?? 'Kak') }},%20mengenai%20pesanan%20cetak%20SnapPrint%20dengan%20No%20Invoice%20{{ $t->invoice_number }}..." 
+                                <a href="https://wa.me/{{ $cleanPhone }}?text=Halo%20{{ urlencode($t->customer_name ?? 'Kak') }},%20mengenai%20pesanan%20cetak%20Snaprint%20dengan%20No%20Invoice%20{{ $t->invoice_number }}..." 
                                    target="_blank" 
                                    class="text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold text-decoration-none d-inline-flex align-items-center gap-1 mt-0.5">
                                     <i class="fa-brands fa-whatsapp text-xs"></i> {{ $t->customer_phone }}
@@ -281,7 +281,7 @@
                                 </a>
 
                                 <!-- Invoice Modal Button -->
-                                <button type="button" onclick='openSnapPrintInvoice(@json($invData))' class="btn btn-sm btn-outline-primary py-0.5 px-2 text-[11px]" title="Lihat Faktur Resmi">
+                                <button type="button" onclick='openSnaprintInvoice(@json($invData))' class="btn btn-sm btn-outline-primary py-0.5 px-2 text-[11px]" title="Lihat Faktur Resmi">
                                     <i class="fa-solid fa-file-invoice"></i>
                                 </button>
                             </div>

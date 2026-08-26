@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login &bull; SnapPrint ERP</title>
+    <title>Login &bull; Snaprint ERP</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,10 +43,10 @@
         <!-- Logo & Header -->
         <div class="text-center mb-4">
             <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle shadow-lg p-1 mb-3" style="width: 84px; height: 84px;">
-                <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint Logo" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
+                <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint Logo" class="rounded-circle" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
-            <h3 class="fw-bold text-white mb-1" style="letter-spacing: -0.5px;">SnapPrint <span style="color: #93c5fd;">ERP</span></h3>
-            <p class="mb-0 text-white" style="font-size: 13px; font-weight: 500; opacity: 0.9;">Digital Printing Enterprise Management System</p>
+            <h3 class="fw-bold text-white mb-1" style="letter-spacing: -0.5px;">Snaprint <span style="color: #93c5fd;">ERP</span></h3>
+            <p class="mb-0 text-white" style="font-size: 13px; font-weight: 500; opacity: 0.9;">"great spot to print"</p>
         </div>
 
         <!-- Login Form Card -->
@@ -95,7 +95,7 @@
         </div>
 
         <div class="text-center mt-4 text-white" style="font-size: 12px; opacity: 0.85;">
-            Powered by <strong class="text-white">SnapPrint Enterprise Engine</strong> &bull; &copy; {{ date('Y') }}
+            Powered by <strong class="text-white">Snaprint Enterprise Engine</strong> &bull; &copy; {{ date('Y') }}
         </div>
     </div>
 </body>
