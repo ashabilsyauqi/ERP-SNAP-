@@ -13,7 +13,7 @@
 @endsection
 
 @section('content')
-<div class="flex flex-col md:flex-row gap-4 h-[calc(100vh-125px)] animate-fade-in relative pb-16 md:pb-0 overflow-hidden" 
+<div class="flex flex-col md:flex-row gap-3 h-[calc(100vh-95px)] animate-fade-in relative pb-16 md:pb-0 overflow-hidden" 
      id="pos-main-container"
      x-data="{ 
         isDp: false, 
@@ -53,22 +53,24 @@
      }"
      @cart-total-changed.window="handleCartTotalUpdate($event.detail.total)">
     
-    <!-- Left Column: Products Grid & Search (60% Desktop) -->
-    <div class="w-full md:w-3/5 lg:w-2/3 flex flex-col gap-3 min-h-0 h-full">
+    <!-- Left Column: Products Grid & Search (Expansive Flex) -->
+    <div class="flex-1 flex flex-col gap-2.5 min-h-0 h-full">
         
-        <!-- Products Header & Search -->
-        <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 flex-shrink-0">
-            <div>
-                <h2 class="text-base font-bold text-slate-900 mb-0 d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-cash-register text-blue-600"></i>
-                    <span>Katalog Bahan & Produk Kasir</span>
-                </h2>
-                <p class="text-[11px] text-slate-500 mb-0">Klik pada kartu produk untuk memasukkan ke keranjang kasir</p>
+        <!-- Products Header & Search (Compact Clean Bar) -->
+        <div class="bg-white px-3.5 py-2.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2.5 flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                    <i class="fa-solid fa-cash-register text-sm"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-900 mb-0">Katalog Produk & Layanan Kasir</h2>
+                    <p class="text-[11px] text-slate-500 mb-0">Klik kartu untuk langsung memasukkan ke keranjang kasir</p>
+                </div>
             </div>
             
             <!-- Live Search Products -->
-            <div class="relative w-full sm:w-64">
-                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="Cari 112 produk & bahan cetak..." 
+            <div class="relative w-full sm:w-72">
+                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="Cari 112 produk cetak & merchandise..." 
                     class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs transition duration-150">
                 <div class="absolute left-3 top-2.5 text-slate-400">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
@@ -76,14 +78,14 @@
             </div>
         </div>
 
-        <!-- Categories Pill Filter Tabs -->
+        <!-- Categories Pill Filter Tabs (Touch Friendly) -->
         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 flex-shrink-0 no-scrollbar" id="category-filter-container">
             <button type="button" 
                     onclick="filterCategory('all', this)" 
                     class="category-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 border bg-blue-600 text-white border-blue-600 shadow-sm cursor-pointer flex items-center gap-1.5 active"
                     data-cat="all">
                 <i class="fa-solid fa-layer-group text-[11px]"></i>
-                <span>Semua Produk</span>
+                <span>Semua</span>
                 <span class="bg-white/20 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">{{ $materials->count() }}</span>
             </button>
 
@@ -116,16 +118,16 @@
             @endforeach
         </div>
         
-        <!-- Products Cards Grid (Independent Scroll) -->
-        <div id="products-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 overflow-y-auto pr-1 pb-2 flex-grow min-h-0">
+        <!-- Products Cards Grid (Spacious Touch-Friendly Layout) -->
+        <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0">
             @foreach($materials as $material)
-                <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between"
+                <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group"
                      data-name="{{ strtolower($material->material_name) }}"
                      data-category="{{ $material->category ?? 'Lainnya' }}"
-                     onclick="handleProductClick('{{ addslashes($material->material_name) }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }})">
+                     onclick="handleProductClick('{{ addslashes($material->material_name) }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }}, '{{ addslashes($material->category ?? '') }}')">
                     
                     <div>
-                        <div class="flex justify-between items-start mb-1 gap-1">
+                        <div class="flex justify-between items-start mb-1.5 gap-1">
                             @php
                                 $badgeStyle = match($material->category) {
                                     'Print Dokumen dan Sticker' => 'bg-sky-50 text-sky-700 border-sky-200',
@@ -139,21 +141,21 @@
                                     default => 'bg-slate-50 text-slate-700 border-slate-200'
                                 };
                             @endphp
-                            <span class="badge {{ $badgeStyle }} border text-[10px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[130px]" title="{{ $material->category ?? 'Bahan' }}">
+                            <span class="badge {{ $badgeStyle }} border text-[10px] font-semibold px-2 py-0.5 rounded-md" title="{{ $material->category ?? 'Bahan' }}">
                                 {{ $material->category ?? 'Bahan' }}
                             </span>
                             <span class="text-[10px] {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold flex-shrink-0">
-                                Stok: {{ $material->stock_qty }} {{ $material->unit ?? 'pcs' }}
+                                {{ $material->stock_qty }} pcs
                             </span>
                         </div>
                         
-                        <h3 class="font-bold text-slate-900 text-xs line-clamp-2 mb-1">
+                        <h3 class="font-bold text-slate-900 text-xs line-clamp-2 mb-1 group-hover:text-blue-600 transition leading-snug">
                             {{ $material->material_name }}
                         </h3>
                         
                         @if($material->fixed_size)
-                            <div class="text-[11px] text-slate-500 mb-2">
-                                Ukuran: <strong class="text-slate-700">{{ $material->fixed_size }} m</strong>
+                            <div class="text-[10px] text-slate-500 mb-1">
+                                Lebar Roll: <strong class="text-slate-700">{{ $material->fixed_size }} m</strong>
                             </div>
                         @endif
 
@@ -166,13 +168,13 @@
 
                     <div class="pt-2 border-t border-slate-100 flex justify-between items-center mt-2">
                         <div>
-                            <span class="text-[10px] text-slate-400 block leading-tight">Harga Satuan</span>
+                            <span class="text-[9.5px] text-slate-400 block leading-tight">Harga Satuan</span>
                             <span class="font-bold text-blue-900 font-mono text-xs">
                                 Rp {{ number_format($material->retail_price, 0, ',', '.') }}
                             </span>
                         </div>
                         
-                        <button type="button" class="w-7 h-7 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg flex items-center justify-center transition border-0 cursor-pointer text-xs">
+                        <button type="button" class="w-7 h-7 bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white rounded-lg flex items-center justify-center transition border-0 cursor-pointer text-xs">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
@@ -180,53 +182,36 @@
             @endforeach
 
             <!-- Empty State for Filter/Search -->
-            <div id="products-empty-state" class="col-span-2 lg:col-span-3 py-12 text-center hidden">
-                <div class="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-2 text-xl">
+            <div id="products-empty-state" class="col-span-2 lg:col-span-4 2xl:col-span-5 py-12 text-center hidden">
+                <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-2 text-lg">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </div>
-                <h4 class="text-sm font-bold text-slate-700 mb-1">Produk Tidak Ditemukan</h4>
-                <p class="text-xs text-slate-400 mb-0">Coba ubah kata kunci pencarian atau pilih kategori lain.</p>
-            </div>
-        </div>
-        
-        <!-- Stock Reference Widget (Docked at Bottom of Left Column) -->
-        <div class="bg-slate-100 p-2.5 rounded-xl border border-slate-200 flex-shrink-0 overflow-x-auto whitespace-nowrap hidden sm:block">
-            <div class="d-flex align-items-center gap-2">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Stok Real-time:</span>
-                <div class="flex gap-2 text-xs">
-                    @foreach($materials as $material)
-                        <div class="bg-white px-2.5 py-1 rounded-lg shadow-sm border border-slate-200 flex items-center gap-1.5">
-                            <span class="font-medium text-slate-700 text-[11px]">{{ $material->material_name }}</span>
-                            @if($material->fixed_size) 
-                                <span class="text-[10px] text-blue-600">({{ $material->fixed_size }}m)</span> 
-                            @endif
-                            <span class="text-slate-300">|</span>
-                            <span class="font-bold font-mono text-xs {{ $material->stock_qty > 0 ? 'text-emerald-700' : 'text-rose-600' }}">{{ $material->stock_qty }}</span>
-                        </div>
-                    @endforeach
-                </div>
+                <h4 class="text-xs font-bold text-slate-700 mb-1">Produk Tidak Ditemukan</h4>
+                <p class="text-[11px] text-slate-400 mb-0">Coba ubah kata kunci pencarian atau pilih kategori lain.</p>
             </div>
         </div>
     </div>
 
-    <!-- Right Column: Cart & Checkout (Desktop 40%, Fits Exact Height) -->
-    <div class="hidden md:flex md:w-2/5 lg:w-1/3 bg-white rounded-2xl border border-slate-200 shadow-sm flex-col overflow-hidden h-full">
+    <!-- Right Column: Cart & Checkout (Sleek Fixed Width on POS) -->
+    <div class="hidden md:flex w-full md:w-[350px] lg:w-[380px] xl:w-[410px] bg-white rounded-2xl border border-slate-200 shadow-sm flex-col overflow-hidden h-full flex-shrink-0">
         <!-- Cart Header -->
-        <div class="p-3 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+        <div class="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-2">
-                <i class="fa-solid fa-cart-shopping text-blue-400"></i>
-                <h2 class="text-sm font-bold mb-0 text-white">Keranjang Order (POS)</h2>
+                <i class="fa-solid fa-cart-shopping text-blue-400 text-sm"></i>
+                <h2 class="text-xs font-bold mb-0 text-white">Keranjang Order (POS)</h2>
             </div>
-            <span id="cart-item-count-badge" class="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">0 item</span>
+            <div class="flex items-center gap-2">
+                <span id="cart-item-count-badge" class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0 item</span>
+            </div>
         </div>
         
-        <!-- Cart Items List (Desktop Independent Scroll) -->
-        <div class="p-3 flex-grow overflow-y-auto bg-slate-50/50 min-h-0 space-y-2.5" id="cart-container-desktop">
+        <!-- Cart Items List (Independent Scroll) -->
+        <div class="p-3 flex-grow overflow-y-auto bg-slate-50/50 min-h-0 space-y-2" id="cart-container-desktop">
             <!-- Injected by JS -->
         </div>
 
         <!-- Checkout Pricing & Action Area (Docked at Bottom) -->
-        <div class="p-3 border-t border-slate-200 bg-white space-y-2.5 flex-shrink-0 overflow-y-auto max-h-[55vh]">
+        <div class="p-3 border-t border-slate-200 bg-white space-y-2 flex-shrink-0 overflow-y-auto max-h-[50vh]">
             
             <!-- DP (Down Payment) & Custom Order Toggle - Hanya Muncul jika Total Tagihan >= Rp 500.000 -->
             <div x-show="isEligibleForDp" x-cloak class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2 transition-all">
@@ -592,13 +577,24 @@
     };
 
     // --- Check if product is banner or custom media ---
-    function isBannerProduct(name, fixedSize) {
-        return /banner|flexi|spanduk|kain|backlite|textile|korea|china/i.test(name) || (fixedSize && parseFloat(fixedSize) > 0);
+    function isBannerProduct(name, fixedSize, category) {
+        if (!fixedSize || parseFloat(fixedSize) <= 0) return false;
+        
+        const nameLower = (name || '').toLowerCase();
+        // Exclude standard documents, copies, prints, bindings, merchandise, etc.
+        const nonBannerKeywords = ['fotokopi', 'foto copy', 'scan', 'print', 'jilid', 'laminating', 'laminasi', 'spiral', 'nota', 'brosur', 'mug', 'stempel', 'stampel', 'tumbler', 'kalender', 'kipas', 'lanyard', 'pin', 'id card', 'cutting', 'sablon dtf', 'paket'];
+        for (let kw of nonBannerKeywords) {
+            if (nameLower.includes(kw)) return false;
+        }
+
+        const isOutdoorCat = category && /outdoor|indoor/i.test(category);
+        const isRollName = /^(flexi|flexy|albatros|ritrama|oneway|kain banner)/i.test(nameLower.trim());
+        return isOutdoorCat || isRollName;
     }
 
     // --- Handle product card click ---
-    function handleProductClick(materialName, fixedSize, retailPrice, wholesalePrices) {
-        if (isBannerProduct(materialName, fixedSize)) {
+    function handleProductClick(materialName, fixedSize, retailPrice, wholesalePrices, category = '') {
+        if (isBannerProduct(materialName, fixedSize, category)) {
             openBannerDimensionModal(materialName, fixedSize, retailPrice, wholesalePrices);
         } else {
             addToCart(materialName, fixedSize, retailPrice, wholesalePrices);
