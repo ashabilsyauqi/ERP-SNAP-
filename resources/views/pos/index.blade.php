@@ -13,7 +13,7 @@
 @endsection
 
 @section('content')
-<div class="flex flex-col lg:flex-row gap-3 h-[calc(100vh-95px)] animate-fade-in relative pb-16 lg:pb-0 overflow-hidden" 
+<div class="flex flex-col lg:flex-row gap-3 h-[calc(100vh-95px)] w-full max-w-full animate-fade-in relative pb-16 lg:pb-0 overflow-hidden" 
      id="pos-main-container"
      x-data="{ 
         activeTab: 'catalog', 
@@ -65,7 +65,7 @@
      @item-added-to-cart.window="notifyItemAdded($event.detail.name)">
     
     <!-- Mobile & Tablet Segmented Tab Switcher (Visible on screens < 1024px) -->
-    <div class="lg:hidden flex items-center bg-slate-200/90 p-1 rounded-2xl gap-1 flex-shrink-0 shadow-inner">
+    <div class="lg:hidden flex items-center bg-slate-200/90 p-1 rounded-2xl gap-1 flex-shrink-0 shadow-inner w-full">
         <button type="button" 
                 @click="activeTab = 'catalog'" 
                 :class="activeTab === 'catalog' ? 'bg-white text-blue-600 shadow font-bold' : 'text-slate-600 font-semibold hover:text-slate-900'"
@@ -85,25 +85,25 @@
         </button>
     </div>
 
-    <!-- Left Column: Products Grid & Search -->
-    <div class="flex-1 flex flex-col gap-2.5 min-h-0 h-full"
+    <!-- Left Column: Products Grid & Search (min-w-0 ensures no flex blowout) -->
+    <div class="flex-1 min-w-0 flex flex-col gap-2.5 min-h-0 h-full overflow-hidden"
          :class="activeTab === 'catalog' ? 'flex' : 'hidden lg:flex'">
         
         <!-- Products Header & Search (Compact Clean Bar) -->
-        <div class="bg-white px-3.5 py-2.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2.5 flex-shrink-0">
-            <div class="flex items-center gap-2">
+        <div class="bg-white px-3.5 py-2.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2.5 flex-shrink-0 w-full">
+            <div class="flex items-center gap-2 min-w-0">
                 <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
                     <i class="fa-solid fa-cash-register text-sm"></i>
                 </div>
-                <div>
-                    <h2 class="text-sm font-bold text-slate-900 mb-0">Katalog Produk & Layanan Kasir</h2>
-                    <p class="text-[11px] text-slate-500 mb-0">Klik kartu untuk langsung memasukkan ke keranjang kasir</p>
+                <div class="min-w-0">
+                    <h2 class="text-sm font-bold text-slate-900 mb-0 truncate">Katalog Produk & Layanan Kasir</h2>
+                    <p class="text-[11px] text-slate-500 mb-0 truncate">Klik kartu untuk memasukkan ke keranjang kasir</p>
                 </div>
             </div>
             
             <!-- Live Search Products -->
-            <div class="relative w-full sm:w-72">
-                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="Cari 112 produk cetak & merchandise..." 
+            <div class="relative w-full sm:w-64 md:w-72 flex-shrink-0">
+                <input type="text" id="product-search" onkeyup="filterProducts()" placeholder="Cari produk / layanan..." 
                     class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 text-xs transition duration-150">
                 <div class="absolute left-3 top-2.5 text-slate-400">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
@@ -111,8 +111,8 @@
             </div>
         </div>
 
-        <!-- Categories Pill Filter Tabs (Touch Friendly) -->
-        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 flex-shrink-0 no-scrollbar" id="category-filter-container">
+        <!-- Categories Pill Filter Tabs (Touch Friendly, Horizontal Scroll) -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 flex-shrink-0 no-scrollbar w-full" id="category-filter-container">
             <button type="button" 
                     onclick="filterCategory('all', this)" 
                     class="category-filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 border bg-blue-600 text-white border-blue-600 shadow-sm cursor-pointer flex items-center gap-1.5 active"
@@ -151,15 +151,15 @@
             @endforeach
         </div>
         
-        <!-- Products Cards Grid (Max 3 Columns, Smooth Vertical Scroll) -->
-        <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0">
+        <!-- Products Cards Grid (Responsive 2 to 3 Columns Max, Smooth Vertical Scroll) -->
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0 w-full">
             @foreach($materials as $material)
-                <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group"
+                <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group min-w-0"
                      data-name="{{ strtolower($material->material_name) }}"
                      data-category="{{ $material->category ?? 'Lainnya' }}"
                      onclick="handleProductClick('{{ addslashes($material->material_name) }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }}, '{{ addslashes($material->category ?? '') }}')">
                     
-                    <div>
+                    <div class="min-w-0">
                         <div class="flex justify-between items-start mb-1.5 gap-1">
                             @php
                                 $badgeStyle = match($material->category) {
@@ -174,7 +174,7 @@
                                     default => 'bg-slate-50 text-slate-700 border-slate-200'
                                 };
                             @endphp
-                            <span class="badge {{ $badgeStyle }} border text-[10px] font-semibold px-2 py-0.5 rounded-md truncate max-w-[130px]" title="{{ $material->category ?? 'Bahan' }}">
+                            <span class="badge {{ $badgeStyle }} border text-[10px] font-semibold px-2 py-0.5 rounded-md truncate max-w-[120px]" title="{{ $material->category ?? 'Bahan' }}">
                                 {{ $material->category ?? 'Bahan' }}
                             </span>
                             <span class="text-[10px] {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold flex-shrink-0">
@@ -187,27 +187,27 @@
                         </h3>
                         
                         @if($material->fixed_size)
-                            <div class="text-[10px] text-slate-500 mb-1">
+                            <div class="text-[10px] text-slate-500 mb-1 truncate">
                                 Lebar Roll: <strong class="text-slate-700">{{ $material->fixed_size }} m</strong>
                             </div>
                         @endif
 
                         @if($material->wholesalePrices->count() > 0)
-                            <div class="text-[10px] text-blue-600 font-medium mb-1">
+                            <div class="text-[10px] text-blue-600 font-medium mb-1 truncate">
                                 <i class="fa-solid fa-tags me-1"></i>{{ $material->wholesalePrices->count() }} Tier Grosir
                             </div>
                         @endif
                     </div>
 
                     <div class="pt-2 border-t border-slate-100 flex justify-between items-center mt-2">
-                        <div>
+                        <div class="min-w-0">
                             <span class="text-[9.5px] text-slate-400 block leading-tight">Harga Satuan</span>
-                            <span class="font-bold text-blue-900 font-mono text-xs">
+                            <span class="font-bold text-blue-900 font-mono text-xs truncate block">
                                 Rp {{ number_format($material->retail_price, 0, ',', '.') }}
                             </span>
                         </div>
                         
-                        <button type="button" class="w-7 h-7 bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white rounded-lg flex items-center justify-center transition border-0 cursor-pointer text-xs">
+                        <button type="button" class="w-7 h-7 bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white rounded-lg flex items-center justify-center transition border-0 cursor-pointer text-xs flex-shrink-0">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
@@ -215,7 +215,7 @@
             @endforeach
 
             <!-- Empty State for Filter/Search -->
-            <div id="products-empty-state" class="col-span-2 sm:col-span-3 py-12 text-center hidden">
+            <div id="products-empty-state" class="col-span-1 sm:col-span-2 xl:col-span-3 py-12 text-center hidden">
                 <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-2 text-lg">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </div>
@@ -225,8 +225,8 @@
         </div>
     </div>
 
-    <!-- Right Column: Cart & Checkout (Always visible on Desktop lg+, activeTab === 'cart' on < lg) -->
-    <div class="w-full lg:w-[360px] xl:w-[390px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
+    <!-- Right Column: Cart & Checkout (Strict Fixed Responsive Width, Always In View) -->
+    <div class="w-full lg:w-[320px] xl:w-[360px] 2xl:w-[380px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
          :class="activeTab === 'cart' ? 'flex' : 'hidden lg:flex'">
         
         <!-- Cart Header -->
