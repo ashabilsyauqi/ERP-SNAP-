@@ -47,6 +47,7 @@ class RealStoreProductsSeeder extends Seeder
                 $retail = (float) $prod['retail_price'];
                 $isRoll = (str_contains(strtolower($name), 'flexy') || str_contains(strtolower($name), 'flexi') || str_contains(strtolower($name), 'albatros') || str_contains(strtolower($name), 'ritrama') || str_contains(strtolower($name), 'oneway') || str_contains(strtolower($name), 'kain banner')) && !str_contains(strtolower($name), 'paket');
                 $fixedSize = $isRoll ? 1.0 : null;
+                $wholesaleList = $prod['wholesale'] ?? [];
 
                 $material = Material::updateOrCreate(
                     [
