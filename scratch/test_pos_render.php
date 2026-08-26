@@ -8,6 +8,7 @@ $kernel->bootstrap();
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 $user = User::first();
 Auth::login($user);

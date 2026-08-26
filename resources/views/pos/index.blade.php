@@ -13,17 +13,26 @@
 @endsection
 
 @section('content')
-<div class="flex flex-col md:flex-row gap-3 h-[calc(100vh-95px)] animate-fade-in relative pb-16 md:pb-0 overflow-hidden" 
+<div class="flex flex-col lg:flex-row gap-3 h-[calc(100vh-95px)] animate-fade-in relative pb-16 lg:pb-0 overflow-hidden" 
      id="pos-main-container"
      x-data="{ 
+        activeTab: 'catalog', 
         isDp: false, 
         cartTotal: 0,
+        cartItemCount: 0,
         minDpThreshold: 500000,
         customerName: '', 
         customerPhone: '', 
         dueDate: '', 
         dpAmount: 0, 
         productionNotes: '',
+        showToast: false,
+        toastItemName: '',
+        notifyItemAdded(name) {
+            this.toastItemName = name;
+            this.showToast = true;
+            setTimeout(() => { this.showToast = false; }, 1800);
+        },
         get minDpAmount() {
             return Math.round((Number(this.cartTotal) || 0) * 0.5);
         },
@@ -41,8 +50,9 @@
             const total = Number(this.cartTotal) || 0;
             this.dpAmount = Math.round(total * (pct / 100));
         },
-        handleCartTotalUpdate(total) {
+        handleCartTotalUpdate(total, count) {
             this.cartTotal = Number(total) || 0;
+            this.cartItemCount = Number(count) || 0;
             if (this.cartTotal < this.minDpThreshold) {
                 this.isDp = false;
                 this.dpAmount = 0;
@@ -51,10 +61,33 @@
             }
         }
      }"
-     @cart-total-changed.window="handleCartTotalUpdate($event.detail.total)">
+     @cart-total-changed.window="handleCartTotalUpdate($event.detail.total, $event.detail.count)"
+     @item-added-to-cart.window="notifyItemAdded($event.detail.name)">
     
-    <!-- Left Column: Products Grid & Search (Expansive Flex) -->
-    <div class="flex-1 flex flex-col gap-2.5 min-h-0 h-full">
+    <!-- Mobile & Tablet Segmented Tab Switcher (Visible on screens < 1024px) -->
+    <div class="lg:hidden flex items-center bg-slate-200/90 p-1 rounded-2xl gap-1 flex-shrink-0 shadow-inner">
+        <button type="button" 
+                @click="activeTab = 'catalog'" 
+                :class="activeTab === 'catalog' ? 'bg-white text-blue-600 shadow font-bold' : 'text-slate-600 font-semibold hover:text-slate-900'"
+                class="flex-1 py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition duration-150 border-0 cursor-pointer">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>1. Katalog Produk</span>
+            <span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.2 rounded-full font-mono">{{ $materials->count() }}</span>
+        </button>
+        <button type="button" 
+                @click="activeTab = 'cart'" 
+                :class="activeTab === 'cart' ? 'bg-blue-600 text-white shadow font-bold' : 'text-slate-600 font-semibold hover:text-slate-900'"
+                class="flex-1 py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition duration-150 border-0 cursor-pointer relative">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>2. Keranjang</span>
+            <span :class="activeTab === 'cart' ? 'bg-white text-blue-700' : 'bg-blue-600 text-white'" class="text-[10px] font-bold px-2 py-0.2 rounded-full font-mono" x-text="cartItemCount + ' item'">0 item</span>
+            <span class="font-mono font-bold text-[11px] ms-1" x-text="'(Rp ' + Number(cartTotal).toLocaleString('id-ID') + ')'"></span>
+        </button>
+    </div>
+
+    <!-- Left Column: Products Grid & Search -->
+    <div class="flex-1 flex flex-col gap-2.5 min-h-0 h-full"
+         :class="activeTab === 'catalog' ? 'flex' : 'hidden lg:flex'">
         
         <!-- Products Header & Search (Compact Clean Bar) -->
         <div class="bg-white px-3.5 py-2.5 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2.5 flex-shrink-0">
@@ -192,16 +225,25 @@
         </div>
     </div>
 
-    <!-- Right Column: Cart & Checkout (Sleek Fixed Width on POS) -->
-    <div class="hidden md:flex w-full md:w-[350px] lg:w-[380px] xl:w-[410px] bg-white rounded-2xl border border-slate-200 shadow-sm flex-col overflow-hidden h-full flex-shrink-0">
+    <!-- Right Column: Cart & Checkout (Always visible on Desktop lg+, activeTab === 'cart' on < lg) -->
+    <div class="w-full lg:w-[380px] xl:w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
+         :class="activeTab === 'cart' ? 'flex' : 'hidden lg:flex'">
+        
         <!-- Cart Header -->
         <div class="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
             <div class="flex items-center gap-2">
+                <!-- Back to Catalog button on screens < 1024px -->
+                <button type="button" @click="activeTab = 'catalog'" class="lg:hidden w-7 h-7 bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center border-0 cursor-pointer" title="Kembali ke Katalog">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                </button>
                 <i class="fa-solid fa-cart-shopping text-blue-400 text-sm"></i>
                 <h2 class="text-xs font-bold mb-0 text-white">Keranjang Order (POS)</h2>
             </div>
             <div class="flex items-center gap-2">
-                <span id="cart-item-count-badge" class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0 item</span>
+                <button type="button" onclick="clearCart()" class="text-[11px] text-slate-400 hover:text-rose-400 font-semibold bg-transparent border-0 cursor-pointer p-0">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                </button>
+                <span id="cart-item-count-badge" class="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" x-text="cartItemCount + ' item'">0 item</span>
             </div>
         </div>
         
@@ -273,7 +315,7 @@
                 </div>
             </div>
 
-            <!-- Payment Method Tiles (Desktop) -->
+            <!-- Payment Method Tiles (Desktop & Mobile) -->
             <div>
                 <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Metode Pembayaran (DP / Full)</label>
                 <div class="grid grid-cols-3 gap-1.5">
@@ -350,101 +392,36 @@
         </div>
     </div>
 
-    <!-- ==================== MOBILE LAYOUT ELEMENTS ==================== -->
-    
-    <!-- Mobile Persistent Bottom Bar -->
-    <div id="mobile-cart-bar" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between z-30 shadow-2xl transition duration-300">
+    <!-- Mobile & Tablet Persistent Bottom Bar (Visible on < lg when on catalog view) -->
+    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 px-4 py-2.5 flex items-center justify-between z-30 shadow-2xl transition duration-300"
+         x-show="activeTab === 'catalog'" x-cloak>
         <div>
-            <p id="mobile-cart-qty-text" class="text-xs font-medium text-slate-500 mb-0">0 item terpilih</p>
-            <p id="mobile-cart-total-text" class="text-base font-extrabold text-blue-900 mb-0 font-mono">Rp 0</p>
+            <p class="text-[11px] font-medium text-slate-500 mb-0" x-text="cartItemCount + ' item di keranjang'">0 item di keranjang</p>
+            <p class="text-sm font-extrabold text-blue-900 mb-0 font-mono" x-text="'Rp ' + Number(cartTotal).toLocaleString('id-ID')">Rp 0</p>
         </div>
         
-        <button onclick="toggleMobileCartDrawer(true)" id="mobile-cart-review-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition cursor-pointer border-0 text-xs">
+        <button type="button" @click="activeTab = 'cart'" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition cursor-pointer border-0 text-xs shadow-md shadow-blue-500/30 active:scale-95">
             <i class="fa-solid fa-cart-shopping"></i>
-            <span>Lihat Keranjang</span>
+            <span>Buka Keranjang</span>
+            <i class="fa-solid fa-arrow-right text-[10px]"></i>
         </button>
     </div>
 
-    <!-- Mobile Cart Slide-Up Drawer -->
-    <div id="mobile-cart-drawer" class="fixed inset-0 z-50 md:hidden hidden flex flex-col justify-end bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-        <div id="mobile-drawer-panel" class="bg-white w-full max-h-[85vh] rounded-t-3xl shadow-2xl flex flex-col transform translate-y-full transition-transform duration-300 ease-out overflow-hidden">
-            
-            <!-- Drawer Header -->
-            <div class="px-4 py-3 bg-slate-900 text-white flex justify-between items-center flex-shrink-0">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-cart-shopping text-blue-400"></i>
-                    <span class="font-bold text-sm text-white">Keranjang Order</span>
-                </div>
-                
-                <button type="button" onclick="toggleMobileCartDrawer(false)" class="text-slate-400 hover:text-white p-1 rounded-full border-0 bg-transparent">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            
-            <!-- Cart Items Mobile Scroll Region -->
-            <div class="p-4 overflow-y-auto bg-slate-50 flex-grow" id="cart-container-mobile">
-                <!-- Injected by JS -->
-            </div>
-
-            <!-- Checkout Section Mobile -->
-            <div class="p-4 border-t border-slate-200 bg-white space-y-3 flex-shrink-0">
-                <!-- Payment Method Tiles (Mobile) -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Metode Pembayaran</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <!-- Cash Button Mobile -->
-                        <button type="button" onclick="setPaymentMethod('Cash')" id="pm-mobile-Cash" 
-                            class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                            <i class="fa-solid fa-money-bill-wave text-base mb-1 text-emerald-600"></i>
-                            <span class="text-xs font-bold">Cash</span>
-                        </button>
-                        <!-- Transfer Button Mobile -->
-                        <button type="button" onclick="setPaymentMethod('Transfer')" id="pm-mobile-Transfer" 
-                            class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                            <i class="fa-solid fa-building-columns text-base mb-1 text-blue-600"></i>
-                            <span class="text-xs font-bold">Transfer</span>
-                        </button>
-                        <!-- QRIS Button Mobile -->
-                        <button type="button" onclick="setPaymentMethod('QRIS')" id="pm-mobile-QRIS" 
-                            class="pm-tile flex flex-col items-center justify-center py-2 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                            <i class="fa-solid fa-qrcode text-base mb-1 text-indigo-600"></i>
-                            <span class="text-xs font-bold">QRIS</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Price summary -->
-                <div class="bg-slate-50 p-3 rounded-xl space-y-1 text-xs text-slate-500 font-medium">
-                    <div class="flex justify-between text-slate-900 font-bold border-t border-slate-200 pt-1 text-sm">
-                        <span>Total Tagihan</span>
-                        <span id="receipt-total-mobile" class="font-mono text-blue-900">Rp 0</span>
-                    </div>
-                </div>
-
-                <!-- Success Alert Mobile -->
-                <div id="checkout-success-mobile" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-900 p-3 rounded-xl text-xs space-y-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded">
-                            <i class="fa-solid fa-circle-check me-1"></i> STATUS SUKSES
-                        </span>
-                        <span class="font-mono font-bold text-blue-900" id="success-inv-text-mobile"></span>
-                    </div>
-                    <div class="d-flex gap-2 pt-1">
-                        <button type="button" id="btn-print-last-receipt-mobile" class="btn btn-sm btn-primary text-xs flex-1 py-1 font-semibold">
-                            <i class="fa-solid fa-print me-1"></i> Cetak Struk 58mm
-                        </button>
-                    </div>
-                </div>
-
-                <div id="checkout-error-mobile" class="hidden bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-semibold"></div>
-
-                <button onclick="processCheckout()" id="checkout-btn-mobile" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Konfirmasi & Bayar Tagihan</span>
-                </button>
-            </div>
-        </div>
+    <!-- Toast Notification for Product Click -->
+    <div x-show="showToast" 
+         x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+         x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+         class="fixed bottom-16 lg:bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900 text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-2 text-xs border border-white/20 pointer-events-none"
+         style="display: none;">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span>Ditambahkan: <strong x-text="toastItemName" class="text-blue-300"></strong></span>
     </div>
+</div>
 </div>
 
 <!-- Input holds global payment selection state -->
@@ -747,6 +724,8 @@
 
         renderCart();
 
+        window.dispatchEvent(new CustomEvent('item-added-to-cart', { detail: { name: activeDimProduct.name } }));
+
         const modalEl = document.getElementById('modalBannerDimension');
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
@@ -770,6 +749,16 @@
                 retail_price: retailPrice,
                 wholesale_prices: wholesalePrices
             });
+            renderCart();
+        }
+
+        window.dispatchEvent(new CustomEvent('item-added-to-cart', { detail: { name: materialName } }));
+    }
+
+    // --- Clear All Items in Cart ---
+    function clearCart() {
+        if (cart.length > 0) {
+            cart = [];
             renderCart();
         }
     }
@@ -821,18 +810,11 @@
         return { price, isWholesale };
     }
 
-    // --- Render Cart (Desktop + Mobile) ---
+    // --- Render Cart ---
     function renderCart() {
         const desktopContainer = document.getElementById('cart-container-desktop');
-        const mobileContainer = document.getElementById('cart-container-mobile');
-        
         const badgeCount = document.getElementById('cart-item-count-badge');
         const receiptTotalDesktop = document.getElementById('receipt-total-desktop');
-        const receiptTotalMobile = document.getElementById('receipt-total-mobile');
-        
-        const mobileCartBar = document.getElementById('mobile-cart-bar');
-        const mobileCartQtyText = document.getElementById('mobile-cart-qty-text');
-        const mobileCartTotalText = document.getElementById('mobile-cart-total-text');
 
         if (cart.length === 0) {
             const emptyState = `
@@ -841,25 +823,21 @@
                         <i class="fa-solid fa-cart-shopping text-xl text-slate-400"></i>
                     </div>
                     <p class="font-bold text-slate-700 text-sm mb-1">Keranjang Masih Kosong</p>
-                    <p class="text-xs text-slate-400">Pilih bahan cetak dari katalog di sebelah kiri untuk memulai transaksi.</p>
+                    <p class="text-xs text-slate-400">Pilih produk atau layanan dari katalog untuk memulai transaksi.</p>
                 </div>
             `;
-            desktopContainer.innerHTML = emptyState;
-            mobileContainer.innerHTML = emptyState;
-            badgeCount.innerText = '0 item';
-            receiptTotalDesktop.innerText = 'Rp 0';
-            receiptTotalMobile.innerText = 'Rp 0';
+            if (desktopContainer) desktopContainer.innerHTML = emptyState;
+            if (badgeCount) badgeCount.innerText = '0 item';
+            if (receiptTotalDesktop) receiptTotalDesktop.innerText = 'Rp 0';
             window.currentGrandTotal = 0;
             
-            window.dispatchEvent(new CustomEvent('cart-total-changed', { detail: { total: 0 } }));
-
-            mobileCartBar.classList.add('hidden');
+            window.dispatchEvent(new CustomEvent('cart-total-changed', { detail: { total: 0, count: 0 } }));
             return;
         }
 
         let totalQty = 0;
         let grandTotal = 0;
-        let cartHtml = '<div class="space-y-2.5">';
+        let cartHtml = '<div class="space-y-2">';
 
         cart.forEach(item => {
             const { price: basePrice, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
@@ -875,7 +853,7 @@
             grandTotal += itemTotal;
 
             cartHtml += `
-                <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm flex flex-col gap-2">
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-1.5">
                     <div class="flex justify-between items-start">
                         <div>
                             <span class="font-bold text-slate-900 text-xs">${item.material_name_or_type}</span>
@@ -888,7 +866,7 @@
                                 </div>
                             ` : (item.requested_size ? `<span class="block text-[10px] text-blue-600 font-medium">Ukuran: ${item.requested_size}m</span>` : '')}
                             
-                            <div class="flex items-center gap-1.5 mt-1">
+                            <div class="flex items-center gap-1.5 mt-0.5">
                                 <span class="text-[11px] font-mono text-slate-600">
                                     @ Rp ${Number(finalUnitPrice).toLocaleString('id-ID')}
                                     ${item.is_custom_banner ? `<small class="text-slate-400">(${Number(basePrice).toLocaleString('id-ID')}/m²)</small>` : ''}
@@ -902,7 +880,7 @@
                         </div>
                     </div>
                     
-                    <div class="flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
+                    <div class="flex justify-between items-center border-t border-slate-100 pt-1.5 mt-0.5">
                         <div class="d-flex align-items-center gap-2">
                             <button onclick="updateQty(${item.id}, -${item.qty})" class="text-[10px] text-rose-500 hover:text-rose-700 font-semibold bg-transparent border-0 cursor-pointer p-0">
                                 <i class="fa-solid fa-trash-can me-0.5"></i> Hapus
@@ -926,23 +904,14 @@
 
         cartHtml += '</div>';
 
-        desktopContainer.innerHTML = cartHtml;
-        mobileContainer.innerHTML = cartHtml;
-
-        badgeCount.innerText = `${totalQty} item`;
+        if (desktopContainer) desktopContainer.innerHTML = cartHtml;
+        if (badgeCount) badgeCount.innerText = `${totalQty} item`;
         window.currentGrandTotal = grandTotal;
         
-        // Dispatch cart total changed event for Alpine reactivity
-        window.dispatchEvent(new CustomEvent('cart-total-changed', { detail: { total: grandTotal } }));
+        window.dispatchEvent(new CustomEvent('cart-total-changed', { detail: { total: grandTotal, count: totalQty } }));
 
         const formattedTotal = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
-        receiptTotalDesktop.innerText = formattedTotal;
-        receiptTotalMobile.innerText = formattedTotal;
-
-        // Mobile Bottom Bar Data
-        mobileCartBar.classList.remove('hidden');
-        mobileCartQtyText.innerText = `${totalQty} item terpilih`;
-        mobileCartTotalText.innerText = formattedTotal;
+        if (receiptTotalDesktop) receiptTotalDesktop.innerText = formattedTotal;
     }
 
     // --- Category & Search Combined Filtering ---
@@ -1101,13 +1070,17 @@
         const btnMobile = document.getElementById('checkout-btn-mobile');
 
         // Disable Buttons
-        btnDesktop.disabled = true;
-        btnMobile.disabled = true;
-        btnDesktop.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...`;
-        btnMobile.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...`;
+        if (btnDesktop) {
+            btnDesktop.disabled = true;
+            btnDesktop.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...`;
+        }
+        if (btnMobile) {
+            btnMobile.disabled = true;
+            btnMobile.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Memproses...`;
+        }
 
-        errContainerDesktop.classList.add('hidden');
-        errContainerMobile.classList.add('hidden');
+        if (errContainerDesktop) errContainerDesktop.classList.add('hidden');
+        if (errContainerMobile) errContainerMobile.classList.add('hidden');
         if (successContainerDesktop) successContainerDesktop.classList.add('hidden');
         if (successContainerMobile) successContainerMobile.classList.add('hidden');
 
@@ -1141,16 +1114,19 @@
         })
         .then(response => response.json())
         .then(data => {
-            btnDesktop.disabled = false;
-            btnMobile.disabled = false;
-            btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${isDp ? 'Proses Simpan Pesanan DP' : 'Proses Bayar (Checkout)'}`;
-            btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar Tagihan`;
+            if (btnDesktop) {
+                btnDesktop.disabled = false;
+                btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${isDp ? 'Proses Simpan Pesanan DP' : 'Proses Bayar (Checkout)'}`;
+            }
+            if (btnMobile) {
+                btnMobile.disabled = false;
+                btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar Tagihan`;
+            }
 
             if (data.status === 'success' || data.success === true) {
                 // Clear cart state
                 cart = [];
                 renderCart();
-                toggleMobileCartDrawer(false);
 
                 const isPartial = data.payment_status === 'PARTIAL';
 
@@ -1225,17 +1201,25 @@
 
             } else {
                 const errorMsg = data.message || 'Terjadi kesalahan sistem saat memproses transaksi kasir.';
-                errContainerDesktop.innerText = errorMsg;
-                errContainerDesktop.classList.remove('hidden');
-                errContainerMobile.innerText = errorMsg;
-                errContainerMobile.classList.remove('hidden');
+                if (errContainerDesktop) {
+                    errContainerDesktop.innerText = errorMsg;
+                    errContainerDesktop.classList.remove('hidden');
+                }
+                if (errContainerMobile) {
+                    errContainerMobile.innerText = errorMsg;
+                    errContainerMobile.classList.remove('hidden');
+                }
             }
         })
         .catch(err => {
-            btnDesktop.disabled = false;
-            btnMobile.disabled = false;
-            btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Proses Bayar`;
-            btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar`;
+            if (btnDesktop) {
+                btnDesktop.disabled = false;
+                btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Proses Bayar`;
+            }
+            if (btnMobile) {
+                btnMobile.disabled = false;
+                btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar`;
+            }
             
             Swal.fire({ icon: 'error', title: 'Gagal', text: 'Koneksi bermasalah atau terjadi error pada server.' });
         });
