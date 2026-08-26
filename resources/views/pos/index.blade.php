@@ -151,8 +151,8 @@
             @endforeach
         </div>
         
-        <!-- Products Cards Grid (Spacious Touch-Friendly Layout) -->
-        <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0">
+        <!-- Products Cards Grid (Max 3 Columns, Smooth Vertical Scroll) -->
+        <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0">
             @foreach($materials as $material)
                 <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group"
                      data-name="{{ strtolower($material->material_name) }}"
@@ -174,7 +174,7 @@
                                     default => 'bg-slate-50 text-slate-700 border-slate-200'
                                 };
                             @endphp
-                            <span class="badge {{ $badgeStyle }} border text-[10px] font-semibold px-2 py-0.5 rounded-md" title="{{ $material->category ?? 'Bahan' }}">
+                            <span class="badge {{ $badgeStyle }} border text-[10px] font-semibold px-2 py-0.5 rounded-md truncate max-w-[130px]" title="{{ $material->category ?? 'Bahan' }}">
                                 {{ $material->category ?? 'Bahan' }}
                             </span>
                             <span class="text-[10px] {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold flex-shrink-0">
@@ -215,7 +215,7 @@
             @endforeach
 
             <!-- Empty State for Filter/Search -->
-            <div id="products-empty-state" class="col-span-2 lg:col-span-4 2xl:col-span-5 py-12 text-center hidden">
+            <div id="products-empty-state" class="col-span-2 sm:col-span-3 py-12 text-center hidden">
                 <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-2 text-lg">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </div>
@@ -226,7 +226,7 @@
     </div>
 
     <!-- Right Column: Cart & Checkout (Always visible on Desktop lg+, activeTab === 'cart' on < lg) -->
-    <div class="w-full lg:w-[380px] xl:w-[420px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
+    <div class="w-full lg:w-[360px] xl:w-[390px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
          :class="activeTab === 'cart' ? 'flex' : 'hidden lg:flex'">
         
         <!-- Cart Header -->
