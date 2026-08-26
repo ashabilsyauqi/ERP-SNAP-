@@ -437,34 +437,34 @@ def build_pdf():
     # =========================================================================
     # SLIDE 4: 3. KATALOG PRODUK & LAYANAN MULTI-KATEGORI
     # =========================================================================
-    story.append(Paragraph("3. Portofolio Produk & Layanan Multi-Kategori", style_section_title))
-    story.append(Paragraph("Kombinasi layanan lengkap one-stop print center untuk memaksimalkan average order value (AOV) tiap pelanggan.", style_section_subtitle))
+    story.append(Paragraph("3. Portofolio Produk & Layanan Multi-Kategori (112 SKU Riil)", style_section_title))
+    story.append(Paragraph("Data katalog harga jual & HPP riil terverifikasi dari operasional gerai SnapPrint Dukuh Zamrud dengan average margin 61.7%.", style_section_subtitle))
 
     slide4_data = [
         [
             Paragraph("""
             <font color="#0284C7"><b>1. DIGITAL PRINT & DOKUMEN</b></font><br/>
-            <font size='7' color='#64748B'><i>Mesin Digital Laser A3+ High-Definition</i></font><br/><br/>
-            • <b>Print Lembaran A3+:</b> Art Paper (150-260g), Ivory, Matte Paper, Kraft, Linen, Concorde.<br/>
-            • <b>Packaging & Retail Print:</b> Label stiker chromo/vinyl kiss-cut, kartu nama, flyer, brosur lipat.<br/>
-            • <b>Jilid & Finishing:</b> Hardcover skripsi mewah berlogo emas, softcover laminasi doff/glossy, jilid spiral kawat, booklet jahitan tengah.<br/>
-            • <b>Dokumen Korporasi:</b> Buku panduan, proposal tender, sertifikat berhologram anti-pemalsuan.
+            <font size='7' color='#64748B'><i>Laser A3+, HVS, Art Paper, Sticker Kisscut</i></font><br/><br/>
+            • <b>Print Lembaran A3+:</b> Art Paper 120/150g, Art Carton 210/260g, Blues White, Linen.<br/>
+            • <b>Sticker Label:</b> Chromo & Vinyl Glossy/Doff/Transparan (Tiering grosir s/d Rp 5.000).<br/>
+            • <b>Jilid & Finishing:</b> Hardcover skripsi mewah emas, softcover laminasi, kawat spiral No 5–20.<br/>
+            • <b>Dokumen Korporasi:</b> Modul materi, fotokopi A4/A3 1-2 sisi, scan resolusi tinggi.
             """, style_card_body),
             Paragraph("""
             <font color="#D97706"><b>2. LARGE FORMAT & OUTDOOR</b></font><br/>
             <font size='7' color='#64748B'><i>Plotter Eco-Solvent / UV 1.8m – 3.2m</i></font><br/><br/>
-            • <b>Spanduk & Banner:</b> Flexi China 280g/340g, Flexi Korea 440g, Flexi Jerman (anti robek tahan cuaca).<br/>
-            • <b>Media Indoor Premium:</b> Albatros matte, Luster Silk berkilau, Duratrans backlit neon box.<br/>
-            • <b>Sticker & Decal:</b> Stiker vinyl Ritrama/Orajet laminasi, stiker one-way vision kaca mobil/toko.<br/>
-            • <b>Display Hardware:</b> X-Banner, Y-Banner, Roll-up Aluminium, Event Desk, Tripod Poster, Plang Toko.
+            • <b>Spanduk & Banner:</b> Flexy China 280g/340g, Flexy Korea 440g tahan cuaca luar ruangan.<br/>
+            • <b>Media Indoor Premium:</b> Albatros matte halus, Sticker Ritrama & Oneway Vision kaca.<br/>
+            • <b>Display Hardware Komplit:</b> Paket X-Banner 60x160cm, Roll Banner 60x160 & 85x200cm.<br/>
+            • <b>Media Promosi Usaha:</b> Plang reklame toko, backdrop panggung, mata ayam ring.
             """, style_card_body),
             Paragraph("""
-            <font color="#E11D48"><b>3. MERCHANDISE & PACKAGING</b></font><br/>
-            <font size='7' color='#64748B'><i>Sablon Digital DTF, UV Flatbed, Press</i></font><br/><br/>
-            • <b>Apparel Sablon DTF:</b> Kaos katun combed 24s/30s, polo shirt, jaket hoodie, totebag canvas, topi.<br/>
-            • <b>Souvenir & Drinkware:</b> Tumbler vacuum flask gravir/print UV, mug keramik sublim, gantungan kunci akrilik.<br/>
-            • <b>Office Accessories:</b> Tali lanyard printing satin stopper, ID card PVC tebal (mirip kartu ATM).<br/>
-            • <b>Kemasan Custom:</b> Box kardus corrugated cetak sablon, paper box makanan, stempel otomatis kilat.
+            <font color="#E11D48"><b>3. MERCHANDISE, NOTA & STEMPEL</b></font><br/>
+            <font size='7' color='#64748B'><i>Sablon DTF, Lanyard, Stempel Flash, Nota NCR</i></font><br/><br/>
+            • <b>Sablon Apparel DTF:</b> Sablon ukuran A4, A3, dan meteran full colour presisi tinggi.<br/>
+            • <b>Souvenir & Kantor:</b> Lanyard 2-2.5cm, ID Card PVC, Pin 44/58mm, Mug keramik + box, Kipas.<br/>
+            • <b>Nota NCR Berjilid:</b> Nota 1-3 ply ukuran A6, A5, A4 (Full Color & BW Paket Rim).<br/>
+            • <b>Stempel Otomatis:</b> Stempel Flash 1-2 warna (Kecil, Sedang, Besar).
             """, style_card_body),
         ]
     ]
@@ -485,9 +485,9 @@ def build_pdf():
 
     margin_cards = [
         [
-            Paragraph("<b>Gross Margin Digital A3+:</b> <font color='#0284C7'><b>60% – 70%</b></font>", style_card_body),
-            Paragraph("<b>Gross Margin Banner / Outdoor:</b> <font color='#D97706'><b>50% – 60%</b></font>", style_card_body),
-            Paragraph("<b>Gross Margin Merchandise DTF:</b> <font color='#E11D48'><b>65% – 75%</b></font>", style_card_body),
+            Paragraph("<b>Margin Print & Stiker (Riil):</b> <font color='#0284C7'><b>75.6%</b></font>", style_card_body),
+            Paragraph("<b>Margin Banner & Outdoor (Riil):</b> <font color='#D97706'><b>46.9%</b></font>", style_card_body),
+            Paragraph("<b>Margin Merchandise & Nota (Riil):</b> <font color='#E11D48'><b>55.9%</b></font>", style_card_body),
         ]
     ]
     margin_table = Table(margin_cards, colWidths=[248, 248, 269])

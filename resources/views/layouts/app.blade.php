@@ -549,7 +549,7 @@
                 <!-- SnapPrint Brand Logo Emblem in Navbar -->
                 <div class="d-flex align-items-center gap-2 border-end pe-3 ps-1 me-1 border-white/20 h-75">
                     <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="SnapPrint" class="rounded-circle" style="width: 24px; height: 24px; object-fit: cover;">
-                    <span class="fw-bold tracking-wide text-white text-xs d-none d-sm-inline">SnapPrint</span>
+                    <span class="fw-bold tracking-wide text-white text-xs d-none d-sm-inline">Snaprint</span>
                     <span class="text-white/40 d-none d-sm-inline">|</span>
                     <span class="fw-bold text-white text-xs d-flex align-items-center gap-1.5">
                         <i class="fa-solid {{ $appIcon }} text-amber-300 text-xs"></i>
