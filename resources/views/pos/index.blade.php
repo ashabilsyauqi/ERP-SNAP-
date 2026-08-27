@@ -430,50 +430,50 @@
 <!-- Modal Custom Dimension Banner (Interactive Roll Canvas & Adjustable Dimensions) -->
 <div class="modal fade" id="modalBannerDimension" tabindex="-1" aria-labelledby="modalBannerDimensionLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content rounded-3 border-0 shadow-2xl overflow-hidden">
-            <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center border-bottom border-slate-700">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
+            <!-- Modal Header with Solid Background -->
+            <div class="px-4 py-3 d-flex justify-content-between align-items-center" style="background-color: #0f172a !important; color: #ffffff !important;">
                 <div class="d-flex align-items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-blue-600/30 border border-blue-400/40 text-blue-400 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: rgba(59, 130, 246, 0.2); border: 1px solid rgba(96, 165, 250, 0.5); color: #60a5fa;">
                         <i class="fa-solid fa-scroll text-sm"></i>
                     </div>
                     <div>
                         <h5 class="fs-6 fw-bold mb-0 text-white" id="modalBannerDimensionLabel">Kustomisasi Ukuran Gulungan Banner</h5>
-                        <span class="text-[11px] text-blue-200">Cetak Outdoor & Indoor (Lebar Max 3m | Panjang Max 30m)</span>
+                        <span class="text-[11px]" style="color: #94a3b8;">Cetak Outdoor & Indoor (Lebar 1.0m - 3.0m | Panjang 1.0m - 30.0m)</span>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="p-4 bg-slate-50">
+            <div class="p-4" style="background-color: #f8fafc;">
                 <div class="row g-3">
                     <!-- LEFT COLUMN: Dynamic Banner Roll Visual Preview -->
                     <div class="col-12 col-lg-5">
-                        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm h-100 d-flex flex-col justify-between">
+                        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm h-100 d-flex flex-col justify-between" style="border-radius: 1rem;">
                             <div>
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div>
+                                    <div class="overflow-hidden">
                                         <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Material Cetak</span>
-                                        <h6 class="font-bold text-slate-900 text-sm mb-0 truncate" id="dim_product_name">-</h6>
+                                        <h6 class="font-bold text-slate-900 text-sm mb-0 text-truncate" id="dim_product_name">-</h6>
                                     </div>
-                                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-bold" id="dim_product_price">Rp 0/m²</span>
+                                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-bold px-2 py-1" id="dim_product_price">Rp 0/m²</span>
                                 </div>
 
                                 <!-- Visual Roll Simulation Graphic Box -->
-                                <div class="bg-gradient-to-b from-slate-100 to-slate-200/80 rounded-xl p-3 border border-slate-200/90 relative overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
+                                <div class="rounded-xl p-3 border border-slate-200 relative overflow-hidden flex flex-col items-center justify-center min-h-[220px]" style="background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);">
                                     <!-- Spindle Roll Top Header Graphic -->
-                                    <div class="w-full flex items-center justify-center mb-1.5 z-10">
-                                        <div class="h-3.5 bg-gradient-to-r from-slate-700 via-slate-400 to-slate-800 rounded-full shadow-md w-11/12 border border-slate-600 flex items-center justify-between px-2 relative">
-                                            <div class="w-1.5 h-1.5 rounded-full bg-slate-900"></div>
+                                    <div class="w-full flex items-center justify-center mb-2 z-10">
+                                        <div class="h-4 rounded-full shadow-md w-11/12 border flex items-center justify-between px-2 relative" style="background: linear-gradient(90deg, #1e293b 0%, #64748b 50%, #1e293b 100%); border-color: #334155;">
+                                            <div class="w-2 h-2 rounded-full" style="background-color: #0f172a;"></div>
                                             <span class="text-[8px] font-mono text-slate-200 uppercase tracking-widest font-bold">GULUNGAN ROLL BANNER</span>
-                                            <div class="w-1.5 h-1.5 rounded-full bg-slate-900"></div>
+                                            <div class="w-2 h-2 rounded-full" style="background-color: #0f172a;"></div>
                                         </div>
                                     </div>
 
                                     <!-- Dynamic Scaled Canvas Sheet -->
                                     <div id="banner_preview_canvas" 
                                          class="bg-white border-2 border-dashed border-blue-500 rounded shadow-md relative transition-all duration-300 flex flex-col items-center justify-center p-2 text-center overflow-hidden"
-                                         style="width: 160px; height: 120px; max-width: 95%; max-height: 180px;">
+                                         style="width: 150px; height: 110px; max-width: 95%; max-height: 180px; background-color: #ffffff !important;">
                                         
                                         <!-- Corner Grommets (Mata Ayam) -->
                                         <div class="absolute top-1 left-1 w-2 h-2 rounded-full border border-slate-500 bg-slate-300 shadow-inner"></div>
@@ -483,106 +483,102 @@
 
                                         <!-- Canvas Label Text -->
                                         <div class="z-10 p-1">
-                                            <i class="fa-solid fa-image text-blue-300 text-lg mb-1 block"></i>
-                                            <span id="canvas_dim_label" class="font-bold text-slate-800 font-mono text-xs block leading-tight">1.0m x 2.0m</span>
-                                            <span id="canvas_area_label" class="text-[10px] text-emerald-600 font-bold font-mono block">2.00 m²</span>
+                                            <i class="fa-solid fa-image text-blue-500 text-lg mb-1 block"></i>
+                                            <span id="canvas_dim_label" class="font-bold text-slate-900 font-mono text-xs block leading-tight">1.0m x 2.0m</span>
+                                            <span id="canvas_area_label" class="text-[10px] text-emerald-700 font-bold font-mono block">2.00 m²</span>
                                         </div>
-
-                                        <!-- Texture / Grid Lines Pattern -->
-                                        <div class="absolute inset-0 bg-gradient-to-tr from-blue-50/50 to-transparent pointer-events-none"></div>
                                     </div>
 
                                     <!-- Dimension Indicator Markers -->
-                                    <div class="w-full flex justify-between items-center text-[10px] text-slate-600 font-mono font-semibold px-2 mt-2">
-                                        <span>↔ Lebar: <strong id="marker_width_label" class="text-blue-700">1.0 m</strong></span>
-                                        <span>↕ Panjang: <strong id="marker_length_label" class="text-blue-700">2.0 m</strong></span>
+                                    <div class="w-full flex justify-between items-center text-[10px] font-mono font-bold px-2 mt-2" style="color: #334155;">
+                                        <span>↔ Lebar: <strong id="marker_width_label" class="text-blue-700">1.00 m</strong></span>
+                                        <span>↕ Panjang: <strong id="marker_length_label" class="text-blue-700">2.00 m</strong></span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Rule Warning Alert if < 1m -->
-                            <div id="min_dim_alert" class="hidden mt-2 p-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] leading-tight">
-                                <i class="fa-solid fa-circle-info text-amber-600 me-1"></i>
-                                <span>Dimensi di bawah 1 meter dihitung <strong>minimal 1.0 Meter</strong> untuk biaya cetak.</span>
+                            <div class="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 text-[11px] leading-tight flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check text-blue-600"></i>
+                                <span>Batas Dimensi: <strong>Min 1.0m</strong> | Lebar Max 3.0m | Panjang Max 30.0m</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- RIGHT COLUMN: Input Controls, Sliders & Quick Chips -->
                     <div class="col-12 col-lg-7">
-                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3" style="border-radius: 1rem;">
                             
-                            <!-- 1. LEBAR BANNER (Max 3m, Min 1m rule) -->
+                            <!-- 1. LEBAR BANNER (Locked Min 1.0m, Max 3.0m) -->
                             <div>
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label class="form-label font-bold text-slate-800 text-xs uppercase mb-0">
-                                        <span>1. Lebar Cetak (Max 3.0 Meter) <span class="text-rose-600">*</span></span>
+                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-0">
+                                        <span>1. Lebar Cetak (1.0m s/d 3.0m) <span class="text-rose-600">*</span></span>
                                     </label>
-                                    <span class="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                                        <span id="label_val_width">1.00</span> m
+                                    <span class="text-[11px] font-mono font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                        <span id="label_val_width">1.00</span> Meter
                                     </span>
                                 </div>
                                 <div class="input-group input-group-sm mb-1.5">
-                                    <input type="number" id="banner_width_m" min="0.1" max="3.0" step="0.05" value="1.0" 
+                                    <input type="number" id="banner_width_m" min="1.0" max="3.0" step="0.05" value="1.0" 
                                            oninput="syncBannerWidth(this.value, 'input')" 
-                                           class="form-control form-control-sm font-bold font-mono text-slate-900" placeholder="e.g. 1.5">
-                                    <span class="input-group-text font-bold text-xs bg-slate-100">Meter</span>
+                                           class="form-control form-control-sm font-bold font-mono text-slate-900 text-sm" placeholder="1.0">
+                                    <span class="input-group-text font-bold text-xs bg-slate-100 text-slate-700">Meter</span>
                                 </div>
-                                <input type="range" id="banner_width_slider" min="0.1" max="3.0" step="0.05" value="1.0" 
+                                <input type="range" id="banner_width_slider" min="1.0" max="3.0" step="0.05" value="1.0" 
                                        oninput="syncBannerWidth(this.value, 'slider')" 
-                                       class="form-range w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                       class="form-range w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                                 
                                 <!-- Quick Chips Width -->
                                 <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
-                                    <span class="text-[10px] text-slate-400 font-semibold me-1">Pilihan Lebar:</span>
-                                    <button type="button" onclick="setBannerWidth(1.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">1.0m</button>
-                                    <button type="button" onclick="setBannerWidth(1.2)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">1.2m</button>
-                                    <button type="button" onclick="setBannerWidth(1.5)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">1.5m</button>
-                                    <button type="button" onclick="setBannerWidth(2.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">2.0m</button>
-                                    <button type="button" onclick="setBannerWidth(2.5)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">2.5m</button>
-                                    <button type="button" onclick="setBannerWidth(3.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">3.0m (Max)</button>
+                                    <span class="text-[10px] text-slate-500 font-semibold me-1">Pilihan Lebar:</span>
+                                    <button type="button" onclick="setBannerWidth(1.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">1.0m</button>
+                                    <button type="button" onclick="setBannerWidth(1.2)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">1.2m</button>
+                                    <button type="button" onclick="setBannerWidth(1.5)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">1.5m</button>
+                                    <button type="button" onclick="setBannerWidth(2.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">2.0m</button>
+                                    <button type="button" onclick="setBannerWidth(2.5)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">2.5m</button>
+                                    <button type="button" onclick="setBannerWidth(3.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">3.0m (Max)</button>
                                 </div>
                             </div>
 
-                            <!-- 2. PANJANG BANNER (Max 30m, Min 1m rule) -->
+                            <!-- 2. PANJANG BANNER (Locked Min 1.0m, Max 30.0m) -->
                             <div class="border-t border-slate-100 pt-2.5">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label class="form-label font-bold text-slate-800 text-xs uppercase mb-0">
-                                        <span>2. Panjang Cetak (Max 30.0 Meter) <span class="text-rose-600">*</span></span>
+                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-0">
+                                        <span>2. Panjang Cetak (1.0m s/d 30.0m) <span class="text-rose-600">*</span></span>
                                     </label>
-                                    <span class="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                                        <span id="label_val_length">2.00</span> m
+                                    <span class="text-[11px] font-mono font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                        <span id="label_val_length">2.00</span> Meter
                                     </span>
                                 </div>
                                 <div class="input-group input-group-sm mb-1.5">
-                                    <input type="number" id="banner_length_m" min="0.1" max="30.0" step="0.1" value="2.0" 
+                                    <input type="number" id="banner_length_m" min="1.0" max="30.0" step="0.1" value="2.0" 
                                            oninput="syncBannerLength(this.value, 'input')" 
-                                           class="form-control form-control-sm font-bold font-mono text-slate-900" placeholder="e.g. 3.0">
-                                    <span class="input-group-text font-bold text-xs bg-slate-100">Meter</span>
+                                           class="form-control form-control-sm font-bold font-mono text-slate-900 text-sm" placeholder="2.0">
+                                    <span class="input-group-text font-bold text-xs bg-slate-100 text-slate-700">Meter</span>
                                 </div>
-                                <input type="range" id="banner_length_slider" min="0.1" max="30.0" step="0.1" value="2.0" 
+                                <input type="range" id="banner_length_slider" min="1.0" max="30.0" step="0.1" value="2.0" 
                                        oninput="syncBannerLength(this.value, 'slider')" 
-                                       class="form-range w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                       class="form-range w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
                                 
                                 <!-- Quick Chips Length -->
                                 <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
-                                    <span class="text-[10px] text-slate-400 font-semibold me-1">Pilihan Panjang:</span>
-                                    <button type="button" onclick="setBannerLength(1.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">1m</button>
-                                    <button type="button" onclick="setBannerLength(2.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">2m</button>
-                                    <button type="button" onclick="setBannerLength(3.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">3m</button>
-                                    <button type="button" onclick="setBannerLength(4.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">4m</button>
-                                    <button type="button" onclick="setBannerLength(5.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">5m</button>
-                                    <button type="button" onclick="setBannerLength(10.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">10m</button>
-                                    <button type="button" onclick="setBannerLength(20.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">20m</button>
-                                    <button type="button" onclick="setBannerLength(30.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">30m</button>
+                                    <span class="text-[10px] text-slate-500 font-semibold me-1">Pilihan Panjang:</span>
+                                    <button type="button" onclick="setBannerLength(1.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">1m</button>
+                                    <button type="button" onclick="setBannerLength(2.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">2m</button>
+                                    <button type="button" onclick="setBannerLength(3.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">3m</button>
+                                    <button type="button" onclick="setBannerLength(4.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">4m</button>
+                                    <button type="button" onclick="setBannerLength(5.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">5m</button>
+                                    <button type="button" onclick="setBannerLength(10.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">10m</button>
+                                    <button type="button" onclick="setBannerLength(20.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">20m</button>
+                                    <button type="button" onclick="setBannerLength(30.0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">30m (Max)</button>
                                 </div>
                             </div>
 
                             <!-- 3. FINISHING & JUMLAH LEMBAR (QTY) -->
                             <div class="border-t border-slate-100 pt-2.5 row g-2">
                                 <div class="col-7">
-                                    <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">Finishing Spanduk</label>
-                                    <select id="banner_finishing" class="form-select form-select-sm text-xs font-semibold">
+                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-1">Finishing Spanduk</label>
+                                    <select id="banner_finishing" class="form-select form-select-sm text-xs font-semibold text-slate-800">
                                         <option value="Mata Ayam 4 Sudut">Mata Ayam 4 Sudut (Standar)</option>
                                         <option value="Mata Ayam Keliling (Per Meter)">Mata Ayam Keliling (Per 1 Meter)</option>
                                         <option value="Lipat Pas Gambar">Lipat Press Lem Pas Gambar</option>
@@ -592,10 +588,10 @@
                                     </select>
                                 </div>
                                 <div class="col-5">
-                                    <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">Jumlah (Qty)</label>
+                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-1">Jumlah (Qty)</label>
                                     <div class="input-group input-group-sm">
                                         <button type="button" onclick="changeDimQty(-1)" class="btn btn-outline-secondary font-bold">-</button>
-                                        <input type="number" id="dim_qty" min="1" value="1" oninput="calculateDimensionPreview()" class="form-control form-control-sm text-center font-bold font-mono">
+                                        <input type="number" id="dim_qty" min="1" value="1" oninput="calculateDimensionPreview()" class="form-control form-control-sm text-center font-bold font-mono text-slate-900">
                                         <button type="button" onclick="changeDimQty(1)" class="btn btn-outline-secondary font-bold">+</button>
                                     </div>
                                 </div>
@@ -605,32 +601,28 @@
                     </div>
                 </div>
 
-                <!-- LIVE CALCULATION SUMMARY CARD -->
-                <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl p-3.5 mt-3 shadow-lg">
+                <!-- LIVE CALCULATION SUMMARY CARD WITH SOLID HIGH-CONTRAST DARK BACKGROUND -->
+                <div class="p-3.5 mt-3 shadow-lg rounded-2xl" style="background-color: #0f172a !important; color: #ffffff !important; border-radius: 1rem; border: 1px solid #1e293b;">
                     <div class="row align-items-center">
                         <div class="col-12 col-md-7">
-                            <div class="d-flex flex-wrap gap-x-4 gap-y-1 text-xs text-blue-200 mb-1">
+                            <div class="d-flex flex-wrap gap-x-4 gap-y-1 text-xs mb-1" style="color: #cbd5e1;">
                                 <div>
-                                    <span>Ukuran Riil:</span>
-                                    <strong id="dim_preview_size" class="text-white font-mono font-bold">1.00m x 2.00m</strong>
+                                    <span style="color: #94a3b8;">Ukuran Cetak:</span>
+                                    <strong id="dim_preview_size" class="text-white font-mono font-bold ms-1">1.00m x 2.00m</strong>
                                 </div>
                                 <div>
-                                    <span>Luas Fisik:</span>
-                                    <strong id="dim_preview_physical_area" class="text-white font-mono">2.00 m²</strong>
-                                </div>
-                                <div>
-                                    <span>Luas Dihitung:</span>
-                                    <strong id="dim_preview_area" class="text-emerald-400 font-mono font-bold">2.00 m²</strong>
+                                    <span style="color: #94a3b8;">Luas Cetak:</span>
+                                    <strong id="dim_preview_area" class="font-mono font-bold ms-1" style="color: #34d399 !important;">2.00 m²</strong>
                                 </div>
                             </div>
-                            <div class="text-[11px] text-blue-300">
+                            <div class="text-[12px]" style="color: #94a3b8;">
                                 <span>Harga Satuan:</span>
-                                <strong id="dim_preview_unit_price" class="text-amber-300 font-mono font-bold">Rp 0</strong> / lembar
+                                <strong id="dim_preview_unit_price" class="font-mono font-bold ms-1" style="color: #facc15 !important;">Rp 0</strong> / lembar
                             </div>
                         </div>
                         <div class="col-12 col-md-5 text-md-end mt-2 mt-md-0">
-                            <span class="text-[11px] text-blue-200 uppercase tracking-wider block">Total Subtotal Pesanan</span>
-                            <span id="dim_preview_subtotal" class="font-mono text-xl font-extrabold text-white">Rp 0</span>
+                            <span class="text-[10px] uppercase tracking-wider block font-bold" style="color: #94a3b8;">TOTAL SUBTOTAL PESANAN</span>
+                            <span id="dim_preview_subtotal" class="font-mono text-2xl font-extrabold" style="color: #38bdf8 !important;">Rp 0</span>
                         </div>
                     </div>
                 </div>
@@ -638,12 +630,12 @@
 
             <!-- Modal Footer -->
             <div class="bg-slate-100 border-top px-4 py-2.5 d-flex justify-content-between align-items-center">
-                <span class="text-[11px] text-slate-500">
-                    <i class="fa-solid fa-calculator text-blue-600 me-1"></i> Perhitungan otomatis luas roll & tier grosir.
+                <span class="text-[11px] text-slate-500 font-medium">
+                    <i class="fa-solid fa-calculator text-blue-600 me-1"></i> Perhitungan otomatis luas roll & tier harga grosir.
                 </span>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" onclick="confirmBannerDimensionAddToCart()" class="btn btn-primary btn-sm font-bold shadow-sm">
+                    <button type="button" class="btn btn-secondary btn-sm font-semibold px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" onclick="confirmBannerDimensionAddToCart()" class="btn btn-primary btn-sm font-bold shadow-sm px-3">
                         <i class="fa-solid fa-cart-plus me-1"></i> Masukkan ke Keranjang
                     </button>
                 </div>
@@ -711,16 +703,16 @@
         document.getElementById('dim_product_name').innerText = materialName;
         document.getElementById('dim_product_price').innerText = 'Rp ' + Number(retailPrice).toLocaleString('id-ID') + '/m²';
 
-        // Set Width
+        // Set Width (Locked min 1.0m, max 3.0m)
         let targetWidth = 1.0;
         if (editCartItem && editCartItem.width_m) {
             targetWidth = parseFloat(editCartItem.width_m);
         } else if (fixedSize && parseFloat(fixedSize) > 0) {
-            targetWidth = Math.min(3.0, parseFloat(fixedSize));
+            targetWidth = Math.max(1.0, Math.min(3.0, parseFloat(fixedSize)));
         }
         setBannerWidth(targetWidth);
 
-        // Set Length
+        // Set Length (Locked min 1.0m, max 30.0m)
         let targetLength = 2.0;
         if (editCartItem && editCartItem.length_m) {
             targetLength = parseFloat(editCartItem.length_m);
@@ -747,10 +739,10 @@
         modal.show();
     }
 
-    // --- Synchronization between sliders and inputs ---
+    // --- Synchronization between sliders and inputs (Locked Min 1.0m) ---
     function syncBannerWidth(val, source) {
         let num = parseFloat(val) || 1.0;
-        num = Math.max(0.1, Math.min(3.0, num));
+        num = Math.max(1.0, Math.min(3.0, num));
         num = Math.round(num * 100) / 100;
 
         if (source === 'slider') {
@@ -764,7 +756,7 @@
 
     function setBannerWidth(val) {
         let num = parseFloat(val) || 1.0;
-        num = Math.max(0.1, Math.min(3.0, num));
+        num = Math.max(1.0, Math.min(3.0, num));
         num = Math.round(num * 100) / 100;
 
         document.getElementById('banner_width_m').value = num;
@@ -775,7 +767,7 @@
 
     function syncBannerLength(val, source) {
         let num = parseFloat(val) || 1.0;
-        num = Math.max(0.1, Math.min(30.0, num));
+        num = Math.max(1.0, Math.min(30.0, num));
         num = Math.round(num * 100) / 100;
 
         if (source === 'slider') {
@@ -789,7 +781,7 @@
 
     function setBannerLength(val) {
         let num = parseFloat(val) || 1.0;
-        num = Math.max(0.1, Math.min(30.0, num));
+        num = Math.max(1.0, Math.min(30.0, num));
         num = Math.round(num * 100) / 100;
 
         document.getElementById('banner_length_m').value = num;
@@ -812,34 +804,20 @@
         let rawLength = parseFloat(document.getElementById('banner_length_m').value) || 1.0;
         const qty = parseInt(document.getElementById('dim_qty').value, 10) || 1;
 
-        // Constraints: Lebar Max 3m, Panjang Max 30m
-        rawWidth = Math.max(0.1, Math.min(3.0, rawWidth));
-        rawLength = Math.max(0.1, Math.min(30.0, rawLength));
+        // Strict Constraints: Lebar [1.0m - 3.0m], Panjang [1.0m - 30.0m]
+        rawWidth = Math.max(1.0, Math.min(3.0, rawWidth));
+        rawLength = Math.max(1.0, Math.min(30.0, rawLength));
 
-        // Rule: Jika order dibawah 1m, tetap dihitung 1m per sisi untuk perhitungan harga
-        const billableWidth = Math.max(1.0, rawWidth);
-        const billableLength = Math.max(1.0, rawLength);
+        const areaM2 = Math.round((rawWidth * rawLength) * 1000) / 1000;
 
-        const physicalArea = Math.round((rawWidth * rawLength) * 1000) / 1000;
-        const billableArea = Math.round((billableWidth * billableLength) * 1000) / 1000;
-
-        // Show/Hide Min Dim Alert
-        const alertEl = document.getElementById('min_dim_alert');
-        if (rawWidth < 1.0 || rawLength < 1.0) {
-            alertEl.classList.remove('hidden');
-        } else {
-            alertEl.classList.add('hidden');
-        }
-
-        // Price calculation using Wholesale Tier & Billable Area
+        // Price calculation using Wholesale Tier & Area
         const { price: baseUnitPrice } = getUnitPrice(activeDimProduct.retailPrice, activeDimProduct.wholesalePrices, qty);
-        const unitPricePerLembar = Math.round(billableArea * baseUnitPrice);
+        const unitPricePerLembar = Math.round(areaM2 * baseUnitPrice);
         const subtotal = unitPricePerLembar * qty;
 
         // Update Labels
         document.getElementById('dim_preview_size').innerText = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
-        document.getElementById('dim_preview_physical_area').innerText = `${physicalArea.toFixed(2)} m²`;
-        document.getElementById('dim_preview_area').innerText = `${billableArea.toFixed(2)} m²`;
+        document.getElementById('dim_preview_area').innerText = `${areaM2.toFixed(2)} m²`;
         document.getElementById('dim_preview_unit_price').innerText = 'Rp ' + Number(unitPricePerLembar).toLocaleString('id-ID');
         document.getElementById('dim_preview_subtotal').innerText = 'Rp ' + Number(subtotal).toLocaleString('id-ID');
 
@@ -847,25 +825,24 @@
         document.getElementById('marker_length_label').innerText = `${rawLength.toFixed(2)} m`;
 
         document.getElementById('canvas_dim_label').innerText = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
-        document.getElementById('canvas_area_label').innerText = `${physicalArea.toFixed(2)} m²`;
+        document.getElementById('canvas_area_label').innerText = `${areaM2.toFixed(2)} m²`;
 
         // Update Visual Canvas Aspect Ratio
         const canvas = document.getElementById('banner_preview_canvas');
         if (canvas) {
-            // Base visual container is approx 180px wide x 130px tall
             let ratio = rawLength / rawWidth;
             let targetW = 140;
             let targetH = 110;
 
             if (ratio >= 2.0) {
-                targetW = Math.min(220, 100 + (ratio * 12));
-                targetH = 80;
-            } else if (ratio <= 0.6) {
+                targetW = Math.min(200, Math.round(90 + (ratio * 10)));
+                targetH = 75;
+            } else if (ratio <= 0.7) {
                 targetW = 100;
-                targetH = Math.min(150, 100 + (1 / ratio * 15));
+                targetH = Math.min(140, Math.round(90 + (1 / ratio * 12)));
             } else {
-                targetW = 140;
-                targetH = Math.min(130, Math.round(140 / ratio));
+                targetW = 130;
+                targetH = Math.min(120, Math.max(70, Math.round(130 / ratio)));
             }
 
             canvas.style.width = `${targetW}px`;
@@ -880,22 +857,12 @@
         const qty = parseInt(document.getElementById('dim_qty').value, 10) || 1;
         const finishing = document.getElementById('banner_finishing').value || 'Mata Ayam 4 Sudut';
 
-        rawWidth = Math.max(0.1, Math.min(3.0, rawWidth));
-        rawLength = Math.max(0.1, Math.min(30.0, rawLength));
+        // Strict Lock min 1.0m
+        rawWidth = Math.max(1.0, Math.min(3.0, rawWidth));
+        rawLength = Math.max(1.0, Math.min(30.0, rawLength));
 
-        const billableWidth = Math.max(1.0, rawWidth);
-        const billableLength = Math.max(1.0, rawLength);
-
-        const physicalArea = Math.round((rawWidth * rawLength) * 1000) / 1000;
-        const billableArea = Math.round((billableWidth * billableLength) * 1000) / 1000;
-
-        let noteDim = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
-        if (rawWidth < 1.0 || rawLength < 1.0) {
-            noteDim += ` (Min 1m: ${billableArea.toFixed(2)}m²)`;
-        } else {
-            noteDim += ` (${billableArea.toFixed(2)}m²)`;
-        }
-        noteDim += ` - ${finishing}`;
+        const areaM2 = Math.round((rawWidth * rawLength) * 1000) / 1000;
+        const noteDim = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m (${areaM2.toFixed(2)}m²) - ${finishing}`;
 
         if (activeDimProduct.editCartId !== null) {
             // Edit existing cart item
@@ -905,8 +872,8 @@
                 item.length_m = rawLength;
                 item.fixed_length_m = rawWidth;
                 item.custom_width_cm = Math.round(rawLength * 100);
-                item.area_m2 = physicalArea;
-                item.billable_area_m2 = billableArea;
+                item.area_m2 = areaM2;
+                item.billable_area_m2 = areaM2;
                 item.finishing = finishing;
                 item.qty = qty;
                 item.dimension_text = noteDim;
@@ -920,8 +887,8 @@
                 length_m: rawLength,
                 fixed_length_m: rawWidth,
                 custom_width_cm: Math.round(rawLength * 100),
-                area_m2: physicalArea,
-                billable_area_m2: billableArea,
+                area_m2: areaM2,
+                billable_area_m2: areaM2,
                 finishing: finishing,
                 dimension_text: noteDim,
                 requested_size: rawWidth,
@@ -940,7 +907,6 @@
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
     }
-
     // --- Add regular non-banner items to Cart ---
     function addToCart(materialName, fixedSize, retailPrice, wholesalePrices) {
         let size = fixedSize;
