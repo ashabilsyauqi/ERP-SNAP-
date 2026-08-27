@@ -1189,7 +1189,7 @@
     let currentCategory = 'all';
 
     function filterCategory(category, btnElement) {
-        currentCategory = category;
+        currentCategory = (category || 'all').toString().trim();
 
         // Update Button Active Styles
         document.querySelectorAll('.category-filter-btn').forEach(btn => {
@@ -1202,10 +1202,11 @@
             }
         });
 
-        if (btnElement) {
-            btnElement.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'font-medium');
-            btnElement.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'active', 'font-semibold');
-            const countBadge = btnElement.querySelector('span:last-child');
+        const activeBtn = btnElement || document.querySelector(`.category-filter-btn[data-cat="${currentCategory}"]`);
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-white', 'text-slate-700', 'border-slate-200', 'font-medium');
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'active', 'font-semibold');
+            const countBadge = activeBtn.querySelector('span:last-child');
             if (countBadge) {
                 countBadge.classList.remove('bg-slate-100', 'text-slate-600');
                 countBadge.classList.add('bg-white/20', 'text-white');
@@ -1220,21 +1221,24 @@
     }
 
     function applyCombinedFilter() {
-        const query = (document.getElementById('product-search')?.value || '').toLowerCase().trim();
+        const searchInput = document.getElementById('product-search');
+        const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
         const cards = document.querySelectorAll('.product-card');
         let visibleCount = 0;
 
         cards.forEach(card => {
             const name = (card.getAttribute('data-name') || '').toLowerCase();
-            const cat = card.getAttribute('data-category') || '';
+            const cat = (card.getAttribute('data-category') || '').trim();
 
             const matchQuery = !query || name.includes(query);
-            const matchCat = (currentCategory === 'all') || (cat === currentCategory);
+            const matchCat = (currentCategory === 'all') || (cat.toLowerCase() === currentCategory.toLowerCase());
 
             if (matchQuery && matchCat) {
+                card.style.display = 'flex';
                 card.classList.remove('hidden');
                 visibleCount++;
             } else {
+                card.style.display = 'none';
                 card.classList.add('hidden');
             }
         });
@@ -1243,11 +1247,17 @@
         if (emptyState) {
             if (visibleCount === 0) {
                 emptyState.classList.remove('hidden');
+                emptyState.style.display = 'block';
             } else {
                 emptyState.classList.add('hidden');
+                emptyState.style.display = 'none';
             }
         }
     }
+
+    window.filterCategory = filterCategory;
+    window.filterProducts = filterProducts;
+    window.applyCombinedFilter = applyCombinedFilter;
 
     // --- Switch Selected Payment Tile UI ---
     function setPaymentMethod(method) {
@@ -1511,5 +1521,18 @@
             Swal.fire({ icon: 'error', title: 'Gagal', text: 'Koneksi bermasalah atau terjadi error pada server.' });
         });
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const catContainer = document.getElementById('category-filter-container');
+        if (catContainer) {
+            catContainer.addEventListener('click', function(e) {
+                const btn = e.target.closest('.category-filter-btn');
+                if (btn) {
+                    const cat = btn.getAttribute('data-cat') || 'all';
+                    filterCategory(cat, btn);
+                }
+            });
+        }
+    });
 </script>
 @endsection
