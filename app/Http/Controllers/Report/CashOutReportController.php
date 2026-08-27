@@ -17,6 +17,9 @@ class CashOutReportController extends Controller
         
         $query = CashTransaction::with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])
             ->where('tipe', 'keluar')
+            ->whereDoesntHave('account', function($q) {
+                $q->where('kode_akun', '6-1000');
+            })
             ->orderBy('tanggal', 'desc')
             ->orderBy('created_at', 'desc');
 

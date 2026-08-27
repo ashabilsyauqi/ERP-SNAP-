@@ -218,22 +218,6 @@ class PosController extends Controller
                 }
             }
 
-            // Record HPP Outflow (COGS)
-            $hppAccount = \App\Models\Account::where('kode_akun', '6-1000')->first();
-            if ($hppAccount && $totalHpp > 0) {
-                \App\Models\CashTransaction::create([
-                    'branch_id' => auth()->user()->branch_id,
-                    'account_id' => $hppAccount->id,
-                    'user_id' => auth()->id(),
-                    'tipe' => 'keluar',
-                    'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('keluar'),
-                    'tanggal' => now()->toDateString(),
-                    'jumlah' => $totalHpp,
-                    'keterangan' => 'Harga Pokok Penjualan (HPP) dari invoice ' . $transaction->invoice_number,
-                    'transaction_id' => $transaction->id,
-                ]);
-            }
-
             DB::commit();
 
             return response()->json([

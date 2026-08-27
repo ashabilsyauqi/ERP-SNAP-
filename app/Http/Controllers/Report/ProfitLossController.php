@@ -58,10 +58,12 @@ class ProfitLossController extends Controller
             $totalPendapatan += $totalSalesFromTrx;
         }
 
-        // Tambahan Pendapatan Lain-lain dari Jurnal Kas Masuk Non-POS
+        // Tambahan Pendapatan Lain-lain dari Jurnal Kas Masuk Non-POS (Hanya Akun Pendapatan Selain 4-1000)
         $otherIncome = $cashTransactions->where('tipe', 'masuk')
             ->whereNull('transaction_id')
-            ->filter(function($t) { return $t->account && $t->account->tipe === 'pendapatan'; })
+            ->filter(function($t) { 
+                return $t->account && $t->account->tipe === 'pendapatan' && $t->account->kode_akun !== '4-1000'; 
+            })
             ->groupBy('account.nama_akun');
             
         foreach ($otherIncome as $akun => $trx) {
@@ -71,14 +73,16 @@ class ProfitLossController extends Controller
         }
 
         if ($totalPendapatan == 0) {
-            $generalIncome = $cashTransactions->where('tipe', 'masuk')->sum('jumlah');
+            $generalIncome = $cashTransactions->where('tipe', 'masuk')
+                ->filter(function($t) { return $t->account && $t->account->tipe === 'pendapatan'; })
+                ->sum('jumlah');
             if ($generalIncome > 0) {
                 $pendapatan->push((object)['nama_akun' => 'Pendapatan Kas Masuk Usaha', 'jumlah' => $generalIncome]);
                 $totalPendapatan += $generalIncome;
             }
         }
 
-        // 2. HPP (HARGA POKOK PENJUALAN)
+        // 2. HPP (HARGA POKOK PENJUALAN / COGS)
         $hpp = collect();
         $totalHpp = 0;
         

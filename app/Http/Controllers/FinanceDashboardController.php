@@ -38,11 +38,17 @@ class FinanceDashboardController extends Controller
 
         $totalKasKeluar = (clone $cashQuery)
             ->where('tipe', 'keluar')
+            ->whereDoesntHave('account', function($q) {
+                $q->where('kode_akun', '6-1000'); // Exclude HPP accounting adjustments from actual cash outflow
+            })
             ->whereBetween('tanggal', [$startOfMonth, $endOfMonth])
             ->sum('jumlah');
 
         $saldoKas = (clone $cashQuery)->where('tipe', 'masuk')->sum('jumlah') - 
-                    (clone $cashQuery)->where('tipe', 'keluar')->sum('jumlah');
+                    (clone $cashQuery)->where('tipe', 'keluar')
+                        ->whereDoesntHave('account', function($q) {
+                            $q->where('kode_akun', '6-1000');
+                        })->sum('jumlah');
 
         $jumlahTransaksi = (clone $posQuery)
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
@@ -54,6 +60,9 @@ class FinanceDashboardController extends Controller
 
         $recentTransactions = (clone $cashQuery)
             ->with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])
+            ->whereDoesntHave('account', function($q) {
+                $q->where('kode_akun', '6-1000');
+            })
             ->orderBy('tanggal', 'desc')
             ->orderBy('created_at', 'desc')
             ->take(8)
