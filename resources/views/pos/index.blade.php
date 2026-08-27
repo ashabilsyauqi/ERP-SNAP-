@@ -690,6 +690,19 @@
         }
     }
 
+    // --- Edit Banner item in Cart ---
+    function editBannerCartItem(itemId) {
+        const item = cart.find(i => i.id === itemId);
+        if (!item) return;
+        openBannerDimensionModal(
+            item.material_name_or_type,
+            item.fixed_length_m || 3.0,
+            item.retail_price,
+            item.wholesale_prices || [],
+            item
+        );
+    }
+
     // --- Open Banner Dimension Modal ---
     function openBannerDimensionModal(materialName, fixedSize, retailPrice, wholesalePrices, editCartItem = null) {
         activeDimProduct = {
@@ -1031,19 +1044,19 @@
 
             cartHtml += `
                 <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-1.5">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <span class="font-bold text-slate-900 text-xs">${item.material_name_or_type}</span>
+                    <div class="flex justify-between items-start gap-2">
+                        <div class="min-w-0 flex-grow">
+                            <span class="font-bold text-slate-900 text-xs truncate block">${item.material_name_or_type}</span>
                             
                             ${item.is_custom_banner ? `
                                 <div class="mt-0.5">
-                                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-semibold py-0.5 px-1.5 rounded">
+                                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-semibold py-0.5 px-1.5 rounded inline-block text-wrap">
                                         <i class="fa-solid fa-ruler-combined me-1"></i>${item.dimension_text || (item.fixed_length_m + 'm x ' + item.custom_width_cm + 'cm')}
                                     </span>
                                 </div>
                             ` : (item.requested_size ? `<span class="block text-[10px] text-blue-600 font-medium">Ukuran: ${item.requested_size}m</span>` : '')}
                             
-                            <div class="flex items-center gap-1.5 mt-0.5">
+                            <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                 <span class="text-[11px] font-mono text-slate-600">
                                     @ Rp ${Number(finalUnitPrice).toLocaleString('id-ID')}
                                     ${item.is_custom_banner ? `<small class="text-slate-400">(${Number(basePrice).toLocaleString('id-ID')}/m²)</small>` : ''}
@@ -1052,26 +1065,26 @@
                             </div>
                         </div>
                         
-                        <div class="text-right">
+                        <div class="text-right flex-shrink-0">
                             <span class="font-bold font-mono text-xs text-slate-900">Rp ${Number(itemTotal).toLocaleString('id-ID')}</span>
                         </div>
                     </div>
                     
                     <div class="flex justify-between items-center border-t border-slate-100 pt-1.5 mt-0.5">
                         <div class="d-flex align-items-center gap-2">
-                            <button onclick="updateQty(${item.id}, -${item.qty})" class="text-[10px] text-rose-500 hover:text-rose-700 font-semibold bg-transparent border-0 cursor-pointer p-0">
+                            <button type="button" onclick="updateQty(${item.id}, -${item.qty})" class="text-[10px] text-rose-500 hover:text-rose-700 font-semibold bg-transparent border-0 cursor-pointer p-0">
                                 <i class="fa-solid fa-trash-can me-0.5"></i> Hapus
                             </button>
                             ${item.is_custom_banner ? `
-                                <button onclick="openBannerDimensionModal('${item.material_name_or_type}', '${item.fixed_length_m}', ${item.retail_price}, ${JSON.stringify(item.wholesale_prices)}, cart.find(i=>i.id===${item.id}))" class="text-[10px] text-blue-600 hover:text-blue-800 font-semibold bg-transparent border-0 cursor-pointer p-0">
+                                <button type="button" onclick="editBannerCartItem(${item.id})" class="text-[10px] text-blue-600 hover:text-blue-800 font-semibold bg-transparent border-0 cursor-pointer p-0">
                                     <i class="fa-solid fa-pen-ruler me-0.5"></i> Ubah Ukuran
                                 </button>
                             ` : ''}
                         </div>
                         
-                        <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm">
+                        <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm flex-shrink-0">
                             <button type="button" onclick="updateQty(${item.id}, -1)" class="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition font-bold text-xs bg-transparent border-0 cursor-pointer" title="Kurangi 1">-</button>
-                            <input type="number" min="1" value="${item.qty}" onchange="setQty(${item.id}, this.value)" onkeydown="if(event.key === 'Enter'){ this.blur(); }" class="w-12 h-7 text-center font-bold font-mono text-xs text-slate-900 border-x border-slate-200 bg-slate-50 focus:bg-white focus:outline-none p-0" title="Ketik jumlah unit">
+                            <input type="number" min="1" value="${item.qty}" onchange="setQty(${item.id}, this.value)" onkeydown="if(event.key === 'Enter'){ this.blur(); }" class="w-10 h-7 text-center font-bold font-mono text-xs text-slate-900 border-x border-slate-200 bg-slate-50 focus:bg-white focus:outline-none p-0" title="Ketik jumlah unit">
                             <button type="button" onclick="updateQty(${item.id}, 1)" class="w-7 h-7 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition font-bold text-xs bg-transparent border-0 cursor-pointer" title="Tambah 1">+</button>
                         </div>
                     </div>
