@@ -427,113 +427,226 @@
 <!-- Input holds global payment selection state -->
 <input type="hidden" id="global_payment_method" value="Cash">
 
-<!-- Modal Custom Dimension Banner (Panjang Fixed & Lebar Custom dalam CM) -->
+<!-- Modal Custom Dimension Banner (Interactive Roll Canvas & Adjustable Dimensions) -->
 <div class="modal fade" id="modalBannerDimension" tabindex="-1" aria-labelledby="modalBannerDimensionLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-3 border shadow-2xl overflow-hidden">
-            <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fa-solid fa-ruler-combined text-blue-400"></i>
-                    <h5 class="fs-6 fw-bold mb-0 text-white" id="modalBannerDimensionLabel">Kustomisasi Ukuran Banner</h5>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-3 border-0 shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center border-bottom border-slate-700">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-blue-600/30 border border-blue-400/40 text-blue-400 flex items-center justify-center">
+                        <i class="fa-solid fa-scroll text-sm"></i>
+                    </div>
+                    <div>
+                        <h5 class="fs-6 fw-bold mb-0 text-white" id="modalBannerDimensionLabel">Kustomisasi Ukuran Gulungan Banner</h5>
+                        <span class="text-[11px] text-blue-200">Cetak Outdoor & Indoor (Lebar Max 3m | Panjang Max 30m)</span>
+                    </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="p-4 space-y-4 bg-slate-50">
-                <!-- Product Info Card -->
-                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="text-[11px] font-semibold text-slate-500 uppercase">Produk Bahan Cetak</div>
-                    <div class="font-bold text-slate-900 text-sm" id="dim_product_name">-</div>
-                    <div class="text-xs text-blue-700 font-mono font-bold mt-0.5">
-                        Harga Dasar: <span id="dim_product_price">Rp 0</span> / m²
+
+            <div class="p-4 bg-slate-50">
+                <div class="row g-3">
+                    <!-- LEFT COLUMN: Dynamic Banner Roll Visual Preview -->
+                    <div class="col-12 col-lg-5">
+                        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm h-100 d-flex flex-col justify-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Material Cetak</span>
+                                        <h6 class="font-bold text-slate-900 text-sm mb-0 truncate" id="dim_product_name">-</h6>
+                                    </div>
+                                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-bold" id="dim_product_price">Rp 0/m²</span>
+                                </div>
+
+                                <!-- Visual Roll Simulation Graphic Box -->
+                                <div class="bg-gradient-to-b from-slate-100 to-slate-200/80 rounded-xl p-3 border border-slate-200/90 relative overflow-hidden flex flex-col items-center justify-center min-h-[220px]">
+                                    <!-- Spindle Roll Top Header Graphic -->
+                                    <div class="w-full flex items-center justify-center mb-1.5 z-10">
+                                        <div class="h-3.5 bg-gradient-to-r from-slate-700 via-slate-400 to-slate-800 rounded-full shadow-md w-11/12 border border-slate-600 flex items-center justify-between px-2 relative">
+                                            <div class="w-1.5 h-1.5 rounded-full bg-slate-900"></div>
+                                            <span class="text-[8px] font-mono text-slate-200 uppercase tracking-widest font-bold">GULUNGAN ROLL BANNER</span>
+                                            <div class="w-1.5 h-1.5 rounded-full bg-slate-900"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dynamic Scaled Canvas Sheet -->
+                                    <div id="banner_preview_canvas" 
+                                         class="bg-white border-2 border-dashed border-blue-500 rounded shadow-md relative transition-all duration-300 flex flex-col items-center justify-center p-2 text-center overflow-hidden"
+                                         style="width: 160px; height: 120px; max-width: 95%; max-height: 180px;">
+                                        
+                                        <!-- Corner Grommets (Mata Ayam) -->
+                                        <div class="absolute top-1 left-1 w-2 h-2 rounded-full border border-slate-500 bg-slate-300 shadow-inner"></div>
+                                        <div class="absolute top-1 right-1 w-2 h-2 rounded-full border border-slate-500 bg-slate-300 shadow-inner"></div>
+                                        <div class="absolute bottom-1 left-1 w-2 h-2 rounded-full border border-slate-500 bg-slate-300 shadow-inner"></div>
+                                        <div class="absolute bottom-1 right-1 w-2 h-2 rounded-full border border-slate-500 bg-slate-300 shadow-inner"></div>
+
+                                        <!-- Canvas Label Text -->
+                                        <div class="z-10 p-1">
+                                            <i class="fa-solid fa-image text-blue-300 text-lg mb-1 block"></i>
+                                            <span id="canvas_dim_label" class="font-bold text-slate-800 font-mono text-xs block leading-tight">1.0m x 2.0m</span>
+                                            <span id="canvas_area_label" class="text-[10px] text-emerald-600 font-bold font-mono block">2.00 m²</span>
+                                        </div>
+
+                                        <!-- Texture / Grid Lines Pattern -->
+                                        <div class="absolute inset-0 bg-gradient-to-tr from-blue-50/50 to-transparent pointer-events-none"></div>
+                                    </div>
+
+                                    <!-- Dimension Indicator Markers -->
+                                    <div class="w-full flex justify-between items-center text-[10px] text-slate-600 font-mono font-semibold px-2 mt-2">
+                                        <span>↔ Lebar: <strong id="marker_width_label" class="text-blue-700">1.0 m</strong></span>
+                                        <span>↕ Panjang: <strong id="marker_length_label" class="text-blue-700">2.0 m</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rule Warning Alert if < 1m -->
+                            <div id="min_dim_alert" class="hidden mt-2 p-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] leading-tight">
+                                <i class="fa-solid fa-circle-info text-amber-600 me-1"></i>
+                                <span>Dimensi di bawah 1 meter dihitung <strong>minimal 1.0 Meter</strong> untuk biaya cetak.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Input Controls, Sliders & Quick Chips -->
+                    <div class="col-12 col-lg-7">
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            
+                            <!-- 1. LEBAR BANNER (Max 3m, Min 1m rule) -->
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label font-bold text-slate-800 text-xs uppercase mb-0">
+                                        <span>1. Lebar Cetak (Max 3.0 Meter) <span class="text-rose-600">*</span></span>
+                                    </label>
+                                    <span class="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                        <span id="label_val_width">1.00</span> m
+                                    </span>
+                                </div>
+                                <div class="input-group input-group-sm mb-1.5">
+                                    <input type="number" id="banner_width_m" min="0.1" max="3.0" step="0.05" value="1.0" 
+                                           oninput="syncBannerWidth(this.value, 'input')" 
+                                           class="form-control form-control-sm font-bold font-mono text-slate-900" placeholder="e.g. 1.5">
+                                    <span class="input-group-text font-bold text-xs bg-slate-100">Meter</span>
+                                </div>
+                                <input type="range" id="banner_width_slider" min="0.1" max="3.0" step="0.05" value="1.0" 
+                                       oninput="syncBannerWidth(this.value, 'slider')" 
+                                       class="form-range w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                
+                                <!-- Quick Chips Width -->
+                                <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
+                                    <span class="text-[10px] text-slate-400 font-semibold me-1">Pilihan Lebar:</span>
+                                    <button type="button" onclick="setBannerWidth(1.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">1.0m</button>
+                                    <button type="button" onclick="setBannerWidth(1.2)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">1.2m</button>
+                                    <button type="button" onclick="setBannerWidth(1.5)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">1.5m</button>
+                                    <button type="button" onclick="setBannerWidth(2.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">2.0m</button>
+                                    <button type="button" onclick="setBannerWidth(2.5)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">2.5m</button>
+                                    <button type="button" onclick="setBannerWidth(3.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">3.0m (Max)</button>
+                                </div>
+                            </div>
+
+                            <!-- 2. PANJANG BANNER (Max 30m, Min 1m rule) -->
+                            <div class="border-t border-slate-100 pt-2.5">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label font-bold text-slate-800 text-xs uppercase mb-0">
+                                        <span>2. Panjang Cetak (Max 30.0 Meter) <span class="text-rose-600">*</span></span>
+                                    </label>
+                                    <span class="text-[11px] font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                        <span id="label_val_length">2.00</span> m
+                                    </span>
+                                </div>
+                                <div class="input-group input-group-sm mb-1.5">
+                                    <input type="number" id="banner_length_m" min="0.1" max="30.0" step="0.1" value="2.0" 
+                                           oninput="syncBannerLength(this.value, 'input')" 
+                                           class="form-control form-control-sm font-bold font-mono text-slate-900" placeholder="e.g. 3.0">
+                                    <span class="input-group-text font-bold text-xs bg-slate-100">Meter</span>
+                                </div>
+                                <input type="range" id="banner_length_slider" min="0.1" max="30.0" step="0.1" value="2.0" 
+                                       oninput="syncBannerLength(this.value, 'slider')" 
+                                       class="form-range w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                
+                                <!-- Quick Chips Length -->
+                                <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
+                                    <span class="text-[10px] text-slate-400 font-semibold me-1">Pilihan Panjang:</span>
+                                    <button type="button" onclick="setBannerLength(1.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">1m</button>
+                                    <button type="button" onclick="setBannerLength(2.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">2m</button>
+                                    <button type="button" onclick="setBannerLength(3.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">3m</button>
+                                    <button type="button" onclick="setBannerLength(4.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">4m</button>
+                                    <button type="button" onclick="setBannerLength(5.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">5m</button>
+                                    <button type="button" onclick="setBannerLength(10.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">10m</button>
+                                    <button type="button" onclick="setBannerLength(20.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">20m</button>
+                                    <button type="button" onclick="setBannerLength(30.0)" class="btn btn-xs btn-outline-secondary py-0.2 px-2 text-[10px] rounded-pill">30m</button>
+                                </div>
+                            </div>
+
+                            <!-- 3. FINISHING & JUMLAH LEMBAR (QTY) -->
+                            <div class="border-t border-slate-100 pt-2.5 row g-2">
+                                <div class="col-7">
+                                    <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">Finishing Spanduk</label>
+                                    <select id="banner_finishing" class="form-select form-select-sm text-xs font-semibold">
+                                        <option value="Mata Ayam 4 Sudut">Mata Ayam 4 Sudut (Standar)</option>
+                                        <option value="Mata Ayam Keliling (Per Meter)">Mata Ayam Keliling (Per 1 Meter)</option>
+                                        <option value="Lipat Pas Gambar">Lipat Press Lem Pas Gambar</option>
+                                        <option value="Selongsong Atas Bawah">Selongsong Bambu / Kayu (Atas-Bawah)</option>
+                                        <option value="Lebihan Putih (Tanpa Mata Ayam)">Lebihan Putih 5cm (Tanpa Mata Ayam)</option>
+                                        <option value="Potong Pas (Tanpa Finishing)">Potong Pas (Tanpa Finishing)</option>
+                                    </select>
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">Jumlah (Qty)</label>
+                                    <div class="input-group input-group-sm">
+                                        <button type="button" onclick="changeDimQty(-1)" class="btn btn-outline-secondary font-bold">-</button>
+                                        <input type="number" id="dim_qty" min="1" value="1" oninput="calculateDimensionPreview()" class="form-control form-control-sm text-center font-bold font-mono">
+                                        <button type="button" onclick="changeDimQty(1)" class="btn btn-outline-secondary font-bold">+</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
 
-                <!-- Input Dimension Form -->
-                <div class="space-y-3">
-                    <!-- 1. Panjang (Fixed Size / Roll) -->
-                    <div>
-                        <label class="form-label font-bold text-slate-700 text-xs uppercase d-flex justify-content-between align-items-center">
-                            <span>1. Panjang Bahan (Fixed Roll) <span class="text-rose-600">*</span></span>
-                            <span class="badge bg-blue-100 text-blue-800 text-[10px]">Ukuran Standar Meter</span>
-                        </label>
-                        <div class="input-group input-group-sm mb-1">
-                            <select id="dim_fixed_length_select" onchange="onFixedLengthSelectChange(this.value)" class="form-select form-select-sm font-semibold">
-                                <option value="1.0">1.0 Meter (100 cm)</option>
-                                <option value="1.2">1.2 Meter (120 cm)</option>
-                                <option value="1.5">1.5 Meter (150 cm)</option>
-                                <option value="2.0">2.0 Meter (200 cm)</option>
-                                <option value="2.5">2.5 Meter (250 cm)</option>
-                                <option value="3.0">3.0 Meter (300 cm)</option>
-                                <option value="3.2">3.2 Meter (320 cm)</option>
-                                <option value="custom">Custom Panjang Roll (Meter)...</option>
-                            </select>
-                            <span class="input-group-text font-bold text-xs bg-slate-100">Meter</span>
+                <!-- LIVE CALCULATION SUMMARY CARD -->
+                <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-2xl p-3.5 mt-3 shadow-lg">
+                    <div class="row align-items-center">
+                        <div class="col-12 col-md-7">
+                            <div class="d-flex flex-wrap gap-x-4 gap-y-1 text-xs text-blue-200 mb-1">
+                                <div>
+                                    <span>Ukuran Riil:</span>
+                                    <strong id="dim_preview_size" class="text-white font-mono font-bold">1.00m x 2.00m</strong>
+                                </div>
+                                <div>
+                                    <span>Luas Fisik:</span>
+                                    <strong id="dim_preview_physical_area" class="text-white font-mono">2.00 m²</strong>
+                                </div>
+                                <div>
+                                    <span>Luas Dihitung:</span>
+                                    <strong id="dim_preview_area" class="text-emerald-400 font-mono font-bold">2.00 m²</strong>
+                                </div>
+                            </div>
+                            <div class="text-[11px] text-blue-300">
+                                <span>Harga Satuan:</span>
+                                <strong id="dim_preview_unit_price" class="text-amber-300 font-mono font-bold">Rp 0</strong> / lembar
+                            </div>
                         </div>
-                        <div id="dim_custom_length_container" class="hidden mt-1">
-                            <input type="number" step="0.1" min="0.1" id="dim_fixed_length_custom" oninput="calculateDimensionPreview()" class="form-control form-control-sm font-bold" placeholder="Contoh: 2.2">
+                        <div class="col-12 col-md-5 text-md-end mt-2 mt-md-0">
+                            <span class="text-[11px] text-blue-200 uppercase tracking-wider block">Total Subtotal Pesanan</span>
+                            <span id="dim_preview_subtotal" class="font-mono text-xl font-extrabold text-white">Rp 0</span>
                         </div>
-                    </div>
-
-                    <!-- 2. Lebar (Custom dalam CM) -->
-                    <div>
-                        <label class="form-label font-bold text-slate-700 text-xs uppercase d-flex justify-content-between align-items-center">
-                            <span>2. Lebar Cetak (Customize dalam CM) <span class="text-rose-600">*</span></span>
-                            <span class="badge bg-emerald-100 text-emerald-800 text-[10px]">Satuan Centimeter (CM)</span>
-                        </label>
-                        <div class="input-group input-group-sm mb-2">
-                            <input type="number" id="dim_custom_width_cm" min="10" step="1" value="150" oninput="calculateDimensionPreview()" class="form-control form-control-sm font-bold font-mono text-base text-blue-900" placeholder="contoh: 150">
-                            <span class="input-group-text font-bold text-xs bg-slate-100">CM</span>
-                        </div>
-                        <!-- Quick Width Chips -->
-                        <div class="d-flex flex-wrap gap-1.5 align-items-center">
-                            <span class="text-[10px] text-slate-500 font-semibold me-1">Pilihan Cepat:</span>
-                            <button type="button" onclick="setDimWidth(50)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">50 cm</button>
-                            <button type="button" onclick="setDimWidth(100)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">100 cm</button>
-                            <button type="button" onclick="setDimWidth(150)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">150 cm</button>
-                            <button type="button" onclick="setDimWidth(200)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">200 cm</button>
-                            <button type="button" onclick="setDimWidth(250)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">250 cm</button>
-                            <button type="button" onclick="setDimWidth(300)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">300 cm</button>
-                            <button type="button" onclick="setDimWidth(400)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">400 cm</button>
-                            <button type="button" onclick="setDimWidth(500)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill">500 cm</button>
-                        </div>
-                    </div>
-
-                    <!-- 3. Jumlah Cetak (Qty Lembar) -->
-                    <div>
-                        <label class="form-label font-bold text-slate-700 text-xs uppercase">3. Jumlah Lembar (Qty Pcs)</label>
-                        <div class="input-group input-group-sm">
-                            <button type="button" onclick="changeDimQty(-1)" class="btn btn-outline-secondary font-bold">-</button>
-                            <input type="number" id="dim_qty" min="1" value="1" oninput="calculateDimensionPreview()" class="form-control form-control-sm text-center font-bold font-mono">
-                            <button type="button" onclick="changeDimQty(1)" class="btn btn-outline-secondary font-bold">+</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Live Calculation Result Card -->
-                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-1.5">
-                    <div class="d-flex justify-content-between text-xs text-blue-900">
-                        <span>Ukuran Cetak:</span>
-                        <strong id="dim_preview_size" class="font-mono">2.0m x 150cm</strong>
-                    </div>
-                    <div class="d-flex justify-content-between text-xs text-blue-900">
-                        <span>Luas per Lembar:</span>
-                        <strong id="dim_preview_area" class="font-mono text-emerald-700">3.00 m²</strong>
-                    </div>
-                    <div class="d-flex justify-content-between text-xs text-blue-900 border-t border-blue-200 pt-1">
-                        <span>Harga Satuan per Lembar:</span>
-                        <strong id="dim_preview_unit_price" class="font-mono">Rp 75.000</strong>
-                    </div>
-                    <div class="d-flex justify-content-between text-sm text-blue-950 font-bold border-t border-blue-200 pt-1">
-                        <span>Total Subtotal:</span>
-                        <span id="dim_preview_subtotal" class="font-mono fs-6 text-blue-800">Rp 75.000</span>
                     </div>
                 </div>
             </div>
-            <div class="bg-slate-100 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                <button type="button" onclick="confirmBannerDimensionAddToCart()" class="btn btn-primary btn-sm font-bold">
-                    <i class="fa-solid fa-cart-plus me-1"></i> Masukkan ke Keranjang
-                </button>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-100 border-top px-4 py-2.5 d-flex justify-content-between align-items-center">
+                <span class="text-[11px] text-slate-500">
+                    <i class="fa-solid fa-calculator text-blue-600 me-1"></i> Perhitungan otomatis luas roll & tier grosir.
+                </span>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" onclick="confirmBannerDimensionAddToCart()" class="btn btn-primary btn-sm font-bold shadow-sm">
+                        <i class="fa-solid fa-cart-plus me-1"></i> Masukkan ke Keranjang
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -555,18 +668,25 @@
 
     // --- Check if product is banner or custom media ---
     function isBannerProduct(name, fixedSize, category) {
-        if (!fixedSize || parseFloat(fixedSize) <= 0) return false;
-        
         const nameLower = (name || '').toLowerCase();
-        // Exclude standard documents, copies, prints, bindings, merchandise, etc.
-        const nonBannerKeywords = ['fotokopi', 'foto copy', 'scan', 'print', 'jilid', 'laminating', 'laminasi', 'spiral', 'nota', 'brosur', 'mug', 'stempel', 'stampel', 'tumbler', 'kalender', 'kipas', 'lanyard', 'pin', 'id card', 'cutting', 'sablon dtf', 'paket'];
-        for (let kw of nonBannerKeywords) {
-            if (nameLower.includes(kw)) return false;
+        const catLower = (category || '').toLowerCase();
+
+        // Check outdoor / indoor category
+        if (catLower.includes('outdoor') || catLower.includes('indoor') || catLower.includes('banner') || catLower.includes('spanduk')) {
+            return true;
         }
 
-        const isOutdoorCat = category && /outdoor|indoor/i.test(category);
-        const isRollName = /^(flexi|flexy|albatros|ritrama|oneway|kain banner)/i.test(nameLower.trim());
-        return isOutdoorCat || isRollName;
+        // Keywords
+        const bannerKeywords = ['flexi', 'flexy', 'albatros', 'albatross', 'banner', 'spanduk', 'baliho', 'backdrop', 'ritrama', 'oneway', 'one way', 'kain banner', 'luster', 'polybanner', 'backlite', 'frontlite', 'korchin', 'hicon', 'xbanner', 'x-banner', 'roll up'];
+        for (let kw of bannerKeywords) {
+            if (nameLower.includes(kw)) return true;
+        }
+
+        if (fixedSize && parseFloat(fixedSize) > 0) {
+            return true;
+        }
+
+        return false;
     }
 
     // --- Handle product card click ---
@@ -589,35 +709,32 @@
         };
 
         document.getElementById('dim_product_name').innerText = materialName;
-        document.getElementById('dim_product_price').innerText = 'Rp ' + Number(retailPrice).toLocaleString('id-ID');
+        document.getElementById('dim_product_price').innerText = 'Rp ' + Number(retailPrice).toLocaleString('id-ID') + '/m²';
 
-        // Set Fixed Length
-        const selectFixed = document.getElementById('dim_fixed_length_select');
-        const customContainer = document.getElementById('dim_custom_length_container');
-        const customInput = document.getElementById('dim_fixed_length_custom');
-
-        let targetFixed = editCartItem ? String(editCartItem.fixed_length_m) : (fixedSize ? String(fixedSize) : '2.0');
-        
-        let optionFound = false;
-        for (let i = 0; i < selectFixed.options.length; i++) {
-            if (selectFixed.options[i].value === targetFixed) {
-                selectFixed.selectedIndex = i;
-                optionFound = true;
-                break;
-            }
+        // Set Width
+        let targetWidth = 1.0;
+        if (editCartItem && editCartItem.width_m) {
+            targetWidth = parseFloat(editCartItem.width_m);
+        } else if (fixedSize && parseFloat(fixedSize) > 0) {
+            targetWidth = Math.min(3.0, parseFloat(fixedSize));
         }
+        setBannerWidth(targetWidth);
 
-        if (!optionFound) {
-            selectFixed.value = 'custom';
-            customContainer.classList.remove('hidden');
-            customInput.value = targetFixed;
+        // Set Length
+        let targetLength = 2.0;
+        if (editCartItem && editCartItem.length_m) {
+            targetLength = parseFloat(editCartItem.length_m);
+        } else if (editCartItem && editCartItem.custom_width_cm) {
+            targetLength = parseFloat(editCartItem.custom_width_cm) / 100;
+        }
+        setBannerLength(targetLength);
+
+        // Set Finishing
+        if (editCartItem && editCartItem.finishing) {
+            document.getElementById('banner_finishing').value = editCartItem.finishing;
         } else {
-            customContainer.classList.add('hidden');
+            document.getElementById('banner_finishing').value = 'Mata Ayam 4 Sudut';
         }
-
-        // Set Custom Width CM
-        const widthVal = editCartItem ? editCartItem.custom_width_cm : 150;
-        document.getElementById('dim_custom_width_cm').value = widthVal;
 
         // Set Qty
         const qtyVal = editCartItem ? editCartItem.qty : 1;
@@ -630,18 +747,54 @@
         modal.show();
     }
 
-    function onFixedLengthSelectChange(val) {
-        const customContainer = document.getElementById('dim_custom_length_container');
-        if (val === 'custom') {
-            customContainer.classList.remove('hidden');
+    // --- Synchronization between sliders and inputs ---
+    function syncBannerWidth(val, source) {
+        let num = parseFloat(val) || 1.0;
+        num = Math.max(0.1, Math.min(3.0, num));
+        num = Math.round(num * 100) / 100;
+
+        if (source === 'slider') {
+            document.getElementById('banner_width_m').value = num;
         } else {
-            customContainer.classList.add('hidden');
+            document.getElementById('banner_width_slider').value = num;
         }
+        document.getElementById('label_val_width').innerText = num.toFixed(2);
         calculateDimensionPreview();
     }
 
-    function setDimWidth(val) {
-        document.getElementById('dim_custom_width_cm').value = val;
+    function setBannerWidth(val) {
+        let num = parseFloat(val) || 1.0;
+        num = Math.max(0.1, Math.min(3.0, num));
+        num = Math.round(num * 100) / 100;
+
+        document.getElementById('banner_width_m').value = num;
+        document.getElementById('banner_width_slider').value = num;
+        document.getElementById('label_val_width').innerText = num.toFixed(2);
+        calculateDimensionPreview();
+    }
+
+    function syncBannerLength(val, source) {
+        let num = parseFloat(val) || 1.0;
+        num = Math.max(0.1, Math.min(30.0, num));
+        num = Math.round(num * 100) / 100;
+
+        if (source === 'slider') {
+            document.getElementById('banner_length_m').value = num;
+        } else {
+            document.getElementById('banner_length_slider').value = num;
+        }
+        document.getElementById('label_val_length').innerText = num.toFixed(2);
+        calculateDimensionPreview();
+    }
+
+    function setBannerLength(val) {
+        let num = parseFloat(val) || 1.0;
+        num = Math.max(0.1, Math.min(30.0, num));
+        num = Math.round(num * 100) / 100;
+
+        document.getElementById('banner_length_m').value = num;
+        document.getElementById('banner_length_slider').value = num;
+        document.getElementById('label_val_length').innerText = num.toFixed(2);
         calculateDimensionPreview();
     }
 
@@ -653,73 +806,130 @@
         calculateDimensionPreview();
     }
 
-    function getActiveFixedLength() {
-        const select = document.getElementById('dim_fixed_length_select').value;
-        if (select === 'custom') {
-            return parseFloat(document.getElementById('dim_fixed_length_custom').value) || 2.0;
-        }
-        return parseFloat(select) || 2.0;
-    }
-
+    // --- Dynamic Banner Roll Canvas & Calculation ---
     function calculateDimensionPreview() {
-        const fixedLength = getActiveFixedLength();
-        const customWidthCm = parseFloat(document.getElementById('dim_custom_width_cm').value) || 100;
+        let rawWidth = parseFloat(document.getElementById('banner_width_m').value) || 1.0;
+        let rawLength = parseFloat(document.getElementById('banner_length_m').value) || 1.0;
         const qty = parseInt(document.getElementById('dim_qty').value, 10) || 1;
 
-        const areaM2 = (fixedLength * (customWidthCm / 100));
-        const roundedArea = Math.round(areaM2 * 1000) / 1000;
+        // Constraints: Lebar Max 3m, Panjang Max 30m
+        rawWidth = Math.max(0.1, Math.min(3.0, rawWidth));
+        rawLength = Math.max(0.1, Math.min(30.0, rawLength));
 
+        // Rule: Jika order dibawah 1m, tetap dihitung 1m per sisi untuk perhitungan harga
+        const billableWidth = Math.max(1.0, rawWidth);
+        const billableLength = Math.max(1.0, rawLength);
+
+        const physicalArea = Math.round((rawWidth * rawLength) * 1000) / 1000;
+        const billableArea = Math.round((billableWidth * billableLength) * 1000) / 1000;
+
+        // Show/Hide Min Dim Alert
+        const alertEl = document.getElementById('min_dim_alert');
+        if (rawWidth < 1.0 || rawLength < 1.0) {
+            alertEl.classList.remove('hidden');
+        } else {
+            alertEl.classList.add('hidden');
+        }
+
+        // Price calculation using Wholesale Tier & Billable Area
         const { price: baseUnitPrice } = getUnitPrice(activeDimProduct.retailPrice, activeDimProduct.wholesalePrices, qty);
-        const unitPricePerLembar = Math.round(roundedArea * baseUnitPrice);
+        const unitPricePerLembar = Math.round(billableArea * baseUnitPrice);
         const subtotal = unitPricePerLembar * qty;
 
-        document.getElementById('dim_preview_size').innerText = `${fixedLength}m x ${customWidthCm}cm`;
-        document.getElementById('dim_preview_area').innerText = `${roundedArea.toFixed(2)} m²`;
+        // Update Labels
+        document.getElementById('dim_preview_size').innerText = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
+        document.getElementById('dim_preview_physical_area').innerText = `${physicalArea.toFixed(2)} m²`;
+        document.getElementById('dim_preview_area').innerText = `${billableArea.toFixed(2)} m²`;
         document.getElementById('dim_preview_unit_price').innerText = 'Rp ' + Number(unitPricePerLembar).toLocaleString('id-ID');
         document.getElementById('dim_preview_subtotal').innerText = 'Rp ' + Number(subtotal).toLocaleString('id-ID');
+
+        document.getElementById('marker_width_label').innerText = `${rawWidth.toFixed(2)} m`;
+        document.getElementById('marker_length_label').innerText = `${rawLength.toFixed(2)} m`;
+
+        document.getElementById('canvas_dim_label').innerText = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
+        document.getElementById('canvas_area_label').innerText = `${physicalArea.toFixed(2)} m²`;
+
+        // Update Visual Canvas Aspect Ratio
+        const canvas = document.getElementById('banner_preview_canvas');
+        if (canvas) {
+            // Base visual container is approx 180px wide x 130px tall
+            let ratio = rawLength / rawWidth;
+            let targetW = 140;
+            let targetH = 110;
+
+            if (ratio >= 2.0) {
+                targetW = Math.min(220, 100 + (ratio * 12));
+                targetH = 80;
+            } else if (ratio <= 0.6) {
+                targetW = 100;
+                targetH = Math.min(150, 100 + (1 / ratio * 15));
+            } else {
+                targetW = 140;
+                targetH = Math.min(130, Math.round(140 / ratio));
+            }
+
+            canvas.style.width = `${targetW}px`;
+            canvas.style.height = `${targetH}px`;
+        }
     }
 
+    // --- Confirm Custom Banner to Cart ---
     function confirmBannerDimensionAddToCart() {
-        const fixedLength = getActiveFixedLength();
-        const customWidthCm = parseFloat(document.getElementById('dim_custom_width_cm').value) || 100;
+        let rawWidth = parseFloat(document.getElementById('banner_width_m').value) || 1.0;
+        let rawLength = parseFloat(document.getElementById('banner_length_m').value) || 1.0;
         const qty = parseInt(document.getElementById('dim_qty').value, 10) || 1;
-        const areaM2 = Math.round((fixedLength * (customWidthCm / 100)) * 1000) / 1000;
+        const finishing = document.getElementById('banner_finishing').value || 'Mata Ayam 4 Sudut';
+
+        rawWidth = Math.max(0.1, Math.min(3.0, rawWidth));
+        rawLength = Math.max(0.1, Math.min(30.0, rawLength));
+
+        const billableWidth = Math.max(1.0, rawWidth);
+        const billableLength = Math.max(1.0, rawLength);
+
+        const physicalArea = Math.round((rawWidth * rawLength) * 1000) / 1000;
+        const billableArea = Math.round((billableWidth * billableLength) * 1000) / 1000;
+
+        let noteDim = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
+        if (rawWidth < 1.0 || rawLength < 1.0) {
+            noteDim += ` (Min 1m: ${billableArea.toFixed(2)}m²)`;
+        } else {
+            noteDim += ` (${billableArea.toFixed(2)}m²)`;
+        }
+        noteDim += ` - ${finishing}`;
 
         if (activeDimProduct.editCartId !== null) {
             // Edit existing cart item
             const item = cart.find(i => i.id === activeDimProduct.editCartId);
             if (item) {
-                item.fixed_length_m = fixedLength;
-                item.custom_width_cm = customWidthCm;
-                item.area_m2 = areaM2;
+                item.width_m = rawWidth;
+                item.length_m = rawLength;
+                item.fixed_length_m = rawWidth;
+                item.custom_width_cm = Math.round(rawLength * 100);
+                item.area_m2 = physicalArea;
+                item.billable_area_m2 = billableArea;
+                item.finishing = finishing;
                 item.qty = qty;
-                item.dimension_text = `${fixedLength}m x ${customWidthCm}cm (${areaM2.toFixed(2)} m²)`;
+                item.dimension_text = noteDim;
             }
         } else {
             // Add new custom banner item to cart
-            const dimensionText = `${fixedLength}m x ${customWidthCm}cm (${areaM2.toFixed(2)} m²)`;
-            
-            // Check if exact dimension already in cart
-            const existing = cart.find(i => i.material_name_or_type === activeDimProduct.name 
-                                          && i.fixed_length_m === fixedLength 
-                                          && i.custom_width_cm === customWidthCm);
-            if (existing) {
-                existing.qty += qty;
-            } else {
-                cart.push({
-                    id: cartCounter++,
-                    material_name_or_type: activeDimProduct.name,
-                    fixed_length_m: fixedLength,
-                    custom_width_cm: customWidthCm,
-                    area_m2: areaM2,
-                    dimension_text: dimensionText,
-                    requested_size: fixedLength,
-                    is_custom_banner: true,
-                    qty: qty,
-                    retail_price: activeDimProduct.retailPrice,
-                    wholesale_prices: activeDimProduct.wholesalePrices
-                });
-            }
+            cart.push({
+                id: cartCounter++,
+                material_name_or_type: activeDimProduct.name,
+                width_m: rawWidth,
+                length_m: rawLength,
+                fixed_length_m: rawWidth,
+                custom_width_cm: Math.round(rawLength * 100),
+                area_m2: physicalArea,
+                billable_area_m2: billableArea,
+                finishing: finishing,
+                dimension_text: noteDim,
+                requested_size: rawWidth,
+                is_custom_banner: true,
+                qty: qty,
+                retail_price: activeDimProduct.retailPrice,
+                wholesale_prices: activeDimProduct.wholesalePrices
+            });
         }
 
         renderCart();
@@ -843,8 +1053,9 @@
             const { price: basePrice, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
             
             let finalUnitPrice = basePrice;
-            if (item.is_custom_banner && item.area_m2) {
-                finalUnitPrice = Math.round(item.area_m2 * basePrice);
+            if (item.is_custom_banner && (item.billable_area_m2 || item.area_m2)) {
+                const area = item.billable_area_m2 || item.area_m2;
+                finalUnitPrice = Math.round(area * basePrice);
             }
 
             const itemTotal = finalUnitPrice * item.qty;

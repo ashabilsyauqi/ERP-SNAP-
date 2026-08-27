@@ -116,14 +116,21 @@ class PosController extends Controller
                 }
 
                 // Calculate dimensions if it is a banner with custom size
-                $isCustomBanner = ($fixedLength && $customWidth);
+                $widthM = !empty($item['width_m']) ? (float)$item['width_m'] : (!empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : null);
+                $lengthM = !empty($item['length_m']) ? (float)$item['length_m'] : (!empty($item['custom_width_cm']) ? (float)($item['custom_width_cm'] / 100) : null);
+                $isCustomBanner = ($widthM && $lengthM);
+
                 if ($isCustomBanner) {
-                    if (!$areaM2) {
-                        $areaM2 = round($fixedLength * ($customWidth / 100), 3);
-                    }
-                    $dimensionText = $item['dimension_text'] ?? "{$fixedLength}m x {$customWidth}cm ({$areaM2} m²)";
+                    $billableWidth = max(1.0, $widthM);
+                    $billableLength = max(1.0, $lengthM);
+                    $billableAreaM2 = !empty($item['billable_area_m2']) ? (float)$item['billable_area_m2'] : round($billableWidth * $billableLength, 3);
+                    $physicalAreaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : round($widthM * $lengthM, 3);
+                    
+                    $dimensionText = $item['dimension_text'] ?? "{$widthM}m x {$lengthM}m ({$physicalAreaM2} m²)";
+                    $areaM2 = $billableAreaM2;
                 } else {
                     $dimensionText = $item['dimension_text'] ?? ($fixedLength ? "Ukuran: {$fixedLength}m" : null);
+                    $physicalAreaM2 = $areaM2;
                 }
 
                 // Wholesale tier price lookup based on qty
@@ -140,7 +147,7 @@ class PosController extends Controller
                 // Price calculation
                 if ($isCustomBanner && $areaM2 > 0) {
                     $unitPrice = round($areaM2 * $baseUnitPrice);
-                    $itemHpp = round($areaM2 * $materialToDeduct->purchase_price) * $qty;
+                    $itemHpp = round($physicalAreaM2 * $materialToDeduct->purchase_price) * $qty;
                 } else {
                     $unitPrice = $baseUnitPrice;
                     $itemHpp = $materialToDeduct->purchase_price * $qty;
@@ -150,8 +157,8 @@ class PosController extends Controller
                 $totalPrice += $totalItemPrice;
                 $totalHpp += $itemHpp;
 
-                // Deduct stock
-                $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($areaM2 * $qty)) : $qty;
+                // Deduct stock (based on physical area consumed)
+                $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($physicalAreaM2 * $qty)) : $qty;
                 $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $stockDeductUnits);
                 $materialToDeduct->save();
 
@@ -160,9 +167,9 @@ class PosController extends Controller
                     'material_id' => $materialToDeduct->id,
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
-                    'fixed_length_m' => $fixedLength,
-                    'custom_width_cm' => $customWidth,
-                    'area_m2' => $areaM2,
+                    'fixed_length_m' => $widthM ?: $fixedLength,
+                    'custom_width_cm' => $lengthM ? round($lengthM * 100) : $customWidth,
+                    'area_m2' => $physicalAreaM2 ?: $areaM2,
                     'dimension_text' => $dimensionText,
                 ]);
 
