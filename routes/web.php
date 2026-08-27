@@ -24,14 +24,13 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware(['role:owner'])->group(function () {
-        // Owner only sales actions
-        Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit');
-        Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update');
-        Route::post('/sales/{id}/refund', [SalesController::class, 'refund'])->name('sales.refund');
-
         // Branch Management (Owner Only - No Manager Access)
         Route::resource('branches', \App\Http\Controllers\BranchController::class)->except(['create', 'show', 'edit']);
     });
+
+    // Customer Directory & Search (Owner, Manager, Cashier)
+    Route::get('/customers/search', [\App\Http\Controllers\CustomerController::class, 'search'])->name('customers.search');
+    Route::resource('customers', \App\Http\Controllers\CustomerController::class);
 
     // Profile & Digital Signature
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
@@ -66,6 +65,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:cashier'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+        Route::post('/sales/{id}/refund', [SalesController::class, 'refund'])->name('sales.refund');
         Route::post('/cashier-shift/open', [\App\Http\Controllers\CashierShiftController::class, 'openShift'])->name('cashier-shift.open');
         Route::post('/cashier-shift/close', [\App\Http\Controllers\CashierShiftController::class, 'closeShift'])->name('cashier-shift.close');
     });

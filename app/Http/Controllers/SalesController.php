@@ -345,18 +345,24 @@ class SalesController extends Controller
     }
 
     /**
-     * Void/Refund transaction and restore stock to material inventory (Owner only).
+     * Void/Refund transaction and restore stock to material inventory (Cashier from POS only).
      */
     public function refund($id)
     {
-        if (!auth()->user()->isOwner()) {
-            abort(403, 'Unauthorized access.');
+        $user = auth()->user();
+
+        if (!$user->isCashier()) {
+            abort(403, 'Kegiatan pembatalan / refund transaksi kasir hanya dapat dilakukan oleh petugas Kasir dari terminal POS.');
         }
 
         try {
             DB::beginTransaction();
 
             $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
+
+            if ($transaction->branch_id && $transaction->branch_id !== $user->branch_id) {
+                abort(403, 'Anda hanya dapat me-refund transaksi pada cabang Anda.');
+            }
 
             // Restore all items stock
             foreach ($transaction->transactionDetails as $detail) {
@@ -372,11 +378,11 @@ class SalesController extends Controller
 
             DB::commit();
 
-            return redirect()->route('sales.index')->with('success', "Transaction {$invoiceNumber} has been successfully voided/refunded. All stocks restored.");
+            return redirect()->back()->with('success', "Transaksi {$invoiceNumber} berhasil dibatalkan/direfund. Seluruh stok bahan telah dikembalikan.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('sales.index')->with('error', 'Failed to refund transaction: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memproses refund transaksi: ' . $e->getMessage());
         }
     }
 

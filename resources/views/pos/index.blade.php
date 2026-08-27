@@ -21,13 +21,40 @@
         cartTotal: 0,
         cartItemCount: 0,
         minDpThreshold: 500000,
+        customerId: null,
         customerName: '', 
         customerPhone: '', 
+        customerEmail: '',
+        customersList: {{ Js::from($customers ?? []) }},
+        showCustomerDropdown: false,
         dueDate: '', 
         dpAmount: 0, 
         productionNotes: '',
         showToast: false,
         toastItemName: '',
+        selectExistingCustomer(cust) {
+            this.customerId = cust.id;
+            this.customerName = cust.name;
+            this.customerPhone = cust.phone || '';
+            this.customerEmail = cust.email || '';
+            this.showCustomerDropdown = false;
+        },
+        clearCustomer() {
+            this.customerId = null;
+            this.customerName = '';
+            this.customerPhone = '';
+            this.customerEmail = '';
+            this.showCustomerDropdown = false;
+        },
+        get filteredCustomers() {
+            if (!this.customerName || this.customerName.trim() === '') return this.customersList.slice(0, 10);
+            const q = this.customerName.toLowerCase();
+            return this.customersList.filter(c => 
+                (c.name && c.name.toLowerCase().includes(q)) || 
+                (c.phone && c.phone.includes(q)) ||
+                (c.email && c.email.toLowerCase().includes(q))
+            ).slice(0, 8);
+        },
         notifyItemAdded(name) {
             this.toastItemName = name;
             this.showToast = true;
@@ -255,6 +282,66 @@
         <!-- Checkout Pricing & Action Area (Docked at Bottom) -->
         <div class="p-3 border-t border-slate-200 bg-white space-y-2 flex-shrink-0 overflow-y-auto max-h-[50vh]">
             
+            <!-- Customer Selection Area (Searchable Autocomplete + Auto-Create) -->
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/90 space-y-2 relative" @click.outside="showCustomerDropdown = false">
+                <div class="flex items-center justify-between">
+                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-0 flex items-center gap-1">
+                        <i class="fa-solid fa-user-tag text-blue-600"></i> Pelanggan / Customer
+                    </label>
+                    <template x-if="customerName">
+                        <button type="button" @click="clearCustomer()" class="text-[10px] text-rose-500 hover:text-rose-700 font-semibold bg-transparent border-0 cursor-pointer p-0">
+                            <i class="fa-solid fa-xmark me-0.5"></i> Reset
+                        </button>
+                    </template>
+                </div>
+
+                <!-- Searchable Name Input with Live Dropdown -->
+                <div class="relative">
+                    <div class="flex items-center bg-white border border-slate-300 rounded-lg px-2 py-1 shadow-sm focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs me-1.5 flex-shrink-0"></i>
+                        <input type="text" 
+                               x-model="customerName" 
+                               @focus="showCustomerDropdown = true" 
+                               @input="customerId = null; showCustomerDropdown = true"
+                               placeholder="Ketik / cari nama pelanggan..." 
+                               class="w-full bg-transparent border-0 text-xs font-semibold text-slate-900 focus:outline-none p-0">
+                        <template x-if="customerId">
+                            <span class="badge bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.5 rounded flex-shrink-0">Tersimpan</span>
+                        </template>
+                    </div>
+
+                    <!-- Autocomplete Dropdown Menu -->
+                    <div x-show="showCustomerDropdown && filteredCustomers.length > 0" 
+                         x-cloak 
+                         class="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-100">
+                        <template x-for="cust in filteredCustomers" :key="cust.id">
+                            <div @click="selectExistingCustomer(cust)" 
+                                 class="p-2 hover:bg-blue-50 cursor-pointer transition flex items-center justify-between text-xs">
+                                <div class="min-w-0 pr-2">
+                                    <div class="font-bold text-slate-900 truncate" x-text="cust.name"></div>
+                                    <div class="text-[10px] text-slate-500 font-mono" x-text="cust.phone || cust.email || 'Tanpa Kontak'"></div>
+                                </div>
+                                <span class="text-[10px] text-blue-600 font-semibold flex-shrink-0">Pilih <i class="fa-solid fa-chevron-right text-[8px] ms-0.5"></i></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Optional Phone & Email Inputs -->
+                <div class="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-200/60">
+                    <div>
+                        <label class="block text-[9.5px] font-bold text-slate-500 uppercase mb-0.5">No. WhatsApp (Opsional)</label>
+                        <input type="text" x-model="customerPhone" placeholder="0812xxxxxxxx" 
+                            class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-[9.5px] font-bold text-slate-500 uppercase mb-0.5">Email (Opsional)</label>
+                        <input type="email" x-model="customerEmail" placeholder="nama@email.com" 
+                            class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs">
+                    </div>
+                </div>
+            </div>
+
             <!-- DP (Down Payment) & Custom Order Toggle - Hanya Muncul jika Total Tagihan >= Rp 500.000 -->
             <div x-show="isEligibleForDp" x-cloak class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2 transition-all">
                 <div class="flex items-center justify-between">
@@ -267,19 +354,6 @@
 
                 <!-- DP Extra Fields (Animated Expand) -->
                 <div x-show="isDp" x-cloak class="space-y-2 pt-1 border-t border-blue-200/60 text-xs">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Nama Client</label>
-                            <input type="text" x-model="customerName" placeholder="Contoh: PT Surya / Bpk Dani" 
-                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">No. WhatsApp</label>
-                            <input type="text" x-model="customerPhone" placeholder="08123456789" 
-                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono">
-                        </div>
-                    </div>
-
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Estimasi Selesai (DL)</label>
@@ -1285,6 +1359,13 @@
             qty: item.qty
         }));
 
+        const alpineEl = document.getElementById('pos-main-container');
+        const alpineData = (alpineEl && window.Alpine) ? Alpine.$data(alpineEl) : {};
+        const customerId = alpineData.customerId || null;
+        const customerName = alpineData.customerName || '';
+        const customerPhone = alpineData.customerPhone || '';
+        const customerEmail = alpineData.customerEmail || '';
+
         fetch('{{ route("pos.checkout") }}', {
             method: 'POST',
             headers: {
@@ -1296,8 +1377,10 @@
                 items: payloadItems,
                 is_dp: isDp,
                 dp_amount: dpAmount,
+                customer_id: customerId,
                 customer_name: customerName,
                 customer_phone: customerPhone,
+                customer_email: customerEmail,
                 due_date: dueDate,
                 production_notes: productionNotes
             })
@@ -1317,6 +1400,7 @@
                 // Clear cart state
                 cart = [];
                 renderCart();
+                if (alpineData.clearCustomer) alpineData.clearCustomer();
 
                 const isPartial = data.payment_status === 'PARTIAL';
 

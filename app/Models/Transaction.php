@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'invoice_number',
     'user_id',
+    'customer_id',
     'customer_name',
     'customer_phone',
     'total_price',
@@ -36,6 +37,11 @@ class Transaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function transactionDetails(): HasMany

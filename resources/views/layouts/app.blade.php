@@ -444,6 +444,7 @@
                     'type' => 'dropdown',
                     'role' => 'owner,manager',
                     'items' => [
+                        ['title' => 'Data Pelanggan (Customer Directory)', 'route' => 'customers.index', 'role' => 'owner,manager'],
                         ['title' => 'Piutang & Pesanan DP', 'route' => 'sales.receivables', 'role' => 'owner,manager'],
                         ['title' => 'Penerimaan Kas (Cash Receipts)', 'route' => 'kas-masuk.index', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Kas Masuk', 'route' => 'reports.cash-in', 'role' => 'owner,manager'],
@@ -550,7 +551,7 @@
                     ]
                 ]
             ];
-        } elseif (Str::startsWith($currentRoute, 'pos') || Str::startsWith($currentRoute, 'sales')) {
+        } elseif (Str::startsWith($currentRoute, 'pos') || Str::startsWith($currentRoute, 'sales') || Str::startsWith($currentRoute, 'customers')) {
             $activeApp = (auth()->check() && auth()->user()->role === 'cashier') ? 'Point of Sale' : 'Orders / Penjualan';
             $appIcon = (auth()->check() && auth()->user()->role === 'cashier') ? 'fa-cash-register' : 'fa-receipt';
             $menuGroups = [
@@ -562,6 +563,7 @@
                         ['title' => 'Terminal Kasir Checkout (POS)', 'route' => 'pos.index', 'role' => 'cashier'],
                         ['title' => 'Piutang & Monitoring Pesanan DP', 'route' => 'sales.receivables', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Riwayat Transaksi Penjualan', 'route' => 'sales.index', 'role' => 'cashier,owner,manager'],
+                        ['title' => 'Data Pelanggan (Customers)', 'route' => 'customers.index', 'role' => 'cashier,owner,manager'],
                     ]
                 ],
                 [

@@ -35,7 +35,13 @@ class PosController extends Controller
             ->distinct()
             ->pluck('category');
 
-        return view('pos.index', compact('materials', 'categories'));
+        $customers = \App\Models\Customer::where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            })
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name', 'phone', 'email']);
+
+        return view('pos.index', compact('materials', 'categories', 'customers'));
     }
 
     public function checkout(Request $request)
@@ -59,8 +65,10 @@ class PosController extends Controller
             'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
             'is_dp' => 'nullable|boolean',
             'dp_amount' => 'nullable|numeric|min:0',
+            'customer_id' => 'nullable|exists:customers,id',
             'customer_name' => 'nullable|string|max:150',
             'customer_phone' => 'nullable|string|max:50',
+            'customer_email' => 'nullable|email|max:100',
             'due_date' => 'nullable|date',
             'production_notes' => 'nullable|string',
         ]);
@@ -74,12 +82,59 @@ class PosController extends Controller
             $isDp = $request->boolean('is_dp');
             $requestedDp = $isDp ? (float) $request->input('dp_amount', 0) : 0;
 
+            // Resolve or Auto-Create Customer Record
+            $customerId = $request->input('customer_id');
+            $customerName = trim($request->input('customer_name', ''));
+            $customerPhone = trim($request->input('customer_phone', ''));
+            $customerEmail = trim($request->input('customer_email', ''));
+
+            if (!empty($customerId)) {
+                $custObj = \App\Models\Customer::find($customerId);
+                if ($custObj) {
+                    $customerName = $custObj->name;
+                    if (empty($customerPhone)) $customerPhone = $custObj->phone;
+                    if (empty($customerEmail)) $customerEmail = $custObj->email;
+                }
+            } elseif (!empty($customerName)) {
+                // Search if customer already exists by exact name in current branch / global
+                $custObj = \App\Models\Customer::where('name', $customerName)
+                    ->where(function($b) {
+                        $b->where('branch_id', auth()->user()->branch_id)->orWhereNull('branch_id');
+                    })->first();
+
+                if (!$custObj && !empty($customerPhone)) {
+                    $custObj = \App\Models\Customer::where('phone', $customerPhone)->first();
+                }
+
+                if (!$custObj) {
+                    // Auto-create new customer!
+                    $custObj = \App\Models\Customer::create([
+                        'name' => $customerName,
+                        'phone' => $customerPhone ?: null,
+                        'email' => $customerEmail ?: null,
+                        'branch_id' => auth()->user()->branch_id,
+                    ]);
+                } else {
+                    // Update contact details if provided
+                    if (empty($custObj->phone) && !empty($customerPhone)) {
+                        $custObj->phone = $customerPhone;
+                    }
+                    if (empty($custObj->email) && !empty($customerEmail)) {
+                        $custObj->email = $customerEmail;
+                    }
+                    $custObj->save();
+                }
+
+                $customerId = $custObj->id;
+            }
+
             $transaction = Transaction::create([
                 'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
                 'user_id' => auth()->id(),
                 'branch_id' => auth()->user()->branch_id,
-                'customer_name' => $request->customer_name,
-                'customer_phone' => $request->customer_phone,
+                'customer_id' => $customerId ?: null,
+                'customer_name' => $customerName ?: null,
+                'customer_phone' => $customerPhone ?: null,
                 'total_price' => 0,
                 'total_hpp' => 0,
                 'payment_method' => $request->payment_method,

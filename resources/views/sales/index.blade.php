@@ -285,10 +285,10 @@
                                         <a href="{{ route('sales.receipt', $trx->id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Cetak Struk Thermal POS" target="_blank">
                                             <i class="fa-solid fa-receipt text-xs"></i>
                                         </a>
-                                        @if(auth()->user()->isOwner())
-                                            <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Refund invoice ini? Stok akan dikembalikan dan transaksi kas akan dibatalkan.');">
+                                        @if(auth()->user()->isCashier())
+                                            <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Refund invoice ini? Stok bahan akan dikembalikan ke inventori.');">
                                                 @csrf
-                                                <button class="btn btn-sm btn-outline-danger py-0 px-2" type="submit" title="Batalkan / Refund Transaksi">
+                                                <button class="btn btn-sm btn-outline-danger py-0 px-2" type="submit" title="Batalkan / Refund Transaksi Kasir">
                                                     <i class="fa-solid fa-rotate-left text-xs"></i>
                                                 </button>
                                             </form>

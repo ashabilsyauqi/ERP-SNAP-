@@ -78,21 +78,27 @@ class SalesReportController extends Controller
         $salesData = collect();
         $branchBreakdown = collect();
 
+        $driver = DB::connection()->getDriverName();
+        $isSqlite = ($driver === 'sqlite');
+
         // 1. Grouped Sales Table Query
         if ($period === 'daily') {
+            $dateExpr = $isSqlite ? "strftime('%Y-%m-%d', created_at)" : "DATE(created_at)";
             $selectFields = [
-                DB::raw('DATE(created_at) as date_val'),
+                DB::raw("{$dateExpr} as date_val"),
                 DB::raw('COUNT(id) as total_transactions'),
                 DB::raw('SUM(total_price) as total_sales'),
-                DB::raw("SUM(CASE WHEN payment_method = 'Cash' THEN total_price ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN payment_method = 'QRIS' THEN total_price ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN payment_method = 'Transfer' THEN total_price ELSE 0 END) as transfer_sales")
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN total_price ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN total_price ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total_price ELSE 0 END) as transfer_sales")
             ];
 
             $groupBy = ['date_val'];
             if ($isAllBranches) {
                 $selectFields[] = 'branch_id';
                 $groupBy[] = 'branch_id';
+            } else {
+                $selectFields[] = DB::raw('MAX(branch_id) as branch_id');
             }
 
             $rawRecords = (clone $query)->select($selectFields)
@@ -115,20 +121,25 @@ class SalesReportController extends Controller
                 ]);
             }
         } elseif ($period === 'monthly') {
+            $yearExpr = $isSqlite ? "strftime('%Y', created_at)" : "YEAR(created_at)";
+            $monthExpr = $isSqlite ? "CAST(strftime('%m', created_at) AS INTEGER)" : "MONTH(created_at)";
+
             $selectFields = [
-                DB::raw('YEAR(created_at) as year_val'),
-                DB::raw('MONTH(created_at) as month_val'),
+                DB::raw("{$yearExpr} as year_val"),
+                DB::raw("{$monthExpr} as month_val"),
                 DB::raw('COUNT(id) as total_transactions'),
                 DB::raw('SUM(total_price) as total_sales'),
-                DB::raw("SUM(CASE WHEN payment_method = 'Cash' THEN total_price ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN payment_method = 'QRIS' THEN total_price ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN payment_method = 'Transfer' THEN total_price ELSE 0 END) as transfer_sales")
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN total_price ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN total_price ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total_price ELSE 0 END) as transfer_sales")
             ];
 
             $groupBy = ['year_val', 'month_val'];
             if ($isAllBranches) {
                 $selectFields[] = 'branch_id';
                 $groupBy[] = 'branch_id';
+            } else {
+                $selectFields[] = DB::raw('MAX(branch_id) as branch_id');
             }
 
             $rawRecords = (clone $query)->select($selectFields)
@@ -139,10 +150,10 @@ class SalesReportController extends Controller
 
             foreach ($rawRecords as $row) {
                 $branchObj = $branches->firstWhere('id', $row->branch_id);
-                $monthName = Carbon::createFromDate($row->year_val, $row->month_val, 1)->translatedFormat('F Y');
+                $monthName = Carbon::createFromDate((int)$row->year_val, (int)$row->month_val, 1)->translatedFormat('F Y');
                 $salesData->push((object)[
                     'period_date' => $monthName,
-                    'raw_date' => Carbon::createFromDate($row->year_val, $row->month_val, 1)->format('M Y'),
+                    'raw_date' => Carbon::createFromDate((int)$row->year_val, (int)$row->month_val, 1)->format('M Y'),
                     'branch_name' => $branchObj ? $branchObj->nama_cabang : 'Pusat',
                     'branch_id' => $row->branch_id ?? null,
                     'total_transactions' => $row->total_transactions,
@@ -154,19 +165,23 @@ class SalesReportController extends Controller
             }
         } else {
             // Yearly
+            $yearExpr = $isSqlite ? "strftime('%Y', created_at)" : "YEAR(created_at)";
+
             $selectFields = [
-                DB::raw('YEAR(created_at) as year_val'),
+                DB::raw("{$yearExpr} as year_val"),
                 DB::raw('COUNT(id) as total_transactions'),
                 DB::raw('SUM(total_price) as total_sales'),
-                DB::raw("SUM(CASE WHEN payment_method = 'Cash' THEN total_price ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN payment_method = 'QRIS' THEN total_price ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN payment_method = 'Transfer' THEN total_price ELSE 0 END) as transfer_sales")
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN total_price ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN total_price ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total_price ELSE 0 END) as transfer_sales")
             ];
 
             $groupBy = ['year_val'];
             if ($isAllBranches) {
                 $selectFields[] = 'branch_id';
                 $groupBy[] = 'branch_id';
+            } else {
+                $selectFields[] = DB::raw('MAX(branch_id) as branch_id');
             }
 
             $rawRecords = (clone $query)->select($selectFields)
