@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 class PosController extends Controller
 {
@@ -23,9 +24,11 @@ class PosController extends Controller
         // Exclude Tinta (OPEX) from POS, filter by branch
         $materials = Material::with('wholesalePrices')
             ->where('branch_id', $branchId)
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
             ->where('material_name', 'not like', '%tinta%')
-            ->orderBy('category', 'asc')
-            ->orderBy('material_name', 'asc')
+            ->orderBy('category')
+            ->orderBy('material_name')
             ->get();
 
         $categories = Material::where('branch_id', $branchId)
@@ -35,11 +38,14 @@ class PosController extends Controller
             ->distinct()
             ->pluck('category');
 
-        $customers = \App\Models\Customer::where(function($q) use ($branchId) {
-                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
-            })
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'phone', 'email']);
+        $customers = collect();
+        if (Schema::hasTable('customers')) {
+            $customers = \App\Models\Customer::where(function($q) use ($branchId) {
+                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+                })
+                ->orderBy('name', 'asc')
+                ->get(['id', 'name', 'phone', 'email']);
+        }
 
         return view('pos.index', compact('materials', 'categories', 'customers'));
     }
@@ -94,44 +100,46 @@ class PosController extends Controller
             $customerPhone = trim($request->input('customer_phone', ''));
             $customerEmail = trim($request->input('customer_email', ''));
 
-            if (!empty($customerId)) {
-                $custObj = \App\Models\Customer::find($customerId);
-                if ($custObj) {
-                    $customerName = $custObj->name;
-                    if (empty($customerPhone)) $customerPhone = $custObj->phone;
-                    if (empty($customerEmail)) $customerEmail = $custObj->email;
-                }
-            } elseif (!empty($customerName)) {
-                // Search if customer already exists by exact name in current branch / global
-                $custObj = \App\Models\Customer::where('name', $customerName)
-                    ->where(function($b) {
-                        $b->where('branch_id', auth()->user()->branch_id)->orWhereNull('branch_id');
-                    })->first();
-
-                if (!$custObj && !empty($customerPhone)) {
-                    $custObj = \App\Models\Customer::where('phone', $customerPhone)->first();
-                }
-
-                if (!$custObj) {
-                    // Auto-create new customer!
-                    $custObj = \App\Models\Customer::create([
-                        'name' => $customerName,
-                        'phone' => $customerPhone ?: null,
-                        'email' => $customerEmail ?: null,
-                        'branch_id' => auth()->user()->branch_id,
-                    ]);
-                } else {
-                    // Update contact details if provided
-                    if (empty($custObj->phone) && !empty($customerPhone)) {
-                        $custObj->phone = $customerPhone;
+            if (Schema::hasTable('customers')) {
+                if (!empty($customerId)) {
+                    $custObj = \App\Models\Customer::find($customerId);
+                    if ($custObj) {
+                        $customerName = $custObj->name;
+                        if (empty($customerPhone)) $customerPhone = $custObj->phone;
+                        if (empty($customerEmail)) $customerEmail = $custObj->email;
                     }
-                    if (empty($custObj->email) && !empty($customerEmail)) {
-                        $custObj->email = $customerEmail;
-                    }
-                    $custObj->save();
-                }
+                } elseif (!empty($customerName)) {
+                    // Search if customer already exists by exact name in current branch / global
+                    $custObj = \App\Models\Customer::where('name', $customerName)
+                        ->where(function($b) {
+                            $b->where('branch_id', auth()->user()->branch_id)->orWhereNull('branch_id');
+                        })->first();
 
-                $customerId = $custObj->id;
+                    if (!$custObj && !empty($customerPhone)) {
+                        $custObj = \App\Models\Customer::where('phone', $customerPhone)->first();
+                    }
+
+                    if (!$custObj) {
+                        // Auto-create new customer!
+                        $custObj = \App\Models\Customer::create([
+                            'name' => $customerName,
+                            'phone' => $customerPhone ?: null,
+                            'email' => $customerEmail ?: null,
+                            'branch_id' => auth()->user()->branch_id,
+                        ]);
+                    } else {
+                        // Update contact details if provided
+                        if (empty($custObj->phone) && !empty($customerPhone)) {
+                            $custObj->phone = $customerPhone;
+                        }
+                        if (empty($custObj->email) && !empty($customerEmail)) {
+                            $custObj->email = $customerEmail;
+                        }
+                        $custObj->save();
+                    }
+
+                    $customerId = $custObj->id;
+                }
             }
 
             $transaction = Transaction::create([
@@ -186,6 +194,8 @@ class PosController extends Controller
                 // Calculate dimensions if it is a banner with custom size
                 $widthM = !empty($item['width_m']) ? (float)$item['width_m'] : (!empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : null);
                 $lengthM = !empty($item['length_m']) ? (float)$item['length_m'] : (!empty($item['custom_width_cm']) ? (float)($item['custom_width_cm'] / 100) : null);
+                $customWidth = !empty($item['custom_width_cm']) ? (float)$item['custom_width_cm'] : ($lengthM ? round($lengthM * 100) : null);
+                $fixedLength = !empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : (!empty($item['requested_size']) ? (float)$item['requested_size'] : ($widthM ?: null));
                 $isCustomBanner = !empty($item['is_custom_banner']) || ($widthM && $lengthM && $widthM > 0 && $lengthM > 0);
 
                 if ($isCustomBanner) {
@@ -197,7 +207,6 @@ class PosController extends Controller
                     $dimensionText = $item['dimension_text'] ?? "{$widthM}m x {$lengthM}m ({$physicalAreaM2} m²)";
                     $areaM2 = $billableAreaM2;
                 } else {
-                    $fixedLength = !empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : (!empty($item['requested_size']) ? (float)$item['requested_size'] : null);
                     $dimensionText = $item['dimension_text'] ?? ($fixedLength ? "Ukuran: {$fixedLength}m" : null);
                     $physicalAreaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : null;
                     $areaM2 = $physicalAreaM2;
@@ -238,7 +247,7 @@ class PosController extends Controller
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
                     'fixed_length_m' => $widthM ?: $fixedLength,
-                    'custom_width_cm' => $lengthM ? round($lengthM * 100) : $customWidth,
+                    'custom_width_cm' => $customWidth,
                     'area_m2' => $physicalAreaM2 ?: $areaM2,
                     'dimension_text' => $dimensionText,
                 ]);
