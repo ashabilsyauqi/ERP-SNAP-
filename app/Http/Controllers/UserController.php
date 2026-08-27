@@ -89,15 +89,19 @@ class UserController extends Controller
         }
 
         if (Auth::id() === $user->id) {
-            return redirect()->route('users.index')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+            return redirect()->route('users.index')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.');
         }
 
-        if ($user->transactions()->exists() || $user->cashTransactions()->exists()) {
-            return redirect()->route('users.index')->with('error', 'User tidak dapat dihapus karena sudah memiliki riwayat transaksi.');
+        if ($user->isOwner() && User::where('role', 'owner')->whereNull('deleted_at')->count() <= 1) {
+            return redirect()->route('users.index')->with('error', 'Tidak dapat menghapus satu-satunya akun Owner aktif dalam sistem.');
         }
 
-        $user->delete();
-
-        return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+        try {
+            $username = $user->username;
+            $user->delete();
+            return redirect()->route('users.index')->with('success', "User '{$username}' berhasil dinonaktifkan / dihapus.");
+        } catch (\Exception $e) {
+            return redirect()->route('users.index')->with('error', 'Gagal menghapus user: ' . $e->getMessage());
+        }
     }
 }

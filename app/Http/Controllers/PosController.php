@@ -14,6 +14,10 @@ class PosController extends Controller
 {
     public function index()
     {
+        if (auth()->user()->isOwner()) {
+            return redirect()->route('owner.dashboard')->with('info', 'Fitur terminal kasir POS dinonaktifkan untuk akun Owner. Silakan gunakan menu Penjualan atau Dashboard Eksekutif untuk memantau transaksi cabang.');
+        }
+
         $branchId = auth()->user()->branch_id;
 
         // Exclude Tinta (OPEX) from POS, filter by branch

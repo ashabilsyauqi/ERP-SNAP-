@@ -63,13 +63,16 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
 
-    Route::middleware(['role:cashier,owner,manager'])->group(function () {
+    // POS Terminal & Cashier Register (Cashier & Branch Manager Only - Excludes Owner)
+    Route::middleware(['role:cashier,manager'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
         Route::post('/cashier-shift/open', [\App\Http\Controllers\CashierShiftController::class, 'openShift'])->name('cashier-shift.open');
         Route::post('/cashier-shift/close', [\App\Http\Controllers\CashierShiftController::class, 'closeShift'])->name('cashier-shift.close');
-        
-        // Cashier, Manager, and Owner sales views & Receivables
+    });
+
+    // Orders, Invoices, and Receivables Monitoring (Cashier, Manager, and Owner)
+    Route::middleware(['role:cashier,owner,manager'])->group(function () {
         Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
         Route::get('/sales/receivables', [SalesController::class, 'receivables'])->name('sales.receivables');
         Route::post('/sales/{id}/settle', [SalesController::class, 'settle'])->name('sales.settle');

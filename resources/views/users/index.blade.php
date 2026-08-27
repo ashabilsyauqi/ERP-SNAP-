@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Users & Access Rights')
-@section('page-title', 'Settings / Users & Companies / Users (Hak Akses Pengguna)')
+@section('page-title', 'Settings / Users & Companies / Users (Hak Akses Pengguna & Pengaturan Modul)')
 
 @section('action-buttons')
 <button type="button" class="btn-odoo-primary" data-bs-toggle="modal" data-bs-target="#modalAddUser">
@@ -11,10 +11,36 @@
 @endsection
 
 @section('content')
-<div id="main-view-wrapper" data-view-wrapper>
+<div id="main-view-wrapper" data-view-wrapper x-data="{ currentTab: 'users' }">
 
-    <!-- Main Odoo Sheet -->
-    <div class="o_form_sheet p-0 overflow-hidden bg-white">
+    <!-- Top Tabs Switcher -->
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+        <ul class="nav nav-pills gap-2">
+            <li class="nav-item">
+                <button class="nav-link px-3 py-1.5 rounded-2 text-xs fw-bold cursor-pointer transition" 
+                        :class="currentTab === 'users' ? 'active bg-blue-700 text-white shadow-sm' : 'bg-white text-slate-700 border hover:bg-slate-50'"
+                        @click="currentTab = 'users'">
+                    <i class="fa-solid fa-users me-1.5"></i>
+                    <span>Daftar Pengguna ({{ $users->count() }})</span>
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link px-3 py-1.5 rounded-2 text-xs fw-bold cursor-pointer transition" 
+                        :class="currentTab === 'matrix' ? 'active bg-blue-700 text-white shadow-sm' : 'bg-white text-slate-700 border hover:bg-slate-50'"
+                        @click="currentTab = 'matrix'">
+                    <i class="fa-solid fa-shield-halved me-1.5"></i>
+                    <span>Pengaturan Hak Akses & Matriks Modul</span>
+                </button>
+            </li>
+        </ul>
+        <div class="text-[11px] text-slate-500 d-none d-md-block">
+            <i class="fa-solid fa-circle-info text-blue-600 me-1"></i>
+            Role menentukan otorisasi modul, cabang, dan tindakan bisnis pada sistem ERP.
+        </div>
+    </div>
+
+    <!-- TAB 1: USERS LIST TABLE -->
+    <div x-show="currentTab === 'users'" class="o_form_sheet p-0 overflow-hidden bg-white shadow-sm rounded-3 border">
         <div class="table-responsive">
             <table class="table table-hover o_list_table mb-0" id="main-table">
                 <thead>
@@ -93,7 +119,7 @@
                                         <i class="fa-solid fa-pen-to-square text-xs"></i>
                                     </button>
                                     @if(auth()->id() !== $user->id)
-                                        <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus pengguna ini?');">
+                                        <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus/nonaktifkan pengguna {{ addslashes($user->username) }}? Riwayat transaksi historis tetap terjaga aman.');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Hapus User">
@@ -114,6 +140,176 @@
         </div>
     </div>
 
+    <!-- TAB 2: ACCESS RIGHTS & MODULE SETTINGS MATRIX -->
+    <div x-show="currentTab === 'matrix'" class="o_form_sheet p-4 bg-white shadow-sm rounded-3 border" style="display: none;">
+        <div class="mb-4">
+            <h5 class="fw-bold text-slate-800 fs-6 mb-1">
+                <i class="fa-solid fa-sliders text-blue-600 me-1.5"></i> Matriks Hak Akses & Pembagian Otoritas Modul
+            </h5>
+            <p class="text-xs text-slate-500 mb-0">
+                Berikut adalah matriks resmi pembagian hak akses modul untuk setiap level pengguna (*Role-Based Access Control / RBAC*):
+            </p>
+        </div>
+
+        <div class="table-responsive mb-4">
+            <table class="table table-bordered align-middle text-xs mb-0">
+                <thead class="bg-slate-100 text-slate-700">
+                    <tr>
+                        <th class="py-2.5 px-3">Modul / Fitur Aplikasi</th>
+                        <th class="text-center py-2.5 px-2 bg-purple-50/70 text-purple-900" style="width: 20%;">
+                            <i class="fa-solid fa-crown me-1 text-purple-600"></i> Owner / Direksi
+                        </th>
+                        <th class="text-center py-2.5 px-2 bg-sky-50/70 text-sky-900" style="width: 20%;">
+                            <i class="fa-solid fa-user-tie me-1 text-sky-600"></i> Manajer Cabang
+                        </th>
+                        <th class="text-center py-2.5 px-2 bg-amber-50/70 text-amber-900" style="width: 20%;">
+                            <i class="fa-solid fa-cart-shopping me-1 text-amber-600"></i> Purchasing
+                        </th>
+                        <th class="text-center py-2.5 px-2 bg-emerald-50/70 text-emerald-900" style="width: 20%;">
+                            <i class="fa-solid fa-cash-register me-1 text-emerald-600"></i> Kasir (POS)
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Executive Dashboard -->
+                    <tr>
+                        <td class="px-3 fw-bold text-slate-800">
+                            <i class="fa-solid fa-chart-pie text-indigo-600 me-2"></i> Dashboard Eksekutif Konsolidasi
+                            <div class="text-[10px] text-slate-400 font-normal">Omzet, HPP, OPEX & Laba Bersih Multi-Cabang</div>
+                        </td>
+                        <td class="text-center bg-purple-50/30 font-semibold text-emerald-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
+                            <span class="text-[10px]">Semua Cabang</span>
+                        </td>
+                        <td class="text-center bg-sky-50/30 font-semibold text-blue-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-blue-600"></i><br>
+                            <span class="text-[10px]">Cabang Sendiri</span>
+                        </td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                    </tr>
+
+                    <!-- Accounting & Finance -->
+                    <tr>
+                        <td class="px-3 fw-bold text-slate-800">
+                            <i class="fa-solid fa-wallet text-emerald-600 me-2"></i> Akuntansi & Buku Kas
+                            <div class="text-[10px] text-slate-400 font-normal">Kas Masuk, Kas Keluar, Mutasi & Laba Rugi</div>
+                        </td>
+                        <td class="text-center bg-purple-50/30 font-semibold text-emerald-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
+                            <span class="text-[10px]">Full Global</span>
+                        </td>
+                        <td class="text-center bg-sky-50/30 font-semibold text-blue-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-blue-600"></i><br>
+                            <span class="text-[10px]">Input Kas Cabang</span>
+                        </td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                    </tr>
+
+                    <!-- Terminal Kasir POS -->
+                    <tr class="table-warning/20">
+                        <td class="px-3 fw-bold text-slate-800">
+                            <i class="fa-solid fa-cash-register text-rose-600 me-2"></i> Terminal Kasir POS (Point of Sale)
+                            <div class="text-[10px] text-slate-400 font-normal">Checkout Pesanan, Nota Struk & Buka/Tutup Shift Kasir</div>
+                        </td>
+                        <td class="text-center bg-purple-50/30 font-semibold text-rose-600">
+                            <i class="fa-solid fa-ban fs-6 text-rose-500"></i><br>
+                            <span class="text-[10px] text-rose-600">Dinonaktifkan</span>
+                        </td>
+                        <td class="text-center bg-sky-50/30 font-semibold text-blue-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-blue-600"></i><br>
+                            <span class="text-[10px]">Aktif Cabang</span>
+                        </td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                        <td class="text-center bg-emerald-50/30 font-semibold text-emerald-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
+                            <span class="text-[10px]">Full Kasir</span>
+                        </td>
+                    </tr>
+
+                    <!-- Penjualan & Piutang -->
+                    <tr>
+                        <td class="px-3 fw-bold text-slate-800">
+                            <i class="fa-solid fa-receipt text-blue-600 me-2"></i> Orders & Piutang Pelanggan (DP)
+                            <div class="text-[10px] text-slate-400 font-normal">Monitoring status SPK, pelunasan sisa DP & cetak invoice</div>
+                        </td>
+                        <td class="text-center bg-purple-50/30 font-semibold text-emerald-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
+                            <span class="text-[10px]">Edit & Refund</span>
+                        </td>
+                        <td class="text-center bg-sky-50/30 font-semibold text-blue-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-blue-600"></i><br>
+                            <span class="text-[10px]">Settle & Update Status</span>
+                        </td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                        <td class="text-center bg-emerald-50/30 font-semibold text-emerald-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
+                            <span class="text-[10px]">Settle & Cetak</span>
+                        </td>
+                    </tr>
+
+                    <!-- Pengadaan & Purchasing -->
+                    <tr>
+                        <td class="px-3 fw-bold text-slate-800">
+                            <i class="fa-solid fa-cart-shopping text-amber-600 me-2"></i> Pengadaan (Purchasing) & Supplier
+                            <div class="text-[10px] text-slate-400 font-normal">Rencana Pembelian, RFQ Supplier & Pembayaran Vendor</div>
+                        </td>
+                        <td class="text-center bg-purple-50/30 font-semibold text-emerald-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
+                            <span class="text-[10px]">Approval & Pay</span>
+                        </td>
+                        <td class="text-center bg-sky-50/30 font-semibold text-blue-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-blue-600"></i><br>
+                            <span class="text-[10px]">Approval Cabang</span>
+                        </td>
+                        <td class="text-center bg-amber-50/30 font-semibold text-amber-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-amber-600"></i><br>
+                            <span class="text-[10px]">Create RFQ & Plans</span>
+                        </td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                    </tr>
+
+                    <!-- QC & Stock Opname -->
+                    <tr>
+                        <td class="px-3 fw-bold text-slate-800">
+                            <i class="fa-solid fa-boxes-stacked text-orange-600 me-2"></i> Stock Opname & QC Inspection
+                            <div class="text-[10px] text-slate-400 font-normal">Pemeriksaan barang datang supplier & opname stok fisik</div>
+                        </td>
+                        <td class="text-center bg-purple-50/30 font-semibold text-emerald-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
+                            <span class="text-[10px]">Monitoring Global</span>
+                        </td>
+                        <td class="text-center bg-sky-50/30 font-semibold text-blue-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-blue-600"></i><br>
+                            <span class="text-[10px]">Verifikasi QC & Opname</span>
+                        </td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                    </tr>
+
+                    <!-- Pengaturan Cabang & Pengguna -->
+                    <tr>
+                        <td class="px-3 fw-bold text-slate-800">
+                            <i class="fa-solid fa-gear text-slate-700 me-2"></i> Pengaturan Cabang & Pengguna
+                            <div class="text-[10px] text-slate-400 font-normal">Manajemen data cabang toko, user login & digital signature</div>
+                        </td>
+                        <td class="text-center bg-purple-50/30 font-semibold text-emerald-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
+                            <span class="text-[10px]">Full Semua User & Cabang</span>
+                        </td>
+                        <td class="text-center bg-sky-50/30 font-semibold text-blue-700">
+                            <i class="fa-solid fa-circle-check fs-6 text-blue-600"></i><br>
+                            <span class="text-[10px]">User Kasir Cabangnya</span>
+                        </td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                        <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 Modal Tambah User -->
     <div class="modal fade" id="modalAddUser" tabindex="-1" aria-labelledby="modalAddUserLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -129,7 +325,7 @@
                     <div class="modal-body p-4">
                         <div class="mb-3">
                             <label class="form-label font-semibold text-slate-700 text-xs uppercase">Username / Login ID <span class="text-danger">*</span></label>
-                            <input type="text" name="username" required class="form-control form-control-sm" placeholder="e.g. johan_kasir">
+                            <input type="text" name="username" required class="form-control form-control-sm" placeholder="e.g. kasir_zamrud">
                         </div>
                         <div class="mb-3">
                             <label class="form-label font-semibold text-slate-700 text-xs uppercase">Password <span class="text-danger">*</span></label>
@@ -141,7 +337,9 @@
                                 <option value="cashier">Kasir (Point of Sale)</option>
                                 <option value="purchasing">Purchasing (Pengadaan)</option>
                                 <option value="manager">Manager Toko (Approval & QC)</option>
-                                <option value="owner">Owner / Administrator (Full Access)</option>
+                                @if(auth()->user()->isOwner())
+                                    <option value="owner">Owner / Administrator (Full Access)</option>
+                                @endif
                             </select>
                         </div>
                         <div class="mb-3" id="add_branch_container">
@@ -191,7 +389,9 @@
                                 <option value="cashier">Kasir (Point of Sale)</option>
                                 <option value="purchasing">Purchasing (Pengadaan)</option>
                                 <option value="manager">Manager Toko (Approval & QC)</option>
-                                <option value="owner">Owner / Administrator (Full Access)</option>
+                                @if(auth()->user()->isOwner())
+                                    <option value="owner">Owner / Administrator (Full Access)</option>
+                                @endif
                             </select>
                         </div>
                         <div class="mb-3" id="edit_branch_container">
