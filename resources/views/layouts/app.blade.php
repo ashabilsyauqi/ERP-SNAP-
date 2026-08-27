@@ -400,11 +400,11 @@
 
         // Dynamic Menu Construction based on Current App Context
         if (Str::startsWith($currentRoute, 'owner.dashboard') || Str::startsWith($currentRoute, 'branches')) {
-            $activeApp = 'Executive';
-            $appIcon = 'fa-chart-pie';
+            $activeApp = (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Toko' : 'Executive';
+            $appIcon = (auth()->check() && auth()->user()->isManager()) ? 'fa-store' : 'fa-chart-pie';
             $menuGroups = [
                 [
-                    'title' => 'Dashboard',
+                    'title' => (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Toko' : 'Dashboard',
                     'type' => 'link',
                     'route' => 'owner.dashboard',
                     'role' => 'owner,manager'
@@ -419,7 +419,7 @@
                     ]
                 ],
                 [
-                    'title' => 'Laporan Eksekutif',
+                    'title' => (auth()->check() && auth()->user()->isManager()) ? 'Laporan Toko' : 'Laporan Eksekutif',
                     'type' => 'dropdown',
                     'role' => 'owner,manager',
                     'items' => [
@@ -551,15 +551,15 @@
                 ]
             ];
         } elseif (Str::startsWith($currentRoute, 'pos') || Str::startsWith($currentRoute, 'sales')) {
-            $activeApp = 'Point of Sale';
-            $appIcon = 'fa-cash-register';
+            $activeApp = (auth()->check() && auth()->user()->role === 'cashier') ? 'Point of Sale' : 'Orders / Penjualan';
+            $appIcon = (auth()->check() && auth()->user()->role === 'cashier') ? 'fa-cash-register' : 'fa-receipt';
             $menuGroups = [
                 [
                     'title' => 'Orders',
                     'type' => 'dropdown',
                     'role' => 'cashier,owner,manager',
                     'items' => [
-                        ['title' => 'Terminal Kasir Checkout (POS)', 'route' => 'pos.index', 'role' => 'cashier,manager'],
+                        ['title' => 'Terminal Kasir Checkout (POS)', 'route' => 'pos.index', 'role' => 'cashier'],
                         ['title' => 'Piutang & Monitoring Pesanan DP', 'route' => 'sales.receivables', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Riwayat Transaksi Penjualan', 'route' => 'sales.index', 'role' => 'cashier,owner,manager'],
                     ]
@@ -567,7 +567,7 @@
                 [
                     'title' => 'Products',
                     'type' => 'dropdown',
-                    'role' => 'cashier,owner,manager',
+                    'role' => 'owner,manager',
                     'items' => [
                         ['title' => 'Katalog Bahan Cetak Kasir', 'route' => 'materials.index', 'role' => 'owner,manager'],
                     ]
@@ -575,7 +575,7 @@
                 [
                     'title' => 'Reporting',
                     'type' => 'dropdown',
-                    'role' => 'cashier,owner,manager',
+                    'role' => 'owner,manager',
                     'items' => [
                         ['title' => 'Laporan Penjualan POS', 'route' => 'reports.sales', 'role' => 'owner,manager'],
                     ]
@@ -901,7 +901,9 @@
                       { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
                       { name: 'Settings & Profile', route: '{{ route('profile.index') }}', icon: 'fa-solid fa-gear', bg: 'bg-gradient-to-tr from-slate-600 to-gray-800' }
                       @else
-                      @if(auth()->user()->isOwner() || auth()->user()->isManager())
+                      @if(auth()->user()->isManager())
+                      { name: 'Dashboard Toko', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-store', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900' },
+                      @elseif(auth()->user()->isOwner())
                       { name: 'Executive / Owner', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-chart-pie', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900' },
                       @endif
                       @if(auth()->user()->isOwner() || auth()->user()->isManager())
@@ -911,9 +913,6 @@
                       { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
                       { name: 'Purchase / RFQ', route: '{{ route('purchasing.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700' },
                       { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },
-                      @if(!auth()->user()->isOwner())
-                      { name: 'Point of Sale (POS)', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-cash-register', bg: 'bg-gradient-to-tr from-rose-500 to-pink-700' },
-                      @endif
                       { name: 'Orders / Penjualan', route: '{{ route('sales.index') }}', icon: 'fa-solid fa-receipt', bg: 'bg-gradient-to-tr from-sky-500 to-blue-700' },
                       @if(auth()->user()->isOwner() || auth()->user()->isManager())
                       { name: 'Users & Access', route: '{{ route('users.index') }}', icon: 'fa-solid fa-users', bg: 'bg-gradient-to-tr from-slate-700 to-slate-900' },

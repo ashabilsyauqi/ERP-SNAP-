@@ -63,8 +63,8 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
 
-    // POS Terminal & Cashier Register (Cashier & Branch Manager Only - Excludes Owner)
-    Route::middleware(['role:cashier,manager'])->group(function () {
+    // POS Terminal & Cashier Register (Cashier Only - Excludes Owner & Manager)
+    Route::middleware(['role:cashier'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
         Route::post('/cashier-shift/open', [\App\Http\Controllers\CashierShiftController::class, 'openShift'])->name('cashier-shift.open');

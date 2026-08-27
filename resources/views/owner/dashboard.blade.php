@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard Enterprise')
-@section('page-title', 'Dashboard Monitoring ERP Enterprise')
+@section('title', (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Toko' : 'Dashboard Enterprise')
+@section('page-title', (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Monitoring Toko' : 'Dashboard Monitoring ERP Enterprise')
 
 @section('content')
 

@@ -217,14 +217,14 @@
                             <i class="fa-solid fa-ban fs-6 text-rose-500"></i><br>
                             <span class="text-[10px] text-rose-600">Dinonaktifkan</span>
                         </td>
-                        <td class="text-center bg-sky-50/30 font-semibold text-blue-700">
-                            <i class="fa-solid fa-circle-check fs-6 text-blue-600"></i><br>
-                            <span class="text-[10px]">Aktif Cabang</span>
+                        <td class="text-center bg-sky-50/30 font-semibold text-rose-600">
+                            <i class="fa-solid fa-ban fs-6 text-rose-500"></i><br>
+                            <span class="text-[10px] text-rose-600">Dinonaktifkan</span>
                         </td>
                         <td class="text-center text-slate-300"><i class="fa-solid fa-circle-xmark fs-6"></i></td>
                         <td class="text-center bg-emerald-50/30 font-semibold text-emerald-700">
                             <i class="fa-solid fa-circle-check fs-6 text-emerald-600"></i><br>
-                            <span class="text-[10px]">Full Kasir</span>
+                            <span class="text-[10px]">Khusus Kasir</span>
                         </td>
                     </tr>
 

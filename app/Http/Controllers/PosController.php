@@ -14,8 +14,8 @@ class PosController extends Controller
 {
     public function index()
     {
-        if (auth()->user()->isOwner()) {
-            return redirect()->route('owner.dashboard')->with('info', 'Fitur terminal kasir POS dinonaktifkan untuk akun Owner. Silakan gunakan menu Penjualan atau Dashboard Eksekutif untuk memantau transaksi cabang.');
+        if (auth()->user()->isOwner() || auth()->user()->isManager()) {
+            return redirect()->route('owner.dashboard')->with('info', 'Fitur terminal kasir POS khusus untuk akun Kasir. Silakan gunakan menu Penjualan atau Dashboard Toko untuk memantau transaksi cabang.');
         }
 
         $branchId = auth()->user()->branch_id;
@@ -40,6 +40,13 @@ class PosController extends Controller
 
     public function checkout(Request $request)
     {
+        if (auth()->user()->isOwner() || auth()->user()->isManager()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Transaksi kasir POS hanya dapat diproses oleh akun Kasir.'
+            ], 403);
+        }
+
         $request->validate([
             'items' => 'required|array|min:1',
             'items.*.material_name_or_type' => 'required|string',
