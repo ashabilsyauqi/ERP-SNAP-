@@ -798,6 +798,49 @@
         );
     }
 
+    // --- Modal Safe Opener & Closer ---
+    function showBannerModal() {
+        const modalEl = document.getElementById('modalBannerDimension');
+        if (!modalEl) return;
+        try {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+                return;
+            }
+        } catch(e) {
+            console.warn('Bootstrap modal fallback', e);
+        }
+        modalEl.classList.add('show');
+        modalEl.style.display = 'block';
+        modalEl.removeAttribute('aria-hidden');
+        modalEl.setAttribute('aria-modal', 'true');
+        if (!document.getElementById('custom-modal-backdrop')) {
+            const bd = document.createElement('div');
+            bd.id = 'custom-modal-backdrop';
+            bd.className = 'modal-backdrop fade show';
+            document.body.appendChild(bd);
+        }
+    }
+
+    function hideBannerModal() {
+        const modalEl = document.getElementById('modalBannerDimension');
+        if (!modalEl) return;
+        try {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+            }
+        } catch(e) {}
+        modalEl.classList.remove('show');
+        modalEl.style.display = 'none';
+        modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.removeAttribute('aria-modal');
+        const bd = document.getElementById('custom-modal-backdrop');
+        if (bd) bd.remove();
+        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+    }
+
     // --- Open Banner Dimension Modal ---
     function openBannerDimensionModal(materialId, materialName, fixedSize, retailPrice, wholesalePrices, editCartItem = null) {
         activeDimProduct = {
@@ -809,8 +852,10 @@
             editCartId: editCartItem ? editCartItem.id : null
         };
 
-        document.getElementById('dim_product_name').innerText = materialName;
-        document.getElementById('dim_product_price').innerText = 'Rp ' + Number(retailPrice).toLocaleString('id-ID') + '/m²';
+        const nameEl = document.getElementById('dim_product_name');
+        if (nameEl) nameEl.innerText = materialName;
+        const priceEl = document.getElementById('dim_product_price');
+        if (priceEl) priceEl.innerText = 'Rp ' + Number(retailPrice).toLocaleString('id-ID') + '/m²';
 
         // Set Width (Locked min 1.0m, max 3.0m)
         let targetWidth = 1.0;
@@ -831,21 +876,22 @@
         setBannerLength(targetLength);
 
         // Set Finishing
-        if (editCartItem && editCartItem.finishing) {
-            document.getElementById('banner_finishing').value = editCartItem.finishing;
-        } else {
-            document.getElementById('banner_finishing').value = 'Mata Ayam 4 Sudut';
+        const finishEl = document.getElementById('banner_finishing');
+        if (finishEl) {
+            if (editCartItem && editCartItem.finishing) {
+                finishEl.value = editCartItem.finishing;
+            } else {
+                finishEl.value = 'Mata Ayam 4 Sudut';
+            }
         }
 
         // Set Qty
         const qtyVal = editCartItem ? editCartItem.qty : 1;
-        document.getElementById('dim_qty').value = qtyVal;
+        const qtyEl = document.getElementById('dim_qty');
+        if (qtyEl) qtyEl.value = qtyVal;
 
         calculateDimensionPreview();
-
-        const modalEl = document.getElementById('modalBannerDimension');
-        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
+        showBannerModal();
     }
 
     // --- Synchronization between sliders and inputs (Locked Min 1.0m) ---
@@ -1015,9 +1061,7 @@
 
         window.dispatchEvent(new CustomEvent('item-added-to-cart', { detail: { name: activeDimProduct.name } }));
 
-        const modalEl = document.getElementById('modalBannerDimension');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
+        hideBannerModal();
     }
     // --- Add regular non-banner items to Cart ---
     function addToCart(materialId, materialName, fixedSize, retailPrice, wholesalePrices) {
@@ -1339,14 +1383,16 @@
         }
 
         const posContainer = document.getElementById('pos-main-container');
-        const alpineData = posContainer && window.Alpine ? Alpine.$data(posContainer) : null;
+        const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : {};
 
         const isDp = alpineData ? (alpineData.isDp && alpineData.isEligibleForDp) : false;
         const dpAmount = isDp ? (parseFloat(alpineData.dpAmount) || 0) : 0;
-        const customerName = isDp ? alpineData.customerName : null;
-        const customerPhone = isDp ? alpineData.customerPhone : null;
-        const dueDate = isDp ? alpineData.dueDate : null;
-        const productionNotes = isDp ? alpineData.productionNotes : null;
+        const dueDate = isDp ? (alpineData.dueDate || null) : null;
+        const productionNotes = isDp ? (alpineData.productionNotes || null) : null;
+        const customerId = alpineData ? (alpineData.customerId || null) : null;
+        const customerName = alpineData ? (alpineData.customerName || '') : '';
+        const customerPhone = alpineData ? (alpineData.customerPhone || '') : '';
+        const customerEmail = alpineData ? (alpineData.customerEmail || '') : '';
 
         if (isDp) {
             const minAllowedDp = alpineData ? alpineData.minDpAmount : Math.round((window.currentGrandTotal || 0) * 0.5);
@@ -1400,13 +1446,6 @@
             dimension_text: item.dimension_text || null,
             qty: item.qty
         }));
-
-        const alpineEl = document.getElementById('pos-main-container');
-        const alpineData = (alpineEl && window.Alpine) ? Alpine.$data(alpineEl) : {};
-        const customerId = alpineData.customerId || null;
-        const customerName = alpineData.customerName || '';
-        const customerPhone = alpineData.customerPhone || '';
-        const customerEmail = alpineData.customerEmail || '';
 
         fetch('{{ route("pos.checkout") }}', {
             method: 'POST',
@@ -1553,5 +1592,29 @@
             });
         }
     });
+
+    window.onSelectProduct = onSelectProduct;
+    window.handleProductClick = handleProductClick;
+    window.addToCart = addToCart;
+    window.updateQty = updateQty;
+    window.setQty = setQty;
+    window.clearCart = clearCart;
+    window.editBannerCartItem = editBannerCartItem;
+    window.openBannerDimensionModal = openBannerDimensionModal;
+    window.confirmBannerDimensionAddToCart = confirmBannerDimensionAddToCart;
+    window.showBannerModal = showBannerModal;
+    window.hideBannerModal = hideBannerModal;
+    window.syncBannerWidth = syncBannerWidth;
+    window.setBannerWidth = setBannerWidth;
+    window.syncBannerLength = syncBannerLength;
+    window.setBannerLength = setBannerLength;
+    window.changeDimQty = changeDimQty;
+    window.calculateDimensionPreview = calculateDimensionPreview;
+    window.renderCart = renderCart;
+    window.filterCategory = filterCategory;
+    window.filterProducts = filterProducts;
+    window.applyCombinedFilter = applyCombinedFilter;
+    window.setPaymentMethod = setPaymentMethod;
+    window.submitCheckout = submitCheckout;
 </script>
 @endsection
