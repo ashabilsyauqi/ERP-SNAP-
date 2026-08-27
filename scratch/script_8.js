@@ -730,7 +730,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': 'gEg8phykL1sWyfbloAyxxZXgQ0wxzuRKju5v139B'
+                'X-CSRF-TOKEN': 'GuBTmocqK5vn4xqLOB8sELp6GrEafKxPlVtEgA3P'
             },
             body: JSON.stringify({
                 payment_method: paymentMethod,

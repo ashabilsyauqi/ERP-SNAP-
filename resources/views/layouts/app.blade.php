@@ -148,6 +148,11 @@
             top: 100% !important;
             background-color: #ffffff;
             z-index: 1050;
+            display: none;
+        }
+        .o_main_navbar .dropdown-menu.show,
+        .dropdown-menu.show {
+            display: block !important;
         }
         .o_main_navbar .dropdown-item {
             padding: 7px 16px;
@@ -650,7 +655,7 @@
                                 </a>
                             @elseif($group['type'] === 'dropdown')
                                 <div class="dropdown">
-                                    <button class="o_nav_dropdown_toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="o_nav_dropdown_toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
                                         {{ $group['title'] }}
                                     </button>
                                     <ul class="dropdown-menu shadow">
@@ -1110,8 +1115,6 @@
         </div>
     </div>
 
-    <!-- Bootstrap 5 Bundle JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- ApexCharts JS -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.min.js"></script>
     <!-- Driver.js for Guided Tour -->
@@ -1375,6 +1378,56 @@
             `);
             printWindow.document.close();
         };
+
+        // Universal Dropdown Toggle & Auto-Close Engine
+        document.addEventListener('click', function(e) {
+            const toggle = e.target.closest('[data-bs-toggle="dropdown"]');
+            const isInsideMenu = e.target.closest('.dropdown-menu');
+
+            if (!toggle && !isInsideMenu) {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
+                    const parentToggle = menu.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+                    if (parentToggle) {
+                        parentToggle.setAttribute('aria-expanded', 'false');
+                        parentToggle.classList.remove('show');
+                    }
+                });
+                return;
+            }
+
+            if (toggle) {
+                e.preventDefault();
+                e.stopPropagation();
+                const dropdownParent = toggle.closest('.dropdown');
+                const menu = dropdownParent ? dropdownParent.querySelector('.dropdown-menu') : null;
+                if (!menu) return;
+
+                const isShown = menu.classList.contains('show');
+
+                // Close all other open dropdowns
+                document.querySelectorAll('.dropdown-menu.show').forEach(m => {
+                    if (m !== menu) {
+                        m.classList.remove('show');
+                        const t = m.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
+                        if (t) {
+                            t.setAttribute('aria-expanded', 'false');
+                            t.classList.remove('show');
+                        }
+                    }
+                });
+
+                if (isShown) {
+                    menu.classList.remove('show');
+                    toggle.setAttribute('aria-expanded', 'false');
+                    toggle.classList.remove('show');
+                } else {
+                    menu.classList.add('show');
+                    toggle.setAttribute('aria-expanded', 'true');
+                    toggle.classList.add('show');
+                }
+            }
+        });
     </script>
 </body>
 </html>
