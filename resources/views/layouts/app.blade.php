@@ -892,6 +892,15 @@
               x-data="{ 
                   search: '',
                   apps: [
+                      @if(auth()->user()->role === 'cashier')
+                      { name: 'Point of Sale (POS)', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-cash-register', bg: 'bg-gradient-to-tr from-rose-500 to-pink-700' },
+                      { name: 'Orders / Penjualan', route: '{{ route('sales.index') }}', icon: 'fa-solid fa-receipt', bg: 'bg-gradient-to-tr from-sky-500 to-blue-700' }
+                      @elseif(auth()->user()->role === 'purchasing')
+                      { name: 'Purchase / RFQ', route: '{{ route('purchasing.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700' },
+                      { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },
+                      { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
+                      { name: 'Settings & Profile', route: '{{ route('profile.index') }}', icon: 'fa-solid fa-gear', bg: 'bg-gradient-to-tr from-slate-600 to-gray-800' }
+                      @else
                       @if(auth()->user()->isOwner() || auth()->user()->isManager())
                       { name: 'Executive / Owner', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-chart-pie', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900' },
                       @endif
@@ -910,6 +919,7 @@
                       { name: 'Users & Access', route: '{{ route('users.index') }}', icon: 'fa-solid fa-users', bg: 'bg-gradient-to-tr from-slate-700 to-slate-900' },
                       @endif
                       { name: 'Settings & Profile', route: '{{ route('profile.index') }}', icon: 'fa-solid fa-gear', bg: 'bg-gradient-to-tr from-slate-600 to-gray-800' }
+                      @endif
                   ]
               }"
               @filter-apps.window="search = $event.detail.toLowerCase()">
