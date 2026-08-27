@@ -860,7 +860,7 @@
          x-transition:leave="transition ease-in duration-150"
          x-transition:leave-start="opacity-100 scale-100"
          x-transition:leave-end="opacity-0 scale-95"
-         class="fixed inset-0 p-6 flex flex-col items-center justify-start overflow-y-auto"
+         class="fixed inset-0 p-6 flex flex-col items-center justify-center overflow-y-auto"
          style="position: fixed; inset: 0; z-index: 999999 !important; width: 100vw; height: 100vh; display: none; background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%) !important;"
          x-cloak
          @keydown.window.escape="showSwitcher = false">
@@ -871,14 +871,14 @@
          </button>
 
          <!-- Snaprint Brand Logo & Title in Switcher -->
-         <div class="text-center mt-6 mb-2">
+         <div class="text-center mb-2">
              <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint Logo" class="rounded-circle shadow-2xl mb-3 border-2 border-white/50" style="width: 72px; height: 72px; object-fit: cover;">
              <h2 class="text-3xl font-extrabold text-white tracking-tight drop-shadow">Snaprint</h2>
              <p class="text-blue-200 text-xs mt-0.5 font-medium tracking-wide">"great spot to print"</p>
          </div>
 
          <!-- Search Apps Input -->
-         <div class="w-full max-w-md my-6 relative" x-data="{ searchQuery: '' }">
+         <div class="w-full max-w-md my-5 relative" x-data="{ searchQuery: '' }">
              <input type="text" 
                     placeholder="Search Apps... (Ketik nama modul)" 
                     x-model="searchQuery"
@@ -887,8 +887,8 @@
              <i class="fa-solid fa-magnifying-glass absolute right-4 top-4 text-white/50"></i>
          </div>
 
-         <!-- App Switcher Matrix Grid -->
-         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8 max-w-4xl w-full text-center pb-12"
+         <!-- App Switcher Centered Flex Matrix -->
+         <div class="flex flex-wrap justify-center items-center gap-8 max-w-4xl w-full text-center pb-6 mx-auto"
               x-data="{ 
                   search: '',
                   apps: [
@@ -926,13 +926,13 @@
               
               <template x-for="app in apps">
                   <div x-show="app.name.toLowerCase().includes(search)" 
-                       class="flex flex-col items-center">
+                       class="flex flex-col items-center w-28 sm:w-36">
                       <a :href="app.route" 
-                         class="w-20 h-20 rounded-2xl flex items-center justify-center shadow-xl transform hover:scale-110 hover:shadow-2xl transition-all duration-200 text-decoration-none mb-2.5 border border-white/30"
+                         class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center shadow-xl transform hover:scale-110 hover:shadow-2xl transition-all duration-200 text-decoration-none mb-2.5 border border-white/30"
                          :class="app.bg">
-                          <i class="text-3xl text-white" :class="app.icon"></i>
+                          <i class="text-3xl sm:text-4xl text-white" :class="app.icon"></i>
                       </a>
-                      <span class="text-white text-xs font-semibold tracking-wide drop-shadow" x-text="app.name"></span>
+                      <span class="text-white text-xs sm:text-sm font-semibold tracking-wide drop-shadow text-center" x-text="app.name"></span>
                   </div>
               </template>
          </div>
