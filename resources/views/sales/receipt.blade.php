@@ -188,16 +188,20 @@
             <td>Kasir</td>
             <td>: {{ $transaction->user->full_name ?: ($transaction->user->username ?? 'Kasir') }}</td>
         </tr>
-        @if($transaction->customer_name)
+        @php
+            $custName = $transaction->customer_name ?: ($transaction->customer->name ?? null);
+            $custPhone = $transaction->customer_phone ?: ($transaction->customer->phone ?? null);
+        @endphp
+        @if($custName)
         <tr>
-            <td>Client</td>
-            <td>: <strong>{{ $transaction->customer_name }}</strong></td>
+            <td>Pelanggan</td>
+            <td>: <strong>{{ $custName }}</strong></td>
         </tr>
         @endif
-        @if($transaction->customer_phone)
+        @if($custPhone)
         <tr>
             <td>WhatsApp</td>
-            <td>: {{ $transaction->customer_phone }}</td>
+            <td>: {{ $custPhone }}</td>
         </tr>
         @endif
         @if($transaction->due_date)

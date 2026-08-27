@@ -55,11 +55,17 @@ class PosController extends Controller
 
         $request->validate([
             'items' => 'required|array|min:1',
+            'items.*.material_id' => 'nullable|integer',
             'items.*.material_name_or_type' => 'required|string',
             'items.*.requested_size' => 'nullable|numeric|min:0',
+            'items.*.width_m' => 'nullable|numeric|min:0',
+            'items.*.length_m' => 'nullable|numeric|min:0',
             'items.*.fixed_length_m' => 'nullable|numeric|min:0',
             'items.*.custom_width_cm' => 'nullable|numeric|min:0',
             'items.*.area_m2' => 'nullable|numeric|min:0',
+            'items.*.billable_area_m2' => 'nullable|numeric|min:0',
+            'items.*.is_custom_banner' => 'nullable|boolean',
+            'items.*.finishing' => 'nullable|string|max:100',
             'items.*.dimension_text' => 'nullable|string|max:100',
             'items.*.qty' => 'required|integer|min:1',
             'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
@@ -149,50 +155,52 @@ class PosController extends Controller
             $savedItems = [];
 
             foreach ($request->items as $item) {
-                $qty = $item['qty'];
-                $fixedLength = !empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : (!empty($item['requested_size']) ? (float)$item['requested_size'] : null);
-                $customWidth = !empty($item['custom_width_cm']) ? (float)$item['custom_width_cm'] : null;
-                $areaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : null;
+                $qty = (int)$item['qty'];
                 
-                // Find material by name & branch
-                $materialQuery = Material::where('branch_id', auth()->user()->branch_id)
-                    ->where('material_name', 'like', '%' . $item['material_name_or_type'] . '%');
+                // Deterministic material lookup: by material_id, exact name, or partial name
+                $materialToDeduct = null;
+                if (!empty($item['material_id'])) {
+                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)->find($item['material_id']);
+                }
 
-                if ($fixedLength) {
-                    $materialToDeduct = (clone $materialQuery)
-                        ->where(function($q) use ($fixedLength) {
-                            $q->where('fixed_size', '>=', $fixedLength)
-                              ->orWhereNull('fixed_size');
-                        })
-                        ->orderBy('fixed_size', 'asc')
+                if (!$materialToDeduct) {
+                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
+                        ->where('material_name', $item['material_name_or_type'])
                         ->first();
-                } else {
-                    $materialToDeduct = $materialQuery->first();
+                }
+
+                if (!$materialToDeduct) {
+                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
+                        ->where('material_name', 'like', '%' . $item['material_name_or_type'] . '%')
+                        ->first();
                 }
 
                 if (!$materialToDeduct) {
                     $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)->first();
-                    if (!$materialToDeduct) {
-                        throw new \Exception("Bahan {$item['material_name_or_type']} tidak ditemukan di cabang ini.");
-                    }
+                }
+
+                if (!$materialToDeduct) {
+                    throw new \Exception("Bahan {$item['material_name_or_type']} tidak ditemukan di cabang ini.");
                 }
 
                 // Calculate dimensions if it is a banner with custom size
                 $widthM = !empty($item['width_m']) ? (float)$item['width_m'] : (!empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : null);
                 $lengthM = !empty($item['length_m']) ? (float)$item['length_m'] : (!empty($item['custom_width_cm']) ? (float)($item['custom_width_cm'] / 100) : null);
-                $isCustomBanner = ($widthM && $lengthM);
+                $isCustomBanner = !empty($item['is_custom_banner']) || ($widthM && $lengthM && $widthM > 0 && $lengthM > 0);
 
                 if ($isCustomBanner) {
-                    $billableWidth = max(1.0, $widthM);
-                    $billableLength = max(1.0, $lengthM);
+                    $billableWidth = max(1.0, $widthM ?: 1.0);
+                    $billableLength = max(1.0, $lengthM ?: 1.0);
                     $billableAreaM2 = !empty($item['billable_area_m2']) ? (float)$item['billable_area_m2'] : round($billableWidth * $billableLength, 3);
-                    $physicalAreaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : round($widthM * $lengthM, 3);
+                    $physicalAreaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : round(($widthM ?: 1.0) * ($lengthM ?: 1.0), 3);
                     
                     $dimensionText = $item['dimension_text'] ?? "{$widthM}m x {$lengthM}m ({$physicalAreaM2} m²)";
                     $areaM2 = $billableAreaM2;
                 } else {
+                    $fixedLength = !empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : (!empty($item['requested_size']) ? (float)$item['requested_size'] : null);
                     $dimensionText = $item['dimension_text'] ?? ($fixedLength ? "Ukuran: {$fixedLength}m" : null);
-                    $physicalAreaM2 = $areaM2;
+                    $physicalAreaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : null;
+                    $areaM2 = $physicalAreaM2;
                 }
 
                 // Wholesale tier price lookup based on qty
@@ -209,7 +217,7 @@ class PosController extends Controller
                 // Price calculation
                 if ($isCustomBanner && $areaM2 > 0) {
                     $unitPrice = round($areaM2 * $baseUnitPrice);
-                    $itemHpp = round($physicalAreaM2 * $materialToDeduct->purchase_price) * $qty;
+                    $itemHpp = round(($physicalAreaM2 ?: $areaM2) * $materialToDeduct->purchase_price) * $qty;
                 } else {
                     $unitPrice = $baseUnitPrice;
                     $itemHpp = $materialToDeduct->purchase_price * $qty;

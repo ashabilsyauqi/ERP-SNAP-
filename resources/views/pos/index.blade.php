@@ -184,7 +184,7 @@
                 <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group min-w-0"
                      data-name="{{ strtolower($material->material_name) }}"
                      data-category="{{ $material->category ?? 'Lainnya' }}"
-                     onclick="handleProductClick('{{ addslashes($material->material_name) }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }}, '{{ addslashes($material->category ?? '') }}')">
+                     onclick="handleProductClick({{ $material->id }}, '{{ addslashes($material->material_name) }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }}, '{{ addslashes($material->category ?? '') }}')">
                     
                     <div class="min-w-0">
                         <div class="flex justify-between items-start mb-1.5 gap-1">
@@ -725,6 +725,7 @@
 
     // Active state for dimension modal
     let activeDimProduct = {
+        materialId: null,
         name: '',
         fixedSize: null,
         retailPrice: 0,
@@ -756,11 +757,11 @@
     }
 
     // --- Handle product card click ---
-    function handleProductClick(materialName, fixedSize, retailPrice, wholesalePrices, category = '') {
+    function handleProductClick(materialId, materialName, fixedSize, retailPrice, wholesalePrices, category = '') {
         if (isBannerProduct(materialName, fixedSize, category)) {
-            openBannerDimensionModal(materialName, fixedSize, retailPrice, wholesalePrices);
+            openBannerDimensionModal(materialId, materialName, fixedSize, retailPrice, wholesalePrices);
         } else {
-            addToCart(materialName, fixedSize, retailPrice, wholesalePrices);
+            addToCart(materialId, materialName, fixedSize, retailPrice, wholesalePrices);
         }
     }
 
@@ -769,6 +770,7 @@
         const item = cart.find(i => i.id === itemId);
         if (!item) return;
         openBannerDimensionModal(
+            item.material_id,
             item.material_name_or_type,
             item.fixed_length_m || 3.0,
             item.retail_price,
@@ -778,8 +780,9 @@
     }
 
     // --- Open Banner Dimension Modal ---
-    function openBannerDimensionModal(materialName, fixedSize, retailPrice, wholesalePrices, editCartItem = null) {
+    function openBannerDimensionModal(materialId, materialName, fixedSize, retailPrice, wholesalePrices, editCartItem = null) {
         activeDimProduct = {
+            materialId: materialId || (editCartItem ? editCartItem.material_id : null),
             name: materialName,
             fixedSize: fixedSize,
             retailPrice: retailPrice,
@@ -955,6 +958,8 @@
             // Edit existing cart item
             const item = cart.find(i => i.id === activeDimProduct.editCartId);
             if (item) {
+                item.material_id = activeDimProduct.materialId || item.material_id;
+                item.material_name_or_type = activeDimProduct.name || item.material_name_or_type;
                 item.width_m = rawWidth;
                 item.length_m = rawLength;
                 item.fixed_length_m = rawWidth;
@@ -969,6 +974,7 @@
             // Add new custom banner item to cart
             cart.push({
                 id: cartCounter++,
+                material_id: activeDimProduct.materialId,
                 material_name_or_type: activeDimProduct.name,
                 width_m: rawWidth,
                 length_m: rawLength,
@@ -995,22 +1001,23 @@
         if (modal) modal.hide();
     }
     // --- Add regular non-banner items to Cart ---
-    function addToCart(materialName, fixedSize, retailPrice, wholesalePrices) {
+    function addToCart(materialId, materialName, fixedSize, retailPrice, wholesalePrices) {
         let size = fixedSize;
 
-        let existingItem = cart.find(i => i.material_name_or_type === materialName && !i.is_custom_banner);
+        let existingItem = cart.find(i => (i.material_id === materialId || i.material_name_or_type === materialName) && !i.is_custom_banner);
 
         if (existingItem) {
             updateQty(existingItem.id, 1);
         } else {
             cart.push({
                 id: cartCounter++,
+                material_id: materialId,
                 material_name_or_type: materialName,
                 requested_size: size,
                 is_custom_banner: false,
                 qty: 1,
                 retail_price: retailPrice,
-                wholesale_prices: wholesalePrices
+                wholesale_prices: wholesalePrices || []
             });
             renderCart();
         }
@@ -1350,11 +1357,17 @@
 
         // Format items payload for PosController
         const payloadItems = cart.map(item => ({
+            material_id: item.material_id || null,
             material_name_or_type: item.material_name_or_type,
             requested_size: item.requested_size,
+            width_m: item.width_m || item.fixed_length_m || null,
+            length_m: item.length_m || (item.custom_width_cm ? item.custom_width_cm / 100 : null),
             fixed_length_m: item.fixed_length_m || null,
             custom_width_cm: item.custom_width_cm || null,
             area_m2: item.area_m2 || null,
+            billable_area_m2: item.billable_area_m2 || null,
+            is_custom_banner: !!item.is_custom_banner,
+            finishing: item.finishing || null,
             dimension_text: item.dimension_text || null,
             qty: item.qty
         }));
