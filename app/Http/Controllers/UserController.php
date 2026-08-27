@@ -10,19 +10,32 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $authUser = Auth::user();
         
         if ($authUser->isManager()) {
-            $users = User::with('branch')->where('branch_id', $authUser->branch_id)->orderBy('username')->get();
+            // Manager only sees users belonging to their own assigned branch
+            $users = User::with('branch')
+                ->where('branch_id', $authUser->branch_id)
+                ->orderBy('username')
+                ->get();
             $branches = Branch::where('id', $authUser->branch_id)->get();
+            $selectedBranchId = $authUser->branch_id;
         } else {
-            $users = User::with('branch')->orderBy('username')->get();
+            // Owner sees all users from all branches or can filter by branch
+            $selectedBranchId = $request->input('branch_id', 'all');
+            $query = User::with('branch')->orderBy('username');
+
+            if ($selectedBranchId !== 'all') {
+                $query->where('branch_id', $selectedBranchId);
+            }
+
+            $users = $query->get();
             $branches = Branch::orderBy('nama_cabang')->get();
         }
 
-        return view('users.index', compact('users', 'branches'));
+        return view('users.index', compact('users', 'branches', 'selectedBranchId'));
     }
 
     public function store(Request $request)

@@ -39,6 +39,38 @@
         </div>
     </div>
 
+    <!-- Branch Indicator / Filter Bar -->
+    @if(auth()->user()->isOwner())
+    <div class="bg-white border border-slate-200 rounded-lg mb-3 p-2.5 shadow-sm d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <form method="GET" action="{{ route('users.index') }}" class="d-flex align-items-center gap-2 mb-0">
+            <label class="text-xs font-bold text-slate-700 mb-0 d-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-filter text-blue-600"></i> Filter Cabang:
+            </label>
+            <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm font-semibold text-xs py-1" style="min-width: 220px;">
+                <option value="all" {{ ($selectedBranchId ?? 'all') === 'all' ? 'selected' : '' }}>Semua Cabang (Global)</option>
+                @foreach($branches as $b)
+                    <option value="{{ $b->id }}" {{ ($selectedBranchId ?? '') == $b->id ? 'selected' : '' }}>
+                        {{ $b->nama_cabang }}
+                    </option>
+                @endforeach
+            </select>
+        </form>
+        <span class="badge bg-purple-50 text-purple-700 border border-purple-200 text-xs py-1.5 px-2.5">
+            <i class="fa-solid fa-crown me-1 text-purple-600"></i> Mode Owner: Akses Seluruh Pengguna
+        </span>
+    </div>
+    @else
+    <div class="bg-sky-50 border border-sky-200 rounded-lg mb-3 p-2.5 shadow-sm d-flex justify-content-between align-items-center">
+        <div class="text-xs text-sky-900 font-semibold d-flex align-items-center gap-2">
+            <i class="fa-solid fa-shop text-sky-600 fs-6"></i>
+            <span>Cabang Anda: <strong>{{ auth()->user()->branch->nama_cabang ?? 'Cabang Terdaftar' }}</strong> (Hanya menampilkan staf dan kasir pada cabang ini)</span>
+        </div>
+        <span class="badge bg-sky-100 text-sky-800 border border-sky-300 text-xs py-1 px-2">
+            <i class="fa-solid fa-user-tie me-1"></i> Manager Cabang
+        </span>
+    </div>
+    @endif
+
     <!-- TAB 1: USERS LIST TABLE -->
     <div x-show="currentTab === 'users'" class="o_form_sheet p-0 overflow-hidden bg-white shadow-sm rounded-3 border">
         <div class="table-responsive">
@@ -340,17 +372,25 @@
                                 @if(auth()->user()->isOwner())
                                     <option value="owner">Owner / Administrator (Full Access)</option>
                                 @endif
-                            </select>
-                        </div>
-                        <div class="mb-3" id="add_branch_container">
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang <span class="text-danger">*</span></label>
-                            <select name="branch_id" id="add_user_branch_id" class="form-select form-select-sm">
-                                <option value="">-- Pilih Cabang --</option>
-                                @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        @if(auth()->user()->isManager())
+                            <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
+                            <div class="mb-3">
+                                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang</label>
+                                <div class="p-2 bg-slate-100 rounded border text-xs font-semibold text-slate-800">
+                                    <i class="fa-solid fa-building me-1 text-blue-600"></i> {{ auth()->user()->branch->nama_cabang ?? 'Cabang Anda' }}
+                                </div>
+                            </div>
+                        @else
+                            <div class="mb-3" id="add_branch_container">
+                                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang <span class="text-danger">*</span></label>
+                                <select name="branch_id" id="add_user_branch_id" class="form-select form-select-sm">
+                                    <option value="">-- Pilih Cabang --</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
                     </div>
                     <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
                         <button type="button" class="btn-odoo-secondary" data-bs-dismiss="modal">Batal</button>
@@ -394,15 +434,25 @@
                                 @endif
                             </select>
                         </div>
-                        <div class="mb-3" id="edit_branch_container">
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang</label>
-                            <select name="branch_id" id="edit_user_branch_id" class="form-select form-select-sm">
-                                <option value="">-- Pilih Cabang --</option>
-                                @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        @if(auth()->user()->isManager())
+                            <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
+                            <div class="mb-3">
+                                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang</label>
+                                <div class="p-2 bg-slate-100 rounded border text-xs font-semibold text-slate-800">
+                                    <i class="fa-solid fa-building me-1 text-blue-600"></i> {{ auth()->user()->branch->nama_cabang ?? 'Cabang Anda' }}
+                                </div>
+                            </div>
+                        @else
+                            <div class="mb-3" id="edit_branch_container">
+                                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Penempatan Cabang</label>
+                                <select name="branch_id" id="edit_user_branch_id" class="form-select form-select-sm">
+                                    <option value="">-- Pilih Cabang --</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
                     </div>
                     <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
                         <button type="button" class="btn-odoo-secondary" data-bs-dismiss="modal">Batal</button>
@@ -420,11 +470,13 @@ function toggleBranchInput(mode) {
     const branchContainer = document.getElementById(mode + '_branch_container');
     const branchSelect = document.getElementById(mode + '_user_branch_id');
     
+    if (!roleSelect) return;
+
     if (roleSelect.value === 'owner') {
-        branchContainer.style.display = 'none';
+        if (branchContainer) branchContainer.style.display = 'none';
         if (branchSelect) branchSelect.removeAttribute('required');
     } else {
-        branchContainer.style.display = 'block';
+        if (branchContainer) branchContainer.style.display = 'block';
         if (branchSelect) branchSelect.setAttribute('required', 'required');
     }
 }
