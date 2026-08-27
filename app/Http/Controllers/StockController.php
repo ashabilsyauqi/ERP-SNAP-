@@ -54,7 +54,7 @@ class StockController extends Controller
                 $q->where('branch_id', $user->branch_id);
             })->count();
 
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         $catQuery = Material::query();
         if (!$user->isOwner()) {
@@ -112,7 +112,7 @@ class StockController extends Controller
 
         $pendingPurchases = $pendingQuery->get();
         $pendingCount = $pendingPurchases->count();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('stock.inspection', compact('pendingPurchases', 'pendingCount', 'branches'));
     }
@@ -150,7 +150,7 @@ class StockController extends Controller
 
         $rejectedPurchases = $rejectedQuery->get();
         $rejectedCount = $rejectedPurchases->count();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('stock.rejected', compact('rejectedPurchases', 'rejectedCount', 'branches'));
     }

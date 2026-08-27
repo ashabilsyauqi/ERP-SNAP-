@@ -57,7 +57,7 @@ class OwnerController extends Controller
         $transferSales = (clone $query)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('total_price');
 
         // Sales Per Branch Data
-        $branchSalesData = Branch::withTrashed()->get()->map(function ($branch) {
+        $branchSalesData = Branch::all()->map(function ($branch) {
             $sales = Transaction::where('branch_id', $branch->id)->sum('total_price');
             return [
                 'name' => $branch->nama_cabang,
@@ -103,7 +103,7 @@ class OwnerController extends Controller
         }
 
         $recentTransactions = (clone $query)->with(['user', 'branch', 'transactionDetails.material'])->orderBy('created_at', 'desc')->take(10)->get();
-        $branches = Branch::withTrashed()->get();
+        $branches = Branch::all();
 
         return view('owner.dashboard', compact(
             'totalSales',

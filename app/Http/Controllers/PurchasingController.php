@@ -63,7 +63,7 @@ class PurchasingController extends Controller
         $rejectedCount = $purchases->where('status', 'rejected')->count();
 
         $suppliers = Supplier::orderBy('name', 'asc')->get();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('purchasing.index', compact(
             'materials',
@@ -145,7 +145,7 @@ class PurchasingController extends Controller
         $rejectedCount = $purchases->where('status', 'rejected')->count();
 
         $suppliers = Supplier::orderBy('name', 'asc')->get();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('purchasing.history', compact(
             'purchases',

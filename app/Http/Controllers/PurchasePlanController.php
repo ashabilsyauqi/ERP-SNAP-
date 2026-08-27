@@ -60,7 +60,7 @@ class PurchasePlanController extends Controller
         $rejectedCount = $plans->where('status', 'rejected_by_owner')->count();
         $draftCount = $plans->where('status', 'draft')->count();
 
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
         $paymentAccounts = \App\Models\Account::where('tipe', 'aset')->where('is_active', true)->orderBy('kode_akun')->get();
 
         return view('purchasing.plans.index', compact(

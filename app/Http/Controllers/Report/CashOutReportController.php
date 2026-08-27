@@ -51,7 +51,7 @@ class CashOutReportController extends Controller
         $cashTransactions = $query->paginate(50)->withQueryString();
 
         $accounts = Account::where('tipe', 'beban')->active()->orderBy('nama_akun')->get();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('reports.cash-out', compact('cashTransactions', 'accounts', 'branches', 'totalKeluar', 'startDate', 'endDate'));
     }

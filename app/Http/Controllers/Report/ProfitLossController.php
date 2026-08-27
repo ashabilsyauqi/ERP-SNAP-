@@ -124,7 +124,7 @@ class ProfitLossController extends Controller
 
         $labaBersih = $labaKotor - $totalBebanOperasional;
 
-        $branches = Branch::withTrashed()->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('reports.profit-loss', compact(
             'pendapatan', 'totalPendapatan',

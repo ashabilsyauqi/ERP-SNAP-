@@ -19,7 +19,7 @@ class SalesReportController extends Controller
         $selectedBranchId = $request->input('branch_id', 'all');
         $isAllBranches = ($selectedBranchId === 'all' || empty($selectedBranchId));
 
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         $timeframe = $request->input('timeframe', '6m'); // Default 6 bulan
         $now = Carbon::now();

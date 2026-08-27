@@ -75,7 +75,7 @@ class SalesController extends Controller
         $totalTrx = (clone $summaryQuery)->count();
 
         $transactions = $query->get();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         $paymentSummary = [
             'period' => $period,
@@ -128,7 +128,7 @@ class SalesController extends Controller
         }
 
         $transactions = $query->get();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         // Calculate KPI Statistics
         $baseStatQuery = Transaction::query();

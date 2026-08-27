@@ -31,7 +31,7 @@
                 </thead>
                 <tbody>
                     @forelse($branches as $branch)
-                        <tr class="search-row {{ $branch->trashed() ? 'opacity-50' : '' }}">
+                        <tr class="search-row">
                             <td class="ps-3 text-center">
                                 <input type="checkbox" class="form-check-input">
                             </td>
@@ -59,11 +59,7 @@
                                 @endif
                             </td>
                             <td class="text-center">
-                                @if($branch->trashed())
-                                    <span class="badge bg-amber-50 text-amber-700 border border-amber-200 text-[10px]">Archived</span>
-                                @else
-                                    <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px]">Active</span>
-                                @endif
+                                <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px]">Active</span>
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
@@ -73,22 +69,13 @@
                                             title="Edit Cabang">
                                         <i class="fa-solid fa-pen-to-square text-xs"></i>
                                     </button>
-                                    @if(!$branch->trashed())
-                                        <form action="{{ route('branches.destroy', $branch->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Arsipkan cabang ini? Data transaksi masa lalu tetap tersimpan.');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Arsipkan">
-                                                <i class="fa-solid fa-box-archive text-xs"></i>
-                                            </button>
-                                        </form>
-                                    @else
-                                        <form action="{{ route('branches.restore', $branch->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Aktifkan Kembali">
-                                                <i class="fa-solid fa-rotate-left text-xs"></i>
-                                            </button>
-                                        </form>
-                                    @endif
+                                    <form action="{{ route('branches.destroy', $branch->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus cabang {{ addslashes($branch->nama_cabang) }}?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Hapus Cabang">
+                                            <i class="fa-solid fa-trash text-xs"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>

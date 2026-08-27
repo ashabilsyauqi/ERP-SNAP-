@@ -40,7 +40,7 @@ class CashInController extends Controller
 
         $cashTransactions = $query->orderBy('tanggal', 'desc')->orderBy('created_at', 'desc')->paginate(15);
         $accounts = Account::whereIn('tipe', ['pendapatan', 'aset'])->active()->orderBy('nama_akun')->get();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('cash-in.index', compact('cashTransactions', 'accounts', 'branches'));
     }

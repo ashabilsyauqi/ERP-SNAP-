@@ -69,7 +69,7 @@ class ExpenseReportController extends Controller
             'values' => $chartValues
         ];
 
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('reports.expenses', compact('expenses', 'chartData', 'totalExpenses', 'branches'));
     }

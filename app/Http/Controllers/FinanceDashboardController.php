@@ -68,7 +68,7 @@ class FinanceDashboardController extends Controller
             ->take(8)
             ->get();
 
-        $branches = \App\Models\Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
 
         return view('finance-dashboard', compact(
             'totalKasMasuk', 

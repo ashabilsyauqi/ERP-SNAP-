@@ -48,7 +48,7 @@ class CashInReportController extends Controller
         $cashTransactions = $query->paginate(50)->withQueryString();
 
         $accounts = Account::whereIn('tipe', ['pendapatan', 'aset'])->active()->orderBy('nama_akun')->get();
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
 
         return view('reports.cash-in', compact('cashTransactions', 'accounts', 'branches', 'totalMasuk', 'startDate', 'endDate'));
     }

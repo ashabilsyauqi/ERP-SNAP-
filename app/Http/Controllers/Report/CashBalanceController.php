@@ -50,7 +50,7 @@ class CashBalanceController extends Controller
         });
 
         // Branch Breakdown
-        $branches = Branch::withTrashed()->orderBy('nama_cabang')->get();
+        $branches = Branch::orderBy('nama_cabang')->get();
         $perBranch = [];
 
         foreach ($branches as $branch) {
