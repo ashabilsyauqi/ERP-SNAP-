@@ -182,9 +182,10 @@
         <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0 w-full">
             @foreach($materials as $material)
                 <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group min-w-0"
+                     data-id="{{ $material->id }}"
                      data-name="{{ strtolower($material->material_name) }}"
                      data-category="{{ $material->category ?? 'Lainnya' }}"
-                     onclick="handleProductClick({{ $material->id }}, '{{ addslashes($material->material_name) }}', '{{ $material->fixed_size }}', {{ $material->retail_price }}, {{ json_encode($material->wholesalePrices) }}, '{{ addslashes($material->category ?? '') }}')">
+                     onclick="onSelectProduct({{ $material->id }})">
                     
                     <div class="min-w-0">
                         <div class="flex justify-between items-start mb-1.5 gap-1">
@@ -719,6 +720,24 @@
 </div>
 
 <script>
+    // Products master catalog lookup object indexed by material id
+    const productsCatalog = @json($materials->keyBy('id'));
+
+    function onSelectProduct(materialId) {
+        const product = productsCatalog[materialId];
+        if (!product) return;
+        handleProductClick(
+            product.id,
+            product.material_name,
+            product.fixed_size,
+            parseFloat(product.retail_price) || 0,
+            product.wholesale_prices || [],
+            product.category || ''
+        );
+    }
+
+    window.onSelectProduct = onSelectProduct;
+
     let cart = [];
     let cartCounter = 0;
     window.currentGrandTotal = 0;
