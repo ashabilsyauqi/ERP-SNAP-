@@ -654,11 +654,11 @@
                                     {{ $group['title'] }}
                                 </a>
                             @elseif($group['type'] === 'dropdown')
-                                <div class="dropdown">
-                                    <button class="o_nav_dropdown_toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-display="static" aria-expanded="false">
+                                <div class="dropdown" x-data="{ open: false }" @click.outside="open = false">
+                                    <button class="o_nav_dropdown_toggle dropdown-toggle" type="button" @click="open = !open">
                                         {{ $group['title'] }}
                                     </button>
-                                    <ul class="dropdown-menu shadow">
+                                    <ul class="dropdown-menu shadow" :class="{ 'show': open }" x-show="open" style="position: absolute; top: 100%; left: 0; display: none;" x-cloak>
                                         @foreach($group['items'] as $item)
                                             @php
                                                 $itemAllowed = false;
@@ -697,8 +697,8 @@
 
                 <!-- Company / Branch Selector Menu -->
                 @if(auth()->user()->isOwner())
-                <div class="dropdown">
-                    <button class="btn btn-link p-0 text-decoration-none text-white d-flex align-items-center gap-1.5 dropdown-toggle border-0 h-100 px-2 hover:bg-white/10 cursor-pointer" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="dropdown" x-data="{ open: false }" @click.outside="open = false">
+                    <button class="btn btn-link p-0 text-decoration-none text-white d-flex align-items-center gap-1.5 dropdown-toggle border-0 h-100 px-2 hover:bg-white/10 cursor-pointer" type="button" @click="open = !open">
                         <i class="fa-solid fa-building text-amber-300 text-xs"></i>
                         <span class="text-xs font-semibold">
                             @php
@@ -712,7 +712,7 @@
                             {{ $selectedBranchName }}
                         </span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-1 p-2" style="min-width: 220px;">
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-1 p-2" :class="{ 'show': open }" x-show="open" style="position: absolute; top: 100%; right: 0; min-width: 220px; display: none;" x-cloak>
                         <li class="px-2 py-1 text-[10px] uppercase font-bold text-slate-400">Pilih Cabang (Company)</li>
                         <li>
                             <a class="dropdown-item rounded-2 text-xs py-1.5 {{ $selectedBranchId === 'all' ? 'active bg-blue-600 text-white font-bold' : '' }}" href="?branch_id=all">
@@ -745,15 +745,15 @@
                 </div>
 
                 <!-- User Profile Dropdown -->
-                <div class="dropdown">
-                    <button class="btn btn-link p-0 text-decoration-none text-white d-flex align-items-center gap-2 dropdown-toggle border-0 cursor-pointer" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="dropdown" x-data="{ open: false }" @click.outside="open = false">
+                    <button class="btn btn-link p-0 text-decoration-none text-white d-flex align-items-center gap-2 dropdown-toggle border-0 cursor-pointer" type="button" @click="open = !open">
                         @if(auth()->user()->avatar_path)
                             <img src="{{ asset('storage/' . auth()->user()->avatar_path) }}" alt="Avatar" class="rounded-circle object-cover border border-white/40" style="width: 28px; height: 28px;">
                         @else
                             <x-bladewind::avatar label="{{ strtoupper(substr(auth()->user()->username ?? 'U', 0, 2)) }}" size="small" />
                         @endif
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-2" style="min-width: 200px;">
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-2" :class="{ 'show': open }" x-show="open" style="position: absolute; top: 100%; right: 0; min-width: 200px; display: none;" x-cloak>
                         <li class="px-3 py-2 border-bottom mb-2">
                             <p class="text-xs font-bold text-slate-800 mb-0 truncate">{{ auth()->user()->full_name ?: auth()->user()->username }}</p>
                             <p class="text-[10px] text-slate-500 uppercase font-semibold mb-0">{{ auth()->user()->role }} &bull; {{ auth()->user()->branch->nama_cabang ?? 'Pusat' }}</p>
@@ -1378,56 +1378,6 @@
             `);
             printWindow.document.close();
         };
-
-        // Universal Dropdown Toggle & Auto-Close Engine
-        document.addEventListener('click', function(e) {
-            const toggle = e.target.closest('[data-bs-toggle="dropdown"]');
-            const isInsideMenu = e.target.closest('.dropdown-menu');
-
-            if (!toggle && !isInsideMenu) {
-                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                    menu.classList.remove('show');
-                    const parentToggle = menu.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
-                    if (parentToggle) {
-                        parentToggle.setAttribute('aria-expanded', 'false');
-                        parentToggle.classList.remove('show');
-                    }
-                });
-                return;
-            }
-
-            if (toggle) {
-                e.preventDefault();
-                e.stopPropagation();
-                const dropdownParent = toggle.closest('.dropdown');
-                const menu = dropdownParent ? dropdownParent.querySelector('.dropdown-menu') : null;
-                if (!menu) return;
-
-                const isShown = menu.classList.contains('show');
-
-                // Close all other open dropdowns
-                document.querySelectorAll('.dropdown-menu.show').forEach(m => {
-                    if (m !== menu) {
-                        m.classList.remove('show');
-                        const t = m.closest('.dropdown')?.querySelector('[data-bs-toggle="dropdown"]');
-                        if (t) {
-                            t.setAttribute('aria-expanded', 'false');
-                            t.classList.remove('show');
-                        }
-                    }
-                });
-
-                if (isShown) {
-                    menu.classList.remove('show');
-                    toggle.setAttribute('aria-expanded', 'false');
-                    toggle.classList.remove('show');
-                } else {
-                    menu.classList.add('show');
-                    toggle.setAttribute('aria-expanded', 'true');
-                    toggle.classList.add('show');
-                }
-            }
-        });
     </script>
 </body>
 </html>
