@@ -46,6 +46,12 @@ class OwnerController extends Controller
 
         $netProfit = $grossProfit - $totalOpex;
 
+        $omsetBase = (float) $totalSales;
+        $hppPct = $omsetBase > 0 ? round(($totalHpp / $omsetBase) * 100, 1) : 0;
+        $grossPct = $omsetBase > 0 ? round(($grossProfit / $omsetBase) * 100, 1) : 0;
+        $opexPct = $omsetBase > 0 ? round(($totalOpex / $omsetBase) * 100, 1) : 0;
+        $netPct = $omsetBase > 0 ? round(($netProfit / $omsetBase) * 100, 1) : 0;
+
         $totalTransactionsCount = (clone $query)->count();
         $totalMaterialsCount = (clone $materialQuery)->count();
         $lowStockCount = (clone $materialQuery)->where('stock_qty', '<=', 5)->count();
@@ -111,6 +117,10 @@ class OwnerController extends Controller
             'grossProfit',
             'netProfit',
             'totalOpex',
+            'hppPct',
+            'grossPct',
+            'opexPct',
+            'netPct',
             'totalTransactionsCount',
             'totalMaterialsCount',
             'lowStockCount',

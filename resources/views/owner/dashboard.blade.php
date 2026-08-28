@@ -40,68 +40,92 @@
 </div>
 @endif
 
-<!-- Overhauled Financial KPI Grid (5 Columns) -->
+<!-- Overhauled Financial KPI Grid (5 Columns) with Percentage Badges -->
 <div class="o_form_sheet">
+    @php
+        $omsetBase = (float) ($totalSales ?? 0);
+        $calcHppPct = $hppPct ?? ($omsetBase > 0 ? round((($totalHpp ?? 0) / $omsetBase) * 100, 1) : 0);
+        $calcGrossPct = $grossPct ?? ($omsetBase > 0 ? round((($grossProfit ?? 0) / $omsetBase) * 100, 1) : 0);
+        $calcOpexPct = $opexPct ?? ($omsetBase > 0 ? round((($totalOpex ?? 0) / $omsetBase) * 100, 1) : 0);
+        $calcNetPct = $netPct ?? ($omsetBase > 0 ? round((($netProfit ?? 0) / $omsetBase) * 100, 1) : 0);
+    @endphp
+
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <!-- Card 1: Revenue -->
-    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
-        <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Omset (Revenue)</p>
-            <h3 class="text-lg font-extrabold text-slate-900">Rp {{ number_format($totalSales, 0, ',', '.') }}</h3>
-            <small class="text-slate-400 text-[10px]">Total penjualan kotor POS</small>
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+            <div class="min-w-0 flex-grow me-2">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">Total Omset</p>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex-shrink-0">100%</span>
+                </div>
+                <h3 class="text-lg font-extrabold text-slate-900 truncate">Rp {{ number_format($totalSales, 0, ',', '.') }}</h3>
+                <small class="text-slate-400 text-[10px] block truncate">Total penjualan (100% basis)</small>
+            </div>
+            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl flex-shrink-0">
+                <i class="fa-solid fa-coins text-xl"></i>
+            </div>
         </div>
-        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-            <i class="fa-solid fa-coins text-xl"></i>
-        </div>
-    </div>
 
-    <!-- Card 2: HPP -->
-    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
-        <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">HPP Modal (COGS)</p>
-            <h3 class="text-lg font-extrabold text-slate-900">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h3>
-            <small class="text-slate-400 text-[10px]">Biaya bahan baku terpakai</small>
+        <!-- Card 2: HPP -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+            <div class="min-w-0 flex-grow me-2">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">HPP Modal (COGS)</p>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 flex-shrink-0">{{ $calcHppPct }}%</span>
+                </div>
+                <h3 class="text-lg font-extrabold text-slate-900 truncate">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h3>
+                <small class="text-slate-400 text-[10px] block truncate">Bahan baku ({{ $calcHppPct }}% omset)</small>
+            </div>
+            <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl flex-shrink-0">
+                <i class="fa-solid fa-boxes-stacked text-xl"></i>
+            </div>
         </div>
-        <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl">
-            <i class="fa-solid fa-boxes-stacked text-xl"></i>
-        </div>
-    </div>
 
-    <!-- Card 3: Gross Profit -->
-    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
-        <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Laba Kotor</p>
-            <h3 class="text-lg font-extrabold text-emerald-600">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h3>
-            <small class="text-slate-400 text-[10px]">Omset dikurangi HPP</small>
+        <!-- Card 3: Gross Profit -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+            <div class="min-w-0 flex-grow me-2">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">Laba Kotor</p>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 flex-shrink-0">{{ $calcGrossPct }}%</span>
+                </div>
+                <h3 class="text-lg font-extrabold text-emerald-600 truncate">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h3>
+                <small class="text-slate-400 text-[10px] block truncate">Margin kotor ({{ $calcGrossPct }}% omset)</small>
+            </div>
+            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl flex-shrink-0">
+                <i class="fa-solid fa-chart-line text-xl"></i>
+            </div>
         </div>
-        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-            <i class="fa-solid fa-chart-line text-xl"></i>
-        </div>
-    </div>
 
-    <!-- Card 4: OPEX -->
-    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
-        <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Beban Operasional</p>
-            <h3 class="text-lg font-extrabold text-rose-600">Rp {{ number_format($totalOpex, 0, ',', '.') }}</h3>
-            <small class="text-slate-400 text-[10px]">Gaji, Listrik, Sewa, Maint.</small>
+        <!-- Card 4: OPEX -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+            <div class="min-w-0 flex-grow me-2">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">Beban Operasional</p>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 flex-shrink-0">{{ $calcOpexPct }}%</span>
+                </div>
+                <h3 class="text-lg font-extrabold text-rose-600 truncate">Rp {{ number_format($totalOpex, 0, ',', '.') }}</h3>
+                <small class="text-slate-400 text-[10px] block truncate">Biaya operasional ({{ $calcOpexPct }}% omset)</small>
+            </div>
+            <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl flex-shrink-0">
+                <i class="fa-solid fa-wallet text-xl"></i>
+            </div>
         </div>
-        <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl">
-            <i class="fa-solid fa-wallet text-xl"></i>
-        </div>
-    </div>
 
-    <!-- Card 5: Net Profit -->
-    <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between">
-        <div>
-            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Laba Bersih (Net)</p>
-            <h3 class="text-lg font-extrabold {{ $netProfit >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">
-                Rp {{ number_format($netProfit, 0, ',', '.') }}
-            </h3>
-            <small class="text-slate-400 text-[10px]">Laba kotor dikurangi OPEX</small>
-        </div>
-        <div class="p-3 {{ $netProfit >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }} rounded-2xl">
-            <i class="fa-solid fa-scale-balanced text-xl"></i>
+        <!-- Card 5: Net Profit -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+            <div class="min-w-0 flex-grow me-2">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">Laba Bersih (Net)</p>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold {{ $netProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300' }} border flex-shrink-0">{{ $calcNetPct }}%</span>
+                </div>
+                <h3 class="text-lg font-extrabold {{ $netProfit >= 0 ? 'text-emerald-700' : 'text-rose-700' }} truncate">
+                    Rp {{ number_format($netProfit, 0, ',', '.') }}
+                </h3>
+                <small class="text-slate-400 text-[10px] block truncate">Net profit margin ({{ $calcNetPct }}% omset)</small>
+            </div>
+            <div class="p-3 {{ $netProfit >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }} rounded-2xl flex-shrink-0">
+                <i class="fa-solid fa-scale-balanced text-xl"></i>
+            </div>
         </div>
     </div>
 </div>
