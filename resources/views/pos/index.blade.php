@@ -455,6 +455,9 @@
                         <i class="fa-solid fa-file-invoice text-blue-600"></i> Buka Faktur
                     </button>
                 </div>
+                <button type="button" id="btn-wa-last-receipt" class="hidden btn btn-sm w-full py-1 text-xs font-bold text-white d-flex align-items-center justify-content-center gap-1.5 rounded-lg shadow-sm" style="background-color: #25D366; border-color: #25D366;">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Kirim Struk ke WhatsApp
+                </button>
             </div>
 
             <!-- Error Notification Card (Rose Red) -->
@@ -1643,9 +1646,22 @@
                     document.getElementById('btn-open-last-inv').onclick = function() {
                         openSnaprintInvoice(data);
                     };
+
+                    const btnWa = document.getElementById('btn-wa-last-receipt');
+                    if (btnWa) {
+                        if (data.customer_phone) {
+                            btnWa.classList.remove('hidden');
+                            btnWa.innerHTML = `<i class="fa-brands fa-whatsapp text-sm me-1"></i> Kirim Struk ke WhatsApp (${data.customer_phone})`;
+                            btnWa.onclick = function() {
+                                openWhatsAppReceipt(data.customer_phone, data);
+                            };
+                        } else {
+                            btnWa.classList.add('hidden');
+                        }
+                    }
                 }
 
-                // Show Success SweetAlert with Instant 58mm Thermal Print Trigger
+                // Show Success SweetAlert with Instant 58mm Thermal Print & WhatsApp Delivery
                 const titleHtml = isPartial 
                     ? '<span style="color: #d97706; font-weight: 800;">Pesanan DP Tercatat!</span>'
                     : '<span style="color: #059669; font-weight: 800;">Transaksi LUNAS (PAID)</span>';
@@ -1658,6 +1674,15 @@
                         <i class="fa-solid fa-circle-check text-emerald-600"></i> STATUS: PAID (LUNAS)
                        </span>`;
 
+                const waBtnHtml = data.customer_phone ? `
+                    <div class="mt-3 pt-2.5 border-top border-dashed">
+                        <button type="button" id="btn-swal-wa" class="btn w-100 py-2 text-xs font-bold text-white d-flex align-items-center justify-content-center gap-2 rounded-xl shadow-md cursor-pointer border-0" style="background-color: #25D366;">
+                            <i class="fa-brands fa-whatsapp text-base"></i>
+                            <span>Kirim Struk Digital ke WhatsApp (${data.customer_phone})</span>
+                        </button>
+                    </div>
+                ` : '';
+
                 Swal.fire({
                     icon: 'success',
                     title: titleHtml,
@@ -1665,14 +1690,23 @@
                         <div class="py-2 text-center">
                             ${statusBadge}
                             <div class="font-mono text-base font-bold text-slate-800 mt-1">#${data.invoice_number}</div>
-                            ${data.customer_name ? `<div class="text-xs text-slate-700 font-semibold mt-1">Client: <strong>${data.customer_name}</strong></div>` : ''}
+                            ${data.customer_name ? `<div class="text-xs text-slate-700 font-semibold mt-1">Client: <strong>${data.customer_name}</strong> ${data.customer_phone ? '<span class="text-slate-500">(' + data.customer_phone + ')</span>' : ''}</div>` : ''}
                             <div class="text-sm font-extrabold text-blue-900 mt-1 font-mono">
                                 Total: Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}
                                 ${isPartial ? `<br><span class="text-emerald-700 text-xs">DP Masuk: Rp ${Number(data.paid_amount || 0).toLocaleString('id-ID')}</span>` : ''}
                             </div>
                             <div class="text-xs text-slate-500 mt-1">Metode: <strong>${data.payment_method}</strong> &bull; Kasir: ${data.cashier_name}</div>
+                            ${waBtnHtml}
                         </div>
                     `,
+                    didOpen: () => {
+                        const swalWaBtn = document.getElementById('btn-swal-wa');
+                        if (swalWaBtn && data.customer_phone) {
+                            swalWaBtn.onclick = function() {
+                                openWhatsAppReceipt(data.customer_phone, data);
+                            };
+                        }
+                    },
                     showCancelButton: true,
                     showDenyButton: true,
                     confirmButtonColor: '#2563eb',

@@ -279,6 +279,11 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
+                                        @if($trx->customer_phone)
+                                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 text-emerald-600" title="Kirim Struk WhatsApp ({{ $trx->customer_phone }})" onclick='openWhatsAppReceipt("{{ $trx->customer_phone }}", @json($invPayload))'>
+                                                <i class="fa-brands fa-whatsapp text-xs"></i>
+                                            </button>
+                                        @endif
                                         <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Dokumen Faktur" onclick='openSnaprintInvoice(@json($invPayload))'>
                                             <i class="fa-solid fa-file-invoice text-xs"></i>
                                         </button>
@@ -376,6 +381,11 @@
                                 {{ $trx->branch->nama_cabang ?? 'Pusat' }}
                             </span>
                             <div class="d-flex gap-1">
+                                @if($trx->customer_phone)
+                                    <button type="button" class="btn btn-sm btn-light border border-success text-emerald-600 py-0 px-2 text-xs" title="Kirim Struk WA" onclick='openWhatsAppReceipt("{{ $trx->customer_phone }}", @json($invPayload))'>
+                                        <i class="fa-brands fa-whatsapp"></i>
+                                    </button>
+                                @endif
                                 <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-xs" title="Buka Faktur" onclick='openSnaprintInvoice(@json($invPayload))'>
                                     <i class="fa-solid fa-file-invoice text-blue-600"></i>
                                 </button>

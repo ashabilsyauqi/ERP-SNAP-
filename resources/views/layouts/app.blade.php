@@ -978,6 +978,9 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    <button type="button" x-show="inv.customer_phone" @click="openWhatsAppReceipt(inv.customer_phone, inv)" class="btn btn-sm btn-success py-1 px-2.5 text-xs font-semibold text-white d-inline-flex align-items-center gap-1.5 shadow-sm" style="background-color: #25D366; border-color: #25D366;">
+                        <i class="fa-brands fa-whatsapp fs-6"></i> Kirim WA
+                    </button>
                     <button type="button" @click="printSnaprintInvoice(inv)" class="btn btn-sm btn-primary py-1 px-2.5 text-xs font-semibold">
                         <i class="fa-solid fa-print me-1"></i> Cetak Invoice / SPK
                     </button>
@@ -1245,6 +1248,88 @@
             const wb = XLSX.utils.table_to_book(table, { sheet: "Data" });
             XLSX.writeFile(wb, `${filename}_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
+
+        // Global WhatsApp Digital Receipt Helper
+        window.formatWhatsAppPhoneNumber = function(phone) {
+            if (!phone) return '';
+            let cleaned = String(phone).replace(/[^0-9]/g, '');
+            if (cleaned.startsWith('0')) {
+                cleaned = '62' + cleaned.substring(1);
+            } else if (cleaned.startsWith('8')) {
+                cleaned = '62' + cleaned;
+            }
+            return cleaned;
+        };
+
+        window.generateWhatsAppReceiptMessage = function(data) {
+            const isPartial = data.payment_status === 'PARTIAL' || (data.remaining_amount && Number(data.remaining_amount) > 0);
+            const lines = [];
+
+            lines.push('🧾 *STRUK DIGITAL SNAPRINT DIGITAL PRINTING*');
+            lines.push('━━━━━━━━━━━━━━━━━━━━');
+            lines.push(`No. Invoice : *#${data.invoice_number || '-'}*`);
+            lines.push(`Tanggal     : ${data.created_at || new Date().toLocaleString('id-ID')}`);
+            lines.push(`Cabang      : ${data.branch_name || 'Pusat'}`);
+            lines.push(`Kasir       : ${data.cashier_name || 'Kasir'}`);
+            if (data.customer_name) {
+                lines.push(`Pelanggan   : *${data.customer_name}*`);
+            }
+            lines.push('━━━━━━━━━━━━━━━━━━━━');
+            lines.push('*RINCIAN PESANAN:*');
+
+            if (data.items && data.items.length > 0) {
+                data.items.forEach((item, idx) => {
+                    const name = item.material_name || item.name || item.material_name_or_type || 'Bahan Cetak';
+                    const dim = item.dimension_text ? ` [${item.dimension_text}]` : (item.requested_size ? ` [${item.requested_size}m]` : '');
+                    const qty = item.qty_ordered || item.qty || 1;
+                    const unitPrice = Number(item.selling_price || item.price || 0).toLocaleString('id-ID');
+                    const subtotal = Number(item.subtotal || (qty * (item.selling_price || item.price || 0))).toLocaleString('id-ID');
+                    lines.push(`${idx + 1}. *${name}*${dim}`);
+                    lines.push(`   ${qty}x @ Rp ${unitPrice} = *Rp ${subtotal}*`);
+                });
+            } else {
+                lines.push(`1. *${data.keterangan || 'Transaksi Penjualan Kasir POS'}*`);
+                lines.push(`   1x = *Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}*`);
+            }
+
+            lines.push('━━━━━━━━━━━━━━━━━━━━');
+            lines.push(`*Total Tagihan : Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}*`);
+            lines.push(`*Metode Bayar : ${data.payment_method || 'Cash'}*`);
+
+            if (isPartial) {
+                lines.push(`*Status       : DP (Uang Muka)*`);
+                lines.push(`*DP Diterima  : Rp ${Number(data.paid_amount || 0).toLocaleString('id-ID')}*`);
+                lines.push(`*Sisa Piutang : Rp ${Number(data.remaining_amount || 0).toLocaleString('id-ID')}*`);
+                if (data.due_date) {
+                    lines.push(`*Est. Selesai : ${data.due_date}*`);
+                }
+            } else {
+                lines.push(`*Status       : LUNAS (PAID)*`);
+                lines.push(`*Jumlah Bayar : Rp ${Number(data.paid_amount || data.total_price || 0).toLocaleString('id-ID')}*`);
+            }
+
+            if (data.production_notes) {
+                lines.push('━━━━━━━━━━━━━━━━━━━━');
+                lines.push(`*Catatan SPK / Finishing:* _${data.production_notes}_`);
+            }
+
+            lines.push('━━━━━━━━━━━━━━━━━━━━');
+            lines.push('Terima kasih telah mencetak di *Snaprint Digital Printing*! 🙏✨');
+            lines.push('Simpan pesan ini sebagai bukti transaksi resmi Anda.');
+
+            return lines.join('\n');
+        };
+
+        window.openWhatsAppReceipt = function(phone, data) {
+            const cleanPhone = window.formatWhatsAppPhoneNumber(phone);
+            if (!cleanPhone) {
+                alert('Nomor WhatsApp pelanggan tidak valid atau kosong.');
+                return;
+            }
+            const message = window.generateWhatsAppReceiptMessage(data);
+            const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        };
 
         // Global Invoice Viewer Helper
         window.openSnaprintInvoice = function(invData) {

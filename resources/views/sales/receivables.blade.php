@@ -280,6 +280,13 @@
                                     <i class="fa-solid fa-print text-slate-600"></i>
                                 </a>
 
+                                <!-- WhatsApp Digital Receipt Button -->
+                                @if($t->customer_phone)
+                                    <button type="button" onclick='openWhatsAppReceipt("{{ $t->customer_phone }}", @json($invData))' class="btn btn-sm btn-outline-success py-0.5 px-2 text-[11px] text-emerald-600" title="Kirim Struk ke WhatsApp ({{ $t->customer_phone }})">
+                                        <i class="fa-brands fa-whatsapp"></i>
+                                    </button>
+                                @endif
+
                                 <!-- Invoice Modal Button -->
                                 <button type="button" onclick='openSnaprintInvoice(@json($invData))' class="btn btn-sm btn-outline-primary py-0.5 px-2 text-[11px]" title="Lihat Faktur Resmi">
                                     <i class="fa-solid fa-file-invoice"></i>
