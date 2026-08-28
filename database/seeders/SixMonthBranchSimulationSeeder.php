@@ -27,12 +27,11 @@ class SixMonthBranchSimulationSeeder extends Seeder
         $users = User::all();
         $suppliers = Supplier::all();
 
-        $salesAccount = $accounts->firstWhere('kode_akun', '4-1000'); // Pendapatan Penjualan
+        $salesAccount = $accounts->firstWhere('kode_akun', '4-1000'); // Penambahan Cash
         $hppAccount = $accounts->firstWhere('kode_akun', '6-1000');   // HPP (Harga Pokok Penjualan)
 
         // Expense Accounts Map
         $expenseAccounts = [
-            '5-1000' => ['name' => 'Beban Bahan Baku', 'monthly_base' => 350000],
             '5-2000' => ['name' => 'Beban Gaji Karyawan', 'monthly_base' => 1200000],
             '5-3000' => ['name' => 'Beban Sewa Tempat', 'monthly_base' => 500000],
             '5-4000' => ['name' => 'Beban Listrik, Air & Internet', 'monthly_base' => 250000],

@@ -18,11 +18,10 @@ class FinanceDemoSeeder extends Seeder
         $accounts = Account::all();
         $users = User::all();
 
-        $salesAccount = $accounts->firstWhere('kode_akun', '4-1000'); // Pendapatan Penjualan
+        $salesAccount = $accounts->firstWhere('kode_akun', '4-1000'); // Penambahan Cash
         $otherIncomeAccount = $accounts->firstWhere('kode_akun', '4-2000'); // Pendapatan Lain-lain
         
         $expenseAccounts = [
-            '5-1000' => 1500000, // Beban Bahan Baku
             '5-2000' => 3000000, // Beban Gaji
             '5-3000' => 2000000, // Beban Sewa
             '5-4000' => 800000,  // Beban Listrik & Air

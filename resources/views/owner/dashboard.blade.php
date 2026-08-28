@@ -5,28 +5,44 @@
 
 @section('content')
 
-<!-- Branch Filter Dropdown (Owner Only) -->
-@if(auth()->user()->isOwner())
+<!-- Filter Bar (Branch & Period Filter) -->
 <div class="bg-white border border-slate-200 rounded-lg mb-4 p-3 shadow-sm">
     <form method="GET" action="{{ route('owner.dashboard') }}" class="row align-items-center g-3 mb-0">
+        @if(auth()->user()->isOwner())
         <div class="col-auto">
             <label class="col-form-label fw-bold text-dark text-xs d-flex align-items-center">
                 <i class="fa-solid fa-building text-indigo-600 me-2"></i>
-                <span>Pilih Cabang Analisis:</span>
+                <span>Cabang:</span>
             </label>
         </div>
         <div class="col-auto">
             <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm fw-semibold border-slate-300 rounded-lg text-xs">
-                <option value="all" {{ $branchId == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
+                <option value="all" {{ ($branchId ?? 'all') == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
                 @foreach($branches as $branch)
-                    <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
+                    <option value="{{ $branch->id }}" {{ ($branchId ?? '') == $branch->id ? 'selected' : '' }}>
                         {{ $branch->nama_cabang }}
                     </option>
                 @endforeach
             </select>
         </div>
+        @endif
+
+        <div class="col-auto">
+            <label class="col-form-label fw-bold text-dark text-xs d-flex align-items-center">
+                <i class="fa-solid fa-calendar-days text-indigo-600 me-2"></i>
+                <span>Periode:</span>
+            </label>
+        </div>
+        <div class="col-auto">
+            <select name="period" onchange="this.form.submit()" class="form-select form-select-sm fw-semibold border-slate-300 rounded-lg text-xs">
+                <option value="month" {{ ($period ?? 'month') == 'month' ? 'selected' : '' }}>Bulan Ini ({{ \Carbon\Carbon::now()->translatedFormat('F Y') }})</option>
+                <option value="year" {{ ($period ?? '') == 'year' ? 'selected' : '' }}>Tahun Ini ({{ \Carbon\Carbon::now()->year }})</option>
+                <option value="all" {{ ($period ?? '') == 'all' ? 'selected' : '' }}>Semua Waktu (Akumulasi)</option>
+            </select>
+        </div>
+
         <div class="col-auto ms-auto">
-            @if($branchId === 'all')
+            @if(($branchId ?? 'all') === 'all')
                 <span class="badge bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-pill px-3 py-1.5 font-bold text-xs">
                     <i class="fa-solid fa-globe me-1"></i> Data Konsolidasi Enterprise (Seluruh Cabang)
                 </span>
@@ -38,7 +54,6 @@
         </div>
     </form>
 </div>
-@endif
 
 <!-- Overhauled Financial KPI Grid (5 Columns) with Percentage Badges -->
 <div class="o_form_sheet">

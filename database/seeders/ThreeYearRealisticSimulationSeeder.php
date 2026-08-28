@@ -26,7 +26,7 @@ class ThreeYearRealisticSimulationSeeder extends Seeder
         $kasAkun = $accounts->firstWhere('kode_akun', '1-1000') ?? $accounts->first();
         $bankAkun = $accounts->firstWhere('kode_akun', '1-1200') ?? $accounts->first();
 
-        $bebanBahan = $accounts->firstWhere('kode_akun', '5-1000') ?? $kasAkun;
+        $bebanBahan = $accounts->firstWhere('kode_akun', '6-1000') ?? $kasAkun;
         $bebanGaji = $accounts->firstWhere('kode_akun', '5-2000') ?? $kasAkun;
         $bebanSewa = $accounts->firstWhere('kode_akun', '5-3000') ?? $kasAkun;
         $bebanListrik = $accounts->firstWhere('kode_akun', '5-4000') ?? $kasAkun;

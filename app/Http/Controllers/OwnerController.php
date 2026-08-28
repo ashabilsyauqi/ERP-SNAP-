@@ -15,11 +15,16 @@ class OwnerController extends Controller
     {
         $user = auth()->user();
         $branchId = $request->input('branch_id', 'all');
+        $period = $request->input('period', 'month'); // 'month' (default), 'year', 'all'
+        $month = (int) $request->input('month', \Carbon\Carbon::now()->month);
+        $year = (int) $request->input('year', \Carbon\Carbon::now()->year);
 
         $query = Transaction::query();
         $materialQuery = Material::query();
         $purchaseQuery = Purchase::query();
-        $opexQuery = \App\Models\CashTransaction::keluar();
+        $opexQuery = \App\Models\CashTransaction::keluar()->whereHas('account', function($q) {
+            $q->where('tipe', 'beban')->where('kode_akun', '!=', '6-1000');
+        });
 
         if ($user->isManager()) {
             $branchId = $user->branch_id;
@@ -32,18 +37,18 @@ class OwnerController extends Controller
             $opexQuery->where('branch_id', $branchId);
         }
 
+        if ($period === 'month') {
+            $query->whereMonth('created_at', $month)->whereYear('created_at', $year);
+            $opexQuery->whereMonth('tanggal', $month)->whereYear('tanggal', $year);
+        } elseif ($period === 'year') {
+            $query->whereYear('created_at', $year);
+            $opexQuery->whereYear('tanggal', $year);
+        } // 'all' has no date constraint
+
         $totalSales = (clone $query)->sum('total_price');
         $totalHpp = (clone $query)->sum('total_hpp');
         $grossProfit = $totalSales - $totalHpp;
-        
-        $totalOpex = (clone $opexQuery)->whereHas('account', function($q) {
-            $q->where('kode_akun', 'like', '5-2%')
-              ->orWhere('kode_akun', 'like', '5-3%')
-              ->orWhere('kode_akun', 'like', '5-4%')
-              ->orWhere('kode_akun', 'like', '5-5%')
-              ->orWhere('kode_akun', 'like', '5-9%');
-        })->sum('jumlah');
-
+        $totalOpex = (clone $opexQuery)->sum('jumlah');
         $netProfit = $grossProfit - $totalOpex;
 
         $omsetBase = (float) $totalSales;
@@ -63,8 +68,14 @@ class OwnerController extends Controller
         $transferSales = (clone $query)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('total_price');
 
         // Sales Per Branch Data
-        $branchSalesData = Branch::all()->map(function ($branch) {
-            $sales = Transaction::where('branch_id', $branch->id)->sum('total_price');
+        $branchSalesData = Branch::all()->map(function ($branch) use ($period, $month, $year) {
+            $bQuery = Transaction::where('branch_id', $branch->id);
+            if ($period === 'month') {
+                $bQuery->whereMonth('created_at', $month)->whereYear('created_at', $year);
+            } elseif ($period === 'year') {
+                $bQuery->whereYear('created_at', $year);
+            }
+            $sales = $bQuery->sum('total_price');
             return [
                 'name' => $branch->nama_cabang,
                 'sales' => $sales,
@@ -80,12 +91,12 @@ class OwnerController extends Controller
 
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $year = $date->year;
-            $month = $date->month;
+            $trendYear = $date->year;
+            $trendMonth = $date->month;
             $months[] = $date->translatedFormat('F Y');
 
-            $mSalesQuery = Transaction::whereYear('created_at', $year)->whereMonth('created_at', $month);
-            $mOpexQuery = \App\Models\CashTransaction::keluar()->whereYear('tanggal', $year)->whereMonth('tanggal', $month);
+            $mSalesQuery = Transaction::whereYear('created_at', $trendYear)->whereMonth('created_at', $trendMonth);
+            $mOpexQuery = \App\Models\CashTransaction::keluar()->whereYear('tanggal', $trendYear)->whereMonth('tanggal', $trendMonth);
 
             if ($branchId && $branchId !== 'all') {
                 $mSalesQuery->where('branch_id', $branchId);
@@ -95,11 +106,7 @@ class OwnerController extends Controller
             $mSales = $mSalesQuery->sum('total_price');
             $mHpp = $mSalesQuery->sum('total_hpp');
             $mOpex = $mOpexQuery->whereHas('account', function($q) {
-                $q->where('kode_akun', 'like', '5-2%')
-                  ->orWhere('kode_akun', 'like', '5-3%')
-                  ->orWhere('kode_akun', 'like', '5-4%')
-                  ->orWhere('kode_akun', 'like', '5-5%')
-                  ->orWhere('kode_akun', 'like', '5-9%');
+                $q->where('tipe', 'beban')->where('kode_akun', '!=', '6-1000');
             })->sum('jumlah');
 
             $monthlySales[] = $mSales;
@@ -136,7 +143,10 @@ class OwnerController extends Controller
             'monthlyOpex',
             'monthlyNetProfit',
             'branches',
-            'branchId'
+            'branchId',
+            'period',
+            'month',
+            'year'
         ));
     }
 }

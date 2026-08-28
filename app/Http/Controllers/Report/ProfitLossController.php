@@ -88,13 +88,13 @@ class ProfitLossController extends Controller
         
         if ($totalHppFromTrx > 0) {
             $hpp->push((object)[
-                'nama_akun' => 'Harga Pokok Bahan Baku Terjual (COGS)',
+                'nama_akun' => 'Harga Pokok Penjualan (HPP / COGS)',
                 'jumlah' => $totalHppFromTrx
             ]);
             $totalHpp += $totalHppFromTrx;
         } else {
             $hppTrx = $cashTransactions->where('tipe', 'keluar')
-                ->filter(function($t) { return $t->account && ($t->account->kode_akun === '6-1000' || $t->account->kode_akun === '5-1000'); })
+                ->filter(function($t) { return $t->account && $t->account->kode_akun === '6-1000'; })
                 ->groupBy('account.nama_akun');
                 
             foreach ($hppTrx as $akun => $trx) {
@@ -112,7 +112,7 @@ class ProfitLossController extends Controller
         
         $bebanTrx = $cashTransactions->where('tipe', 'keluar')
             ->filter(function($t) { 
-                return $t->account && $t->account->tipe === 'beban' && $t->account->kode_akun !== '6-1000' && $t->account->kode_akun !== '5-1000'; 
+                return $t->account && $t->account->tipe === 'beban' && $t->account->kode_akun !== '6-1000'; 
             })
             ->groupBy('account.nama_akun');
             

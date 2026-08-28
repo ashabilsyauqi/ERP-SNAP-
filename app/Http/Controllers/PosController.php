@@ -297,7 +297,7 @@ class PosController extends Controller
                 if ($salesAccount) {
                     $keterangan = ($paymentStatus === 'PARTIAL') 
                         ? "Penerimaan DP Uang Muka (#{$transaction->invoice_number}) dari " . ($transaction->customer_name ?: 'Pelanggan') . " (Sisa Piutang: Rp " . number_format($remainingAmount, 0, ',', '.') . ")"
-                        : "Pemasukan Penjualan POS (#{$transaction->invoice_number}) dari " . ($transaction->customer_name ?: 'Pelanggan');
+                        : "Penambahan Cash Penjualan POS (#{$transaction->invoice_number}) dari " . ($transaction->customer_name ?: 'Pelanggan');
 
                     \App\Models\CashTransaction::create([
                         'branch_id' => auth()->user()->branch_id,
