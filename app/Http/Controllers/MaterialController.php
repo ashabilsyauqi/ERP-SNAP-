@@ -44,6 +44,7 @@ class MaterialController extends Controller
     {
         $request->validate([
             'material_name' => 'required|string|max:255',
+            'category'      => 'nullable|string|max:100',
             'supplier_id'   => 'nullable|exists:suppliers,id',
             'fixed_size'    => 'nullable|numeric|min:0',
             'purchase_price'=> 'required|numeric|min:0',
@@ -52,10 +53,13 @@ class MaterialController extends Controller
         ]);
 
         $user = Auth::user();
-        $branchId = $user->isManager() ? $user->branch_id : ($request->branch_id ?? $user->branch_id);
+        $branchId = ($user->isOwner() || $user->isSuperAdmin()) && $request->filled('branch_id') && $request->branch_id !== 'all'
+            ? $request->branch_id
+            : ($user->branch_id ?: (\App\Models\Branch::first()->id ?? 1));
 
         $material = Material::create([
             'branch_id'     => $branchId,
+            'category'      => $request->category ?: 'Lainnya',
             'supplier_id'   => $request->supplier_id,
             'material_name' => $request->material_name,
             'fixed_size'    => $request->fixed_size,
@@ -69,9 +73,9 @@ class MaterialController extends Controller
             foreach ($request->wholesale_min_qty as $index => $minQty) {
                 if ($minQty > 0 && isset($request->wholesale_price[$index]) && $request->wholesale_price[$index] > 0) {
                     MaterialWholesalePrice::create([
-                        'material_id' => $material->id,
-                        'min_qty'     => $minQty,
-                        'price'       => $request->wholesale_price[$index],
+                        'material_id'     => $material->id,
+                        'min_qty'         => $minQty,
+                        'wholesale_price' => $request->wholesale_price[$index],
                     ]);
                 }
             }
@@ -84,6 +88,7 @@ class MaterialController extends Controller
     {
         $request->validate([
             'material_name' => 'required|string|max:255',
+            'category'      => 'nullable|string|max:100',
             'supplier_id'   => 'nullable|exists:suppliers,id',
             'fixed_size'    => 'nullable|numeric|min:0',
             'purchase_price'=> 'required|numeric|min:0',
@@ -92,6 +97,7 @@ class MaterialController extends Controller
         ]);
 
         $material->update([
+            'category'      => $request->category ?: $material->category,
             'supplier_id'   => $request->supplier_id,
             'material_name' => $request->material_name,
             'fixed_size'    => $request->fixed_size,
@@ -107,9 +113,9 @@ class MaterialController extends Controller
                 foreach ($request->wholesale_min_qty as $index => $minQty) {
                     if ($minQty > 0 && isset($request->wholesale_price[$index]) && $request->wholesale_price[$index] > 0) {
                         MaterialWholesalePrice::create([
-                            'material_id' => $material->id,
-                            'min_qty'     => $minQty,
-                            'price'       => $request->wholesale_price[$index],
+                            'material_id'     => $material->id,
+                            'min_qty'         => $minQty,
+                            'wholesale_price' => $request->wholesale_price[$index],
                         ]);
                     }
                 }

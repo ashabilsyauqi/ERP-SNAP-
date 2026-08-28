@@ -4,7 +4,13 @@
 @section('page-title', 'Stock Opname & Valuation')
 
 @section('action-buttons')
-<a href="{{ route('stock.inspection') }}" class="btn-odoo-primary text-decoration-none">
+@if(auth()->user()->isManager() || auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
+<button type="button" @click="createOpen = true" class="btn-odoo-primary border-0 shadow-sm d-inline-flex align-items-center gap-1.5 cursor-pointer">
+    <i class="fa-solid fa-plus"></i>
+    <span>Tambah Produk / Bahan</span>
+</button>
+@endif
+<a href="{{ route('stock.inspection') }}" class="btn-odoo-secondary text-decoration-none d-inline-flex align-items-center gap-1.5">
     <i class="fa-solid fa-truck-ramp-box"></i>
     <span>Incoming Receipts (GRN)</span>
     @if($pendingCount > 0)
@@ -15,8 +21,19 @@
 
 @section('content')
 <div x-data="{ 
+    createOpen: false,
     editOpen: false, 
     editMaterial: { id: '', name: '', stock_qty: 0, purchase_price: 0, retail_price: 0, wholesale: [] },
+    newProduct: {
+        wholesale: []
+    },
+    addNewWholesaleTier() {
+        if (!this.newProduct.wholesale) this.newProduct.wholesale = [];
+        this.newProduct.wholesale.push({ min_qty: '', price: '' });
+    },
+    removeNewWholesaleTier(idx) {
+        this.newProduct.wholesale.splice(idx, 1);
+    },
     addWholesaleTier() {
         if (!this.editMaterial.wholesale) this.editMaterial.wholesale = [];
         this.editMaterial.wholesale.push({ min_qty: '', price: '' });
@@ -259,6 +276,151 @@
                     <div class="col-12 text-center py-5 text-muted">Belum ada data inventaris.</div>
                 @endforelse
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Add Product Directly from Stock (Manager / Owner) -->
+    <div x-show="createOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
+        <div class="bg-white rounded-xl shadow-2xl border w-full max-w-xl overflow-hidden animate-fade-in my-auto max-h-[90vh] flex flex-col" @click.away="createOpen = false">
+            <form action="{{ route('stock.store') }}" method="POST" class="flex flex-col h-full overflow-hidden mb-0">
+                @csrf
+                <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-shrink-0">
+                    <h5 class="fs-6 fw-bold text-white mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-box-open text-teal-400"></i> Tambah Master Produk / Bahan Baku
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white text-xs" @click="createOpen = false"></button>
+                </div>
+
+                <div class="p-4 space-y-3 text-xs overflow-y-auto flex-grow">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="md:col-span-2">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Nama Bahan / Produk Cetak <span class="text-rose-600">*</span></label>
+                            <input type="text" name="material_name" class="form-control form-control-sm font-bold text-slate-900" placeholder="Misal: Spanduk Flexy Korea 440gsm Glossy" required>
+                        </div>
+
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Kategori Produk <span class="text-rose-600">*</span></label>
+                            <input type="text" name="category" list="new-category-options" class="form-control form-control-sm font-semibold" placeholder="Pilih atau ketik kategori..." required>
+                            <datalist id="new-category-options">
+                                <option value="Print Dokumen dan Sticker"></option>
+                                <option value="Cetak Outdoor dan Indoor"></option>
+                                <option value="Finishing"></option>
+                                <option value="Merchandise Custom"></option>
+                                <option value="Stampel"></option>
+                                <option value="Nota"></option>
+                                <option value="Brosur"></option>
+                                <option value="Tumbler"></option>
+                                <option value="Lainnya"></option>
+                            </datalist>
+                        </div>
+
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Cabang Penempatan</label>
+                            @if(auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
+                                <select name="branch_id" class="form-select form-select-sm font-semibold">
+                                    @foreach($branches as $b)
+                                        <option value="{{ $b->id }}" {{ (auth()->user()->branch_id == $b->id || (request('branch_id') == $b->id)) ? 'selected' : '' }}>
+                                            {{ $b->nama_cabang }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
+                                <input type="text" class="form-control form-control-sm bg-slate-100 font-semibold" value="{{ auth()->user()->branch->nama_cabang ?? 'Cabang Anda' }}" readonly>
+                            @endif
+                        </div>
+
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Vendor / Supplier (Opsional)</label>
+                            <select name="supplier_id" class="form-select form-select-sm">
+                                <option value="">-- Tanpa Vendor Khusus --</option>
+                                @foreach($suppliers as $sup)
+                                    <option value="{{ $sup->id }}">{{ $sup->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Satuan / Unit</label>
+                            <select name="unit" class="form-select form-select-sm">
+                                <option value="Pcs">Pcs / Lembar</option>
+                                <option value="Meter">Meter (m²)</option>
+                                <option value="Roll">Roll</option>
+                                <option value="Rim">Rim</option>
+                                <option value="Pack">Pack</option>
+                                <option value="Set">Set</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Ukuran / Panjang Gulungan (Meter)</label>
+                            <input type="number" step="0.01" name="fixed_size" class="form-control form-control-sm" placeholder="Misal: 50 (opsional)">
+                        </div>
+
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Stok Awal Fisik (Units) <span class="text-rose-600">*</span></label>
+                            <input type="number" name="stock_qty" value="10" class="form-control form-control-sm font-bold text-blue-900" required min="0">
+                        </div>
+
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Harga Modal HPP (Cost Price) <span class="text-rose-600">*</span></label>
+                            <input type="number" name="purchase_price" class="form-control form-control-sm font-mono font-bold" placeholder="Misal: 18000" required min="0">
+                        </div>
+
+                        <div>
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Harga Jual Normal (Sell Price) <span class="text-rose-600">*</span></label>
+                            <input type="number" name="retail_price" class="form-control form-control-sm font-mono font-extrabold text-teal-800" placeholder="Misal: 35000" required min="0">
+                        </div>
+                    </div>
+
+                    <!-- Wholesale Tiers Section for New Product -->
+                    <div class="border-t pt-3 space-y-2 mt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-0">
+                                <i class="fa-solid fa-tags text-indigo-600 me-1"></i> Tiering Harga Grosir (Wholesale Price)
+                            </label>
+                            <button type="button" @click="addNewWholesaleTier()" class="btn btn-sm btn-outline-primary py-0.5 px-2 text-[11px]">
+                                <i class="fa-solid fa-plus me-1"></i> Tambah Tier Grosir
+                            </button>
+                        </div>
+
+                        <template x-if="!newProduct.wholesale || newProduct.wholesale.length === 0">
+                            <div class="text-[11px] text-slate-400 italic bg-slate-50 p-2 rounded text-center">
+                                Belum ada harga grosir khusus. Klik tombol di atas jika produk ini memiliki diskon pembelian bertingkat (grosir).
+                            </div>
+                        </template>
+
+                        <div class="space-y-2 max-h-36 overflow-y-auto pr-1">
+                            <template x-for="(tier, idx) in newProduct.wholesale" :key="idx">
+                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                    <div class="w-1/2">
+                                        <label class="block text-[10px] text-slate-500 font-bold mb-0.5">Min. Beli (Qty/Pcs)</label>
+                                        <input type="number" min="1" :name="'wholesale[' + idx + '][min_qty]'" x-model="tier.min_qty" placeholder="Misal: 10" 
+                                            class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs focus:border-blue-600 focus:outline-none" required>
+                                    </div>
+                                    <div class="w-1/2">
+                                        <label class="block text-[10px] text-slate-500 font-bold mb-0.5">Harga Grosir Satuan (Rp)</label>
+                                        <input type="number" min="0" :name="'wholesale[' + idx + '][price]'" x-model="tier.price" placeholder="Misal: 30000" 
+                                            class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono focus:border-blue-600 focus:outline-none" required>
+                                    </div>
+                                    <div class="pt-3">
+                                        <button type="button" @click="removeNewWholesaleTier(idx)" class="text-rose-500 hover:text-rose-700 p-1 border-0 bg-transparent" title="Hapus Tier">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2 flex-shrink-0">
+                    <button type="button" class="btn-odoo-secondary" @click="createOpen = false">Batal</button>
+                    <button type="submit" class="btn-odoo-primary">
+                        <i class="fa-solid fa-plus me-1"></i> Simpan & Daftarkan Produk
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

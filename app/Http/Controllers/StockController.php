@@ -55,6 +55,7 @@ class StockController extends Controller
             })->count();
 
         $branches = Branch::orderBy('nama_cabang')->get();
+        $suppliers = \App\Models\Supplier::orderBy('name')->get();
 
         $catQuery = Material::query();
         if (!$user->isOwner()) {
@@ -74,9 +75,69 @@ class StockController extends Controller
             'lowStockCount',
             'pendingCount',
             'branches',
+            'suppliers',
             'categories',
             'selectedCategory'
         ));
+    }
+
+    /**
+     * Store a newly created Material/Product directly from Stock & Inventory
+     */
+    public function storeProduct(Request $request)
+    {
+        $request->validate([
+            'material_name'  => 'required|string|max:255',
+            'category'       => 'nullable|string|max:100',
+            'supplier_id'    => 'nullable|exists:suppliers,id',
+            'unit'           => 'nullable|string|max:50',
+            'fixed_size'     => 'nullable|numeric|min:0',
+            'purchase_price' => 'required|numeric|min:0',
+            'retail_price'   => 'required|numeric|min:0',
+            'stock_qty'      => 'required|numeric|min:0',
+        ]);
+
+        $user = Auth::user();
+        $branchId = ($user->isOwner() || $user->isSuperAdmin()) && $request->filled('branch_id') && $request->branch_id !== 'all' 
+            ? $request->branch_id 
+            : ($user->branch_id ?: (\App\Models\Branch::first()->id ?? 1));
+
+        $material = Material::create([
+            'branch_id'      => $branchId,
+            'category'       => $request->category ?: 'Lainnya',
+            'supplier_id'    => $request->supplier_id ?: null,
+            'material_name'  => $request->material_name,
+            'unit'           => $request->unit ?: 'Pcs',
+            'fixed_size'     => $request->fixed_size,
+            'purchase_price' => $request->purchase_price,
+            'retail_price'   => $request->retail_price,
+            'stock_qty'      => $request->stock_qty,
+        ]);
+
+        // Save wholesale tiers if provided
+        if ($request->has('wholesale') && is_array($request->wholesale)) {
+            foreach ($request->wholesale as $tier) {
+                if (isset($tier['min_qty']) && $tier['min_qty'] > 0 && isset($tier['price']) && $tier['price'] > 0) {
+                    \App\Models\MaterialWholesalePrice::create([
+                        'material_id'     => $material->id,
+                        'min_qty'         => $tier['min_qty'],
+                        'wholesale_price' => $tier['price'],
+                    ]);
+                }
+            }
+        } elseif ($request->filled('wholesale_min_qty') && is_array($request->wholesale_min_qty)) {
+            foreach ($request->wholesale_min_qty as $index => $minQty) {
+                if ($minQty > 0 && isset($request->wholesale_price[$index]) && $request->wholesale_price[$index] > 0) {
+                    \App\Models\MaterialWholesalePrice::create([
+                        'material_id'     => $material->id,
+                        'min_qty'         => $minQty,
+                        'wholesale_price' => $request->wholesale_price[$index],
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('stock.index')->with('success', "Produk / Bahan baku '{$material->material_name}' berhasil ditambahkan ke inventaris cabang!");
     }
 
     /**

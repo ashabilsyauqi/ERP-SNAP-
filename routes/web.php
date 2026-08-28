@@ -113,6 +113,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/inventory', [\App\Http\Controllers\StockController::class, 'index'])->name('index');
         Route::get('/inspection', [\App\Http\Controllers\StockController::class, 'inspection'])->name('inspection');
         Route::get('/rejected', [\App\Http\Controllers\StockController::class, 'rejected'])->name('rejected');
+        Route::post('/materials', [\App\Http\Controllers\StockController::class, 'storeProduct'])->name('store');
         Route::put('/materials/{material}', [\App\Http\Controllers\StockController::class, 'update'])->name('update');
         Route::post('/purchases/{purchase}/verify', [\App\Http\Controllers\StockController::class, 'verify'])->name('purchases.verify');
         Route::post('/purchases/{purchase}/reject', [\App\Http\Controllers\StockController::class, 'reject'])->name('purchases.reject');
