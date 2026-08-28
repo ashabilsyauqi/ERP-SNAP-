@@ -1375,7 +1375,7 @@
         }
     }
 
-    // --- Checkout Logic via Fetch AJAX ---
+    // --- Checkout Logic via Fetch AJAX with Pre-Payment Confirmation Popup ---
     function processCheckout() {
         if (cart.length === 0) {
             Swal.fire({ icon: 'warning', title: 'Keranjang Kosong', text: 'Pilih bahan baku terlebih dahulu.' });
@@ -1406,7 +1406,7 @@
             }
         }
 
-        const paymentMethod = document.getElementById('global_payment_method').value;
+        const paymentMethod = document.getElementById('global_payment_method').value || 'Cash';
         const errContainerDesktop = document.getElementById('checkout-error-desktop');
         const errContainerMobile = document.getElementById('checkout-error-mobile');
         const successContainerDesktop = document.getElementById('checkout-success-desktop');
@@ -1415,6 +1415,158 @@
         const btnDesktop = document.getElementById('checkout-btn-desktop');
         const btnMobile = document.getElementById('checkout-btn-mobile');
 
+        // Format items payload for PosController & Build itemized summary HTML
+        let itemsTableRows = '';
+        let totalItemCount = 0;
+        let calculatedGrandTotal = 0;
+
+        const payloadItems = cart.map((item, idx) => {
+            const { price: basePrice, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
+            let finalUnitPrice = basePrice;
+            if (item.is_custom_banner && (item.billable_area_m2 || item.area_m2)) {
+                const area = item.billable_area_m2 || item.area_m2;
+                finalUnitPrice = Math.round(area * basePrice);
+            }
+            const itemSubtotal = finalUnitPrice * item.qty;
+            totalItemCount += item.qty;
+            calculatedGrandTotal += itemSubtotal;
+
+            itemsTableRows += `
+                <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+                    <td style="padding: 6px 8px; text-align: left; vertical-align: middle;">
+                        <strong style="color: #1e293b;">${idx + 1}. ${item.material_name_or_type}</strong>
+                        ${item.is_custom_banner ? `<div style="color: #2563eb; font-size: 10px; font-weight: 600;">${item.dimension_text || (item.fixed_length_m + 'm x ' + item.custom_width_cm + 'cm')}</div>` : (item.requested_size ? `<div style="color: #2563eb; font-size: 10px;">Ukuran: ${item.requested_size}m</div>` : '')}
+                    </td>
+                    <td style="padding: 6px 8px; text-align: center; vertical-align: middle; color: #475569; font-weight: bold;">
+                        ${item.qty}x
+                    </td>
+                    <td style="padding: 6px 8px; text-align: right; vertical-align: middle; color: #475569; font-family: monospace;">
+                        Rp ${Number(finalUnitPrice).toLocaleString('id-ID')}
+                    </td>
+                    <td style="padding: 6px 8px; text-align: right; vertical-align: middle; font-weight: bold; color: #0f172a; font-family: monospace;">
+                        Rp ${Number(itemSubtotal).toLocaleString('id-ID')}
+                    </td>
+                </tr>
+            `;
+
+            return {
+                material_id: item.material_id || null,
+                material_name_or_type: item.material_name_or_type,
+                requested_size: item.requested_size,
+                width_m: item.width_m || item.fixed_length_m || null,
+                length_m: item.length_m || (item.custom_width_cm ? item.custom_width_cm / 100 : null),
+                fixed_length_m: item.fixed_length_m || null,
+                custom_width_cm: item.custom_width_cm || null,
+                area_m2: item.area_m2 || null,
+                billable_area_m2: item.billable_area_m2 || null,
+                is_custom_banner: !!item.is_custom_banner,
+                finishing: item.finishing || null,
+                dimension_text: item.dimension_text || null,
+                qty: item.qty
+            };
+        });
+
+        // Customer & Breakdown Formatting
+        const customerDisplay = customerName 
+            ? `<strong style="color: #1e3a8a;">${customerName}</strong> ${customerPhone ? '<span style="color: #64748b; font-size: 10px;">(' + customerPhone + ')</span>' : ''}` 
+            : '<span style="color: #94a3b8; font-style: italic;">Umum / Non-Member</span>';
+
+        let financialSummaryHtml = '';
+        if (isDp) {
+            const sisaPiutang = calculatedGrandTotal - dpAmount;
+            const dpPercent = calculatedGrandTotal > 0 ? Math.round((dpAmount / calculatedGrandTotal) * 100) : 0;
+            financialSummaryHtml = `
+                <div style="background: #f8fafc; border-radius: 8px; padding: 10px 12px; border: 1px solid #e2e8f0; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                        <span style="color: #64748b;">Total Nilai Pesanan:</span>
+                        <strong style="font-family: monospace; color: #0f172a;">Rp ${Number(calculatedGrandTotal).toLocaleString('id-ID')}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #059669; font-weight: bold; margin-bottom: 4px;">
+                        <span>Uang Muka (DP ${dpPercent}%):</span>
+                        <span style="font-family: monospace;">Rp ${Number(dpAmount).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #d97706; font-weight: bold; padding-top: 4px; border-top: 1px dashed #cbd5e1;">
+                        <span>Sisa Piutang (Pelunasan):</span>
+                        <span style="font-family: monospace;">Rp ${Number(sisaPiutang).toLocaleString('id-ID')}</span>
+                    </div>
+                    ${dueDate ? `<div style="font-size: 10.5px; color: #475569; margin-top: 6px; padding-top: 4px; border-top: 1px solid #f1f5f9;"><i class="fa-solid fa-calendar-day text-amber-500 me-1"></i> Target Selesai: <strong>${dueDate}</strong></div>` : ''}
+                </div>
+            `;
+        } else {
+            financialSummaryHtml = `
+                <div style="background: #eff6ff; border-radius: 8px; padding: 10px 12px; border: 1px solid #bfdbfe; margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: #1e3a8a; text-transform: uppercase;">Total Tagihan Kasir:</div>
+                        <div style="font-size: 10px; color: #3b82f6;">${totalItemCount} item dalam keranjang</div>
+                    </div>
+                    <span style="font-size: 16px; font-weight: 800; color: #1d4ed8; font-family: monospace;">Rp ${Number(calculatedGrandTotal).toLocaleString('id-ID')}</span>
+                </div>
+            `;
+        }
+
+        const confirmationModalHtml = `
+            <div style="text-align: left; font-family: system-ui, -apple-system, sans-serif;">
+                <!-- Customer & Payment Metadata -->
+                <div style="background: #f1f5f9; border-radius: 8px; padding: 8px 12px; font-size: 11px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+                        <span style="color: #64748b;">Pelanggan:</span>
+                        <div>${customerDisplay}</div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #64748b;">Metode Pembayaran:</span>
+                        <strong style="color: #2563eb; text-transform: uppercase;">${paymentMethod}</strong>
+                    </div>
+                </div>
+
+                <!-- Itemized Breakdown Table -->
+                <div style="max-height: 180px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8fafc; color: #64748b; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #e2e8f0;">
+                                <th style="padding: 6px 8px; text-align: left;">Item</th>
+                                <th style="padding: 6px 8px; text-align: center;">Qty</th>
+                                <th style="padding: 6px 8px; text-align: right;">Harga</th>
+                                <th style="padding: 6px 8px; text-align: right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsTableRows}
+                        </tbody>
+                    </table>
+                </div>
+
+                ${financialSummaryHtml}
+
+                ${productionNotes ? `<div style="font-size: 10.5px; color: #475569; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 6px 8px; margin-top: 8px;"><i class="fa-solid fa-note-sticky text-amber-500 me-1"></i> Catatan SPK: <em>${productionNotes}</em></div>` : ''}
+            </div>
+        `;
+
+        // Pre-payment Confirmation Popup
+        Swal.fire({
+            title: isDp 
+                ? '<span style="font-size: 17px; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-file-invoice-dollar text-amber-500 me-2"></i>Konfirmasi Pesanan DP</span>' 
+                : '<span style="font-size: 17px; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-cash-register text-blue-600 me-2"></i>Konfirmasi Pembayaran</span>',
+            html: confirmationModalHtml,
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `<i class="fa-solid fa-check me-1"></i> ${isDp ? 'Ya, Simpan Pesanan DP' : 'Ya, Proses & Bayar'}`,
+            cancelButtonText: '<i class="fa-solid fa-xmark me-1"></i> Batal / Periksa Lagi',
+            reverseButtons: true,
+            focusConfirm: true,
+            width: '460px'
+        }).then((confirmResult) => {
+            if (!confirmResult.isConfirmed) {
+                return;
+            }
+
+            // Execute Server Fetch Request
+            executeCheckoutFetch(payloadItems, paymentMethod, isDp, dpAmount, customerId, customerName, customerPhone, customerEmail, dueDate, productionNotes, alpineData, btnDesktop, btnMobile, errContainerDesktop, errContainerMobile, successContainerDesktop, successContainerMobile);
+        });
+    }
+
+    // --- Helper to execute checkout fetch request ---
+    function executeCheckoutFetch(payloadItems, paymentMethod, isDp, dpAmount, customerId, customerName, customerPhone, customerEmail, dueDate, productionNotes, alpineData, btnDesktop, btnMobile, errContainerDesktop, errContainerMobile, successContainerDesktop, successContainerMobile) {
         // Disable Buttons
         if (btnDesktop) {
             btnDesktop.disabled = true;
@@ -1429,23 +1581,6 @@
         if (errContainerMobile) errContainerMobile.classList.add('hidden');
         if (successContainerDesktop) successContainerDesktop.classList.add('hidden');
         if (successContainerMobile) successContainerMobile.classList.add('hidden');
-
-        // Format items payload for PosController
-        const payloadItems = cart.map(item => ({
-            material_id: item.material_id || null,
-            material_name_or_type: item.material_name_or_type,
-            requested_size: item.requested_size,
-            width_m: item.width_m || item.fixed_length_m || null,
-            length_m: item.length_m || (item.custom_width_cm ? item.custom_width_cm / 100 : null),
-            fixed_length_m: item.fixed_length_m || null,
-            custom_width_cm: item.custom_width_cm || null,
-            area_m2: item.area_m2 || null,
-            billable_area_m2: item.billable_area_m2 || null,
-            is_custom_banner: !!item.is_custom_banner,
-            finishing: item.finishing || null,
-            dimension_text: item.dimension_text || null,
-            qty: item.qty
-        }));
 
         fetch('{{ route("pos.checkout") }}', {
             method: 'POST',
