@@ -5,9 +5,9 @@
 
 @section('action-buttons')
 @if(auth()->user()->isManager() || auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
-<button type="button" @click="createOpen = true" class="btn-odoo-primary border-0 shadow-sm d-inline-flex align-items-center gap-1.5 cursor-pointer">
+<button type="button" class="btn-odoo-primary border-0 shadow-sm d-inline-flex align-items-center gap-1.5 cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalAddProductStock">
     <i class="fa-solid fa-plus"></i>
-    <span>Tambah Produk / Bahan</span>
+    <span>+ Add Product</span>
 </button>
 @endif
 <a href="{{ route('stock.inspection') }}" class="btn-odoo-secondary text-decoration-none d-inline-flex align-items-center gap-1.5">
@@ -21,19 +21,8 @@
 
 @section('content')
 <div x-data="{ 
-    createOpen: false,
     editOpen: false, 
     editMaterial: { id: '', name: '', stock_qty: 0, purchase_price: 0, retail_price: 0, wholesale: [] },
-    newProduct: {
-        wholesale: []
-    },
-    addNewWholesaleTier() {
-        if (!this.newProduct.wholesale) this.newProduct.wholesale = [];
-        this.newProduct.wholesale.push({ min_qty: '', price: '' });
-    },
-    removeNewWholesaleTier(idx) {
-        this.newProduct.wholesale.splice(idx, 1);
-    },
     addWholesaleTier() {
         if (!this.editMaterial.wholesale) this.editMaterial.wholesale = [];
         this.editMaterial.wholesale.push({ min_qty: '', price: '' });
@@ -280,147 +269,167 @@
     </div>
 
     <!-- Modal Add Product Directly from Stock (Manager / Owner) -->
-    <div x-show="createOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
-        <div class="bg-white rounded-xl shadow-2xl border w-full max-w-xl overflow-hidden animate-fade-in my-auto max-h-[90vh] flex flex-col" @click.away="createOpen = false">
-            <form action="{{ route('stock.store') }}" method="POST" class="flex flex-col h-full overflow-hidden mb-0">
-                @csrf
-                <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-shrink-0">
-                    <h5 class="fs-6 fw-bold text-white mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-box-open text-teal-400"></i> Tambah Master Produk / Bahan Baku
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white text-xs" @click="createOpen = false"></button>
-                </div>
+    <div class="modal fade" id="modalAddProductStock" tabindex="-1" aria-labelledby="modalAddProductStockLabel" aria-hidden="true" style="z-index: 999999 !important;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-3 shadow-2xl border-0 overflow-hidden">
+                <form action="{{ route('stock.store') }}" method="POST">
+                    @csrf
+                    <div class="modal-header bg-slate-900 text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="modal-title fs-6 fw-bold text-white mb-0 d-flex align-items-center gap-2" id="modalAddProductStockLabel">
+                            <i class="fa-solid fa-box-open text-teal-400"></i> + Add Product (Master Bahan Baku)
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
 
-                <div class="p-4 space-y-3 text-xs overflow-y-auto flex-grow">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div class="md:col-span-2">
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Nama Bahan / Produk Cetak <span class="text-rose-600">*</span></label>
-                            <input type="text" name="material_name" class="form-control form-control-sm font-bold text-slate-900" placeholder="Misal: Spanduk Flexy Korea 440gsm Glossy" required>
-                        </div>
+                    <div class="modal-body p-4 bg-white">
+                        <div class="row g-3">
+                            <!-- 1. Nama Bahan / Produk -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                    <i class="fa-solid fa-box text-primary me-1"></i> Nama Bahan / Produk Cetak <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="material_name" class="form-control form-control-sm font-bold text-slate-900" placeholder="Contoh: Spanduk Flexy Korea 440gsm Glossy" required>
+                            </div>
 
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Kategori Produk <span class="text-rose-600">*</span></label>
-                            <input type="text" name="category" list="new-category-options" class="form-control form-control-sm font-semibold" placeholder="Pilih atau ketik kategori..." required>
-                            <datalist id="new-category-options">
-                                <option value="Print Dokumen dan Sticker"></option>
-                                <option value="Cetak Outdoor dan Indoor"></option>
-                                <option value="Finishing"></option>
-                                <option value="Merchandise Custom"></option>
-                                <option value="Stampel"></option>
-                                <option value="Nota"></option>
-                                <option value="Brosur"></option>
-                                <option value="Tumbler"></option>
-                                <option value="Lainnya"></option>
-                            </datalist>
-                        </div>
+                            <!-- 2. Kategori Produk -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                    <i class="fa-solid fa-layer-group text-primary me-1"></i> Kategori Produk <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" name="category" list="new-category-options-stock" class="form-control form-control-sm font-semibold" placeholder="Pilih atau ketik kategori..." required>
+                                <datalist id="new-category-options-stock">
+                                    <option value="Print Dokumen dan Sticker"></option>
+                                    <option value="Cetak Outdoor dan Indoor"></option>
+                                    <option value="Finishing"></option>
+                                    <option value="Merchandise Custom"></option>
+                                    <option value="Stampel"></option>
+                                    <option value="Nota"></option>
+                                    <option value="Brosur"></option>
+                                    <option value="Tumbler"></option>
+                                    <option value="Lainnya"></option>
+                                </datalist>
+                            </div>
 
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Cabang Penempatan</label>
-                            @if(auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
-                                <select name="branch_id" class="form-select form-select-sm font-semibold">
-                                    @foreach($branches as $b)
-                                        <option value="{{ $b->id }}" {{ (auth()->user()->branch_id == $b->id || (request('branch_id') == $b->id)) ? 'selected' : '' }}>
-                                            {{ $b->nama_cabang }}
-                                        </option>
+                            <!-- 3. Cabang Penempatan -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                    <i class="fa-solid fa-store text-primary me-1"></i> Cabang Penempatan
+                                </label>
+                                @if(auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
+                                    <select name="branch_id" class="form-select form-select-sm font-semibold">
+                                        @foreach($branches as $b)
+                                            <option value="{{ $b->id }}" {{ (auth()->user()->branch_id == $b->id || (request('branch_id') == $b->id)) ? 'selected' : '' }}>
+                                                {{ $b->nama_cabang }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
+                                    <input type="text" class="form-control form-control-sm bg-light font-semibold" value="{{ auth()->user()->branch->nama_cabang ?? 'Cabang Anda' }}" readonly>
+                                @endif
+                            </div>
+
+                            <!-- 4. Vendor / Supplier -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                    <i class="fa-solid fa-truck text-secondary me-1"></i> Vendor / Supplier Utama
+                                </label>
+                                <select name="supplier_id" class="form-select form-select-sm">
+                                    <option value="">-- Tanpa Vendor Khusus (Opsional) --</option>
+                                    @foreach($suppliers as $sup)
+                                        <option value="{{ $sup->id }}">{{ $sup->name }}</option>
                                     @endforeach
                                 </select>
-                            @else
-                                <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
-                                <input type="text" class="form-control form-control-sm bg-slate-100 font-semibold" value="{{ auth()->user()->branch->nama_cabang ?? 'Cabang Anda' }}" readonly>
-                            @endif
-                        </div>
-
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Vendor / Supplier (Opsional)</label>
-                            <select name="supplier_id" class="form-select form-select-sm">
-                                <option value="">-- Tanpa Vendor Khusus --</option>
-                                @foreach($suppliers as $sup)
-                                    <option value="{{ $sup->id }}">{{ $sup->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Satuan / Unit</label>
-                            <select name="unit" class="form-select form-select-sm">
-                                <option value="Pcs">Pcs / Lembar</option>
-                                <option value="Meter">Meter (m²)</option>
-                                <option value="Roll">Roll</option>
-                                <option value="Rim">Rim</option>
-                                <option value="Pack">Pack</option>
-                                <option value="Set">Set</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Ukuran / Panjang Gulungan (Meter)</label>
-                            <input type="number" step="0.01" name="fixed_size" class="form-control form-control-sm" placeholder="Misal: 50 (opsional)">
-                        </div>
-
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Stok Awal Fisik (Units) <span class="text-rose-600">*</span></label>
-                            <input type="number" name="stock_qty" value="10" class="form-control form-control-sm font-bold text-blue-900" required min="0">
-                        </div>
-
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Harga Modal HPP (Cost Price) <span class="text-rose-600">*</span></label>
-                            <input type="number" name="purchase_price" class="form-control form-control-sm font-mono font-bold" placeholder="Misal: 18000" required min="0">
-                        </div>
-
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Harga Jual Normal (Sell Price) <span class="text-rose-600">*</span></label>
-                            <input type="number" name="retail_price" class="form-control form-control-sm font-mono font-extrabold text-teal-800" placeholder="Misal: 35000" required min="0">
-                        </div>
-                    </div>
-
-                    <!-- Wholesale Tiers Section for New Product -->
-                    <div class="border-t pt-3 space-y-2 mt-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-0">
-                                <i class="fa-solid fa-tags text-indigo-600 me-1"></i> Tiering Harga Grosir (Wholesale Price)
-                            </label>
-                            <button type="button" @click="addNewWholesaleTier()" class="btn btn-sm btn-outline-primary py-0.5 px-2 text-[11px]">
-                                <i class="fa-solid fa-plus me-1"></i> Tambah Tier Grosir
-                            </button>
-                        </div>
-
-                        <template x-if="!newProduct.wholesale || newProduct.wholesale.length === 0">
-                            <div class="text-[11px] text-slate-400 italic bg-slate-50 p-2 rounded text-center">
-                                Belum ada harga grosir khusus. Klik tombol di atas jika produk ini memiliki diskon pembelian bertingkat (grosir).
                             </div>
-                        </template>
 
-                        <div class="space-y-2 max-h-36 overflow-y-auto pr-1">
-                            <template x-for="(tier, idx) in newProduct.wholesale" :key="idx">
-                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                                    <div class="w-1/2">
-                                        <label class="block text-[10px] text-slate-500 font-bold mb-0.5">Min. Beli (Qty/Pcs)</label>
-                                        <input type="number" min="1" :name="'wholesale[' + idx + '][min_qty]'" x-model="tier.min_qty" placeholder="Misal: 10" 
-                                            class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs focus:border-blue-600 focus:outline-none" required>
+                            <!-- 5. Satuan & Ukuran -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                    <i class="fa-solid fa-ruler-combined text-secondary me-1"></i> Satuan
+                                </label>
+                                <select name="unit" class="form-select form-select-sm">
+                                    <option value="Pcs">Pcs / Lembar</option>
+                                    <option value="Meter">Meter (m²)</option>
+                                    <option value="Roll">Roll</option>
+                                    <option value="Rim">Rim</option>
+                                    <option value="Pack">Pack</option>
+                                    <option value="Set">Set</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                    <i class="fa-solid fa-arrows-left-right text-secondary me-1"></i> Panjang (Meter)
+                                </label>
+                                <input type="number" step="0.01" name="fixed_size" class="form-control form-control-sm" placeholder="Misal: 50 (opsional)">
+                            </div>
+
+                            <!-- 6. Stok Awal -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                    <i class="fa-solid fa-cubes text-primary me-1"></i> Stok Awal (On Hand) <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" name="stock_qty" value="10" class="form-control form-control-sm fw-bold text-blue-900" required min="0">
+                            </div>
+
+                            <!-- 7. Cost Price / Modal HPP -->
+                            <div class="col-md-4">
+                                <div class="p-2.5 rounded-3 bg-amber-50 border border-amber-300">
+                                    <label class="form-label fw-bold text-amber-900 text-xs text-uppercase mb-1 d-block">
+                                        <i class="fa-solid fa-sack-dollar text-amber-600 me-1"></i> Modal HPP (Cost Price) <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white fw-bold text-amber-800">Rp</span>
+                                        <input type="number" name="purchase_price" class="form-control form-control-sm fw-bold font-monospace" placeholder="18000" required min="0">
                                     </div>
-                                    <div class="w-1/2">
-                                        <label class="block text-[10px] text-slate-500 font-bold mb-0.5">Harga Grosir Satuan (Rp)</label>
-                                        <input type="number" min="0" :name="'wholesale[' + idx + '][price]'" x-model="tier.price" placeholder="Misal: 30000" 
-                                            class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono focus:border-blue-600 focus:outline-none" required>
+                                    <span class="text-[10px] text-amber-700 mt-1 d-block">Harga beli/modal per unit</span>
+                                </div>
+                            </div>
+
+                            <!-- 8. Sales Price / Harga Jual Normal Eceran -->
+                            <div class="col-md-4">
+                                <div class="p-2.5 rounded-3 bg-emerald-50 border border-emerald-300">
+                                    <label class="form-label fw-bold text-emerald-900 text-xs text-uppercase mb-1 d-block">
+                                        <i class="fa-solid fa-tag text-emerald-600 me-1"></i> Harga Jual (Sales Price) <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white fw-bold text-emerald-700">Rp</span>
+                                        <input type="number" name="retail_price" class="form-control form-control-sm fw-bold text-emerald-800 font-monospace" placeholder="35000" required min="0">
                                     </div>
-                                    <div class="pt-3">
-                                        <button type="button" @click="removeNewWholesaleTier(idx)" class="text-rose-500 hover:text-rose-700 p-1 border-0 bg-transparent" title="Hapus Tier">
-                                            <i class="fa-solid fa-trash-can"></i>
+                                    <span class="text-[10px] text-emerald-700 mt-1 d-block">Harga normal eceran kasir</span>
+                                </div>
+                            </div>
+
+                            <!-- 9. Tiering Harga Grosir (Wholesale Price) -->
+                            <div class="col-12 mt-3">
+                                <div class="card border border-indigo-200 bg-indigo-50/40 p-3 rounded-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <h6 class="fw-bold text-indigo-900 mb-0 d-flex align-items-center gap-1.5 fs-7">
+                                                <i class="fa-solid fa-tags text-indigo-600"></i> Tiering Harga Grosir (Wholesale Prices)
+                                            </h6>
+                                            <span class="text-slate-500 text-[11px]">Diskon harga khusus untuk pembelian kuantitas banyak</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-primary py-1 px-2.5 text-xs font-semibold" onclick="addWholesaleRowStock('wholesale-stock-container')">
+                                            <i class="fa-solid fa-plus me-1"></i> Tambah Tier Grosir
                                         </button>
                                     </div>
+
+                                    <div id="wholesale-stock-container" class="d-flex flex-column gap-2 mt-2">
+                                        <!-- Dynamic rows -->
+                                    </div>
                                 </div>
-                            </template>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2 flex-shrink-0">
-                    <button type="button" class="btn-odoo-secondary" @click="createOpen = false">Batal</button>
-                    <button type="submit" class="btn-odoo-primary">
-                        <i class="fa-solid fa-plus me-1"></i> Simpan & Daftarkan Produk
-                    </button>
-                </div>
-            </form>
+                    <div class="modal-footer bg-slate-50 border-top py-2.5 px-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-odoo-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn-odoo-primary">
+                            <i class="fa-solid fa-plus me-1"></i> Simpan & Daftarkan Produk
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -517,4 +526,33 @@
     </div>
 
 </div>
+
+<script>
+    function addWholesaleRowStock(containerId, minQty = '', price = '') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const index = container.children.length;
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center gap-2 p-2 bg-white rounded border';
+        row.innerHTML = `
+            <div class="flex-fill">
+                <label class="form-label text-slate-500 text-[10px] fw-bold mb-0.5 d-block">Minimal Beli (Qty/Pcs):</label>
+                <input type="number" min="1" name="wholesale[${index}][min_qty]" value="${minQty}" class="form-control form-control-sm" placeholder="Contoh: 10" required>
+            </div>
+            <div class="flex-fill">
+                <label class="form-label text-slate-500 text-[10px] fw-bold mb-0.5 d-block">Harga Grosir Satuan (Rp):</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light">Rp</span>
+                    <input type="number" min="0" name="wholesale[${index}][price]" value="${price}" class="form-control form-control-sm font-monospace font-bold" placeholder="Contoh: 180000" required>
+                </div>
+            </div>
+            <div class="pt-3">
+                <button type="button" class="btn btn-sm btn-outline-danger border-0 py-1 px-2" onclick="this.closest('.d-flex').remove()" title="Hapus Tier">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+</script>
 @endsection
