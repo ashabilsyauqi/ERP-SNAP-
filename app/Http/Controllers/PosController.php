@@ -15,11 +15,16 @@ class PosController extends Controller
 {
     public function index()
     {
-        if (auth()->user()->isOwner() || auth()->user()->isManager()) {
+        if (!auth()->user()->isSuperAdmin() && (auth()->user()->role === 'owner' || auth()->user()->isManager())) {
             return redirect()->route('owner.dashboard')->with('info', 'Fitur terminal kasir POS khusus untuk akun Kasir. Silakan gunakan menu Penjualan atau Dashboard Toko untuk memantau transaksi cabang.');
         }
 
         $branchId = auth()->user()->branch_id;
+        if (request()->filled('branch_id') && request('branch_id') !== 'all') {
+            $branchId = request('branch_id');
+        } elseif (!$branchId) {
+            $branchId = \App\Models\Branch::first()->id ?? 1;
+        }
 
         // Exclude Tinta (OPEX) from POS, filter by branch
         $materials = Material::with('wholesalePrices')
@@ -52,7 +57,7 @@ class PosController extends Controller
 
     public function checkout(Request $request)
     {
-        if (auth()->user()->isOwner() || auth()->user()->isManager()) {
+        if (!auth()->user()->isSuperAdmin() && (auth()->user()->role === 'owner' || auth()->user()->isManager())) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Transaksi kasir POS hanya dapat diproses oleh akun Kasir.'
