@@ -345,14 +345,14 @@ class SalesController extends Controller
     }
 
     /**
-     * Void/Refund transaction and restore stock to material inventory (Cashier from POS only).
+     * Void/Refund transaction and restore stock to material inventory (Cashier or Super Admin KINGAshabil).
      */
     public function refund($id)
     {
         $user = auth()->user();
 
-        if (!$user->isCashier()) {
-            abort(403, 'Kegiatan pembatalan / refund transaksi kasir hanya dapat dilakukan oleh petugas Kasir dari terminal POS.');
+        if (!$user->isCashier() && !$user->isSuperAdmin()) {
+            abort(403, 'Kegiatan pembatalan / refund transaksi kasir hanya dapat dilakukan oleh petugas Kasir atau Super Admin KINGAshabil.');
         }
 
         try {
@@ -360,7 +360,7 @@ class SalesController extends Controller
 
             $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
 
-            if ($transaction->branch_id && $transaction->branch_id !== $user->branch_id) {
+            if (!$user->isSuperAdmin() && $transaction->branch_id && $transaction->branch_id !== $user->branch_id) {
                 abort(403, 'Anda hanya dapat me-refund transaksi pada cabang Anda.');
             }
 
@@ -378,12 +378,20 @@ class SalesController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', "Transaksi {$invoiceNumber} berhasil dibatalkan/direfund. Seluruh stok bahan telah dikembalikan.");
+            return redirect()->back()->with('success', "Transaksi {$invoiceNumber} berhasil dihapus/dibatalkan. Seluruh stok bahan telah dikembalikan.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal memproses refund transaksi: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memproses penghapusan transaksi: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Delete transaction alias (Super Admin KINGAshabil / Cashier).
+     */
+    public function destroy($id)
+    {
+        return $this->refund($id);
     }
 
     /**

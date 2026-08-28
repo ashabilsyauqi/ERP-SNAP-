@@ -285,11 +285,11 @@
                                         <a href="{{ route('sales.receipt', $trx->id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Cetak Struk Thermal POS" target="_blank">
                                             <i class="fa-solid fa-receipt text-xs"></i>
                                         </a>
-                                        @if(auth()->user()->isCashier())
-                                            <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Refund invoice ini? Stok bahan akan dikembalikan ke inventori.');">
+                                        @if(auth()->user()->isCashier() || auth()->user()->isSuperAdmin())
+                                            <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus / Batalkan invoice {{ $trx->invoice_number }} ini? Seluruh stok bahan akan dikembalikan ke inventori.');">
                                                 @csrf
-                                                <button class="btn btn-sm btn-outline-danger py-0 px-2" type="submit" title="Batalkan / Refund Transaksi Kasir">
-                                                    <i class="fa-solid fa-rotate-left text-xs"></i>
+                                                <button class="btn btn-sm btn-outline-danger py-0 px-2" type="submit" title="Hapus / Batalkan Transaksi (Kembalikan Stok)">
+                                                    <i class="fa-solid fa-trash-can text-xs"></i>
                                                 </button>
                                             </form>
                                         @endif
@@ -382,6 +382,14 @@
                                 <a href="{{ route('sales.receipt', $trx->id) }}" class="btn btn-sm btn-light border py-0 px-2 text-xs" title="Cetak Struk" target="_blank">
                                     <i class="fa-solid fa-receipt"></i>
                                 </a>
+                                @if(auth()->user()->isCashier() || auth()->user()->isSuperAdmin())
+                                    <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus / Batalkan invoice {{ $trx->invoice_number }} ini?');">
+                                        @csrf
+                                        <button class="btn btn-sm btn-light border border-danger text-danger py-0 px-2 text-xs" type="submit" title="Hapus / Batalkan Transaksi">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     </div>

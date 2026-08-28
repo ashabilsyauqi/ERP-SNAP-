@@ -65,7 +65,6 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:cashier'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
-        Route::post('/sales/{id}/refund', [SalesController::class, 'refund'])->name('sales.refund');
         Route::post('/cashier-shift/open', [\App\Http\Controllers\CashierShiftController::class, 'openShift'])->name('cashier-shift.open');
         Route::post('/cashier-shift/close', [\App\Http\Controllers\CashierShiftController::class, 'closeShift'])->name('cashier-shift.close');
     });
@@ -77,6 +76,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/sales/{id}/settle', [SalesController::class, 'settle'])->name('sales.settle');
         Route::patch('/sales/{id}/status', [SalesController::class, 'updateOrderStatus'])->name('sales.status');
         Route::get('/sales/{id}/receipt', [SalesController::class, 'receipt'])->name('sales.receipt');
+        Route::post('/sales/{id}/refund', [SalesController::class, 'refund'])->name('sales.refund');
+        Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy');
     });
 
     // ==========================================
