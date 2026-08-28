@@ -638,11 +638,11 @@
                     @foreach($menuGroups as $group)
                         @php
                             $groupAllowed = false;
-                            if ($group['role'] === 'all') {
+                            if (auth()->user()->isSuperAdmin() || $group['role'] === 'all') {
                                 $groupAllowed = true;
                             } else {
                                 $roles = explode(',', $group['role']);
-                                if (in_array(auth()->user()->role, $roles)) {
+                                if (in_array(auth()->user()->role, $roles) || (in_array('owner', $roles) && auth()->user()->isOwner())) {
                                     $groupAllowed = true;
                                 }
                             }
@@ -662,11 +662,11 @@
                                         @foreach($group['items'] as $item)
                                             @php
                                                 $itemAllowed = false;
-                                                if ($item['role'] === 'all') {
+                                                if (auth()->user()->isSuperAdmin() || $item['role'] === 'all') {
                                                     $itemAllowed = true;
                                                 } else {
                                                     $itemRoles = explode(',', $item['role']);
-                                                    if (in_array(auth()->user()->role, $itemRoles)) {
+                                                    if (in_array(auth()->user()->role, $itemRoles) || (in_array('owner', $itemRoles) && auth()->user()->isOwner())) {
                                                         $itemAllowed = true;
                                                     }
                                                 }
@@ -900,7 +900,18 @@
               x-data="{ 
                   search: '',
                   apps: [
-                      @if(auth()->user()->role === 'cashier')
+                      @if(auth()->user()->isSuperAdmin())
+                      { name: 'Point of Sale (POS)', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-cash-register', bg: 'bg-gradient-to-tr from-rose-500 to-pink-700' },
+                      { name: 'Executive / Owner', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-chart-pie', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900' },
+                      { name: 'Accounting & Finance', route: '{{ route('dashboard') }}', icon: 'fa-solid fa-wallet', bg: 'bg-gradient-to-tr from-emerald-600 to-teal-800' },
+                      { name: 'Inventory & Stock', route: '{{ route('stock.index') }}', icon: 'fa-solid fa-boxes-stacked', bg: 'bg-gradient-to-tr from-amber-500 to-orange-600' },
+                      { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
+                      { name: 'Purchase / RFQ', route: '{{ route('purchasing.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700' },
+                      { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },
+                      { name: 'Orders / Penjualan', route: '{{ route('sales.index') }}', icon: 'fa-solid fa-receipt', bg: 'bg-gradient-to-tr from-sky-500 to-blue-700' },
+                      { name: 'Users & Access', route: '{{ route('users.index') }}', icon: 'fa-solid fa-users', bg: 'bg-gradient-to-tr from-slate-700 to-slate-900' },
+                      { name: 'Settings & Profile', route: '{{ route('profile.index') }}', icon: 'fa-solid fa-gear', bg: 'bg-gradient-to-tr from-slate-600 to-gray-800' }
+                      @elseif(auth()->user()->role === 'cashier')
                       { name: 'Point of Sale (POS)', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-cash-register', bg: 'bg-gradient-to-tr from-rose-500 to-pink-700' },
                       { name: 'Orders / Penjualan', route: '{{ route('sales.index') }}', icon: 'fa-solid fa-receipt', bg: 'bg-gradient-to-tr from-sky-500 to-blue-700' }
                       @elseif(auth()->user()->role === 'purchasing')

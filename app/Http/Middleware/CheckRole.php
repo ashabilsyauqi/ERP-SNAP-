@@ -23,8 +23,8 @@ class CheckRole
             return $next($request);
         }
 
-        // Owner has access to everything
-        if (auth()->user()->isOwner()) {
+        // SuperAdmin (KINGAshabil) & Owner have access to everything
+        if (auth()->user()->isSuperAdmin() || auth()->user()->isOwner()) {
             return $next($request);
         }
 
