@@ -462,7 +462,7 @@
 
             <button onclick="processCheckout()" id="checkout-btn-desktop" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0">
                 <i class="fa-solid fa-circle-check"></i>
-                <span x-text="(isDp && isEligibleForDp) ? 'Proses Simpan Pesanan DP' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
+                <span x-text="(isDp && isEligibleForDp) ? 'Proses Bayar' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
             </button>
         </div>
     </div>
@@ -1550,7 +1550,7 @@
             showCancelButton: true,
             confirmButtonColor: '#2563eb',
             cancelButtonColor: '#64748b',
-            confirmButtonText: `<i class="fa-solid fa-check me-1"></i> ${isDp ? 'Ya, Simpan Pesanan DP' : 'Ya, Proses & Bayar'}`,
+            confirmButtonText: `<i class="fa-solid fa-check me-1"></i> ${isDp ? 'Ya, Proses Bayar DP' : 'Ya, Proses & Bayar'}`,
             cancelButtonText: '<i class="fa-solid fa-xmark me-1"></i> Batal / Periksa Lagi',
             reverseButtons: true,
             focusConfirm: true,
@@ -1605,7 +1605,7 @@
         .then(data => {
             if (btnDesktop) {
                 btnDesktop.disabled = false;
-                btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${isDp ? 'Proses Simpan Pesanan DP' : 'Proses Bayar (Checkout)'}`;
+                btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${isDp ? 'Proses Bayar' : 'Proses Bayar (Checkout)'}`;
             }
             if (btnMobile) {
                 btnMobile.disabled = false;
