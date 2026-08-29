@@ -372,6 +372,8 @@
                                 @if(auth()->user()->isOwner())
                                     <option value="owner">Owner / Administrator (Full Access)</option>
                                 @endif
+                            </select>
+                        </div>
                         @if(auth()->user()->isManager())
                             <input type="hidden" name="branch_id" value="{{ auth()->user()->branch_id }}">
                             <div class="mb-3">
