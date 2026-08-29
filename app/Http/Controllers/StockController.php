@@ -115,9 +115,11 @@ class StockController extends Controller
         ]);
 
         // Save wholesale tiers if provided
+        $wholesaleTiers = [];
         if ($request->has('wholesale') && is_array($request->wholesale)) {
             foreach ($request->wholesale as $tier) {
                 if (isset($tier['min_qty']) && $tier['min_qty'] > 0 && isset($tier['price']) && $tier['price'] > 0) {
+                    $wholesaleTiers[] = ['min_qty' => $tier['min_qty'], 'wholesale_price' => $tier['price']];
                     \App\Models\MaterialWholesalePrice::create([
                         'material_id'     => $material->id,
                         'min_qty'         => $tier['min_qty'],
@@ -128,16 +130,45 @@ class StockController extends Controller
         } elseif ($request->filled('wholesale_min_qty') && is_array($request->wholesale_min_qty)) {
             foreach ($request->wholesale_min_qty as $index => $minQty) {
                 if ($minQty > 0 && isset($request->wholesale_price[$index]) && $request->wholesale_price[$index] > 0) {
+                    $tierPrice = $request->wholesale_price[$index];
+                    $wholesaleTiers[] = ['min_qty' => $minQty, 'wholesale_price' => $tierPrice];
                     \App\Models\MaterialWholesalePrice::create([
                         'material_id'     => $material->id,
                         'min_qty'         => $minQty,
-                        'wholesale_price' => $request->wholesale_price[$index],
+                        'wholesale_price' => $tierPrice,
                     ]);
                 }
             }
         }
 
-        return redirect()->route('stock.index')->with('success', "Produk / Bahan baku '{$material->material_name}' berhasil ditambahkan ke inventaris cabang!");
+        // Replicate to all other branches with stock_qty = 0
+        $otherBranches = Branch::where('id', '!=', $branchId)->get();
+        foreach ($otherBranches as $otherBranch) {
+            $otherMat = Material::where('branch_id', $otherBranch->id)->where('material_name', $material->material_name)->first();
+            if (!$otherMat) {
+                $createdMat = Material::create([
+                    'branch_id'      => $otherBranch->id,
+                    'category'       => $material->category,
+                    'supplier_id'    => $material->supplier_id,
+                    'material_name'  => $material->material_name,
+                    'unit'           => $material->unit ?: 'Pcs',
+                    'fixed_size'     => $material->fixed_size,
+                    'purchase_price' => $material->purchase_price,
+                    'retail_price'   => $material->retail_price,
+                    'stock_qty'      => 0, // initial stock 0 for other branches
+                ]);
+
+                foreach ($wholesaleTiers as $tier) {
+                    \App\Models\MaterialWholesalePrice::create([
+                        'material_id'     => $createdMat->id,
+                        'min_qty'         => $tier['min_qty'],
+                        'wholesale_price' => $tier['wholesale_price'],
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('stock.index')->with('success', "Produk / Bahan baku '{$material->material_name}' berhasil ditambahkan dan disinkronkan ke seluruh cabang!");
     }
 
     /**

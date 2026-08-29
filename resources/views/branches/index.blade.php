@@ -8,6 +8,13 @@
     <i class="fa-solid fa-plus"></i>
     <span>New Branch</span>
 </button>
+<form action="{{ route('branches.sync-catalog') }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menyinkronkan seluruh katalog master bahan baku ke semua cabang?')">
+    @csrf
+    <button type="submit" class="btn-odoo-secondary" title="Pastikan semua cabang memiliki master produk yang sama dengan stok awal 0">
+        <i class="fa-solid fa-arrows-rotate text-blue-600"></i>
+        <span>Sinkronkan Produk ke Semua Cabang</span>
+    </button>
+</form>
 @endsection
 
 @section('content')

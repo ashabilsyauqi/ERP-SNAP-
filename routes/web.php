@@ -25,6 +25,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware(['role:owner'])->group(function () {
         // Branch Management (Owner Only - No Manager Access)
+        Route::post('/branches/sync-catalog', [\App\Http\Controllers\BranchController::class, 'syncCatalog'])->name('branches.sync-catalog');
         Route::resource('branches', \App\Http\Controllers\BranchController::class)->except(['create', 'show', 'edit']);
     });
 
