@@ -1151,15 +1151,18 @@
             driverObj.drive();
         }
 
-        // Global Table Column Sorting Engine
+        // Ultra-Fast Global Table Column Sorting Engine (O(N) Read + In-Memory Sort + Single Fragment DOM Insertion)
         document.addEventListener('click', function(e) {
             const th = e.target.closest('th.sortable');
             if (!th) return;
 
             const table = th.closest('table');
+            if (!table) return;
             const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr.search-row'));
-            if (rows.length === 0) return;
+            if (!tbody) return;
+
+            const rowElements = Array.from(tbody.querySelectorAll('tr.search-row'));
+            if (rowElements.length === 0) return;
 
             const thIndex = Array.from(th.parentNode.children).indexOf(th);
             const isAsc = !th.classList.contains('asc');
@@ -1177,38 +1180,88 @@
             sortIcon.className = `sort-icon fa-solid fa-arrow-${isAsc ? 'up' : 'down'} text-[10px] text-blue-600 ms-1`;
             th.appendChild(sortIcon);
 
-            rows.sort((rowA, rowB) => {
-                const cellA = rowA.children[thIndex]?.innerText.trim() || '';
-                const cellB = rowB.children[thIndex]?.innerText.trim() || '';
-
-                const cleanNumA = cellA.replace(/[^0-9.-]+/g, '');
-                const cleanNumB = cellB.replace(/[^0-9.-]+/g, '');
-                const isNum = cleanNumA !== '' && cleanNumB !== '' && !isNaN(cleanNumA) && !isNaN(cleanNumB);
-
-                if (isNum) {
-                    return isAsc ? (parseFloat(cleanNumA) - parseFloat(cleanNumB)) : (parseFloat(cleanNumB) - parseFloat(cleanNumA));
-                }
-                return isAsc ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            // 1. Single O(N) extraction pass without forced layout reflows
+            const mapped = rowElements.map((row, idx) => {
+                const cell = row.children[thIndex];
+                const rawText = (cell ? cell.textContent : '').trim();
+                const cleanNum = rawText.replace(/[^0-9.-]+/g, '');
+                const isNum = cleanNum !== '' && !isNaN(cleanNum) && !cleanNum.endsWith('.');
+                return {
+                    index: idx,
+                    row: row,
+                    val: isNum ? parseFloat(cleanNum) : rawText.toLowerCase(),
+                    isNum: isNum
+                };
             });
 
-            rows.forEach(row => tbody.appendChild(row));
+            // 2. High-speed in-memory sort
+            mapped.sort((a, b) => {
+                if (a.isNum && b.isNum) {
+                    return isAsc ? (a.val - b.val) : (b.val - a.val);
+                }
+                const strA = String(a.val);
+                const strB = String(b.val);
+                return isAsc ? strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' }) : strB.localeCompare(strA, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
+            // 3. Batch repaint using DocumentFragment for 60fps instant update
+            const fragment = document.createDocumentFragment();
+            mapped.forEach(item => fragment.appendChild(item.row));
+            tbody.appendChild(fragment);
         });
 
-        // Global Table Live Search Filter Engine
+        // Ultra-Fast Global Live Search Engine with Debounce & textContent Caching
+        let searchDebounceTimer = null;
+        function executeTableSearch(query, inputEl) {
+            const cleanQuery = (query || '').toLowerCase().trim();
+            const wrapper = document.querySelector('[data-view-wrapper]') || document;
+            const rows = wrapper.querySelectorAll('tr.search-row');
+            const cards = wrapper.querySelectorAll('.search-card');
+
+            if (!cleanQuery) {
+                rows.forEach(r => r.style.display = '');
+                cards.forEach(c => c.style.display = '');
+                return;
+            }
+
+            // Split query by spaces for multi-keyword fuzzy matching
+            const tokens = cleanQuery.split(/\s+/).filter(Boolean);
+
+            rows.forEach(row => {
+                const text = row._searchCache || (row._searchCache = (row.textContent || '').toLowerCase().replace(/\s+/g, ' '));
+                const matches = tokens.every(tok => text.includes(tok));
+                row.style.display = matches ? '' : 'none';
+            });
+
+            cards.forEach(card => {
+                const text = card._searchCache || (card._searchCache = (card.textContent || '').toLowerCase().replace(/\s+/g, ' '));
+                const matches = tokens.every(tok => text.includes(tok));
+                card.style.display = matches ? '' : 'none';
+            });
+        }
+
         document.addEventListener('input', function(e) {
             if (!e.target.classList.contains('table-search-input')) return;
-            const query = e.target.value.toLowerCase().trim();
-            const wrapper = document.querySelector('[data-view-wrapper]') || document;
+            clearTimeout(searchDebounceTimer);
+            const inputVal = e.target.value;
+            // 150ms debounce prevents UI freezing on fast typing
+            searchDebounceTimer = setTimeout(() => {
+                requestAnimationFrame(() => executeTableSearch(inputVal, e.target));
+            }, 120);
+        });
 
-            wrapper.querySelectorAll('tr.search-row').forEach(row => {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            });
-
-            wrapper.querySelectorAll('.search-card').forEach(card => {
-                const text = card.innerText.toLowerCase();
-                card.style.display = text.includes(query) ? '' : 'none';
-            });
+        // Immediate search on Enter key or clear
+        document.addEventListener('keydown', function(e) {
+            if (e.target.classList.contains('table-search-input')) {
+                if (e.key === 'Enter') {
+                    clearTimeout(searchDebounceTimer);
+                    executeTableSearch(e.target.value, e.target);
+                } else if (e.key === 'Escape') {
+                    e.target.value = '';
+                    clearTimeout(searchDebounceTimer);
+                    executeTableSearch('', e.target);
+                }
+            }
         });
 
         // Global List & Kanban Dual View Mode Switcher
