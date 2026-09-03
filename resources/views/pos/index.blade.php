@@ -4,12 +4,10 @@
 @section('page-title', 'Terminal Kasir Penjualan (POS)')
 
 @section('action-buttons')
-@if(!auth()->user()->isOperator())
 <button type="button" onclick="openDraftOrdersModal()" class="btn-odoo-secondary text-decoration-none position-relative">
     <i class="fa-solid fa-inbox me-1 text-amber-600"></i> Pesanan Draft
     <span id="draft-counter-badge" class="badge bg-amber-600 text-white rounded-pill text-[10px] ms-1">0</span>
 </button>
-@endif
 <a href="{{ route('sales.receivables') }}" class="btn-odoo-primary text-decoration-none">
     <i class="fa-solid fa-hand-holding-dollar me-1"></i> Piutang & Pesanan DP
 </a>
@@ -745,6 +743,17 @@
                         <i class="fa-solid fa-rotate me-1"></i> Refresh
                     </button>
                     <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="px-4 py-2.5 bg-slate-100 border-b border-slate-200 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="draft-branch-filter" class="text-xs font-bold text-slate-700 mb-0"><i class="fa-solid fa-store text-blue-600 me-1"></i> Cabang:</label>
+                    <select id="draft-branch-filter" onchange="loadDraftOrders()" class="form-select form-select-sm text-xs py-1 px-2.5 border-slate-300 rounded font-semibold text-slate-800 bg-white" style="width: auto; min-width: 200px;">
+                        <option value="all">Semua Cabang Toko</option>
+                    </select>
+                </div>
+                <div class="text-[11px] text-slate-500 font-semibold" id="draft-count-summary">
+                    <!-- Populated dynamically via JS -->
                 </div>
             </div>
             <div class="p-4 max-h-[70vh] overflow-y-auto" style="background-color: #f8fafc;">
@@ -2123,23 +2132,42 @@
             modal.show();
             loadDraftOrders();
         }
-    }
+    const isUserOperator = @json(auth()->user()->isOperator());
 
     function loadDraftOrders() {
         const loading = document.getElementById('draft-orders-loading');
         const list = document.getElementById('draft-orders-list');
         const empty = document.getElementById('draft-orders-empty');
+        const branchSelect = document.getElementById('draft-branch-filter');
+        const countSummary = document.getElementById('draft-count-summary');
 
         if (loading) loading.classList.remove('hidden');
         if (list) list.classList.add('hidden');
         if (empty) empty.classList.add('hidden');
 
-        fetch('{{ route("pos.drafts") }}')
+        const selectedBranch = branchSelect ? branchSelect.value : 'all';
+        const url = `{{ route("pos.drafts") }}?branch_id=${encodeURIComponent(selectedBranch)}`;
+
+        fetch(url)
             .then(res => res.json())
             .then(data => {
                 if (loading) loading.classList.add('hidden');
                 const drafts = data.drafts || [];
                 updateDraftBadge(drafts.length);
+
+                if (countSummary) {
+                    countSummary.innerText = `${drafts.length} pesanan draft`;
+                }
+
+                // Populate branch filter options if not yet populated
+                if (branchSelect && data.branches && branchSelect.options.length <= 1) {
+                    data.branches.forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b.id;
+                        opt.textContent = b.nama_cabang;
+                        branchSelect.appendChild(opt);
+                    });
+                }
 
                 if (drafts.length === 0) {
                     if (empty) empty.classList.remove('hidden');
@@ -2157,9 +2185,12 @@
                         card.className = 'bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-amber-400 transition';
                         card.innerHTML = `
                             <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2 mb-1">
+                                <div class="flex items-center gap-2 mb-1 flex-wrap">
                                     <span class="font-mono font-bold text-amber-900 text-xs">${d.invoice_number}</span>
                                     <span class="badge bg-amber-50 text-amber-700 border border-amber-300 text-[9px] font-extrabold uppercase">DRAFT</span>
+                                    <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold">
+                                        <i class="fa-solid fa-store me-1 text-blue-500"></i>${d.branch ? d.branch.nama_cabang : 'Cabang Utama'}
+                                    </span>
                                     <span class="text-[10px] text-slate-400">${new Date(d.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                                 <div class="font-bold text-slate-800 text-xs">${d.customer_name || 'Pelanggan Umum'} ${d.customer_phone ? `<small class="text-slate-500 font-mono">(${d.customer_phone})</small>` : ''}</div>
@@ -2176,9 +2207,15 @@
                                     <a href="/invoices/${d.invoice_number}" target="_blank" class="btn btn-sm btn-outline-secondary text-xs py-1.5 px-2.5 font-semibold" title="Buka Faktur Draft">
                                         <i class="fa-solid fa-file-invoice text-slate-600"></i> Faktur
                                     </a>
-                                    <button type="button" onclick="promptSettleDraft(${d.id}, '${d.invoice_number}', ${d.total_price})" class="btn btn-sm btn-primary text-xs py-1.5 px-3 font-bold flex items-center gap-1.5 shadow-sm">
-                                        <i class="fa-solid fa-cash-register"></i> Bayar
-                                    </button>
+                                    ${isUserOperator ? `
+                                        <span class="badge bg-amber-50 text-amber-700 border border-amber-300 text-[11px] py-1 px-2 font-semibold">
+                                            <i class="fa-solid fa-clock me-1"></i> Menunggu Kasir
+                                        </span>
+                                    ` : `
+                                        <button type="button" onclick="promptSettleDraft(${d.id}, '${d.invoice_number}', ${d.total_price})" class="btn btn-sm btn-primary text-xs py-1.5 px-3 font-bold flex items-center gap-1.5 shadow-sm">
+                                            <i class="fa-solid fa-cash-register"></i> Bayar
+                                        </button>
+                                    `}
                                 </div>
                             </div>
                         `;
@@ -2198,9 +2235,11 @@
         if (badge) {
             badge.innerText = count;
             if (count > 0) {
-                badge.classList.remove('hidden');
+                badge.classList.remove('hidden', 'd-none');
+                badge.style.display = 'inline-block';
             } else {
-                badge.classList.add('hidden');
+                badge.classList.add('hidden', 'd-none');
+                badge.style.display = 'none';
             }
         }
     }
@@ -2786,12 +2825,21 @@
             });
         }
 
-        // Fetch draft count on load for cashiers
+        // Fetch draft count on load for cashiers and operators
         fetch('{{ route("pos.drafts") }}')
             .then(res => res.json())
             .then(data => {
                 if (data.drafts) updateDraftBadge(data.drafts.length);
             }).catch(() => {});
+
+        // Auto-refresh draft count every 10s for real-time multi-terminal sync
+        setInterval(() => {
+            fetch('{{ route("pos.drafts") }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.drafts) updateDraftBadge(data.drafts.length);
+                }).catch(() => {});
+        }, 10000);
     });
 
     window.onSelectProduct = onSelectProduct;

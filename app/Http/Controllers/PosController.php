@@ -362,21 +362,38 @@ class PosController extends Controller
     }
 
     /**
-     * Get pending draft orders for current branch.
+     * Get pending draft orders for current branch (or all branches for Owner/SuperAdmin).
      */
-    public function getDrafts()
+    public function getDrafts(Request $request)
     {
-        $branchId = auth()->user()->branch_id ?: (\App\Models\Branch::first()->id ?? 1);
-        $drafts = Transaction::with(['user', 'customer', 'transactionDetails.material'])
-            ->where('branch_id', $branchId)
+        $user = auth()->user();
+        $query = Transaction::with(['user', 'customer', 'branch', 'transactionDetails.material'])
             ->where('order_status', 'draft')
-            ->where('payment_status', 'UNPAID')
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->where('payment_status', 'UNPAID');
+
+        if ($request->filled('branch_id') && $request->branch_id === 'all') {
+            // Explicitly requested all branches
+        } elseif ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        } elseif ($user->isOwner() || $user->isSuperAdmin()) {
+            // Owner / SuperAdmin sees drafts from all branches by default
+        } else {
+            // Cashiers see their assigned branch drafts (or null branch)
+            $branchId = $user->branch_id ?: (\App\Models\Branch::first()->id ?? 1);
+            $query->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            });
+        }
+
+        $drafts = $query->orderBy('created_at', 'desc')->get();
+        $branches = \App\Models\Branch::orderBy('nama_cabang')->get(['id', 'nama_cabang']);
 
         return response()->json([
             'status' => 'success',
-            'drafts' => $drafts
+            'drafts' => $drafts,
+            'branches' => $branches,
+            'is_owner' => $user->isOwner() || $user->isSuperAdmin(),
+            'user_branch_id' => $user->branch_id
         ]);
     }
 
