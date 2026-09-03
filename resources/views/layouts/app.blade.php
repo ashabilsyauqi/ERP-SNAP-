@@ -1451,11 +1451,16 @@
             `;
 
             const container = document.createElement('div');
+            container.id = 'snaprint-pdf-render-temp';
             container.style.position = 'fixed';
-            container.style.left = '-9999px';
-            container.style.top = '0';
-            container.style.width = '750px';
-            container.style.background = '#ffffff';
+            container.style.left = '0px';
+            container.style.top = '0px';
+            container.style.width = '794px';
+            container.style.backgroundColor = '#ffffff';
+            container.style.zIndex = '-99999';
+            container.style.opacity = '1';
+            container.style.visibility = 'visible';
+            container.style.pointerEvents = 'none';
             container.style.padding = '25px';
             container.style.fontFamily = 'Arial, sans-serif';
             container.style.fontSize = '12px';
@@ -1476,7 +1481,8 @@
                     <div style="position: relative; z-index: 10;">
                         <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 15px; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <img src="${logoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                                <img src="${logoUrl}" crossorigin="anonymous" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                                <div style="display: none; width: 48px; height: 48px; border-radius: 50%; background: #1e3a8a; color: #ffffff; font-weight: 900; font-size: 20px; align-items: center; justify-content: center; font-family: sans-serif;">S</div>
                                 <div>
                                     <div style="font-size: 20px; font-weight: bold; color: #1e3a8a;">Snaprint</div>
                                     <div style="font-size: 11px; color: #64748b;">Digital Printing & Advertising Solutions</div>
@@ -1562,31 +1568,59 @@
         };
 
         // Global Client-side Invoice PDF Downloader (html2pdf)
-        window.downloadSnaprintInvoicePDF = function(inv) {
+        window.downloadSnaprintInvoicePDF = async function(inv) {
             if (typeof html2pdf === 'undefined') {
                 console.warn('html2pdf library is loading or unavailable.');
                 return;
             }
 
+            const old = document.getElementById('snaprint-pdf-render-temp');
+            if (old) old.remove();
+
             const container = window.createInvoicePDFElement(inv);
             document.body.appendChild(container);
+
+            // Wait for images and layout rendering
+            const images = container.querySelectorAll('img');
+            if (images.length > 0) {
+                await Promise.all(Array.from(images).map(img => {
+                    if (img.complete) return Promise.resolve();
+                    return new Promise(res => {
+                        img.onload = res;
+                        img.onerror = res;
+                        setTimeout(res, 400);
+                    });
+                }));
+            }
+            await new Promise(r => setTimeout(r, 200));
+
             const opt = {
-                margin: [5, 5, 5, 5],
+                margin: [6, 6, 6, 6],
                 filename: `Faktur_${inv.invoice_number || 'Document'}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: 794
+                },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            html2pdf().set(opt).from(container).save().then(() => {
+            try {
+                await html2pdf().set(opt).from(container).save();
+            } catch(e) {
+                console.error('html2pdf render error:', e);
+            } finally {
                 container.remove();
-            }).catch(() => {
-                container.remove();
-            });
+            }
         };
 
         // Global Instant WhatsApp Receipt with Auto-Download PDF for Cashier
-        window.openWhatsAppReceipt = function(phone, data) {
+        window.openWhatsAppReceipt = async function(phone, data) {
             const cleanPhone = window.formatWhatsAppPhoneNumber(phone);
             if (!cleanPhone) {
                 if (typeof Swal !== 'undefined') {
@@ -1603,9 +1637,9 @@
 
             const filename = `Faktur_${data.invoice_number || 'Document'}.pdf`;
 
-            // 1. Otomatis download file PDF Faktur ke PC kasir
+            // 1. Download berkas PDF ke PC kasir terlebih dahulu secara sempurna
             try {
-                window.downloadSnaprintInvoicePDF(data);
+                await window.downloadSnaprintInvoicePDF(data);
             } catch(e) {
                 console.error('Error auto downloading invoice PDF:', e);
             }
