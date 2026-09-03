@@ -178,8 +178,8 @@ class PurchasePlanController extends Controller
         });
 
         $msg = $request->action_type === 'submit_rfq' 
-            ? 'Purchase Plan & RFQ Bundle berhasil diajukan untuk persetujuan Owner!'
-            : 'Draft Purchase Plan berhasil disimpan.';
+            ? 'Rencana Pengadaan Bahan berhasil diajukan dan ditandatangani digital oleh Manager Toko. Menunggu persetujuan (ACC) Owner!'
+            : 'Draft Rencana Pengadaan berhasil disimpan.';
 
         return redirect()->route('purchasing.plans.index')->with('success', $msg);
     }
@@ -195,11 +195,11 @@ class PurchasePlanController extends Controller
         $user = Auth::user();
 
         if (!$user->isOwner()) {
-            abort(403, 'Hanya Owner yang berhak menyetujui (ACC) Purchase Plan & RFQ Bundle ini.');
+            abort(403, 'Hanya Owner yang berhak menyetujui (ACC) Rencana Pengadaan Bahan ini.');
         }
 
         if ($plan->status !== 'waiting_owner_approval') {
-            return redirect()->back()->with('error', 'Purchase Plan ini tidak dalam status menunggu persetujuan.');
+            return redirect()->back()->with('error', 'Rencana Pengadaan ini tidak dalam status menunggu persetujuan.');
         }
 
         $request->validate([

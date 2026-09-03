@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'Requests for Quotation & Purchase Orders')
-@section('page-title', 'Requests for Quotation (RFQ)')
+@section('page-title', 'Daftar PO Satuan & Pengadaan')
 
 @section('action-buttons')
 <a href="{{ route('purchasing.create') }}" class="btn-odoo-primary text-decoration-none">
     <i class="fa-solid fa-plus"></i>
-    <span>New RFQ</span>
+    <span>Buat PO Baru</span>
 </a>
 @endsection
 

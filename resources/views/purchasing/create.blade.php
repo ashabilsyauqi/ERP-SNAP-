@@ -1,12 +1,12 @@
 @extends('layouts.app')
 
 @section('title', 'New Request for Quotation')
-@section('page-title', 'New RFQ')
+@section('page-title', 'Buat PO Baru')
 
 @section('action-buttons')
 <button type="button" onclick="document.getElementById('purchase-form').submit()" class="btn-odoo-primary">
     <i class="fa-solid fa-check"></i>
-    <span>Save & Submit RFQ</span>
+    <span>Simpan & Ajukan PO</span>
 </button>
 <a href="{{ route('purchasing.index') }}" class="btn-odoo-secondary text-decoration-none">
     Discard
@@ -36,7 +36,7 @@
     <div class="o_form_sheet p-4 bg-white">
         <div class="mb-4 pb-3 border-bottom d-flex justify-content-between align-items-start">
             <div>
-                <h4 class="fw-bold text-slate-900 mb-1">New Purchase Order (Draft RFQ)</h4>
+                <h4 class="fw-bold text-slate-900 mb-1">New Purchase Order (PO Baru)</h4>
                 <p class="text-xs text-slate-500 mb-0">Terbitkan pesanan pembelian material/bahan baku ke vendor.</p>
             </div>
             <div class="o_stat_button">
@@ -131,7 +131,7 @@
 
             <div class="d-flex justify-content-end gap-2 pt-3 border-top">
                 <a href="{{ route('purchasing.index') }}" class="btn-odoo-secondary">Discard</a>
-                <button type="submit" class="btn-odoo-primary">Save & Confirm RFQ</button>
+                <button type="submit" class="btn-odoo-primary">Simpan & Ajukan PO</button>
             </div>
         </form>
     </div>

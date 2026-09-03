@@ -6,7 +6,7 @@
 @section('action-buttons')
 <button type="button" onclick="submitPlanForm('submit_rfq')" class="btn-odoo-primary">
     <i class="fa-solid fa-paper-plane me-1"></i>
-    <span>Ajukan RFQ ke Owner</span>
+    <span>Ajukan ke Owner (ACC)</span>
 </button>
 <button type="button" onclick="submitPlanForm('draft')" class="btn-odoo-secondary">
     <i class="fa-solid fa-floppy-disk me-1"></i>
@@ -24,7 +24,7 @@
     <div class="o_form_statusbar mb-3">
         <div class="d-flex align-items-center gap-2">
             <button type="button" @click="submit('submit_rfq')" class="btn-odoo-primary text-xs">
-                <i class="fa-solid fa-paper-plane me-1"></i> Confirm & Ajukan RFQ
+                <i class="fa-solid fa-paper-plane me-1"></i> Simpan & Ajukan ke Owner
             </button>
             <button type="button" @click="submit('draft')" class="btn-odoo-secondary text-xs">
                 <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Draft
@@ -35,7 +35,7 @@
         </div>
         <div class="o_statusbar_status">
             <div class="o_arrow_button active">1. Draft Plan</div>
-            <div class="o_arrow_button">2. Owner RFQ ACC</div>
+            <div class="o_arrow_button">2. Persetujuan Owner</div>
             <div class="o_arrow_button">3. GRN Gudang</div>
         </div>
     </div>
@@ -246,7 +246,7 @@
                     <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Draft
                 </button>
                 <button type="button" @click="submit('submit_rfq')" class="btn-odoo-primary">
-                    <i class="fa-solid fa-paper-plane me-1"></i> Ajukan RFQ ke Owner
+                    <i class="fa-solid fa-paper-plane me-1"></i> Ajukan ke Owner (ACC)
                 </button>
             </div>
         </form>

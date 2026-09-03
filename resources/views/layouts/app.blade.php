@@ -408,6 +408,17 @@
         $appIcon = 'fa-chart-pie';
         $menuGroups = [];
 
+        $pendingPurchasingCount = 0;
+        $pendingDailyClosingCount = 0;
+        if (auth()->check() && (auth()->user()->isOwner() || auth()->user()->isSuperAdmin())) {
+            $pendingPurchasingCount = \App\Models\PurchasePlan::where('status', 'waiting_owner_approval')->count() 
+                + \App\Models\Purchase::where('status', 'waiting_approval')->count();
+            if (\Illuminate\Support\Facades\Schema::hasTable('daily_closing_reports')) {
+                $pendingDailyClosingCount = \App\Models\DailyClosingReport::where('status', 'submitted')->count();
+            }
+        }
+        $totalOwnerPendingCount = $pendingPurchasingCount + $pendingDailyClosingCount;
+
         // Dynamic Menu Construction based on Current App Context
         if (Str::startsWith($currentRoute, 'owner.dashboard') || Str::startsWith($currentRoute, 'branches')) {
             $activeApp = (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Toko' : 'Executive';
@@ -433,13 +444,14 @@
                     'type' => 'dropdown',
                     'role' => 'owner,manager',
                     'items' => [
+                        ['title' => 'Laporan Tutup Hari (Daily Closing)', 'route' => 'daily-closing.index', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Laba & Rugi Konsolidasi', 'route' => 'reports.profit-loss', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Penjualan Semua Cabang', 'route' => 'reports.sales', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Beban Operasional', 'route' => 'reports.expenses', 'role' => 'owner,manager'],
                     ]
                 ]
             ];
-        } elseif (Str::startsWith($currentRoute, 'dashboard') || Str::startsWith($currentRoute, 'accounts') || Str::startsWith($currentRoute, 'kas-masuk') || Str::startsWith($currentRoute, 'kas-keluar') || Str::startsWith($currentRoute, 'reports')) {
+        } elseif (Str::startsWith($currentRoute, 'dashboard') || Str::startsWith($currentRoute, 'accounts') || Str::startsWith($currentRoute, 'kas-masuk') || Str::startsWith($currentRoute, 'kas-keluar') || Str::startsWith($currentRoute, 'daily-closing') || Str::startsWith($currentRoute, 'reports')) {
             $activeApp = 'Accounting';
             $appIcon = 'fa-wallet';
             $menuGroups = [
@@ -447,6 +459,12 @@
                     'title' => 'Overview',
                     'type' => 'link',
                     'route' => 'dashboard',
+                    'role' => 'owner,manager'
+                ],
+                [
+                    'title' => 'Tutup Kas & Rekonsiliasi',
+                    'type' => 'link',
+                    'route' => 'daily-closing.index',
                     'role' => 'owner,manager'
                 ],
                 [
@@ -477,6 +495,7 @@
                     'role' => 'owner,manager',
                     'items' => [
                         ['title' => 'Bagan Akun (Chart of Accounts - COA)', 'route' => 'accounts.index', 'role' => 'owner,manager'],
+                        ['title' => 'Laporan Tutup Hari (Daily Closing)', 'route' => 'daily-closing.index', 'role' => 'owner,manager'],
                         ['title' => 'Mutasi Buku Besar (General Ledger)', 'route' => 'reports.cash-mutation', 'role' => 'owner,manager'],
                     ]
                 ],
@@ -621,9 +640,13 @@
         <!-- Snaprint Brand Top Main Navbar -->
         <nav class="o_main_navbar flex-shrink-0">
             <div class="d-flex align-items-center h-100 flex-nowrap" style="overflow: visible;">
-                <!-- App Switcher Matrix Button -->
-                <button @click="showSwitcher = !showSwitcher" class="btn text-white px-2.5 py-0 d-flex align-items-center hover:bg-white/10 border-0 h-100 cursor-pointer" title="App Switcher (Home)">
+                <!-- App Switcher Matrix Button with Notification Indicator -->
+                <button @click="showSwitcher = !showSwitcher" class="btn text-white px-2.5 py-0 d-flex align-items-center hover:bg-white/10 border-0 h-100 cursor-pointer position-relative" title="App Switcher (Home)">
                     <i class="fa-solid fa-table-cells fs-5"></i>
+                    @if($totalOwnerPendingCount > 0)
+                        <span class="position-absolute top-2 end-1 p-1 bg-rose-500 border border-white rounded-circle animate-ping" style="width: 8px; height: 8px;"></span>
+                        <span class="position-absolute top-2 end-1 p-1 bg-rose-600 border border-white rounded-circle" style="width: 8px; height: 8px;"></span>
+                    @endif
                 </button>
 
                 <!-- Snaprint Brand Logo Emblem in Navbar -->
@@ -906,11 +929,11 @@
                   apps: [
                       @if(auth()->user()->isSuperAdmin())
                       { name: 'Point of Sale (POS)', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-cash-register', bg: 'bg-gradient-to-tr from-rose-500 to-pink-700' },
-                      { name: 'Executive / Owner', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-chart-pie', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900' },
-                      { name: 'Accounting & Finance', route: '{{ route('dashboard') }}', icon: 'fa-solid fa-wallet', bg: 'bg-gradient-to-tr from-emerald-600 to-teal-800' },
+                       { name: 'Executive / Owner', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-chart-pie', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900', badge: {{ $totalOwnerPendingCount }} },
+                       { name: 'Accounting & Finance', route: '{{ route('dashboard') }}', icon: 'fa-solid fa-wallet', bg: 'bg-gradient-to-tr from-emerald-600 to-teal-800', badge: {{ $pendingDailyClosingCount }} },
                       { name: 'Inventory & Stock', route: '{{ route('stock.index') }}', icon: 'fa-solid fa-boxes-stacked', bg: 'bg-gradient-to-tr from-amber-500 to-orange-600' },
                       { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
-                      { name: 'Purchase / RFQ', route: '{{ route('purchasing.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700' },
+                       { name: 'Pengadaan & Pembelian', route: '{{ route('purchasing.plans.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700', badge: {{ $pendingPurchasingCount }} },
                       { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },
                       { name: 'Orders / Penjualan', route: '{{ route('sales.index') }}', icon: 'fa-solid fa-receipt', bg: 'bg-gradient-to-tr from-sky-500 to-blue-700' },
                       { name: 'Users & Access', route: '{{ route('users.index') }}', icon: 'fa-solid fa-users', bg: 'bg-gradient-to-tr from-slate-700 to-slate-900' },
@@ -921,22 +944,22 @@
                       @elseif(auth()->user()->isOperator())
                       { name: 'Cek Harga & POS', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-calculator', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' }
                       @elseif(auth()->user()->role === 'purchasing')
-                      { name: 'Purchase / RFQ', route: '{{ route('purchasing.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700' },
+                       { name: 'Pengadaan & Pembelian', route: '{{ route('purchasing.plans.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700', badge: {{ $pendingPurchasingCount }} },
                       { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },
                       { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
                       { name: 'Settings & Profile', route: '{{ route('profile.index') }}', icon: 'fa-solid fa-gear', bg: 'bg-gradient-to-tr from-slate-600 to-gray-800' }
                       @else
                       @if(auth()->user()->isManager())
-                      { name: 'Dashboard Toko', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-store', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900' },
+                       { name: 'Dashboard Toko', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-store', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900', badge: {{ $totalOwnerPendingCount }} },
                       @elseif(auth()->user()->isOwner())
-                      { name: 'Executive / Owner', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-chart-pie', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900' },
+                       { name: 'Executive / Owner', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-chart-pie', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900', badge: {{ $totalOwnerPendingCount }} },
                       @endif
                       @if(auth()->user()->isOwner() || auth()->user()->isManager())
-                      { name: 'Accounting & Finance', route: '{{ route('dashboard') }}', icon: 'fa-solid fa-wallet', bg: 'bg-gradient-to-tr from-emerald-600 to-teal-800' },
+                       { name: 'Accounting & Finance', route: '{{ route('dashboard') }}', icon: 'fa-solid fa-wallet', bg: 'bg-gradient-to-tr from-emerald-600 to-teal-800', badge: {{ $pendingDailyClosingCount }} },
                       @endif
                       { name: 'Inventory & Stock', route: '{{ route('stock.index') }}', icon: 'fa-solid fa-boxes-stacked', bg: 'bg-gradient-to-tr from-amber-500 to-orange-600' },
                       { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
-                      { name: 'Purchase / RFQ', route: '{{ route('purchasing.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700' },
+                       { name: 'Pengadaan & Pembelian', route: '{{ route('purchasing.plans.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700', badge: {{ $pendingPurchasingCount }} },
                       { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },
                       { name: 'Orders / Penjualan', route: '{{ route('sales.index') }}', icon: 'fa-solid fa-receipt', bg: 'bg-gradient-to-tr from-sky-500 to-blue-700' },
                       @if(auth()->user()->isOwner() || auth()->user()->isManager())
@@ -951,11 +974,18 @@
               <template x-for="app in apps">
                   <div x-show="app.name.toLowerCase().includes(search)" 
                        class="flex flex-col items-center w-28 sm:w-36">
+                       <div class="position-relative relative">
                       <a :href="app.route" 
                          class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center shadow-xl transform hover:scale-110 hover:shadow-2xl transition-all duration-200 text-decoration-none mb-2.5 border border-white/30"
                          :class="app.bg">
                           <i class="text-3xl sm:text-4xl text-white" :class="app.icon"></i>
                       </a>
+                           <template x-if="app.badge && app.badge > 0">
+                               <span class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger border border-light shadow-lg animate-pulse" style="z-index: 10; font-size: 11px; padding: 4px 7px;">
+                                   <span x-text="app.badge > 99 ? '99+' : app.badge"></span>
+                               </span>
+                           </template>
+                       </div>
                       <span class="text-white text-xs sm:text-sm font-semibold tracking-wide drop-shadow text-center" x-text="app.name"></span>
                   </div>
               </template>

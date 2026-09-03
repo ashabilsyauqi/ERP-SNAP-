@@ -7,7 +7,9 @@ use App\Models\Transaction;
 use App\Models\Material;
 use App\Models\Purchase;
 use App\Models\Branch;
+use App\Models\CashTransaction;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class OwnerController extends Controller
 {
@@ -15,20 +17,20 @@ class OwnerController extends Controller
     {
         $user = auth()->user();
         $branchId = $request->input('branch_id', 'all');
-        $period = $request->input('period', 'month'); // 'month' (default), 'year', 'all'
-        $month = (int) $request->input('month', \Carbon\Carbon::now()->month);
-        $year = (int) $request->input('year', \Carbon\Carbon::now()->year);
-
-        $query = Transaction::query();
-        $materialQuery = Material::query();
-        $purchaseQuery = Purchase::query();
-        $opexQuery = \App\Models\CashTransaction::keluar()->whereHas('account', function($q) {
-            $q->where('tipe', 'beban')->where('kode_akun', '!=', '6-1000');
-        });
+        $timeframe = $request->input('timeframe', $request->input('period', 'month')); // 'today', '7days', 'month', 'year', 'all'
+        $month = (int) $request->input('month', Carbon::now()->month);
+        $year = (int) $request->input('year', Carbon::now()->year);
 
         if ($user->isManager()) {
             $branchId = $user->branch_id;
         }
+
+        $query = Transaction::query()->where('order_status', '!=', 'cancelled');
+        $materialQuery = Material::query();
+        $purchaseQuery = Purchase::query();
+        $opexQuery = CashTransaction::keluar()->whereHas('account', function($q) {
+            $q->where('tipe', 'beban')->where('kode_akun', '!=', '6-1000');
+        });
 
         if ($branchId && $branchId !== 'all') {
             $query->where('branch_id', $branchId);
@@ -37,13 +39,20 @@ class OwnerController extends Controller
             $opexQuery->where('branch_id', $branchId);
         }
 
-        if ($period === 'month') {
-            $query->whereMonth('created_at', $month)->whereYear('created_at', $year);
-            $opexQuery->whereMonth('tanggal', $month)->whereYear('tanggal', $year);
-        } elseif ($period === 'year') {
+        // Apply Timeframe Constraints
+        if ($timeframe === 'today' || $timeframe === '1D') {
+            $query->whereDate('created_at', Carbon::today());
+            $opexQuery->whereDate('tanggal', Carbon::today());
+        } elseif ($timeframe === '7days' || $timeframe === '7D') {
+            $query->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay());
+            $opexQuery->where('tanggal', '>=', Carbon::now()->subDays(6)->startOfDay());
+        } elseif ($timeframe === 'year' || $timeframe === '1Y') {
             $query->whereYear('created_at', $year);
             $opexQuery->whereYear('tanggal', $year);
-        } // 'all' has no date constraint
+        } elseif ($timeframe === 'month' || $timeframe === '1M') {
+            $query->whereMonth('created_at', $month)->whereYear('created_at', $year);
+            $opexQuery->whereMonth('tanggal', $month)->whereYear('tanggal', $year);
+        } // 'all' has no constraints
 
         $totalSales = (clone $query)->sum('total_price');
         $totalHpp = (clone $query)->sum('total_hpp');
@@ -62,17 +71,21 @@ class OwnerController extends Controller
         $lowStockCount = (clone $materialQuery)->where('stock_qty', '<=', 5)->count();
         $pendingPOCount = (clone $purchaseQuery)->whereIn('status', ['waiting_approval', 'pending_verification'])->count();
 
-        // Payment Method Breakdown
-        $cashSales = (clone $query)->whereIn('payment_method', ['Cash', 'cash'])->sum('total_price');
-        $qrisSales = (clone $query)->whereIn('payment_method', ['QRIS', 'qris'])->sum('total_price');
-        $transferSales = (clone $query)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('total_price');
+        // Payment Breakdown
+        $cashSales = (clone $query)->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
+        $qrisSales = (clone $query)->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount');
+        $transferSales = (clone $query)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount');
 
-        // Sales Per Branch Data
-        $branchSalesData = Branch::all()->map(function ($branch) use ($period, $month, $year) {
-            $bQuery = Transaction::where('branch_id', $branch->id);
-            if ($period === 'month') {
+        // Branch Sales Comparison
+        $branchSalesData = Branch::all()->map(function ($branch) use ($timeframe, $month, $year) {
+            $bQuery = Transaction::where('branch_id', $branch->id)->where('order_status', '!=', 'cancelled');
+            if ($timeframe === 'today' || $timeframe === '1D') {
+                $bQuery->whereDate('created_at', Carbon::today());
+            } elseif ($timeframe === '7days' || $timeframe === '7D') {
+                $bQuery->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay());
+            } elseif ($timeframe === 'month' || $timeframe === '1M') {
                 $bQuery->whereMonth('created_at', $month)->whereYear('created_at', $year);
-            } elseif ($period === 'year') {
+            } elseif ($timeframe === 'year' || $timeframe === '1Y') {
                 $bQuery->whereYear('created_at', $year);
             }
             $sales = $bQuery->sum('total_price');
@@ -82,38 +95,98 @@ class OwnerController extends Controller
             ];
         });
 
-        // 6-Month Trend Data
-        $months = [];
-        $monthlySales = [];
-        $monthlyHpp = [];
-        $monthlyOpex = [];
-        $monthlyNetProfit = [];
+        // Interactive Trading Chart Data (Dynamic Labels & Series based on timeframe)
+        $chartLabels = [];
+        $chartSales = [];
+        $chartVolume = [];
+        $chartNet = [];
 
-        for ($i = 5; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
-            $trendYear = $date->year;
-            $trendMonth = $date->month;
-            $months[] = $date->translatedFormat('F Y');
+        if ($timeframe === 'today' || $timeframe === '1D') {
+            for ($h = 8; $h <= 22; $h++) {
+                $timeSlot = sprintf('%02d:00', $h);
+                $chartLabels[] = $timeSlot;
 
-            $mSalesQuery = Transaction::whereYear('created_at', $trendYear)->whereMonth('created_at', $trendMonth);
-            $mOpexQuery = \App\Models\CashTransaction::keluar()->whereYear('tanggal', $trendYear)->whereMonth('tanggal', $trendMonth);
+                $hTrx = Transaction::whereDate('created_at', Carbon::today())
+                    ->whereRaw('HOUR(created_at) = ?', [$h])
+                    ->where('order_status', '!=', 'cancelled');
 
-            if ($branchId && $branchId !== 'all') {
-                $mSalesQuery->where('branch_id', $branchId);
-                $mOpexQuery->where('branch_id', $branchId);
+                if ($branchId && $branchId !== 'all') {
+                    $hTrx->where('branch_id', $branchId);
+                }
+
+                $salesVal = (float) $hTrx->sum('total_price');
+                $volVal = (int) $hTrx->count();
+                $chartSales[] = $salesVal;
+                $chartVolume[] = $volVal;
+                $chartNet[] = $salesVal;
             }
+        } elseif ($timeframe === '7days' || $timeframe === '7D') {
+            for ($d = 6; $d >= 0; $d--) {
+                $targetDate = Carbon::today()->subDays($d);
+                $chartLabels[] = $targetDate->format('d M');
 
-            $mSales = $mSalesQuery->sum('total_price');
-            $mHpp = $mSalesQuery->sum('total_hpp');
-            $mOpex = $mOpexQuery->whereHas('account', function($q) {
-                $q->where('tipe', 'beban')->where('kode_akun', '!=', '6-1000');
-            })->sum('jumlah');
+                $dTrx = Transaction::whereDate('created_at', $targetDate)
+                    ->where('order_status', '!=', 'cancelled');
+                if ($branchId && $branchId !== 'all') {
+                    $dTrx->where('branch_id', $branchId);
+                }
 
-            $monthlySales[] = $mSales;
-            $monthlyHpp[] = $mHpp;
-            $monthlyOpex[] = $mOpex;
-            $monthlyNetProfit[] = $mSales - $mHpp - $mOpex;
+                $salesVal = (float) $dTrx->sum('total_price');
+                $volVal = (int) $dTrx->count();
+                $chartSales[] = $salesVal;
+                $chartVolume[] = $volVal;
+                $chartNet[] = $salesVal;
+            }
+        } elseif ($timeframe === 'year' || $timeframe === '1Y') {
+            for ($m = 1; $m <= 12; $m++) {
+                $chartLabels[] = Carbon::create($year, $m, 1)->translatedFormat('M');
+
+                $mTrx = Transaction::whereYear('created_at', $year)
+                    ->whereMonth('created_at', $m)
+                    ->where('order_status', '!=', 'cancelled');
+                if ($branchId && $branchId !== 'all') {
+                    $mTrx->where('branch_id', $branchId);
+                }
+
+                $salesVal = (float) $mTrx->sum('total_price');
+                $volVal = (int) $mTrx->count();
+                $chartSales[] = $salesVal;
+                $chartVolume[] = $volVal;
+                $chartNet[] = $salesVal;
+            }
+        } else {
+            // Default: Month (30/31 days or past 6 months overview)
+            for ($i = 5; $i >= 0; $i--) {
+                $date = Carbon::now()->subMonths($i);
+                $chartLabels[] = $date->translatedFormat('F Y');
+
+                $mSalesQuery = Transaction::whereYear('created_at', $date->year)
+                    ->whereMonth('created_at', $date->month)
+                    ->where('order_status', '!=', 'cancelled');
+                $mOpexQuery = CashTransaction::keluar()
+                    ->whereYear('tanggal', $date->year)
+                    ->whereMonth('tanggal', $date->month);
+
+                if ($branchId && $branchId !== 'all') {
+                    $mSalesQuery->where('branch_id', $branchId);
+                    $mOpexQuery->where('branch_id', $branchId);
+                }
+
+                $mSales = (float) $mSalesQuery->sum('total_price');
+                $mHpp = (float) $mSalesQuery->sum('total_hpp');
+                $mOpex = (float) $mOpexQuery->whereHas('account', function($q) {
+                    $q->where('tipe', 'beban')->where('kode_akun', '!=', '6-1000');
+                })->sum('jumlah');
+
+                $chartSales[] = $mSales;
+                $chartVolume[] = (int) $mSalesQuery->count();
+                $chartNet[] = $mSales - $mHpp - $mOpex;
+            }
         }
+
+        $highestSales = !empty($chartSales) ? max($chartSales) : 0;
+        $lowestSales = !empty($chartSales) ? min($chartSales) : 0;
+        $avgSales = !empty($chartSales) ? round(array_sum($chartSales) / count($chartSales)) : 0;
 
         $recentTransactions = (clone $query)->with(['user', 'branch', 'transactionDetails.material'])->orderBy('created_at', 'desc')->take(10)->get();
         $branches = Branch::all();
@@ -137,14 +210,16 @@ class OwnerController extends Controller
             'transferSales',
             'branchSalesData',
             'recentTransactions',
-            'months',
-            'monthlySales',
-            'monthlyHpp',
-            'monthlyOpex',
-            'monthlyNetProfit',
+            'chartLabels',
+            'chartSales',
+            'chartVolume',
+            'chartNet',
+            'highestSales',
+            'lowestSales',
+            'avgSales',
             'branches',
             'branchId',
-            'period',
+            'timeframe',
             'month',
             'year'
         ));

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Purchase Plans & Bundle RFQ')
-@section('page-title', 'Rencana Pengadaan & RFQ Bundle (Purchase Plans)')
+@section('title', 'Rencana Pengadaan Bahan (Purchase Plans)')
+@section('page-title', 'Rencana Pengadaan Bahan (Purchase Plans)')
 
 @section('action-buttons')
 <a href="{{ route('purchasing.plans.create') }}" class="btn-odoo-primary text-decoration-none">
@@ -10,7 +10,7 @@
 </a>
 <a href="{{ route('purchasing.index') }}" class="btn-odoo-secondary text-decoration-none">
     <i class="fa-solid fa-list me-1"></i>
-    <span>Daftar RFQ Satuan</span>
+    <span>Daftar PO Satuan</span>
 </a>
 @endsection
 
@@ -49,7 +49,7 @@
             <i class="fa-solid fa-clock-rotate-left text-amber-500 fs-5"></i>
             <div>
                 <div class="o_stat_value text-amber-600">{{ number_format($waitingApprovalCount) }}</div>
-                <div class="o_stat_text">Menunggu ACC Owner (RFQ)</div>
+                <div class="o_stat_text">Menunggu ACC Owner</div>
             </div>
         </div>
         <div class="o_stat_button bg-white shadow-sm">
@@ -88,7 +88,7 @@
                             <th style="width: 40px;" class="ps-3 text-center no-sort">
                                 <input type="checkbox" class="form-check-input">
                             </th>
-                            <th class="sortable">No. Rencana / RFQ</th>
+                            <th class="sortable">No. Rencana Pengadaan</th>
                             <th class="sortable">Judul Pengadaan</th>
                             <th class="sortable">Cabang & Pembuat</th>
                             <th class="sortable text-center">Bundle Item</th>
@@ -189,10 +189,10 @@
                                             </a>
 
                                             @if($plan->status === 'draft' || $plan->status === 'rejected_by_owner')
-                                                <!-- Ajukan RFQ ke Owner Button -->
-                                                <form action="{{ route('purchasing.plans.submit-rfq', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Ajukan Purchase Plan #{{ $plan->plan_number }} ke Owner untuk persetujuan (RFQ)?');">
+                                                <!-- Ajukan ke Owner (ACC) Button -->
+                                                <form action="{{ route('purchasing.plans.submit-rfq', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Ajukan Purchase Plan #{{ $plan->plan_number }} ke Owner untuk persetujuan Owner?');">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Ajukan RFQ ke Owner">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Ajukan ke Owner (ACC)">
                                                         <i class="fa-solid fa-paper-plane text-xs"></i>
                                                     </button>
                                                 </form>
@@ -436,10 +436,10 @@
                             <a :href="'/purchasing/plans/' + selectedPlan.id + '/edit'" class="btn btn-sm btn-outline-primary font-semibold px-3 text-decoration-none d-inline-flex align-items-center">
                                 <i class="fa-solid fa-pen-to-square me-1.5"></i> Edit / Lanjutkan Plan
                             </a>
-                            <form :action="'/purchasing/plans/' + selectedPlan.id + '/submit-rfq'" method="POST" onsubmit="return confirm('Ajukan Purchase Plan ini ke Owner untuk persetujuan (RFQ)?');">
+                            <form :action="'/purchasing/plans/' + selectedPlan.id + '/submit-rfq'" method="POST" onsubmit="return confirm('Ajukan Purchase Plan ini ke Owner untuk persetujuan Owner?');">
                                 @csrf
                                 <button type="submit" class="btn btn-sm btn-primary font-bold px-3">
-                                    <i class="fa-solid fa-paper-plane me-1.5"></i> Ajukan RFQ ke Owner Sekarang
+                                    <i class="fa-solid fa-paper-plane me-1.5"></i> Ajukan Persetujuan ke Owner
                                 </button>
                             </form>
                         </div>
@@ -450,7 +450,7 @@
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-sm btn-outline-danger font-semibold px-3"
                                         @click="openRejectModal(selectedPlan.id); detailOpen = false;">
-                                    <i class="fa-solid fa-ban me-1"></i> Tolak RFQ
+                                    <i class="fa-solid fa-ban me-1"></i> Tolak Pengadaan
                                 </button>
                                 <form :action="'/purchasing/plans/' + selectedPlan.id + '/approve'" method="POST" onsubmit="return confirm('Setujui Purchase Plan ini? PO akan otomatis diterbitkan dan tagihan siap dibayar.');">
                                     @csrf
@@ -473,7 +473,7 @@
         </div>
     </div>
 
-    <!-- Modal Tolak RFQ Owner -->
+    <!-- Modal Tolak Pengadaan Owner -->
     <div x-show="rejectOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
         <div class="bg-white rounded-xl shadow-2xl border w-full max-w-md overflow-hidden" @click.away="rejectOpen = false">
             <form :action="'/purchasing/plans/' + rejectPlanId + '/reject'" method="POST">
@@ -682,7 +682,7 @@
                     </div>
                     <div class="title">
                         <div>${isApproved ? '<span class="stamp-approved">✓ PO DISETUJUI OWNER</span>' : '<span class="stamp-waiting">⏳ MENUNGGU ACC OWNER</span>'}</div>
-                        <div>SURAT PERINTAH KERJA & PENGADAAN (SPK/RFQ)</div>
+                        <div>SURAT PERINTAH KERJA & PENGADAAN (Surat Pengadaan Bahan)</div>
                         <div style="font-size: 11.5px; font-weight: normal; color: #64748b; font-family: monospace;">No: ${plan.plan_number}</div>
                     </div>
                 </div>

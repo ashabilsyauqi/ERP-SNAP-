@@ -67,8 +67,8 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
 
-    // POS Terminal & Cashier Register (Cashier, Operator Cek Harga, and Sales Desk)
-    Route::middleware(['role:cashier,operator,sales'])->group(function () {
+    // POS Terminal & Cashier Register (Cashier, Operator Cek Harga, Sales Desk, and Manager/Owner)
+    Route::middleware(['role:cashier,operator,sales,manager,owner'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
         Route::get('/pos/drafts', [PosController::class, 'getDrafts'])->name('pos.drafts');
@@ -104,6 +104,10 @@ Route::middleware(['auth'])->group(function () {
         // Transaksi Kas
         Route::resource('kas-masuk', \App\Http\Controllers\CashInController::class)->except(['create', 'show', 'edit']);
         Route::resource('kas-keluar', \App\Http\Controllers\CashOutController::class)->except(['create', 'show', 'edit']);
+        
+        // Laporan Tutup Hari (Daily Closing Report)
+        Route::resource('daily-closing', \App\Http\Controllers\DailyClosingController::class);
+        Route::post('daily-closing/{id}/verify', [\App\Http\Controllers\DailyClosingController::class, 'verify'])->name('daily-closing.verify');
         
         // Laporan
         Route::prefix('reports')->name('reports.')->group(function () {

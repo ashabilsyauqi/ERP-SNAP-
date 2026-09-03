@@ -5,57 +5,64 @@
 
 @section('content')
 
-<!-- Filter Bar (Branch & Period Filter) -->
-<div class="bg-white border border-slate-200 rounded-lg mb-4 p-3 shadow-sm">
-    <form method="GET" action="{{ route('owner.dashboard') }}" class="row align-items-center g-3 mb-0">
-        @if(auth()->user()->isOwner())
-        <div class="col-auto">
-            <label class="col-form-label fw-bold text-dark text-xs d-flex align-items-center">
-                <i class="fa-solid fa-building text-indigo-600 me-2"></i>
-                <span>Cabang:</span>
-            </label>
-        </div>
-        <div class="col-auto">
-            <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm fw-semibold border-slate-300 rounded-lg text-xs">
-                <option value="all" {{ ($branchId ?? 'all') == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
-                @foreach($branches as $branch)
-                    <option value="{{ $branch->id }}" {{ ($branchId ?? '') == $branch->id ? 'selected' : '' }}>
-                        {{ $branch->nama_cabang }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        @endif
+<!-- Trading-Platform Style Top Bar (Branch Selector & Quick Timeframe Switchers) -->
+<div class="bg-white border border-slate-200 rounded-2xl mb-4 p-3 shadow-sm">
+    <form method="GET" action="{{ route('owner.dashboard') }}" id="dashboard-filter-form" class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-0">
+        
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            @if(auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
+            <div class="d-flex align-items-center gap-2">
+                <label class="fw-bold text-slate-700 text-xs d-flex align-items-center mb-0">
+                    <i class="fa-solid fa-building text-blue-600 me-1.5"></i> Cabang:
+                </label>
+                <select name="branch_id" onchange="document.getElementById('dashboard-filter-form').submit()" class="form-select form-select-sm fw-bold border-slate-300 rounded-xl text-xs" style="min-width: 180px;">
+                    <option value="all" {{ ($branchId ?? 'all') == 'all' ? 'selected' : '' }}>Semua Cabang (Global)</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" {{ ($branchId ?? '') == $branch->id ? 'selected' : '' }}>
+                            {{ $branch->nama_cabang }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
 
-        <div class="col-auto">
-            <label class="col-form-label fw-bold text-dark text-xs d-flex align-items-center">
-                <i class="fa-solid fa-calendar-days text-indigo-600 me-2"></i>
-                <span>Periode:</span>
-            </label>
-        </div>
-        <div class="col-auto">
-            <select name="period" onchange="this.form.submit()" class="form-select form-select-sm fw-semibold border-slate-300 rounded-lg text-xs">
-                <option value="month" {{ ($period ?? 'month') == 'month' ? 'selected' : '' }}>Bulan Ini ({{ \Carbon\Carbon::now()->translatedFormat('F Y') }})</option>
-                <option value="year" {{ ($period ?? '') == 'year' ? 'selected' : '' }}>Tahun Ini ({{ \Carbon\Carbon::now()->year }})</option>
-                <option value="all" {{ ($period ?? '') == 'all' ? 'selected' : '' }}>Semua Waktu (Akumulasi)</option>
-            </select>
+            <!-- Trading Timeframe Switcher Tabs (1D, 7D, 1M, 1Y, ALL) -->
+            <div class="d-flex align-items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <input type="hidden" name="timeframe" id="timeframe-input" value="{{ $timeframe ?? 'month' }}">
+                
+                <button type="button" onclick="setTimeframe('today')" class="btn btn-sm text-xs px-2.5 py-1 rounded-lg font-bold transition {{ ($timeframe ?? '') === 'today' || ($timeframe ?? '') === '1D' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
+                    1D (Hari Ini)
+                </button>
+                <button type="button" onclick="setTimeframe('7days')" class="btn btn-sm text-xs px-2.5 py-1 rounded-lg font-bold transition {{ ($timeframe ?? '') === '7days' || ($timeframe ?? '') === '7D' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
+                    7D
+                </button>
+                <button type="button" onclick="setTimeframe('month')" class="btn btn-sm text-xs px-2.5 py-1 rounded-lg font-bold transition {{ ($timeframe ?? 'month') === 'month' || ($timeframe ?? '') === '1M' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
+                    1M (Bulan Ini)
+                </button>
+                <button type="button" onclick="setTimeframe('year')" class="btn btn-sm text-xs px-2.5 py-1 rounded-lg font-bold transition {{ ($timeframe ?? '') === 'year' || ($timeframe ?? '') === '1Y' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
+                    1Y (Tahun Ini)
+                </button>
+                <button type="button" onclick="setTimeframe('all')" class="btn btn-sm text-xs px-2.5 py-1 rounded-lg font-bold transition {{ ($timeframe ?? '') === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
+                    All
+                </button>
+            </div>
         </div>
 
-        <div class="col-auto ms-auto">
+        <div class="d-flex align-items-center gap-2">
             @if(($branchId ?? 'all') === 'all')
-                <span class="badge bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-pill px-3 py-1.5 font-bold text-xs">
-                    <i class="fa-solid fa-globe me-1"></i> Data Konsolidasi Enterprise (Seluruh Cabang)
+                <span class="badge bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 font-bold text-xs">
+                    <i class="fa-solid fa-globe me-1"></i> Konsolidasi Seluruh Cabang
                 </span>
             @else
-                <span class="badge bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-pill px-3 py-1.5 font-bold text-xs">
-                    <i class="fa-solid fa-code-branch me-1"></i> Data Cabang Mandiri
+                <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-2.5 py-1.5 font-bold text-xs">
+                    <i class="fa-solid fa-shop me-1"></i> Data Cabang Aktif
                 </span>
             @endif
         </div>
     </form>
 </div>
 
-<!-- Overhauled Financial KPI Grid (5 Columns) with Percentage Badges -->
+<!-- Financial KPI Grid (5 Columns) with Percentages -->
 <div class="o_form_sheet">
     @php
         $omsetBase = (float) ($totalSales ?? 0);
@@ -65,370 +72,374 @@
         $calcNetPct = $netPct ?? ($omsetBase > 0 ? round((($netProfit ?? 0) / $omsetBase) * 100, 1) : 0);
     @endphp
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
         <!-- Card 1: Revenue -->
-        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #1e40af !important;">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">Total Omset</p>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 flex-shrink-0">100%</span>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">Total Omset</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 flex-shrink-0">100%</span>
                 </div>
-                <h3 class="text-lg font-extrabold text-slate-900 truncate">Rp {{ number_format($totalSales, 0, ',', '.') }}</h3>
-                <small class="text-slate-400 text-[10px] block truncate">Total penjualan (100% basis)</small>
+                <h4 class="text-base font-extrabold text-slate-900 font-mono truncate mb-0">Rp {{ number_format($totalSales, 0, ',', '.') }}</h4>
+                <small class="text-slate-400 text-[10px] block truncate mt-0.5">{{ $totalTransactionsCount }} Transaksi tercatat</small>
             </div>
-            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl flex-shrink-0">
-                <i class="fa-solid fa-coins text-xl"></i>
+            <div class="p-2.5 bg-blue-50 text-blue-700 rounded-xl flex-shrink-0">
+                <i class="fa-solid fa-coins text-lg"></i>
             </div>
         </div>
 
         <!-- Card 2: HPP -->
-        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #f59e0b !important;">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">HPP Modal (COGS)</p>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-300 flex-shrink-0">{{ $calcHppPct }}%</span>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">HPP (COGS)</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 flex-shrink-0">{{ $calcHppPct }}%</span>
                 </div>
-                <h3 class="text-lg font-extrabold text-slate-900 truncate">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h3>
-                <small class="text-slate-400 text-[10px] block truncate">Bahan baku ({{ $calcHppPct }}% omset)</small>
+                <h4 class="text-base font-extrabold text-slate-900 font-mono truncate mb-0">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h4>
+                <small class="text-slate-400 text-[10px] block truncate mt-0.5">Biaya modal bahan cetak</small>
             </div>
-            <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl flex-shrink-0">
-                <i class="fa-solid fa-boxes-stacked text-xl"></i>
+            <div class="p-2.5 bg-amber-50 text-amber-700 rounded-xl flex-shrink-0">
+                <i class="fa-solid fa-boxes-packing text-lg"></i>
             </div>
         </div>
 
         <!-- Card 3: Gross Profit -->
-        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #059669 !important;">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">Laba Kotor</p>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 flex-shrink-0">{{ $calcGrossPct }}%</span>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">Gross Profit</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 flex-shrink-0">{{ $calcGrossPct }}%</span>
                 </div>
-                <h3 class="text-lg font-extrabold text-emerald-600 truncate">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h3>
-                <small class="text-slate-400 text-[10px] block truncate">Margin kotor ({{ $calcGrossPct }}% omset)</small>
+                <h4 class="text-base font-extrabold text-emerald-700 font-mono truncate mb-0">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h4>
+                <small class="text-slate-400 text-[10px] block truncate mt-0.5">Omset &minus; HPP</small>
             </div>
-            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-2xl flex-shrink-0">
-                <i class="fa-solid fa-chart-line text-xl"></i>
+            <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl flex-shrink-0">
+                <i class="fa-solid fa-chart-line text-lg"></i>
             </div>
         </div>
 
         <!-- Card 4: OPEX -->
-        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #e11d48 !important;">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">Beban Operasional</p>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-300 flex-shrink-0">{{ $calcOpexPct }}%</span>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">OPEX (Beban)</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 flex-shrink-0">{{ $calcOpexPct }}%</span>
                 </div>
-                <h3 class="text-lg font-extrabold text-rose-600 truncate">Rp {{ number_format($totalOpex, 0, ',', '.') }}</h3>
-                <small class="text-slate-400 text-[10px] block truncate">Biaya operasional ({{ $calcOpexPct }}% omset)</small>
+                <h4 class="text-base font-extrabold text-rose-700 font-mono truncate mb-0">Rp {{ number_format($totalOpex, 0, ',', '.') }}</h4>
+                <small class="text-slate-400 text-[10px] block truncate mt-0.5">Kas keluar operasional</small>
             </div>
-            <div class="p-3 bg-rose-50 text-rose-600 rounded-2xl flex-shrink-0">
-                <i class="fa-solid fa-wallet text-xl"></i>
+            <div class="p-2.5 bg-rose-50 text-rose-700 rounded-xl flex-shrink-0">
+                <i class="fa-solid fa-receipt text-lg"></i>
             </div>
         </div>
 
         <!-- Card 5: Net Profit -->
-        <div class="bg-white rounded-2xl p-4 border border-slate-200/60 shadow-sm flex items-center justify-between hover:shadow-md transition">
+        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #6366f1 !important;">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-0 truncate">Laba Bersih (Net)</p>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold {{ $netProfit >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300' }} border flex-shrink-0">{{ $calcNetPct }}%</span>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">Net Profit</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold {{ $netProfit >= 0 ? 'bg-indigo-50 text-indigo-800' : 'bg-rose-50 text-rose-800' }} flex-shrink-0">{{ $calcNetPct }}%</span>
                 </div>
-                <h3 class="text-lg font-extrabold {{ $netProfit >= 0 ? 'text-emerald-700' : 'text-rose-700' }} truncate">
-                    Rp {{ number_format($netProfit, 0, ',', '.') }}
-                </h3>
-                <small class="text-slate-400 text-[10px] block truncate">Net profit margin ({{ $calcNetPct }}% omset)</small>
+                <h4 class="text-base font-extrabold font-mono truncate mb-0 {{ $netProfit >= 0 ? 'text-indigo-900' : 'text-rose-700' }}">Rp {{ number_format($netProfit, 0, ',', '.') }}</h4>
+                <small class="text-slate-400 text-[10px] block truncate mt-0.5">Laba bersih final</small>
             </div>
-            <div class="p-3 {{ $netProfit >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }} rounded-2xl flex-shrink-0">
-                <i class="fa-solid fa-scale-balanced text-xl"></i>
+            <div class="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl flex-shrink-0">
+                <i class="fa-solid fa-wallet text-lg"></i>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ApexCharts Section -->
-@if($branchId === 'all')
-    <!-- Consolidated View Layout (Full Trend on Top, Breakdown Below) -->
-    <div class="row g-4 mb-6">
-        <div class="col-12">
-            <div class="card shadow-sm border-0 rounded-4">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
-                        <i class="fa-solid fa-chart-column text-indigo-600 me-2"></i>
-                        <span>Tren Keuangan 6 Bulan Terakhir (Konsolidasi Seluruh Cabang)</span>
-                    </h5>
-                    <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-pill px-3 py-1 font-semibold text-xs">
-                        Maret - Agustus 2026
-                    </span>
+<!-- Interactive Trading-Platform Style Chart Section -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm h-100">
+            <!-- Chart Header with Trading Metrics -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pb-3 mb-3 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-slate-900 text-white d-flex align-items-center justify-content-center flex-shrink-0">
+                        <i class="fa-solid fa-chart-candlestick text-xs"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 font-extrabold text-slate-900 text-sm">Grafik Performa Penjualan (Live Chart)</h6>
+                        <span class="text-[10px] text-slate-400 font-semibold">Tampilan Omset & Volume Transaksi</span>
+                    </div>
                 </div>
-                <div class="card-body p-4">
-                    <div id="financial-trend-chart" style="min-height: 350px;"></div>
+
+                <!-- Trading Highlights (High, Low, Avg) -->
+                <div class="d-flex align-items-center gap-2 text-xs">
+                    <div class="px-2 py-1 bg-slate-50 rounded-lg border text-slate-600">
+                        <span class="text-[9px] text-slate-400 font-bold uppercase block">High</span>
+                        <span class="font-mono font-bold text-emerald-700">Rp {{ number_format($highestSales, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="px-2 py-1 bg-slate-50 rounded-lg border text-slate-600">
+                        <span class="text-[9px] text-slate-400 font-bold uppercase block">Low</span>
+                        <span class="font-mono font-bold text-rose-700">Rp {{ number_format($lowestSales, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="px-2 py-1 bg-blue-50 rounded-lg border border-blue-200 text-blue-900">
+                        <span class="text-[9px] text-blue-600 font-bold uppercase block">Avg</span>
+                        <span class="font-mono font-bold text-blue-950">Rp {{ number_format($avgSales, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ApexCharts Container -->
+            <div id="trading-main-chart" style="min-height: 330px;"></div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm h-100 d-flex flex-column justify-between">
+            <div class="d-flex justify-content-between align-items-center pb-2 border-bottom mb-3">
+                <h6 class="mb-0 font-extrabold text-slate-900 text-sm d-flex align-items-center gap-1.5">
+                    <i class="fa-solid fa-chart-pie text-emerald-600"></i> Distribusi Pembayaran
+                </h6>
+                <span class="badge bg-slate-100 text-slate-600 text-[10px]">{{ $timeframe ?? 'month' }}</span>
+            </div>
+
+            <div id="payment-donut-chart" class="w-100 flex-grow-1 d-flex align-items-center justify-content-center" style="min-height: 240px;"></div>
+
+            <div class="grid grid-cols-3 gap-2 text-center text-xs pt-3 border-top mt-2">
+                <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-200">
+                    <span class="text-[9px] font-bold text-emerald-800 uppercase block">Cash</span>
+                    <span class="font-mono font-bold text-emerald-950 text-[11px] block mt-0.5">Rp {{ number_format($cashSales, 0, ',', '.') }}</span>
+                </div>
+                <div class="p-2 rounded-xl bg-blue-50 border border-blue-200">
+                    <span class="text-[9px] font-bold text-blue-800 uppercase block">QRIS</span>
+                    <span class="font-mono font-bold text-blue-950 text-[11px] block mt-0.5">Rp {{ number_format($qrisSales, 0, ',', '.') }}</span>
+                </div>
+                <div class="p-2 rounded-xl bg-amber-50 border border-amber-200">
+                    <span class="text-[9px] font-bold text-amber-800 uppercase block">Transfer</span>
+                    <span class="font-mono font-bold text-amber-950 text-[11px] block mt-0.5">Rp {{ number_format($transferSales, 0, ',', '.') }}</span>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="row g-4 mb-6">
-        <!-- Branch Comparison -->
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0 h-100 rounded-4">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
-                        <i class="fa-solid fa-code-branch text-purple-600 me-2"></i>
-                        <span>Performa Penjualan Antar Cabang</span>
-                    </h5>
-                </div>
-                <div class="card-body p-4">
-                    <div id="branch-comparison-chart" style="min-height: 280px;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Payment Method Distribution -->
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0 h-100 rounded-4">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
-                        <i class="fa-solid fa-chart-pie text-emerald-600 me-2"></i>
-                        <span>Metode Pembayaran POS</span>
-                    </h5>
-                </div>
-                <div class="card-body p-4 d-flex align-items-center justify-content-center">
-                    <div id="payment-chart" class="w-100" style="min-height: 280px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-@else
-    <!-- Specific Branch View Layout (Side-by-Side) -->
-    <div class="row g-4 mb-6">
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 h-100 rounded-4">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
-                        <i class="fa-solid fa-chart-column text-indigo-600 me-2"></i>
-                        <span>Tren Keuangan Cabang</span>
-                    </h5>
-                    <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-pill px-3 py-1 font-semibold text-xs">
-                        Maret - Agustus 2026
-                    </span>
-                </div>
-                <div class="card-body p-4">
-                    <div id="financial-trend-chart" style="min-height: 320px;"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 h-100 rounded-4">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
-                        <i class="fa-solid fa-chart-pie text-emerald-600 me-2"></i>
-                        <span>Metode Pembayaran</span>
-                    </h5>
-                </div>
-                <div class="card-body p-4 d-flex align-items-center justify-content-center">
-                    <div id="payment-chart" class="w-100" style="min-height: 280px;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-@endif
+</div>
 
 <!-- Recent Transactions Table Card -->
-<div class="row">
-    <div class="col-12 mb-4">
-        <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <h5 class="card-title fw-bold mb-0 text-dark d-flex align-items-center">
-                    <i class="fa-solid fa-clock-rotate-left text-indigo-600 me-2"></i>
-                    <span>Transaksi Penjualan Terkini</span>
-                </h5>
-                <a href="{{ route('sales.index') }}" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold d-inline-flex align-items-center">
-                    <span>Lihat Semua Penjualan</span>
-                    <i class="fa-solid fa-arrow-right ms-1.5 text-xs"></i>
-                </a>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-uppercase fs-7 text-muted">
-                            <tr>
-                                <th class="ps-4">No. Invoice</th>
-                                <th>Waktu</th>
-                                <th>Cabang</th>
-                                <th>Kasir</th>
-                                <th>Metode Bayar</th>
-                                <th>Total Belanja</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($recentTransactions as $tx)
-                                @php
-                                    $invItems = $tx->transactionDetails->map(function($d) {
-                                        return [
-                                            'material_name' => $d->material->material_name ?? 'Bahan Cetak',
-                                            'qty_ordered' => $d->qty_ordered,
-                                            'selling_price' => $d->selling_price,
-                                            'subtotal' => $d->qty_ordered * $d->selling_price,
-                                        ];
-                                    });
-                                    $invPayload = [
-                                        'invoice_number' => $tx->invoice_number,
-                                        'created_at' => $tx->created_at->format('d M Y H:i'),
-                                        'cashier_name' => $tx->user->full_name ?: ($tx->user->username ?? 'Kasir'),
-                                        'branch_name' => $tx->branch->nama_cabang ?? 'Pusat',
-                                        'payment_method' => $tx->payment_method ?? 'Cash',
-                                        'payment_status' => $tx->payment_status,
-                                        'paid_amount' => $tx->paid_amount,
-                                        'remaining_amount' => $tx->remaining_amount,
-                                        'customer_name' => $tx->customer_name,
-                                        'customer_phone' => $tx->customer_phone,
-                                        'total_price' => $tx->total_price,
-                                        'items' => $invItems
-                                    ];
-                                @endphp
-                                <tr>
-                                    <td class="ps-4">
-                                        <button type="button" 
-                                                class="btn btn-link p-0 font-mono fw-bold text-blue-700 text-decoration-none d-inline-flex align-items-center gap-1 hover:underline"
-                                                onclick='openSnaprintInvoice(@json($invPayload))'>
-                                            <i class="fa-solid fa-file-invoice text-blue-600 text-xs"></i>
-                                            <span>{{ $tx->invoice_number }}</span>
-                                        </button>
-                                    </td>
-                                    <td class="text-muted fs-7">{{ $tx->created_at->format('d M Y, H:i') }}</td>
-                                    <td><span class="badge bg-light text-dark border">{{ $tx->branch->nama_cabang ?? 'Pusat' }}</span></td>
-                                    <td class="fw-semibold text-dark">{{ $tx->user->full_name ?: ($tx->user->username ?? 'Kasir') }}</td>
-                                    <td>
-                                        <div class="d-inline-flex align-items-center gap-1">
-                                            <span class="badge bg-slate-100 text-slate-700 border px-2 py-0.5 text-[11px]">{{ $tx->payment_method }}</span>
-                                            @if($tx->isPaid())
-                                                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">PAID</span>
-                                            @elseif($tx->isPartial())
-                                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold" title="Sisa Piutang: Rp {{ number_format($tx->remaining_amount, 0, ',', '.') }}">
-                                                    <i class="fa-solid fa-clock-rotate-left me-0.5"></i> UNPAID (DP)
-                                                </span>
-                                            @else
-                                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold">
-                                                    <i class="fa-solid fa-circle-xmark me-0.5"></i> UNPAID
-                                                </span>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="fw-bold text-blue-900 font-mono">Rp {{ number_format($tx->total_price, 0, ',', '.') }}</td>
-                                    <td class="text-center">
-                                        <div class="btn-group btn-group-sm">
-                                            <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Dokumen Faktur" onclick='openSnaprintInvoice(@json($invPayload))'>
-                                                <i class="fa-solid fa-file-invoice text-xs"></i>
-                                            </button>
-                                            <a href="{{ route('sales.receipt', $tx->id) }}" target="_blank" class="btn btn-sm btn-light border py-0 px-2" title="Cetak Struk POS">
-                                                <i class="fa-solid fa-receipt text-xs"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="text-center py-4 text-muted">Belum ada transaksi penjualan terbaru.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+    <div class="p-3.5 bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 font-extrabold text-slate-900 text-xs d-flex align-items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
+            <span>Transaksi Penjualan Terkini</span>
+        </h6>
+        <a href="{{ route('sales.index') }}" class="btn btn-sm btn-outline-primary rounded-xl px-3 py-1 text-xs font-bold d-inline-flex align-items-center gap-1">
+            <span>Lihat Semua Penjualan</span>
+            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 text-xs">
+            <thead class="bg-slate-50 text-slate-600 border-bottom font-bold">
+                <tr>
+                    <th class="ps-3 py-2.5">No. Invoice</th>
+                    <th class="py-2.5">Waktu</th>
+                    <th class="py-2.5">Cabang</th>
+                    <th class="py-2.5">Kasir</th>
+                    <th class="py-2.5">Metode Bayar</th>
+                    <th class="py-2.5 text-end">Total Belanja</th>
+                    <th class="pe-3 py-2.5 text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($recentTransactions as $tx)
+                    @php
+                        $invItems = $tx->transactionDetails->map(function($d) {
+                            return [
+                                'material_name' => $d->material->material_name ?? 'Bahan Cetak',
+                                'qty_ordered' => $d->qty_ordered,
+                                'selling_price' => $d->selling_price,
+                                'subtotal' => $d->qty_ordered * $d->selling_price,
+                            ];
+                        });
+                        $invPayload = [
+                            'invoice_number' => $tx->invoice_number,
+                            'created_at' => $tx->created_at->format('d M Y H:i'),
+                            'cashier_name' => $tx->user->full_name ?: ($tx->user->username ?? 'Kasir'),
+                            'branch_name' => $tx->branch->nama_cabang ?? 'Pusat',
+                            'payment_method' => $tx->payment_method ?? 'Cash',
+                            'payment_status' => $tx->payment_status,
+                            'paid_amount' => $tx->paid_amount,
+                            'remaining_amount' => $tx->remaining_amount,
+                            'customer_name' => $tx->customer_name,
+                            'customer_phone' => $tx->customer_phone,
+                            'total_price' => $tx->total_price,
+                            'items' => $invItems
+                        ];
+                    @endphp
+                    <tr>
+                        <td class="ps-3 font-mono font-bold text-blue-900">
+                            <button type="button" 
+                                    class="btn btn-link p-0 font-mono font-bold text-blue-700 text-decoration-none d-inline-flex align-items-center gap-1 hover:underline text-xs"
+                                    onclick='openSnaprintInvoice(@json($invPayload))'>
+                                <i class="fa-solid fa-file-invoice text-blue-600 text-xs"></i>
+                                <span>{{ $tx->invoice_number }}</span>
+                            </button>
+                        </td>
+                        <td class="text-slate-500 font-semibold">{{ $tx->created_at->format('d M Y, H:i') }}</td>
+                        <td>
+                            <span class="badge bg-slate-100 text-slate-700 border text-[10px]">
+                                {{ $tx->branch->nama_cabang ?? 'Pusat' }}
+                            </span>
+                        </td>
+                        <td class="font-semibold text-slate-700">{{ $tx->user->full_name ?: ($tx->user->username ?? '-') }}</td>
+                        <td>
+                            @if($tx->payment_method === 'Cash')
+                                <span class="badge bg-emerald-100 text-emerald-800 text-[10px]">💵 Cash</span>
+                            @elseif($tx->payment_method === 'QRIS')
+                                <span class="badge bg-blue-100 text-blue-800 text-[10px]">📱 QRIS</span>
+                            @else
+                                <span class="badge bg-amber-100 text-amber-800 text-[10px]">🏦 Transfer</span>
+                            @endif
+                        </td>
+                        <td class="text-end font-mono font-bold text-slate-900">
+                            Rp {{ number_format($tx->total_price, 0, ',', '.') }}
+                        </td>
+                        <td class="pe-3 text-center">
+                            <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-blue-700" title="Buka Dokumen Faktur" onclick='openSnaprintInvoice(@json($invPayload))'>
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-slate-400">Belum ada data transaksi penjualan pada periode ini.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 </div>
-</div>
 
-<!-- ApexCharts Script Initialization -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
+    function setTimeframe(tf) {
+        document.getElementById('timeframe-input').value = tf;
+        document.getElementById('dashboard-filter-form').submit();
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
-        // 1. Combo Chart: Financial Trend (Sales vs OPEX vs Net Profit)
-        const trendChartOptions = {
-            series: [{
-                name: 'Omset Penjualan (Revenue)',
-                type: 'column',
-                data: @json($monthlySales)
-            }, {
-                name: 'Beban Operasional (OPEX)',
-                type: 'column',
-                data: @json($monthlyOpex)
-            }, {
-                name: 'Laba Bersih (Net Profit)',
-                type: 'line',
-                data: @json($monthlyNetProfit)
-            }],
+        // 1. Trading-Style Multi-Axis Chart (Omset Area + Volume Bar)
+        const tradingChartOptions = {
+            series: [
+                {
+                    name: 'Total Omset (Rp)',
+                    type: 'area',
+                    data: @json($chartSales)
+                },
+                {
+                    name: 'Volume Transaksi (Trx)',
+                    type: 'column',
+                    data: @json($chartVolume)
+                }
+            ],
             chart: {
-                height: 350,
+                height: 330,
                 type: 'line',
                 stacked: false,
-                toolbar: { show: false }
+                toolbar: { show: false },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800
+                }
             },
             stroke: {
-                width: [0, 0, 4],
+                width: [3, 0],
                 curve: 'smooth'
             },
             plotOptions: {
                 bar: {
-                    columnWidth: '50%',
-                    borderRadius: 5
+                    columnWidth: '35%',
+                    borderRadius: 4
                 }
             },
-            colors: ['#714B67', '#e11d48', '#008784'],
+            colors: ['#1e40af', '#94a3b8'],
             fill: {
-                opacity: [0.85, 0.85, 1],
+                type: ['gradient', 'solid'],
                 gradient: {
-                    inverseColors: false,
                     shade: 'light',
-                    type: "vertical",
-                    opacityFrom: 0.85,
-                    opacityTo: 0.55,
-                    stops: [0, 100, 100, 100]
+                    type: 'vertical',
+                    shadeIntensity: 0.5,
+                    gradientToColors: ['#3b82f6'],
+                    inverseColors: false,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [0, 100]
                 }
             },
-            labels: @json($months),
+            labels: @json($chartLabels),
             markers: {
-                size: 5
+                size: 4,
+                colors: ['#1e40af'],
+                strokeColors: '#ffffff',
+                strokeWidth: 2,
+                hover: { size: 6 }
             },
             xaxis: {
-                type: 'category'
-            },
-            yaxis: {
+                type: 'category',
                 labels: {
-                    formatter: function (val) {
-                        return "Rp " + new Intl.NumberFormat('id-ID').format(val);
-                    }
+                    style: { fontSize: '10px', fontWeight: 600, colors: '#64748b' }
                 }
             },
+            yaxis: [
+                {
+                    title: { text: 'Omset Penjualan (Rp)', style: { fontSize: '11px', fontWeight: 700, color: '#1e40af' } },
+                    labels: {
+                        formatter: function (val) {
+                            return "Rp " + new Intl.NumberFormat('id-ID').format(val);
+                        },
+                        style: { fontSize: '10px', colors: '#64748b' }
+                    }
+                },
+                {
+                    opposite: true,
+                    title: { text: 'Volume (Trx)', style: { fontSize: '11px', fontWeight: 700, color: '#94a3b8' } },
+                    labels: {
+                        formatter: function (val) {
+                            return Math.round(val) + " Trx";
+                        },
+                        style: { fontSize: '10px', colors: '#64748b' }
+                    }
+                }
+            ],
             tooltip: {
                 shared: true,
                 intersect: false,
-                y: {
-                    formatter: function (y) {
-                        if (typeof y !== "undefined") {
-                            return "Rp " + new Intl.NumberFormat('id-ID').format(y);
+                theme: 'dark',
+                y: [
+                    {
+                        formatter: function (y) {
+                            return typeof y !== "undefined" ? "Rp " + new Intl.NumberFormat('id-ID').format(y) : y;
                         }
-                        return y;
+                    },
+                    {
+                        formatter: function (y) {
+                            return typeof y !== "undefined" ? Math.round(y) + " Transaksi" : y;
+                        }
                     }
-                }
+                ]
+            },
+            grid: {
+                borderColor: '#f1f5f9',
+                strokeDashArray: 4
             }
         };
 
-        const trendChart = new ApexCharts(document.querySelector("#financial-trend-chart"), trendChartOptions);
-        trendChart.render();
+        const mainChart = new ApexCharts(document.querySelector("#trading-main-chart"), tradingChartOptions);
+        mainChart.render();
 
-        // 2. Payment Method Distribution Donut Chart
+        // 2. Payment Donut Chart
         const paymentChartOptions = {
             series: [{{ (float)$cashSales }}, {{ (float)$qrisSales }}, {{ (float)$transferSales }}],
-            labels: ['Cash / Tunai', 'QRIS', 'Transfer Bank'],
+            labels: ['Cash (Tunai)', 'QRIS', 'Transfer Bank'],
             chart: {
                 type: 'donut',
-                height: 280
+                height: 240
             },
-            colors: ['#008784', '#714B67', '#f59e0b'],
-            legend: { position: 'bottom' },
+            colors: ['#059669', '#2563eb', '#d97706'],
+            legend: { position: 'bottom', fontSize: '11px' },
             dataLabels: { enabled: true },
             tooltip: {
                 y: {
@@ -438,56 +449,8 @@
                 }
             }
         };
-        const paymentChart = new ApexCharts(document.querySelector("#payment-chart"), paymentChartOptions);
+        const paymentChart = new ApexCharts(document.querySelector("#payment-donut-chart"), paymentChartOptions);
         paymentChart.render();
-
-        // 3. Branch Sales Comparison (Only in Consolidated View)
-        @if($branchId === 'all')
-            const branchComparisonOptions = {
-                series: [{
-                    name: 'Total Penjualan (Rp)',
-                    data: @json($branchSalesData->pluck('sales'))
-                }],
-                chart: {
-                    type: 'bar',
-                    height: 280,
-                    toolbar: { show: false }
-                },
-                plotOptions: {
-                    bar: {
-                        barHeight: '60%',
-                        distributed: true,
-                        horizontal: true,
-                        borderRadius: 4
-                    }
-                },
-                colors: ['#714B67', '#008784', '#3b82f6', '#f59e0b'],
-                dataLabels: {
-                    enabled: true,
-                    formatter: function (val) {
-                        return "Rp " + new Intl.NumberFormat('id-ID').format(val);
-                    }
-                },
-                xaxis: {
-                    categories: @json($branchSalesData->pluck('name')),
-                    labels: {
-                        formatter: function (val) {
-                            return "Rp " + new Intl.NumberFormat('id-ID').format(val);
-                        }
-                    }
-                },
-                legend: { show: false },
-                tooltip: {
-                    y: {
-                        formatter: function (val) {
-                            return "Rp " + new Intl.NumberFormat('id-ID').format(val);
-                        }
-                    }
-                }
-            };
-            const branchChart = new ApexCharts(document.querySelector("#branch-comparison-chart"), branchComparisonOptions);
-            branchChart.render();
-        @endif
     });
 </script>
 @endsection

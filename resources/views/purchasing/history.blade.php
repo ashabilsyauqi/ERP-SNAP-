@@ -6,7 +6,7 @@
 @section('action-buttons')
 <a href="{{ route('purchasing.create') }}" class="btn-odoo-primary text-decoration-none">
     <i class="fa-solid fa-plus"></i>
-    <span>New RFQ</span>
+    <span>Buat PO Baru</span>
 </a>
 @endsection
 

@@ -15,10 +15,6 @@ class PosController extends Controller
 {
     public function index()
     {
-        if (!auth()->user()->isSuperAdmin() && (auth()->user()->role === 'owner' || auth()->user()->isManager())) {
-            return redirect()->route('owner.dashboard')->with('info', 'Fitur terminal kasir POS khusus untuk akun Kasir. Silakan gunakan menu Penjualan atau Dashboard Toko untuk memantau transaksi cabang.');
-        }
-
         $branchId = auth()->user()->branch_id;
         if (request()->filled('branch_id') && request('branch_id') !== 'all') {
             $branchId = request('branch_id');
@@ -26,22 +22,21 @@ class PosController extends Controller
             $branchId = \App\Models\Branch::first()->id ?? 1;
         }
 
-        // Exclude Tinta (OPEX) from POS, filter by branch
+        // Load all materials for this branch (excluding Tinta OPEX)
         $materials = Material::with('wholesalePrices')
             ->where('branch_id', $branchId)
-            ->whereNotNull('category')
-            ->where('category', '!=', '')
             ->where('material_name', 'not like', '%tinta%')
-            ->orderBy('category')
-            ->orderBy('material_name')
-            ->get();
+            ->get()
+            ->map(function($m) {
+                if (empty($m->category)) {
+                    $m->category = 'Lainnya';
+                }
+                return $m;
+            })
+            ->sortBy(['category', 'material_name'])
+            ->values();
 
-        $categories = Material::where('branch_id', $branchId)
-            ->whereNotNull('category')
-            ->where('category', '!=', '')
-            ->where('material_name', 'not like', '%tinta%')
-            ->distinct()
-            ->pluck('category');
+        $categories = $materials->pluck('category')->unique()->values();
 
         $customers = collect();
         if (Schema::hasTable('customers')) {
@@ -57,13 +52,6 @@ class PosController extends Controller
 
     public function checkout(Request $request)
     {
-        if (!auth()->user()->isSuperAdmin() && (auth()->user()->role === 'owner' || auth()->user()->isManager())) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Transaksi kasir POS hanya dapat diproses oleh akun Kasir.'
-            ], 403);
-        }
-
         $isDraft = auth()->user()->isOperator() || $request->boolean('is_draft');
 
         $request->validate([
