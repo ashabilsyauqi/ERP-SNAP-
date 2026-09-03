@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faktur Penjualan - {{ $transaction->invoice_number }} - Snaprint</title>
+    <!-- OpenGraph Metadata for WhatsApp Rich Link Preview Card -->
+    <meta property="og:title" content="Faktur PDF #{{ $transaction->invoice_number }} - Snaprint">
+    <meta property="og:description" content="Dokumen Resmi Faktur Penjualan Snaprint Digital Printing • Total: Rp {{ number_format($transaction->total_price, 0, ',', '.') }}">
+    <meta property="og:image" content="{{ asset('images/logosnaprint.jpeg') }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:type" content="article">
     <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

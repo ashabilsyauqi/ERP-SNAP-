@@ -1639,27 +1639,30 @@
                 console.error(e);
             }
 
-            // 2. Open WhatsApp Web directly to customer's chat WITHOUT any spammy extra text
-            const url = `https://api.whatsapp.com/send?phone=${cleanPhone}`;
+            // 2. Open WhatsApp directly with the Draft PDF Link prefilled in chat
+            const invNum = data.invoice_number || '-';
+            const publicInvUrl = data.public_invoice_url || `${window.location.origin}/invoices/${invNum}`;
+            const draftMessage = `📄 *Faktur PDF Snaprint #${invNum}*\n${publicInvUrl}`;
+            const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(draftMessage)}`;
             window.open(url, '_blank');
 
-            // 3. Display clear guidance popup so user knows exactly what to do
+            // 3. Clear, friendly notification
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'success',
-                    title: 'Berkas PDF Telah Diunduh',
+                    title: 'Draft Faktur PDF Siap Dikirim!',
                     html: `
                         <div class="text-xs text-slate-600 text-center p-2 space-y-2">
                             <p class="mb-2">Chat WhatsApp ke <strong>${data.customer_name || 'Pelanggan'}</strong> (<code>${cleanPhone}</code>) telah dibuka.</p>
-                            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-900 font-medium">
-                                <i class="fa-solid fa-file-pdf text-rose-600 text-xl mb-1 block"></i>
-                                Berkas <strong>${filename}</strong> sudah otomatis terunduh di perangkat.<br>
-                                Cukup tarik (drag & drop) atau klik lampirkan dokumen (📎) di WhatsApp untuk mengirimnya langsung.
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-900 font-medium text-left">
+                                <i class="fa-brands fa-whatsapp text-emerald-600 text-lg me-1"></i>
+                                Draft link Faktur PDF sudah otomatis terisi di kolom chat WhatsApp.<br>
+                                <strong>Tinggal klik tombol kirim (panah hijau) di WhatsApp!</strong>
                             </div>
                         </div>
                     `,
-                    confirmButtonText: 'Mengerti',
-                    confirmButtonColor: '#2563eb'
+                    confirmButtonText: 'Siap, Mengerti',
+                    confirmButtonColor: '#059669'
                 });
             }
         };
