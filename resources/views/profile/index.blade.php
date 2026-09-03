@@ -172,6 +172,59 @@
             </div>
         </form>
     </div>
+
+    <!-- Card 4: WhatsApp Gateway Integration (Fonnte) -->
+    @if(auth()->user()->isOwner() || auth()->user()->isManager() || auth()->user()->isSuperAdmin())
+    <div class="o_form_sheet p-4 bg-white" id="whatsapp-gateway">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div>
+                <h6 class="fw-bold text-slate-800 text-xs uppercase mb-0">
+                    <i class="fa-brands fa-whatsapp text-emerald-600 fs-5 me-1 align-middle"></i> Integrasi WhatsApp Gateway (Kirim PDF Otomatis Tanpa Redirect)
+                </h6>
+                <small class="text-slate-500 text-[11px]">Memungkinkan kasir mengirimkan berkas fisik Faktur PDF langsung ke WhatsApp pelanggan di latar belakang tanpa membuka aplikasi WhatsApp.</small>
+            </div>
+            <div>
+                @if(!empty($fonnteToken))
+                    <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-semibold px-2.5 py-1">
+                        <i class="fa-solid fa-circle-check text-emerald-600 me-1"></i> Gateway Aktif
+                    </span>
+                @else
+                    <span class="badge bg-amber-100 text-amber-800 border border-amber-300 text-xs font-semibold px-2.5 py-1">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600 me-1"></i> Belum Terhubung
+                    </span>
+                @endif
+            </div>
+        </div>
+
+        <form action="{{ route('profile.whatsapp-gateway') }}" method="POST" class="space-y-3">
+            @csrf
+            <div>
+                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Token API Fonnte (Fonnte API Token)</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-slate-100 font-mono text-xs"><i class="fa-solid fa-key text-slate-500"></i></span>
+                    <input type="password" name="fonnte_token" value="{{ old('fonnte_token', $fonnteToken) }}" class="form-control font-mono text-xs" placeholder="Contoh: a1b2c3d4e5f6g7h8i9j0..." id="input-fonnte-token">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" onclick="const el = document.getElementById('input-fonnte-token'); el.type = el.type === 'password' ? 'text' : 'password';">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-900 mt-2 space-y-1.5">
+                    <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-info text-blue-600"></i> Cara Mendapatkan Token Fonnte (1 Menit):</div>
+                    <ol class="list-decimal pl-4 space-y-1 text-slate-700">
+                        <li>Buka website resmi <strong><a href="https://fonnte.com" target="_blank" class="text-blue-600 underline font-semibold">fonnte.com</a></strong> dan login / daftar gratis.</li>
+                        <li>Tambahkan device dan scan QR WhatsApp toko / nomor resmi Snaprint.</li>
+                        <li>Salin (Copy) <strong>API Token</strong> yang muncul di dashboard Fonnte, lalu tempelkan (Paste) pada form di atas.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end pt-2">
+                <button type="submit" class="btn-odoo-primary">
+                    <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Token WhatsApp Gateway
+                </button>
+            </div>
+        </form>
+    </div>
+    @endif
 </div>
 
 <script>

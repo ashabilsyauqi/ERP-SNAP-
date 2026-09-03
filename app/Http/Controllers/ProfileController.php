@@ -12,7 +12,8 @@ class ProfileController extends Controller
     public function index()
     {
         $user = Auth::user();
-        return view('profile.index', compact('user'));
+        $fonnteToken = \App\Models\Setting::get('fonnte_token', '');
+        return view('profile.index', compact('user', 'fonnteToken'));
     }
 
     public function updateBiodata(Request $request)
@@ -104,5 +105,16 @@ class ProfileController extends Controller
         $user->save();
 
         return redirect()->route('profile.index')->with('success', 'Password akun berhasil diperbarui!');
+    }
+
+    public function updateWhatsAppGateway(Request $request)
+    {
+        $request->validate([
+            'fonnte_token' => 'nullable|string|max:255',
+        ]);
+
+        \App\Models\Setting::set('fonnte_token', trim($request->fonnte_token ?? ''));
+
+        return redirect()->route('profile.index')->with('success', 'Token WhatsApp Gateway (Fonnte) berhasil diperbarui!');
     }
 }

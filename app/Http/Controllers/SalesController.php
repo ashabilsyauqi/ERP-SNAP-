@@ -10,7 +10,9 @@ use App\Models\MaterialWholesalePrice;
 use App\Models\CashTransaction;
 use App\Models\Account;
 use App\Models\Branch;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class SalesController extends Controller
 {
@@ -413,5 +415,77 @@ class SalesController extends Controller
             ->firstOrFail();
 
         return view('sales.public_invoice', compact('transaction'));
+    }
+
+    /**
+     * Send PDF Invoice directly to customer WhatsApp via WhatsApp Gateway API (Fonnte).
+     */
+    public function sendWhatsAppPdf(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:20480',
+            'phone' => 'required|string',
+            'invoice_number' => 'required|string',
+            'customer_name' => 'nullable|string',
+        ]);
+
+        $token = Setting::get('fonnte_token') ?: env('FONNTE_TOKEN');
+
+        if (empty($token)) {
+            return response()->json([
+                'status' => 'unconfigured',
+                'message' => 'Token WhatsApp Gateway (Fonnte) belum disetup. Silakan masukkan token di Pengaturan Profil toko.',
+            ], 422);
+        }
+
+        $phone = preg_replace('/[^0-9]/', '', $request->phone);
+        if (str_starts_with($phone, '0')) {
+            $phone = '62' . substr($phone, 1);
+        } elseif (str_starts_with($phone, '8')) {
+            $phone = '62' . $phone;
+        }
+
+        $pdfFile = $request->file('file');
+        $invoiceNumber = $request->invoice_number;
+        $customerName = $request->customer_name ?: 'Pelanggan';
+
+        $caption = "Halo Kak {$customerName},\nBerikut kami lampirkan berkas resmi Faktur Penjualan Snaprint #{$invoiceNumber}.\nTerima kasih atas kepercayaannya mencetak di Snaprint Digital Printing! 🙏✨";
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => $token,
+            ])->timeout(45)->attach(
+                'file',
+                file_get_contents($pdfFile->getRealPath()),
+                "Faktur_{$invoiceNumber}.pdf"
+            )->post('https://api.fonnte.com/send', [
+                'target' => $phone,
+                'message' => $caption,
+                'filename' => "Faktur_{$invoiceNumber}.pdf",
+                'countryCode' => '62',
+            ]);
+
+            $result = $response->json();
+
+            if ($response->successful() && isset($result['status']) && $result['status'] == true) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => "Berkas Faktur PDF #{$invoiceNumber} berhasil dikirim ke WhatsApp {$phone}!",
+                    'detail' => $result,
+                ]);
+            } else {
+                $reason = $result['reason'] ?? ($result['detail'] ?? 'WhatsApp Gateway menolak pengiriman file.');
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Gagal dari WhatsApp Gateway: ' . $reason,
+                    'detail' => $result,
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Kendala koneksi ke server WhatsApp: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

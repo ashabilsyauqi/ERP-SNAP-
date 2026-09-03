@@ -41,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/profile/biodata', [\App\Http\Controllers\ProfileController::class, 'updateBiodata'])->name('profile.biodata');
     Route::post('/profile/signature', [\App\Http\Controllers\ProfileController::class, 'updateSignature'])->name('profile.signature');
     Route::post('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::post('/profile/whatsapp-gateway', [\App\Http\Controllers\ProfileController::class, 'updateWhatsAppGateway'])->name('profile.whatsapp-gateway');
 
     Route::middleware(['role:purchasing,owner,manager'])->group(function () {
         Route::get('/purchasing', [PurchasingController::class, 'index'])->name('purchasing.index');
@@ -82,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/sales/{id}/settle', [SalesController::class, 'settle'])->name('sales.settle');
         Route::patch('/sales/{id}/status', [SalesController::class, 'updateOrderStatus'])->name('sales.status');
         Route::get('/sales/{id}/receipt', [SalesController::class, 'receipt'])->name('sales.receipt');
+        Route::post('/sales/send-whatsapp-pdf', [SalesController::class, 'sendWhatsAppPdf'])->name('sales.send-whatsapp-pdf');
         Route::post('/sales/{id}/refund', [SalesController::class, 'refund'])->name('sales.refund');
         Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy');
     });
