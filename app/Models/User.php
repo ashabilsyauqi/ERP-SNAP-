@@ -23,7 +23,7 @@ class User extends Authenticatable
         parent::boot();
 
         static::creating(function ($user) {
-            if (!$user->branch_id && in_array($user->role, ['cashier', 'purchasing'])) {
+            if (!$user->branch_id && in_array($user->role, ['cashier', 'purchasing', 'operator', 'sales'])) {
                 $branchId = self::resolveBranchFromUsername($user->username);
                 if ($branchId) {
                     $user->branch_id = $branchId;
@@ -100,6 +100,11 @@ class User extends Authenticatable
     public function isCashier()
     {
         return $this->role === 'cashier';
+    }
+
+    public function isOperator()
+    {
+        return in_array($this->role, ['operator', 'sales']);
     }
 
     public function branch()

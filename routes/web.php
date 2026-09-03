@@ -16,6 +16,9 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Public Invoice View & PDF Download (WhatsApp Link Accessible by Customers)
+Route::get('/invoices/{invoice_number}', [\App\Http\Controllers\SalesController::class, 'publicInvoice'])->name('invoices.public');
+
 Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:owner,manager'])->group(function () {
         Route::get('/owner/dashboard', [OwnerController::class, 'dashboard'])->name('owner.dashboard');
@@ -62,10 +65,12 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
 
-    // POS Terminal & Cashier Register (Cashier Only - Excludes Owner & Manager)
-    Route::middleware(['role:cashier'])->group(function () {
+    // POS Terminal & Cashier Register (Cashier, Operator Cek Harga, and Sales Desk)
+    Route::middleware(['role:cashier,operator,sales'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+        Route::get('/pos/drafts', [PosController::class, 'getDrafts'])->name('pos.drafts');
+        Route::post('/pos/drafts/{id}/settle', [PosController::class, 'settleDraft'])->name('pos.drafts.settle');
         Route::post('/cashier-shift/open', [\App\Http\Controllers\CashierShiftController::class, 'openShift'])->name('cashier-shift.open');
         Route::post('/cashier-shift/close', [\App\Http\Controllers\CashierShiftController::class, 'closeShift'])->name('cashier-shift.close');
     });

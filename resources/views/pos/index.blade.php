@@ -4,6 +4,12 @@
 @section('page-title', 'Terminal Kasir Penjualan (POS)')
 
 @section('action-buttons')
+@if(!auth()->user()->isOperator())
+<button type="button" onclick="openDraftOrdersModal()" class="btn-odoo-secondary text-decoration-none position-relative">
+    <i class="fa-solid fa-inbox me-1 text-amber-600"></i> Pesanan Draft
+    <span id="draft-counter-badge" class="badge bg-amber-600 text-white rounded-pill text-[10px] ms-1">0</span>
+</button>
+@endif
 <a href="{{ route('sales.receivables') }}" class="btn-odoo-primary text-decoration-none">
     <i class="fa-solid fa-hand-holding-dollar me-1"></i> Piutang & Pesanan DP
 </a>
@@ -178,10 +184,10 @@
             @endforeach
         </div>
         
-        <!-- Products Cards Grid (Responsive 2 to 3 Columns Max, Smooth Vertical Scroll) -->
-        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0 w-full">
+        <!-- Products Cards Grid (Fluid Responsive Auto-Fill Flex/Grid, Smooth Vertical Scroll) -->
+        <div id="products-grid" class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0 w-full content-start">
             @foreach($materials as $material)
-                <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group min-w-0"
+                <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group min-w-[190px]"
                      data-id="{{ $material->id }}"
                      data-name="{{ strtolower($material->material_name) }}"
                      data-category="{{ $material->category ?? 'Lainnya' }}"
@@ -243,7 +249,7 @@
             @endforeach
 
             <!-- Empty State for Filter/Search -->
-            <div id="products-empty-state" class="col-span-1 sm:col-span-2 xl:col-span-3 py-12 text-center hidden">
+            <div id="products-empty-state" class="col-span-full py-12 text-center hidden">
                 <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-2 text-lg">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </div>
@@ -254,7 +260,7 @@
     </div>
 
     <!-- Right Column: Cart & Checkout (Strict Fixed Responsive Width, Always In View) -->
-    <div class="w-full lg:w-[320px] xl:w-[360px] 2xl:w-[380px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
+    <div class="w-full lg:w-[330px] xl:w-[370px] 2xl:w-[400px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
          :class="activeTab === 'cart' ? 'flex' : 'hidden lg:flex'">
         
         <!-- Cart Header -->
@@ -391,35 +397,54 @@
             </div>
 
             <!-- Payment Method Tiles (Desktop & Mobile) -->
-            <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Metode Pembayaran (DP / Full)</label>
-                <div class="grid grid-cols-3 gap-1.5">
-                    <!-- Cash Button -->
-                    <button type="button" onclick="setPaymentMethod('Cash')" id="pm-desktop-Cash" 
-                        class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <i class="fa-solid fa-money-bill-wave text-sm mb-0.5 text-emerald-600"></i>
-                        <span class="text-[11px] font-bold">Tunai</span>
-                    </button>
-                    <!-- Transfer Button -->
-                    <button type="button" onclick="setPaymentMethod('Transfer')" id="pm-desktop-Transfer" 
-                        class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <i class="fa-solid fa-building-columns text-sm mb-0.5 text-blue-600"></i>
-                        <span class="text-[11px] font-bold">Transfer</span>
-                    </button>
-                    <!-- QRIS Button -->
-                    <button type="button" onclick="setPaymentMethod('QRIS')" id="pm-desktop-QRIS" 
-                        class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
-                        <i class="fa-solid fa-qrcode text-sm mb-0.5 text-indigo-600"></i>
-                        <span class="text-[11px] font-bold">QRIS</span>
-                    </button>
+            @if(auth()->user()->isOperator())
+                <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-circle-info text-amber-600 text-sm flex-shrink-0"></i>
+                    <span>Mode Cek Harga Aktif: Pesanan akan disimpan sebagai <strong>Draft Antrean Kasir</strong> tanpa pembayaran langsung.</span>
                 </div>
-            </div>
+            @else
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Metode Pembayaran (DP / Full)</label>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <!-- Cash Button -->
+                        <button type="button" onclick="setPaymentMethod('Cash')" id="pm-desktop-Cash" 
+                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            <i class="fa-solid fa-money-bill-wave text-sm mb-0.5 text-emerald-600"></i>
+                            <span class="text-[11px] font-bold">Tunai</span>
+                        </button>
+                        <!-- Transfer Button -->
+                        <button type="button" onclick="setPaymentMethod('Transfer')" id="pm-desktop-Transfer" 
+                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            <i class="fa-solid fa-building-columns text-sm mb-0.5 text-blue-600"></i>
+                            <span class="text-[11px] font-bold">Transfer</span>
+                        </button>
+                        <!-- QRIS Button -->
+                        <button type="button" onclick="setPaymentMethod('QRIS')" id="pm-desktop-QRIS" 
+                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            <i class="fa-solid fa-qrcode text-sm mb-0.5 text-indigo-600"></i>
+                            <span class="text-[11px] font-bold">QRIS</span>
+                        </button>
+                    </div>
+                </div>
+            @endif
 
             <!-- Receipt Breakdown -->
             <div class="bg-slate-50 p-2.5 rounded-xl space-y-1 text-xs text-slate-500 font-medium border border-slate-100">
                 <div class="flex justify-between">
                     <span>Total Tagihan Pesanan</span>
                     <span id="receipt-total-desktop" class="font-mono font-bold text-slate-900">Rp 0</span>
+                </div>
+
+                <!-- Negotiation Discount Breakdown Row -->
+                <div id="nego-discount-row" class="hidden flex justify-between text-emerald-700 font-bold">
+                    <span class="flex items-center gap-1">
+                        <i class="fa-solid fa-handshake text-emerald-600"></i> Potongan Nego
+                    </span>
+                    <span id="nego-discount-text" class="font-mono">- Rp 0</span>
+                </div>
+                <div id="nego-final-row" class="hidden flex justify-between text-blue-900 font-black pt-1 border-t border-slate-200">
+                    <span>Total Akhir Nego</span>
+                    <span id="nego-final-text" class="font-mono text-sm">Rp 0</span>
                 </div>
                 
                 <template x-if="isDp">
@@ -456,17 +481,34 @@
                     </button>
                 </div>
                 <button type="button" id="btn-wa-last-receipt" class="hidden btn btn-sm w-full py-1 text-xs font-bold text-white d-flex align-items-center justify-content-center gap-1.5 rounded-lg shadow-sm" style="background-color: #25D366; border-color: #25D366;">
-                    <i class="fa-brands fa-whatsapp text-sm"></i> Kirim Struk ke WhatsApp
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Kirim Faktur ke WhatsApp
                 </button>
             </div>
 
             <!-- Error Notification Card (Rose Red) -->
             <div id="checkout-error-desktop" class="hidden bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-semibold"></div>
 
-            <button onclick="processCheckout()" id="checkout-btn-desktop" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0">
-                <i class="fa-solid fa-circle-check"></i>
-                <span x-text="(isDp && isEligibleForDp) ? 'Proses Bayar' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
-            </button>
+            <!-- Checkout Action Buttons Area (With Titik 3 Negotiation) -->
+            <div class="flex items-center gap-1.5 pt-1">
+                @if(!auth()->user()->isOperator())
+                    <!-- Titik 3 Tombol Negosiasi (Diskon Total) Tepat di Samping Tombol Bayar -->
+                    <button type="button" onclick="openNegotiationModal()" id="btn-open-nego" class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl transition flex items-center justify-center cursor-pointer flex-shrink-0 shadow-sm" title="Negosiasi / Diskon Total Tagihan">
+                        <i class="fa-solid fa-ellipsis-vertical text-base text-slate-600"></i>
+                    </button>
+                @endif
+
+                @if(auth()->user()->isOperator())
+                    <button onclick="processCheckout(true)" id="checkout-btn-desktop" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-3 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-xs">
+                        <i class="fa-solid fa-file-signature"></i>
+                        <span>Simpan Draft Pesanan (Ke Kasir)</span>
+                    </button>
+                @else
+                    <button onclick="processCheckout(false)" id="checkout-btn-desktop" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-xs">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span x-text="(isDp && isEligibleForDp) ? 'Proses Bayar DP' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
+                    </button>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -504,6 +546,135 @@
 
 <!-- Input holds global payment selection state -->
 <input type="hidden" id="global_payment_method" value="Cash">
+
+<!-- Modal Negosiasi Tagihan POS -->
+<div class="modal fade" id="modalNegotiation" tabindex="-1" aria-labelledby="modalNegotiationLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
+            <div class="px-4 py-3 d-flex justify-content-between align-items-center bg-slate-900 text-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/20 border border-amber-400/30 text-amber-400">
+                        <i class="fa-solid fa-handshake text-sm"></i>
+                    </div>
+                    <div>
+                        <h5 class="fs-6 fw-bold mb-0 text-white" id="modalNegotiationLabel">Negosiasi Total Tagihan</h5>
+                        <span class="text-[11px] text-slate-400">Diskon atau penyesuaian harga total</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="p-4 space-y-3" style="background-color: #f8fafc;">
+                <div class="bg-white p-3 rounded-xl border border-slate-200">
+                    <span class="text-slate-400 font-bold uppercase text-[10px] block">Total Tagihan Asli (Sebelum Nego)</span>
+                    <strong class="text-base font-mono text-slate-900 block" id="nego-modal-orig-total">Rp 0</strong>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase">Metode Penyesuaian</label>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button type="button" onclick="setNegoMode('discount')" id="btn-nego-mode-discount" 
+                            class="py-1.5 px-2 text-xs font-bold rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-center transition">
+                            Potongan Diskon (Rp)
+                        </button>
+                        <button type="button" onclick="setNegoMode('final')" id="btn-nego-mode-final" 
+                            class="py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-600 text-center transition">
+                            Harga Pas / Deal (Rp)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="nego-input-discount-wrapper" class="space-y-1">
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase">Nominal Potongan Diskon (Rp)</label>
+                    <input type="number" id="input-nego-discount" min="0" placeholder="Contoh: 15000" 
+                        class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-emerald-700 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                        oninput="calcNegoResult()">
+                </div>
+
+                <div id="nego-input-final-wrapper" class="space-y-1 hidden">
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase">Harga Kesepakatan Final (Rp)</label>
+                    <input type="number" id="input-nego-final" min="0" placeholder="Contoh: 150000" 
+                        class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-blue-900 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                        oninput="calcNegoResult()">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase">Catatan / Alasan Negosiasi (Opsional)</label>
+                    <input type="text" id="input-nego-notes" placeholder="Misal: Pelanggan setia, order partai besar..." 
+                        class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+
+                <div class="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200 text-xs space-y-1.5">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Potongan:</span>
+                        <span id="nego-preview-discount" class="font-mono font-bold text-emerald-700">- Rp 0</span>
+                    </div>
+                    <div class="flex justify-between text-slate-900 font-bold border-t border-emerald-200/80 pt-1.5">
+                        <span>Total Tagihan Akhir:</span>
+                        <span id="nego-preview-final" class="font-mono text-sm text-blue-900">Rp 0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white px-4 py-3 border-t border-slate-200 d-flex justify-content-between align-items-center gap-2">
+                <button type="button" onclick="resetNegotiation()" class="btn btn-sm btn-outline-danger text-xs py-1.5 px-3">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-secondary text-xs py-1.5 px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" onclick="applyNegotiation()" class="btn btn-sm btn-primary text-xs py-1.5 px-4 font-bold">
+                        <i class="fa-solid fa-check me-1"></i> Terapkan Nego
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Antrean Pesanan Draft Kasir -->
+<div class="modal fade" id="modalDraftOrders" tabindex="-1" aria-labelledby="modalDraftOrdersLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
+            <div class="px-4 py-3 d-flex justify-content-between align-items-center bg-slate-900 text-white">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/20 border border-amber-400/30 text-amber-400">
+                        <i class="fa-solid fa-inbox text-sm"></i>
+                    </div>
+                    <div>
+                        <h5 class="fs-6 fw-bold mb-0 text-white" id="modalDraftOrdersLabel">Antrean Pesanan Draft Cabang</h5>
+                        <span class="text-[11px] text-slate-400">Daftar pesanan yang dibuat oleh Operator / Cek Harga</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" onclick="loadDraftOrders()" class="btn btn-sm btn-light py-1 px-2.5 text-xs text-slate-700 font-semibold" title="Muat Ulang Draft">
+                        <i class="fa-solid fa-rotate me-1"></i> Refresh
+                    </button>
+                    <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="p-4 max-h-[70vh] overflow-y-auto" style="background-color: #f8fafc;">
+                <div id="draft-orders-loading" class="text-center py-8 text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl text-amber-600 mb-2"></i>
+                    <p class="text-xs mb-0">Mengambil antrean pesanan draft...</p>
+                </div>
+
+                <div id="draft-orders-list" class="space-y-2.5 hidden">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+                <div id="draft-orders-empty" class="text-center py-10 text-slate-400 hidden">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-300 text-2xl mb-2">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <h6 class="text-xs font-bold text-slate-700 mb-1">Belum Ada Draft Menunggu</h6>
+                    <p class="text-[11px] text-slate-400 mb-0">Semua pesanan draft dari operator telah diproses atau belum ada yang dibuat.</p>
+                </div>
+            </div>
+            <div class="bg-white px-4 py-2.5 border-t border-slate-200 d-flex justify-content-between align-items-center text-xs text-slate-500">
+                <span><i class="fa-solid fa-circle-info text-amber-500 me-1"></i> Pembayaran draft akan mengurangi stok dan mencatat penerimaan kas.</span>
+                <button type="button" class="btn btn-sm btn-secondary text-xs" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Custom Dimension Banner (Interactive Roll Canvas & Adjustable Dimensions) -->
 <div class="modal fade" id="modalBannerDimension" tabindex="-1" aria-labelledby="modalBannerDimensionLabel" aria-hidden="true">
@@ -1243,12 +1414,34 @@
 
         if (desktopContainer) desktopContainer.innerHTML = cartHtml;
         if (badgeCount) badgeCount.innerText = `${totalQty} item`;
-        window.currentGrandTotal = grandTotal;
-        
-        window.dispatchEvent(new CustomEvent('cart-total-changed', { detail: { total: grandTotal, count: totalQty } }));
+        window.currentAccumulatedTotal = grandTotal;
+        const finalAfterDiscount = Math.max(0, grandTotal - (window.negotiationDiscount || 0));
+        window.currentGrandTotal = finalAfterDiscount;
 
-        const formattedTotal = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
-        if (receiptTotalDesktop) receiptTotalDesktop.innerText = formattedTotal;
+        const negoRow = document.getElementById('nego-discount-row');
+        const negoFinalRow = document.getElementById('nego-final-row');
+        const negoDiscountText = document.getElementById('nego-discount-text');
+        const negoFinalText = document.getElementById('nego-final-text');
+
+        if (window.negotiationDiscount > 0 && grandTotal > 0) {
+            if (negoRow) {
+                negoRow.classList.remove('hidden');
+                if (negoDiscountText) negoDiscountText.innerText = `- Rp ${Number(window.negotiationDiscount).toLocaleString('id-ID')}`;
+            }
+            if (negoFinalRow) {
+                negoFinalRow.classList.remove('hidden');
+                if (negoFinalText) negoFinalText.innerText = `Rp ${Number(finalAfterDiscount).toLocaleString('id-ID')}`;
+            }
+            if (receiptTotalDesktop) {
+                receiptTotalDesktop.innerHTML = `<span class="line-through text-slate-400 font-normal me-1">Rp ${Number(grandTotal).toLocaleString('id-ID')}</span> <span class="text-blue-900 font-bold">Rp ${Number(finalAfterDiscount).toLocaleString('id-ID')}</span>`;
+            }
+        } else {
+            if (negoRow) negoRow.classList.add('hidden');
+            if (negoFinalRow) negoFinalRow.classList.add('hidden');
+            if (receiptTotalDesktop) receiptTotalDesktop.innerText = `Rp ${Number(grandTotal).toLocaleString('id-ID')}`;
+        }
+
+        window.dispatchEvent(new CustomEvent('cart-total-changed', { detail: { total: finalAfterDiscount, count: totalQty } }));
     }
 
     // --- Category & Search Combined Filtering ---
@@ -1378,27 +1571,331 @@
         }
     }
 
+    // --- Negotiation State and Functions ---
+    window.negotiationDiscount = 0;
+    window.negotiationNotes = '';
+    window.negotiationMode = 'discount';
+
+    function openNegotiationModal() {
+        if (!cart || cart.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Keranjang Kosong', text: 'Pilih produk terlebih dahulu sebelum melakukan negosiasi harga.' });
+            return;
+        }
+
+        const origTotal = window.currentAccumulatedTotal || 0;
+        document.getElementById('nego-modal-orig-total').innerText = 'Rp ' + Number(origTotal).toLocaleString('id-ID');
+        document.getElementById('input-nego-discount').value = window.negotiationDiscount || '';
+        document.getElementById('input-nego-final').value = (window.negotiationDiscount > 0) ? Math.max(0, origTotal - window.negotiationDiscount) : '';
+        document.getElementById('input-nego-notes').value = window.negotiationNotes || '';
+
+        setNegoMode(window.negotiationMode || 'discount');
+        calcNegoResult();
+
+        const modalEl = document.getElementById('modalNegotiation');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+    }
+
+    function setNegoMode(mode) {
+        window.negotiationMode = mode;
+        const btnDisc = document.getElementById('btn-nego-mode-discount');
+        const btnFinal = document.getElementById('btn-nego-mode-final');
+        const wrapDisc = document.getElementById('nego-input-discount-wrapper');
+        const wrapFinal = document.getElementById('nego-input-final-wrapper');
+
+        if (mode === 'discount') {
+            if (btnDisc) btnDisc.className = 'py-1.5 px-2 text-xs font-bold rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-center transition';
+            if (btnFinal) btnFinal.className = 'py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-600 text-center transition';
+            if (wrapDisc) wrapDisc.classList.remove('hidden');
+            if (wrapFinal) wrapFinal.classList.add('hidden');
+        } else {
+            if (btnFinal) btnFinal.className = 'py-1.5 px-2 text-xs font-bold rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-center transition';
+            if (btnDisc) btnDisc.className = 'py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-600 text-center transition';
+            if (wrapFinal) wrapFinal.classList.remove('hidden');
+            if (wrapDisc) wrapDisc.classList.add('hidden');
+        }
+        calcNegoResult();
+    }
+
+    function calcNegoResult() {
+        const origTotal = window.currentAccumulatedTotal || 0;
+        let discount = 0;
+
+        if (window.negotiationMode === 'discount') {
+            discount = parseFloat(document.getElementById('input-nego-discount')?.value) || 0;
+        } else {
+            const finalPrice = parseFloat(document.getElementById('input-nego-final')?.value) || 0;
+            discount = Math.max(0, origTotal - finalPrice);
+        }
+
+        discount = Math.max(0, Math.min(origTotal, discount));
+        const finalTotal = Math.max(0, origTotal - discount);
+
+        const prevDisc = document.getElementById('nego-preview-discount');
+        const prevFinal = document.getElementById('nego-preview-final');
+        if (prevDisc) prevDisc.innerText = '- Rp ' + Number(discount).toLocaleString('id-ID');
+        if (prevFinal) prevFinal.innerText = 'Rp ' + Number(finalTotal).toLocaleString('id-ID');
+    }
+
+    function applyNegotiation() {
+        const origTotal = window.currentAccumulatedTotal || 0;
+        let discount = 0;
+
+        if (window.negotiationMode === 'discount') {
+            discount = parseFloat(document.getElementById('input-nego-discount')?.value) || 0;
+        } else {
+            const finalPrice = parseFloat(document.getElementById('input-nego-final')?.value) || 0;
+            discount = Math.max(0, origTotal - finalPrice);
+        }
+
+        discount = Math.max(0, Math.min(origTotal, discount));
+        window.negotiationDiscount = discount;
+        window.negotiationNotes = (document.getElementById('input-nego-notes')?.value || '').trim();
+
+        renderCart();
+
+        const modalEl = document.getElementById('modalNegotiation');
+        if (modalEl) {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+
+        if (discount > 0) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Negosiasi Diterapkan!',
+                html: `Diskon sebesar <strong>Rp ${Number(discount).toLocaleString('id-ID')}</strong> telah dipotong dari total tagihan asli.`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    }
+
+    function resetNegotiation() {
+        window.negotiationDiscount = 0;
+        window.negotiationNotes = '';
+        if (document.getElementById('input-nego-discount')) document.getElementById('input-nego-discount').value = '';
+        if (document.getElementById('input-nego-final')) document.getElementById('input-nego-final').value = '';
+        if (document.getElementById('input-nego-notes')) document.getElementById('input-nego-notes').value = '';
+
+        calcNegoResult();
+        renderCart();
+
+        const modalEl = document.getElementById('modalNegotiation');
+        if (modalEl) {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+    }
+
+    // --- Draft Orders Management (Cashier) ---
+    function openDraftOrdersModal() {
+        const modalEl = document.getElementById('modalDraftOrders');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+            loadDraftOrders();
+        }
+    }
+
+    function loadDraftOrders() {
+        const loading = document.getElementById('draft-orders-loading');
+        const list = document.getElementById('draft-orders-list');
+        const empty = document.getElementById('draft-orders-empty');
+
+        if (loading) loading.classList.remove('hidden');
+        if (list) list.classList.add('hidden');
+        if (empty) empty.classList.add('hidden');
+
+        fetch('{{ route("pos.drafts") }}')
+            .then(res => res.json())
+            .then(data => {
+                if (loading) loading.classList.add('hidden');
+                const drafts = data.drafts || [];
+                updateDraftBadge(drafts.length);
+
+                if (drafts.length === 0) {
+                    if (empty) empty.classList.remove('hidden');
+                    return;
+                }
+
+                if (list) {
+                    list.innerHTML = '';
+                    drafts.forEach(d => {
+                        const itemsSummary = (d.transaction_details || []).map(it => 
+                            `<span class="badge bg-slate-100 text-slate-700 border text-[10px] me-1">${it.qty_ordered}x ${it.material?.material_name || 'Item'}</span>`
+                        ).join('');
+
+                        const card = document.createElement('div');
+                        card.className = 'bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-amber-400 transition';
+                        card.innerHTML = `
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-mono font-bold text-amber-900 text-xs">${d.invoice_number}</span>
+                                    <span class="badge bg-amber-50 text-amber-700 border border-amber-300 text-[9px] font-extrabold uppercase">DRAFT</span>
+                                    <span class="text-[10px] text-slate-400">${new Date(d.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                                <div class="font-bold text-slate-800 text-xs">${d.customer_name || 'Pelanggan Umum'} ${d.customer_phone ? `<small class="text-slate-500 font-mono">(${d.customer_phone})</small>` : ''}</div>
+                                <div class="mt-1 flex flex-wrap gap-1">${itemsSummary}</div>
+                                ${d.negotiation_notes ? `<div class="text-[10px] text-emerald-700 mt-1"><i class="fa-solid fa-handshake me-1"></i>Nego: ${d.negotiation_notes}</div>` : ''}
+                                <div class="text-[10px] text-slate-400 mt-1">Dibuat oleh: <strong class="text-slate-600">${d.user?.full_name || d.user?.username || 'Operator'}</strong></div>
+                            </div>
+                            <div class="text-right flex-shrink-0 w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 block">Total Tagihan</span>
+                                    <span class="font-mono font-extrabold text-blue-900 text-sm">Rp ${Number(d.total_price).toLocaleString('id-ID')}</span>
+                                </div>
+                                <button type="button" onclick="promptSettleDraft(${d.id}, '${d.invoice_number}', ${d.total_price})" class="btn btn-sm btn-primary text-xs py-1.5 px-3 font-bold flex items-center gap-1.5 shadow-sm">
+                                    <i class="fa-solid fa-cash-register"></i> Bayar Sekarang
+                                </button>
+                            </div>
+                        `;
+                        list.appendChild(card);
+                    });
+                    list.classList.remove('hidden');
+                }
+            })
+            .catch(err => {
+                if (loading) loading.classList.add('hidden');
+                console.error(err);
+            });
+    }
+
+    function updateDraftBadge(count) {
+        const badge = document.getElementById('draft-counter-badge');
+        if (badge) {
+            badge.innerText = count;
+            if (count > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    }
+
+    function promptSettleDraft(draftId, invNumber, totalPrice) {
+        Swal.fire({
+            title: `<span style="font-size: 16px; font-weight: 800; color: #0f172a;">Pelunasan Draft #${invNumber}</span>`,
+            html: `
+                <div style="text-align: left; font-size: 12px;" class="space-y-3">
+                    <div style="background: #eff6ff; padding: 8px 12px; border-radius: 8px; border: 1px solid #bfdbfe;">
+                        <span style="color: #1e3a8a; font-weight: bold;">Total Tagihan:</span>
+                        <span style="float: right; font-family: monospace; font-size: 14px; font-weight: 800; color: #1d4ed8;">Rp ${Number(totalPrice).toLocaleString('id-ID')}</span>
+                    </div>
+
+                    <div>
+                        <label style="font-weight: bold; color: #334155; margin-bottom: 4px; display: block;">Metode Pembayaran:</label>
+                        <select id="settle_pm" class="form-select form-select-sm" style="font-size: 12px;">
+                            <option value="Cash">Tunai (Cash)</option>
+                            <option value="Transfer">Transfer Bank</option>
+                            <option value="QRIS">QRIS</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer mb-1">
+                            <input type="checkbox" id="settle_is_dp" onchange="document.getElementById('settle_dp_wrap').style.display = this.checked ? 'block' : 'none';" class="form-check-input">
+                            <span style="font-weight: 600; color: #334155;">Bayar Sebagai DP (Uang Muka)</span>
+                        </label>
+                        <div id="settle_dp_wrap" style="display: none; margin-top: 6px;">
+                            <label style="font-size: 11px; color: #64748b;">Nominal DP (Minimal 50% = Rp ${Number(Math.round(totalPrice * 0.5)).toLocaleString('id-ID')}):</label>
+                            <input type="number" id="settle_dp_amount" min="${Math.round(totalPrice * 0.5)}" value="${Math.round(totalPrice * 0.5)}" class="form-control form-control-sm" style="font-family: monospace;">
+                        </div>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Proses Pelunasan',
+            cancelButtonText: 'Batal',
+            preConfirm: () => {
+                const pm = document.getElementById('settle_pm').value;
+                const isDp = document.getElementById('settle_is_dp').checked;
+                const dpAmount = isDp ? parseFloat(document.getElementById('settle_dp_amount').value) || 0 : 0;
+
+                if (isDp && dpAmount < Math.round(totalPrice * 0.5)) {
+                    Swal.showValidationMessage(`Nominal DP minimal Rp ${Number(Math.round(totalPrice * 0.5)).toLocaleString('id-ID')}`);
+                    return false;
+                }
+
+                return { payment_method: pm, is_dp: isDp, dp_amount: dpAmount };
+            }
+        }).then((res) => {
+            if (res.isConfirmed && res.value) {
+                executeSettleDraft(draftId, res.value);
+            }
+        });
+    }
+
+    function executeSettleDraft(draftId, payload) {
+        Swal.fire({
+            title: 'Memproses Pembayaran...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch(`/pos/drafts/${draftId}/settle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success' || data.success === true) {
+                loadDraftOrders();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Pembayaran Berhasil!',
+                    html: `
+                        <p style="font-size: 13px; color: #475569;">Draft <strong>#${data.invoice_number}</strong> telah resmi dilunasi dan stok dikurangi.</p>
+                        <div class="d-flex gap-2 justify-content-center mt-3">
+                            <a href="${data.receipt_url}" target="_blank" class="btn btn-sm btn-primary text-xs py-1.5 px-3">
+                                <i class="fa-solid fa-print me-1"></i> Cetak Struk
+                            </a>
+                            <a href="${data.public_invoice_url}" target="_blank" class="btn btn-sm btn-outline-primary text-xs py-1.5 px-3">
+                                <i class="fa-solid fa-file-pdf me-1"></i> Unduh Faktur PDF
+                            </a>
+                        </div>
+                    `,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Selesai'
+                });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Gagal Memproses', text: data.message || 'Terjadi kesalahan' });
+            }
+        })
+        .catch(err => {
+            Swal.fire({ icon: 'error', title: 'Kesalahan Sistem', text: err.message });
+        });
+    }
+
     // --- Checkout Logic via Fetch AJAX with Pre-Payment Confirmation Popup ---
-    function processCheckout() {
+    function processCheckout(isDraft = false) {
         if (cart.length === 0) {
-            Swal.fire({ icon: 'warning', title: 'Keranjang Kosong', text: 'Pilih bahan baku terlebih dahulu.' });
+            Swal.fire({ icon: 'warning', title: 'Keranjang Kosong', text: 'Pilih produk terlebih dahulu.' });
             return;
         }
 
         const posContainer = document.getElementById('pos-main-container');
         const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : {};
 
-        const isDp = alpineData ? (alpineData.isDp && alpineData.isEligibleForDp) : false;
+        const isDp = !isDraft && (alpineData ? (alpineData.isDp && alpineData.isEligibleForDp) : false);
         const dpAmount = isDp ? (parseFloat(alpineData.dpAmount) || 0) : 0;
         const dueDate = isDp ? (alpineData.dueDate || null) : null;
-        const productionNotes = isDp ? (alpineData.productionNotes || null) : null;
+        const productionNotes = alpineData ? (alpineData.productionNotes || null) : null;
         const customerId = alpineData ? (alpineData.customerId || null) : null;
         const customerName = alpineData ? (alpineData.customerName || '') : '';
         const customerPhone = alpineData ? (alpineData.customerPhone || '') : '';
         const customerEmail = alpineData ? (alpineData.customerEmail || '') : '';
 
+        const currentGrand = window.currentGrandTotal || 0;
+
         if (isDp) {
-            const minAllowedDp = alpineData ? alpineData.minDpAmount : Math.round((window.currentGrandTotal || 0) * 0.5);
+            const minAllowedDp = alpineData ? alpineData.minDpAmount : Math.round(currentGrand * 0.5);
             if (dpAmount < minAllowedDp) {
                 Swal.fire({ 
                     icon: 'warning', 
@@ -1409,7 +1906,7 @@
             }
         }
 
-        const paymentMethod = document.getElementById('global_payment_method').value || 'Cash';
+        const paymentMethod = isDraft ? 'Draft' : (document.getElementById('global_payment_method').value || 'Cash');
         const errContainerDesktop = document.getElementById('checkout-error-desktop');
         const errContainerMobile = document.getElementById('checkout-error-mobile');
         const successContainerDesktop = document.getElementById('checkout-success-desktop');
@@ -1469,20 +1966,45 @@
             };
         });
 
+        const finalAfterNego = Math.max(0, calculatedGrandTotal - (window.negotiationDiscount || 0));
+
         // Customer & Breakdown Formatting
         const customerDisplay = customerName 
             ? `<strong style="color: #1e3a8a;">${customerName}</strong> ${customerPhone ? '<span style="color: #64748b; font-size: 10px;">(' + customerPhone + ')</span>' : ''}` 
             : '<span style="color: #94a3b8; font-style: italic;">Umum / Non-Member</span>';
 
         let financialSummaryHtml = '';
-        if (isDp) {
-            const sisaPiutang = calculatedGrandTotal - dpAmount;
-            const dpPercent = calculatedGrandTotal > 0 ? Math.round((dpAmount / calculatedGrandTotal) * 100) : 0;
+        if (isDraft) {
+            financialSummaryHtml = `
+                <div style="background: #fffbeb; border-radius: 8px; padding: 10px 12px; border: 1px solid #fde68a; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                        <span style="color: #92400e; font-weight: bold;">Status Draft:</span>
+                        <strong style="color: #b45309;">BELUM DIBAYAR</strong>
+                    </div>
+                    ${(window.negotiationDiscount > 0) ? `
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
+                            <span>Total Asli:</span>
+                            <span style="font-family: monospace; text-decoration: line-through;">Rp ${Number(calculatedGrandTotal).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #059669; font-weight: bold;">
+                            <span>Potongan Nego:</span>
+                            <span style="font-family: monospace;">- Rp ${Number(window.negotiationDiscount).toLocaleString('id-ID')}</span>
+                        </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; color: #1e3a8a; border-top: 1px dashed #f59e0b; padding-top: 4px; margin-top: 4px;">
+                        <span>Estimasi Tagihan:</span>
+                        <span style="font-family: monospace;">Rp ${Number(finalAfterNego).toLocaleString('id-ID')}</span>
+                    </div>
+                </div>
+            `;
+        } else if (isDp) {
+            const sisaPiutang = finalAfterNego - dpAmount;
+            const dpPercent = finalAfterNego > 0 ? Math.round((dpAmount / finalAfterNego) * 100) : 0;
             financialSummaryHtml = `
                 <div style="background: #f8fafc; border-radius: 8px; padding: 10px 12px; border: 1px solid #e2e8f0; margin-top: 10px;">
                     <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
                         <span style="color: #64748b;">Total Nilai Pesanan:</span>
-                        <strong style="font-family: monospace; color: #0f172a;">Rp ${Number(calculatedGrandTotal).toLocaleString('id-ID')}</strong>
+                        <strong style="font-family: monospace; color: #0f172a;">Rp ${Number(finalAfterNego).toLocaleString('id-ID')}</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 12px; color: #059669; font-weight: bold; margin-bottom: 4px;">
                         <span>Uang Muka (DP ${dpPercent}%):</span>
@@ -1497,32 +2019,42 @@
             `;
         } else {
             financialSummaryHtml = `
-                <div style="background: #eff6ff; border-radius: 8px; padding: 10px 12px; border: 1px solid #bfdbfe; margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-size: 11px; font-weight: 700; color: #1e3a8a; text-transform: uppercase;">Total Tagihan Kasir:</div>
-                        <div style="font-size: 10px; color: #3b82f6;">${totalItemCount} item dalam keranjang</div>
+                <div style="background: #eff6ff; border-radius: 8px; padding: 10px 12px; border: 1px solid #bfdbfe; margin-top: 10px;">
+                    ${(window.negotiationDiscount > 0) ? `
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-bottom: 2px;">
+                            <span>Total Asli:</span>
+                            <span style="font-family: monospace; text-decoration: line-through;">Rp ${Number(calculatedGrandTotal).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #059669; font-weight: bold; margin-bottom: 4px;">
+                            <span>Potongan Nego:</span>
+                            <span style="font-family: monospace;">- Rp ${Number(window.negotiationDiscount).toLocaleString('id-ID')}</span>
+                        </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #dbeafe; padding-top: 4px;">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #1e3a8a; text-transform: uppercase;">Total Tagihan Kasir:</div>
+                            <div style="font-size: 10px; color: #3b82f6;">${totalItemCount} item dalam keranjang</div>
+                        </div>
+                        <span style="font-size: 16px; font-weight: 800; color: #1d4ed8; font-family: monospace;">Rp ${Number(finalAfterNego).toLocaleString('id-ID')}</span>
                     </div>
-                    <span style="font-size: 16px; font-weight: 800; color: #1d4ed8; font-family: monospace;">Rp ${Number(calculatedGrandTotal).toLocaleString('id-ID')}</span>
                 </div>
             `;
         }
 
         const confirmationModalHtml = `
             <div style="text-align: left; font-family: system-ui, -apple-system, sans-serif;">
-                <!-- Customer & Payment Metadata -->
                 <div style="background: #f1f5f9; border-radius: 8px; padding: 8px 12px; font-size: 11px; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
                         <span style="color: #64748b;">Pelanggan:</span>
                         <div>${customerDisplay}</div>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
-                        <span style="color: #64748b;">Metode Pembayaran:</span>
-                        <strong style="color: #2563eb; text-transform: uppercase;">${paymentMethod}</strong>
+                        <span style="color: #64748b;">Metode / Tipe:</span>
+                        <strong style="color: ${isDraft ? '#d97706' : '#2563eb'}; text-transform: uppercase;">${isDraft ? 'Draft Pesanan (Menunggu Kasir)' : paymentMethod}</strong>
                     </div>
                 </div>
 
-                <!-- Itemized Breakdown Table -->
-                <div style="max-height: 180px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px;">
+                <div style="max-height: 160px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: #f8fafc; color: #64748b; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #e2e8f0;">
@@ -1532,9 +2064,7 @@
                                 <th style="padding: 6px 8px; text-align: right;">Subtotal</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            ${itemsTableRows}
-                        </tbody>
+                        <tbody>${itemsTableRows}</tbody>
                     </table>
                 </div>
 
@@ -1544,16 +2074,24 @@
             </div>
         `;
 
+        const swalTitle = isDraft
+            ? '<span style="font-size: 17px; font-weight: 800; color: #d97706;"><i class="fa-solid fa-file-signature text-amber-500 me-2"></i>Simpan Draft Pesanan</span>'
+            : (isDp 
+                ? '<span style="font-size: 17px; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-file-invoice-dollar text-amber-500 me-2"></i>Konfirmasi Pesanan DP</span>' 
+                : '<span style="font-size: 17px; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-cash-register text-blue-600 me-2"></i>Konfirmasi Pembayaran</span>');
+
+        const confirmBtnText = isDraft
+            ? '<i class="fa-solid fa-file-signature me-1"></i> Ya, Simpan Draft (Ke Kasir)'
+            : (isDp ? '<i class="fa-solid fa-check me-1"></i> Ya, Proses Bayar DP' : '<i class="fa-solid fa-check me-1"></i> Ya, Proses & Bayar');
+
         // Pre-payment Confirmation Popup
         Swal.fire({
-            title: isDp 
-                ? '<span style="font-size: 17px; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-file-invoice-dollar text-amber-500 me-2"></i>Konfirmasi Pesanan DP</span>' 
-                : '<span style="font-size: 17px; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-cash-register text-blue-600 me-2"></i>Konfirmasi Pembayaran</span>',
+            title: swalTitle,
             html: confirmationModalHtml,
             showCancelButton: true,
-            confirmButtonColor: '#2563eb',
+            confirmButtonColor: isDraft ? '#d97706' : '#2563eb',
             cancelButtonColor: '#64748b',
-            confirmButtonText: `<i class="fa-solid fa-check me-1"></i> ${isDp ? 'Ya, Proses Bayar DP' : 'Ya, Proses & Bayar'}`,
+            confirmButtonText: confirmBtnText,
             cancelButtonText: '<i class="fa-solid fa-xmark me-1"></i> Batal / Periksa Lagi',
             reverseButtons: true,
             focusConfirm: true,
@@ -1563,13 +2101,12 @@
                 return;
             }
 
-            // Execute Server Fetch Request
-            executeCheckoutFetch(payloadItems, paymentMethod, isDp, dpAmount, customerId, customerName, customerPhone, customerEmail, dueDate, productionNotes, alpineData, btnDesktop, btnMobile, errContainerDesktop, errContainerMobile, successContainerDesktop, successContainerMobile);
+            executeCheckoutFetch(payloadItems, paymentMethod, isDp, dpAmount, customerId, customerName, customerPhone, customerEmail, dueDate, productionNotes, isDraft, alpineData, btnDesktop, btnMobile, errContainerDesktop, errContainerMobile, successContainerDesktop, successContainerMobile);
         });
     }
 
     // --- Helper to execute checkout fetch request ---
-    function executeCheckoutFetch(payloadItems, paymentMethod, isDp, dpAmount, customerId, customerName, customerPhone, customerEmail, dueDate, productionNotes, alpineData, btnDesktop, btnMobile, errContainerDesktop, errContainerMobile, successContainerDesktop, successContainerMobile) {
+    function executeCheckoutFetch(payloadItems, paymentMethod, isDp, dpAmount, customerId, customerName, customerPhone, customerEmail, dueDate, productionNotes, isDraft, alpineData, btnDesktop, btnMobile, errContainerDesktop, errContainerMobile, successContainerDesktop, successContainerMobile) {
         // Disable Buttons
         if (btnDesktop) {
             btnDesktop.disabled = true;
@@ -1592,10 +2129,13 @@
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
             body: JSON.stringify({
-                payment_method: paymentMethod,
+                payment_method: isDraft ? 'Draft' : paymentMethod,
                 items: payloadItems,
                 is_dp: isDp,
                 dp_amount: dpAmount,
+                discount_amount: window.negotiationDiscount || 0,
+                negotiation_notes: window.negotiationNotes || null,
+                is_draft: isDraft,
                 customer_id: customerId,
                 customer_name: customerName,
                 customer_phone: customerPhone,
@@ -1608,7 +2148,9 @@
         .then(data => {
             if (btnDesktop) {
                 btnDesktop.disabled = false;
-                btnDesktop.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> ${isDp ? 'Proses Bayar' : 'Proses Bayar (Checkout)'}`;
+                btnDesktop.innerHTML = isDraft 
+                    ? `<i class="fa-solid fa-file-signature me-1"></i> Simpan Draft Pesanan (Ke Kasir)` 
+                    : `<i class="fa-solid fa-circle-check me-1"></i> ${isDp ? 'Proses Bayar DP' : 'Proses Bayar (Checkout)'}`;
             }
             if (btnMobile) {
                 btnMobile.disabled = false;
@@ -1616,19 +2158,30 @@
             }
 
             if (data.status === 'success' || data.success === true) {
-                // Clear cart state
+                // Clear cart & negotiation state
                 cart = [];
+                resetNegotiation();
                 renderCart();
                 if (alpineData.clearCustomer) alpineData.clearCustomer();
 
                 const isPartial = data.payment_status === 'PARTIAL';
+                const isDraftResult = data.is_draft || data.order_status === 'draft';
+
+                // Update Draft counter on Cashier
+                fetch('{{ route("pos.drafts") }}').then(r => r.json()).then(d => {
+                    if (d.drafts) updateDraftBadge(d.drafts.length);
+                }).catch(() => {});
 
                 // Show Green / Amber Success Card in Desktop Cart Panel
                 if (successContainerDesktop) {
                     document.getElementById('success-inv-text').innerText = '#' + data.invoice_number;
                     
                     const badgeEl = document.getElementById('success-badge-tag');
-                    if (isPartial) {
+                    if (isDraftResult) {
+                        badgeEl.className = 'badge bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded';
+                        badgeEl.innerHTML = '<i class="fa-solid fa-inbox me-1"></i> DRAFT PESANAN';
+                        document.getElementById('success-msg-text').innerText = `Draft #${data.invoice_number} berhasil disimpan. Berikan ke Kasir untuk pembayaran.`;
+                    } else if (isPartial) {
                         badgeEl.className = 'badge bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded';
                         badgeEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-1"></i> DP (UANG MUKA)';
                         document.getElementById('success-msg-text').innerText = `DP Rp ${Number(data.paid_amount).toLocaleString('id-ID')} diterima. Sisa Piutang: Rp ${Number(data.remaining_amount).toLocaleString('id-ID')}`;
@@ -1644,14 +2197,18 @@
                         window.open(data.receipt_url, '_blank', 'width=450,height=600');
                     };
                     document.getElementById('btn-open-last-inv').onclick = function() {
-                        openSnaprintInvoice(data);
+                        if (data.public_invoice_url) {
+                            window.open(data.public_invoice_url, '_blank');
+                        } else {
+                            openSnaprintInvoice(data);
+                        }
                     };
 
                     const btnWa = document.getElementById('btn-wa-last-receipt');
                     if (btnWa) {
                         if (data.customer_phone) {
                             btnWa.classList.remove('hidden');
-                            btnWa.innerHTML = `<i class="fa-brands fa-whatsapp text-sm me-1"></i> Kirim Struk ke WhatsApp (${data.customer_phone})`;
+                            btnWa.innerHTML = `<i class="fa-brands fa-whatsapp text-sm me-1"></i> Kirim Faktur ke WhatsApp (${data.customer_phone})`;
                             btnWa.onclick = function() {
                                 openWhatsAppReceipt(data.customer_phone, data);
                             };
@@ -1661,24 +2218,32 @@
                     }
                 }
 
-                // Show Success SweetAlert with Instant 58mm Thermal Print & WhatsApp Delivery
-                const titleHtml = isPartial 
-                    ? '<span style="color: #d97706; font-weight: 800;">Pesanan DP Tercatat!</span>'
-                    : '<span style="color: #059669; font-weight: 800;">Transaksi LUNAS (PAID)</span>';
+                // Show Success SweetAlert with Instant Thermal Print & WhatsApp PDF Delivery
+                let titleHtml = '';
+                let statusBadge = '';
 
-                const statusBadge = isPartial
-                    ? `<span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 border border-amber-400 rounded-md text-xs font-extrabold uppercase mb-2">
+                if (isDraftResult) {
+                    titleHtml = '<span style="color: #d97706; font-weight: 800;">Draft Pesanan Berhasil Disimpan!</span>';
+                    statusBadge = `<span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 border border-amber-400 rounded-md text-xs font-extrabold uppercase mb-2">
+                        <i class="fa-solid fa-inbox text-amber-600"></i> STATUS: DRAFT (MENUNGGU KASIR)
+                    </span>`;
+                } else if (isPartial) {
+                    titleHtml = '<span style="color: #d97706; font-weight: 800;">Pesanan DP Tercatat!</span>';
+                    statusBadge = `<span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 border border-amber-400 rounded-md text-xs font-extrabold uppercase mb-2">
                         <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> STATUS: DP (PARSIAL) &bull; SISA PIUTANG: Rp ${Number(data.remaining_amount || 0).toLocaleString('id-ID')}
-                       </span>`
-                    : `<span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-400 rounded-md text-xs font-extrabold uppercase mb-2">
+                    </span>`;
+                } else {
+                    titleHtml = '<span style="color: #059669; font-weight: 800;">Transaksi LUNAS (PAID)</span>';
+                    statusBadge = `<span class="inline-block px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-400 rounded-md text-xs font-extrabold uppercase mb-2">
                         <i class="fa-solid fa-circle-check text-emerald-600"></i> STATUS: PAID (LUNAS)
-                       </span>`;
+                    </span>`;
+                }
 
                 const waBtnHtml = data.customer_phone ? `
                     <div class="mt-3 pt-2.5 border-top border-dashed">
                         <button type="button" id="btn-swal-wa" class="btn w-100 py-2 text-xs font-bold text-white d-flex align-items-center justify-content-center gap-2 rounded-xl shadow-md cursor-pointer border-0" style="background-color: #25D366;">
                             <i class="fa-brands fa-whatsapp text-base"></i>
-                            <span>Kirim Struk Digital ke WhatsApp (${data.customer_phone})</span>
+                            <span>Kirim Faktur & PDF ke WhatsApp (${data.customer_phone})</span>
                         </button>
                     </div>
                 ` : '';
@@ -1695,7 +2260,7 @@
                                 Total: Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}
                                 ${isPartial ? `<br><span class="text-emerald-700 text-xs">DP Masuk: Rp ${Number(data.paid_amount || 0).toLocaleString('id-ID')}</span>` : ''}
                             </div>
-                            <div class="text-xs text-slate-500 mt-1">Metode: <strong>${data.payment_method}</strong> &bull; Kasir: ${data.cashier_name}</div>
+                            <div class="text-xs text-slate-500 mt-1">Metode: <strong>${data.payment_method}</strong> &bull; Petugas: ${data.cashier_name}</div>
                             ${waBtnHtml}
                         </div>
                     `,
@@ -1713,13 +2278,17 @@
                     denyButtonColor: '#0f172a',
                     cancelButtonColor: '#64748b',
                     confirmButtonText: '<i class="fa-solid fa-print me-1"></i> Cetak Struk 58mm',
-                    denyButtonText: '<i class="fa-solid fa-file-invoice me-1"></i> Buka Faktur / SPK',
+                    denyButtonText: '<i class="fa-solid fa-file-pdf me-1"></i> Unduh / Buka Faktur PDF',
                     cancelButtonText: 'Selesai (+ Transaksi Baru)'
                 }).then((result) => {
                     if (result.isConfirmed && data.receipt_url) {
                         window.open(data.receipt_url, '_blank', 'width=450,height=600');
                     } else if (result.isDenied) {
-                        openSnaprintInvoice(data);
+                        if (data.public_invoice_url) {
+                            window.open(data.public_invoice_url, '_blank');
+                        } else {
+                            openSnaprintInvoice(data);
+                        }
                     }
                 });
 
@@ -1745,7 +2314,7 @@
                 btnMobile.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Konfirmasi & Bayar`;
             }
             
-            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Koneksi bermasalah atau terjadi error pada server.' });
+            Swal.fire({ icon: 'error', title: 'Gagal', text: 'Koneksi bermasalah atau terjadi error pada server: ' + err.message });
         });
     }
 
@@ -1760,6 +2329,13 @@
                 }
             });
         }
+
+        // Fetch draft count on load for cashiers
+        fetch('{{ route("pos.drafts") }}')
+            .then(res => res.json())
+            .then(data => {
+                if (data.drafts) updateDraftBadge(data.drafts.length);
+            }).catch(() => {});
     });
 
     window.onSelectProduct = onSelectProduct;
@@ -1784,6 +2360,15 @@
     window.filterProducts = filterProducts;
     window.applyCombinedFilter = applyCombinedFilter;
     window.setPaymentMethod = setPaymentMethod;
-    window.submitCheckout = submitCheckout;
+    window.processCheckout = processCheckout;
+    window.openNegotiationModal = openNegotiationModal;
+    window.setNegoMode = setNegoMode;
+    window.calcNegoResult = calcNegoResult;
+    window.applyNegotiation = applyNegotiation;
+    window.resetNegotiation = resetNegotiation;
+    window.openDraftOrdersModal = openDraftOrdersModal;
+    window.loadDraftOrders = loadDraftOrders;
+    window.promptSettleDraft = promptSettleDraft;
+    window.executeSettleDraft = executeSettleDraft;
 </script>
 @endsection

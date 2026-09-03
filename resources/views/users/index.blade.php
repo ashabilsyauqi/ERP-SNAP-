@@ -116,6 +116,7 @@
                                         'manager' => 'bg-sky-50 text-sky-700 border-sky-200',
                                         'cashier' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
                                         'purchasing' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                        'operator', 'sales' => 'bg-cyan-50 text-cyan-700 border-cyan-200',
                                         default => 'bg-slate-100 text-slate-700 border-slate-200'
                                     };
                                 @endphp
@@ -367,6 +368,7 @@
                             <label class="form-label font-semibold text-slate-700 text-xs uppercase">Role Akses <span class="text-danger">*</span></label>
                             <select name="role" id="add_user_role" required class="form-select form-select-sm" onchange="toggleBranchInput('add')">
                                 <option value="cashier">Kasir (Point of Sale)</option>
+                                <option value="operator">Operator / Cek Harga (Draft Order)</option>
                                 <option value="purchasing">Purchasing (Pengadaan)</option>
                                 <option value="manager">Manager Toko (Approval & QC)</option>
                                 @if(auth()->user()->isOwner())
@@ -429,6 +431,7 @@
                             <label class="form-label font-semibold text-slate-700 text-xs uppercase">Role Akses <span class="text-danger">*</span></label>
                             <select name="role" id="edit_user_role" required class="form-select form-select-sm" onchange="toggleBranchInput('edit')">
                                 <option value="cashier">Kasir (Point of Sale)</option>
+                                <option value="operator">Operator / Cek Harga (Draft Order)</option>
                                 <option value="purchasing">Purchasing (Pengadaan)</option>
                                 <option value="manager">Manager Toko (Approval & QC)</option>
                                 @if(auth()->user()->isOwner())

@@ -41,13 +41,13 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $authUser = Auth::user();
-        $allowedRoles = $authUser->isManager() ? 'manager,purchasing,cashier' : 'owner,manager,purchasing,cashier';
+        $allowedRoles = $authUser->isManager() ? 'manager,purchasing,cashier,operator' : 'owner,manager,purchasing,cashier,operator';
 
         $validated = $request->validate([
             'username' => 'required|string|max:255|unique:users,username',
             'role' => 'required|string|in:' . $allowedRoles,
             'password' => 'required|string|min:6',
-            'branch_id' => $authUser->isManager() ? 'nullable|exists:branches,id' : 'required_if:role,manager,purchasing,cashier|nullable|exists:branches,id',
+            'branch_id' => $authUser->isManager() ? 'nullable|exists:branches,id' : 'required_if:role,manager,purchasing,cashier,operator|nullable|exists:branches,id',
         ]);
 
         if ($authUser->isManager()) {
@@ -69,13 +69,13 @@ class UserController extends Controller
             abort(403, 'Anda tidak berhak mengedit user cabang lain.');
         }
 
-        $allowedRoles = $authUser->isManager() ? 'manager,purchasing,cashier' : 'owner,manager,purchasing,cashier';
+        $allowedRoles = $authUser->isManager() ? 'manager,purchasing,cashier,operator' : 'owner,manager,purchasing,cashier,operator';
 
         $validated = $request->validate([
             'username' => 'required|string|max:255|unique:users,username,' . $user->id,
             'role' => 'required|string|in:' . $allowedRoles,
             'password' => 'nullable|string|min:6',
-            'branch_id' => $authUser->isManager() ? 'nullable|exists:branches,id' : 'required_if:role,manager,purchasing,cashier|nullable|exists:branches,id',
+            'branch_id' => $authUser->isManager() ? 'nullable|exists:branches,id' : 'required_if:role,manager,purchasing,cashier,operator|nullable|exists:branches,id',
         ]);
 
         $data = [

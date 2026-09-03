@@ -64,6 +64,8 @@ class PosController extends Controller
             ], 403);
         }
 
+        $isDraft = auth()->user()->isOperator() || $request->boolean('is_draft');
+
         $request->validate([
             'items' => 'required|array|min:1',
             'items.*.material_id' => 'nullable|integer',
@@ -79,21 +81,24 @@ class PosController extends Controller
             'items.*.finishing' => 'nullable|string|max:100',
             'items.*.dimension_text' => 'nullable|string|max:100',
             'items.*.qty' => 'required|integer|min:1',
-            'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
+            'payment_method' => $isDraft ? 'nullable|string' : 'required|string|in:Cash,Transfer,QRIS',
             'is_dp' => 'nullable|boolean',
             'dp_amount' => 'nullable|numeric|min:0',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'negotiation_notes' => 'nullable|string|max:255',
             'customer_id' => 'nullable|exists:customers,id',
             'customer_name' => 'nullable|string|max:150',
             'customer_phone' => 'nullable|string|max:50',
             'customer_email' => 'nullable|email|max:100',
             'due_date' => 'nullable|date',
             'production_notes' => 'nullable|string',
+            'is_draft' => 'nullable|boolean',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $totalPrice = 0;
+            $accumulatedPrice = 0;
             $totalHpp = 0;
 
             $isDp = $request->boolean('is_dp');
@@ -118,49 +123,36 @@ class PosController extends Controller
                     $custObj = \App\Models\Customer::where('name', $customerName)
                         ->where(function($b) {
                             $b->where('branch_id', auth()->user()->branch_id)->orWhereNull('branch_id');
-                        })->first();
-
-                    if (!$custObj && !empty($customerPhone)) {
-                        $custObj = \App\Models\Customer::where('phone', $customerPhone)->first();
-                    }
+                        })
+                        ->first();
 
                     if (!$custObj) {
-                        // Auto-create new customer!
                         $custObj = \App\Models\Customer::create([
+                            'branch_id' => auth()->user()->branch_id,
                             'name' => $customerName,
                             'phone' => $customerPhone ?: null,
                             'email' => $customerEmail ?: null,
-                            'branch_id' => auth()->user()->branch_id,
                         ]);
-                    } else {
-                        // Update contact details if provided
-                        if (empty($custObj->phone) && !empty($customerPhone)) {
-                            $custObj->phone = $customerPhone;
-                        }
-                        if (empty($custObj->email) && !empty($customerEmail)) {
-                            $custObj->email = $customerEmail;
-                        }
-                        $custObj->save();
                     }
-
                     $customerId = $custObj->id;
                 }
             }
 
+            // Create Base Transaction
             $transaction = Transaction::create([
-                'invoice_number' => 'INV-' . strtoupper(Str::random(8)),
+                'branch_id' => auth()->user()->branch_id ?: (\App\Models\Branch::first()->id ?? 1),
+                'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5)),
                 'user_id' => auth()->id(),
-                'branch_id' => auth()->user()->branch_id,
-                'customer_id' => $customerId ?: null,
-                'customer_name' => $customerName ?: null,
+                'customer_id' => $customerId,
+                'customer_name' => $customerName ?: 'Pelanggan Umum',
                 'customer_phone' => $customerPhone ?: null,
                 'total_price' => 0,
                 'total_hpp' => 0,
-                'payment_method' => $request->payment_method,
-                'payment_status' => 'PAID',
+                'payment_method' => $isDraft ? 'Draft (Belum Bayar)' : $request->payment_method,
+                'payment_status' => $isDraft ? 'UNPAID' : 'PAID',
                 'paid_amount' => 0,
                 'remaining_amount' => 0,
-                'order_status' => 'completed',
+                'order_status' => $isDraft ? 'draft' : 'completed',
                 'due_date' => $request->due_date,
                 'production_notes' => $request->production_notes,
             ]);
@@ -168,54 +160,32 @@ class PosController extends Controller
             $savedItems = [];
 
             foreach ($request->items as $item) {
-                $qty = (int)$item['qty'];
-                
-                // Deterministic material lookup: by material_id, exact name, or partial name
+                $qty = (int) $item['qty'];
+                $isCustomBanner = !empty($item['is_custom_banner']);
+                $materialId = $item['material_id'] ?? null;
+                $materialName = $item['material_name_or_type'];
+
                 $materialToDeduct = null;
-                if (!empty($item['material_id'])) {
-                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)->find($item['material_id']);
+                if ($materialId) {
+                    $materialToDeduct = Material::find($materialId);
                 }
-
                 if (!$materialToDeduct) {
-                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
-                        ->where('material_name', $item['material_name_or_type'])
+                    $materialToDeduct = Material::where('material_name', $materialName)
+                        ->where('branch_id', auth()->user()->branch_id)
                         ->first();
                 }
 
                 if (!$materialToDeduct) {
-                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)
-                        ->where('material_name', 'like', '%' . $item['material_name_or_type'] . '%')
-                        ->first();
+                    throw new \Exception("Produk '{$materialName}' tidak ditemukan di katalog cabang aktif.");
                 }
 
-                if (!$materialToDeduct) {
-                    $materialToDeduct = Material::where('branch_id', auth()->user()->branch_id)->first();
-                }
-
-                if (!$materialToDeduct) {
-                    throw new \Exception("Bahan {$item['material_name_or_type']} tidak ditemukan di cabang ini.");
-                }
-
-                // Calculate dimensions if it is a banner with custom size
-                $widthM = !empty($item['width_m']) ? (float)$item['width_m'] : (!empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : null);
-                $lengthM = !empty($item['length_m']) ? (float)$item['length_m'] : (!empty($item['custom_width_cm']) ? (float)($item['custom_width_cm'] / 100) : null);
-                $customWidth = !empty($item['custom_width_cm']) ? (float)$item['custom_width_cm'] : ($lengthM ? round($lengthM * 100) : null);
-                $fixedLength = !empty($item['fixed_length_m']) ? (float)$item['fixed_length_m'] : (!empty($item['requested_size']) ? (float)$item['requested_size'] : ($widthM ?: null));
-                $isCustomBanner = !empty($item['is_custom_banner']) || ($widthM && $lengthM && $widthM > 0 && $lengthM > 0);
-
-                if ($isCustomBanner) {
-                    $billableWidth = max(1.0, $widthM ?: 1.0);
-                    $billableLength = max(1.0, $lengthM ?: 1.0);
-                    $billableAreaM2 = !empty($item['billable_area_m2']) ? (float)$item['billable_area_m2'] : round($billableWidth * $billableLength, 3);
-                    $physicalAreaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : round(($widthM ?: 1.0) * ($lengthM ?: 1.0), 3);
-                    
-                    $dimensionText = $item['dimension_text'] ?? "{$widthM}m x {$lengthM}m ({$physicalAreaM2} m²)";
-                    $areaM2 = $billableAreaM2;
-                } else {
-                    $dimensionText = $item['dimension_text'] ?? ($fixedLength ? "Ukuran: {$fixedLength}m" : null);
-                    $physicalAreaM2 = !empty($item['area_m2']) ? (float)$item['area_m2'] : null;
-                    $areaM2 = $physicalAreaM2;
-                }
+                $fixedLength = (float) ($item['fixed_length_m'] ?? 0);
+                $customWidth = (float) ($item['custom_width_cm'] ?? 0);
+                $areaM2 = (float) ($item['billable_area_m2'] ?? $item['area_m2'] ?? 0);
+                $physicalAreaM2 = (float) ($item['area_m2'] ?? 0);
+                $widthM = (float) ($item['width_m'] ?? 0);
+                $lengthM = (float) ($item['length_m'] ?? 0);
+                $dimensionText = $item['dimension_text'] ?? null;
 
                 // Wholesale tier price lookup based on qty
                 $baseUnitPrice = $materialToDeduct->retail_price;
@@ -238,13 +208,15 @@ class PosController extends Controller
                 }
 
                 $totalItemPrice = $qty * $unitPrice;
-                $totalPrice += $totalItemPrice;
+                $accumulatedPrice += $totalItemPrice;
                 $totalHpp += $itemHpp;
 
-                // Deduct stock (based on physical area consumed)
-                $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($physicalAreaM2 * $qty)) : $qty;
-                $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $stockDeductUnits);
-                $materialToDeduct->save();
+                // Deduct stock only if not draft (stock is deducted upon payment)
+                if (!$isDraft) {
+                    $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($physicalAreaM2 * $qty)) : $qty;
+                    $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $stockDeductUnits);
+                    $materialToDeduct->save();
+                }
 
                 TransactionDetail::create([
                     'transaction_id' => $transaction->id,
@@ -266,8 +238,19 @@ class PosController extends Controller
                 ];
             }
 
-            // Determine Payment & Order Status based on DP (Hanya berlaku untuk transaksi besar >= Rp 500.000 dan minimal DP 50%)
-            if ($isDp && $totalPrice >= 500000) {
+            // Apply Negotiation Discount
+            $discountAmount = min($accumulatedPrice, max(0, (float) $request->input('discount_amount', 0)));
+            $negotiationNotes = $request->input('negotiation_notes');
+            $originalPrice = $accumulatedPrice;
+            $totalPrice = max(0, $originalPrice - $discountAmount);
+
+            // Determine Payment & Order Status
+            if ($isDraft) {
+                $paidAmount = 0;
+                $remainingAmount = $totalPrice;
+                $paymentStatus = 'UNPAID';
+                $orderStatus = 'draft';
+            } elseif ($isDp && $totalPrice >= 500000) {
                 $minDp = round($totalPrice * 0.5);
                 if ($requestedDp < $minDp) {
                     throw new \Exception("Nominal Uang Muka (DP) minimal 50% dari total pesanan (Minimal Rp " . number_format($minDp, 0, ',', '.') . ").");
@@ -283,6 +266,9 @@ class PosController extends Controller
                 $orderStatus = ($isDp && $totalPrice >= 500000) ? 'in_production' : 'completed';
             }
 
+            $transaction->original_price = $originalPrice;
+            $transaction->discount_amount = $discountAmount;
+            $transaction->negotiation_notes = $negotiationNotes;
             $transaction->total_price = $totalPrice;
             $transaction->total_hpp = $totalHpp;
             $transaction->paid_amount = $paidAmount;
@@ -291,8 +277,8 @@ class PosController extends Controller
             $transaction->order_status = $orderStatus;
             $transaction->save();
 
-            // Record Cash Inflow for the actual paid amount (DP or Full)
-            if ($paidAmount > 0) {
+            // Record Cash Inflow for the actual paid amount (DP or Full) - Never for draft
+            if (!$isDraft && $paidAmount > 0) {
                 $salesAccount = \App\Models\Account::where('kode_akun', '4-1000')->first();
                 if ($salesAccount) {
                     $keterangan = ($paymentStatus === 'PARTIAL') 
@@ -315,16 +301,24 @@ class PosController extends Controller
 
             DB::commit();
 
+            $message = $isDraft 
+                ? "Draft pesanan (#{$transaction->invoice_number}) berhasil disimpan! Silakan serahkan nomor invoice ini ke Kasir untuk pembayaran."
+                : (($paymentStatus === 'PARTIAL') 
+                    ? "Pesanan DP tercatat! Uang muka Rp " . number_format($paidAmount, 0, ',', '.') . " diterima, sisa piutang Rp " . number_format($remainingAmount, 0, ',', '.') 
+                    : "Transaksi lunas berhasil diproses. Invoice: " . $transaction->invoice_number);
+
             return response()->json([
                 'status' => 'success',
                 'success' => true,
-                'message' => ($paymentStatus === 'PARTIAL') 
-                    ? "Pesanan DP tercatat! Uang muka Rp " . number_format($paidAmount, 0, ',', '.') . " diterima, sisa piutang Rp " . number_format($remainingAmount, 0, ',', '.') 
-                    : "Transaksi lunas berhasil diproses. Invoice: " . $transaction->invoice_number,
+                'is_draft' => $isDraft,
+                'message' => $message,
                 'transaction_id' => $transaction->id,
                 'invoice_number' => $transaction->invoice_number,
                 'customer_name' => $transaction->customer_name,
                 'customer_phone' => $transaction->customer_phone,
+                'original_price' => $transaction->original_price,
+                'discount_amount' => $transaction->discount_amount,
+                'negotiation_notes' => $transaction->negotiation_notes,
                 'total_price' => $transaction->total_price,
                 'paid_amount' => $transaction->paid_amount,
                 'remaining_amount' => $transaction->remaining_amount,
@@ -338,6 +332,7 @@ class PosController extends Controller
                 'created_at' => $transaction->created_at->format('d M Y H:i'),
                 'items' => $savedItems,
                 'receipt_url' => route('sales.receipt', $transaction->id),
+                'public_invoice_url' => route('invoices.public', $transaction->invoice_number),
                 'redirect' => route('pos.index')
             ]);
 
@@ -347,6 +342,133 @@ class PosController extends Controller
                 'status' => 'error',
                 'success' => false,
                 'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Get pending draft orders for current branch.
+     */
+    public function getDrafts()
+    {
+        $branchId = auth()->user()->branch_id ?: (\App\Models\Branch::first()->id ?? 1);
+        $drafts = Transaction::with(['user', 'customer', 'transactionDetails.material'])
+            ->where('branch_id', $branchId)
+            ->where('order_status', 'draft')
+            ->where('payment_status', 'UNPAID')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'drafts' => $drafts
+        ]);
+    }
+
+    /**
+     * Settle / Pay a draft order directly from POS.
+     */
+    public function settleDraft(Request $request, $id)
+    {
+        if (auth()->user()->isOperator()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akun operator hanya berhak membuat draft. Pelunasan harus dilakukan oleh akun Kasir.'
+            ], 403);
+        }
+
+        $request->validate([
+            'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
+            'is_dp' => 'nullable|boolean',
+            'dp_amount' => 'nullable|numeric|min:0',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
+
+            if ($transaction->order_status !== 'draft') {
+                throw new \Exception("Pesanan ini sudah bukan draft.");
+            }
+
+            // Deduct stock for all items
+            foreach ($transaction->transactionDetails as $detail) {
+                if ($detail->material) {
+                    $material = $detail->material;
+                    $isCustomBanner = $detail->area_m2 > 0 && $detail->custom_width_cm > 0;
+                    $deduct = $isCustomBanner ? max(1, (int)ceil($detail->area_m2 * $detail->qty_ordered)) : $detail->qty_ordered;
+                    $material->stock_qty = max(0, $material->stock_qty - $deduct);
+                    $material->save();
+                }
+            }
+
+            $totalPrice = (float) $transaction->total_price;
+            $isDp = $request->boolean('is_dp');
+            $requestedDp = $isDp ? (float) $request->input('dp_amount', 0) : 0;
+
+            if ($isDp && $totalPrice >= 500000) {
+                $minDp = round($totalPrice * 0.5);
+                if ($requestedDp < $minDp) {
+                    throw new \Exception("Nominal Uang Muka (DP) minimal 50% dari total pesanan (Minimal Rp " . number_format($minDp, 0, ',', '.') . ").");
+                }
+                $paidAmount = $requestedDp;
+                $remainingAmount = max(0, $totalPrice - $paidAmount);
+                $paymentStatus = 'PARTIAL';
+                $orderStatus = 'in_production';
+            } else {
+                $paidAmount = $totalPrice;
+                $remainingAmount = 0;
+                $paymentStatus = 'PAID';
+                $orderStatus = 'completed';
+            }
+
+            $transaction->payment_method = $request->payment_method;
+            $transaction->paid_amount = $paidAmount;
+            $transaction->remaining_amount = $remainingAmount;
+            $transaction->payment_status = $paymentStatus;
+            $transaction->order_status = $orderStatus;
+            $transaction->save();
+
+            // Record cash inflow
+            if ($paidAmount > 0) {
+                $salesAccount = \App\Models\Account::where('kode_akun', '4-1000')->first();
+                if ($salesAccount) {
+                    $keterangan = ($paymentStatus === 'PARTIAL') 
+                        ? "Penerimaan DP Uang Muka (#{$transaction->invoice_number}) dari " . ($transaction->customer_name ?: 'Pelanggan') . " (Sisa Piutang: Rp " . number_format($remainingAmount, 0, ',', '.') . ")"
+                        : "Penjualan POS (#{$transaction->invoice_number}) dari " . ($transaction->customer_name ?: 'Pelanggan');
+
+                    \App\Models\CashTransaction::create([
+                        'branch_id' => auth()->user()->branch_id ?: $transaction->branch_id,
+                        'account_id' => $salesAccount->id,
+                        'user_id' => auth()->id(),
+                        'tipe' => 'masuk',
+                        'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('masuk'),
+                        'tanggal' => now()->toDateString(),
+                        'jumlah' => $paidAmount,
+                        'keterangan' => $keterangan,
+                        'transaction_id' => $transaction->id,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'success' => true,
+                'message' => "Pembayaran draft #{$transaction->invoice_number} berhasil diproses!",
+                'transaction_id' => $transaction->id,
+                'invoice_number' => $transaction->invoice_number,
+                'receipt_url' => route('sales.receipt', $transaction->id),
+                'public_invoice_url' => route('invoices.public', $transaction->invoice_number),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
             ], 400);
         }
     }

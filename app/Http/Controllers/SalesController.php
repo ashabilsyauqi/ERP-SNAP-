@@ -402,4 +402,16 @@ class SalesController extends Controller
         $transaction = Transaction::with(['user', 'transactionDetails.material'])->findOrFail($id);
         return view('sales.receipt', compact('transaction'));
     }
+
+    /**
+     * Display public invoice page for WhatsApp sharing and direct PDF download.
+     */
+    public function publicInvoice($invoice_number)
+    {
+        $transaction = Transaction::with(['user', 'branch', 'transactionDetails.material'])
+            ->where('invoice_number', $invoice_number)
+            ->firstOrFail();
+
+        return view('sales.public_invoice', compact('transaction'));
+    }
 }

@@ -27,6 +27,9 @@
     <link href="{{ asset('vendor/bladewind/css/animate.min.css') }}" rel="stylesheet" />
     <link href="{{ asset('vendor/bladewind/css/bladewind-ui.min.css') }}" rel="stylesheet" />
 
+    <!-- html2pdf.js for Client-side PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <!-- Tailwind CSS CDN Engine with Snaprint Blue Palette -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -1346,7 +1349,14 @@
             }
 
             lines.push('━━━━━━━━━━━━━━━━━━━━');
-            lines.push(`*Total Tagihan : Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}*`);
+            if (data.discount_amount && Number(data.discount_amount) > 0) {
+                const orig = Number(data.original_price || (Number(data.total_price) + Number(data.discount_amount)));
+                lines.push(`Total Asli    : Rp ${orig.toLocaleString('id-ID')}`);
+                lines.push(`Potongan Nego : - Rp ${Number(data.discount_amount).toLocaleString('id-ID')}`);
+                lines.push(`*Total Tagihan : Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}*`);
+            } else {
+                lines.push(`*Total Tagihan : Rp ${Number(data.total_price || 0).toLocaleString('id-ID')}*`);
+            }
             lines.push(`*Metode Bayar : ${data.payment_method || 'Cash'}*`);
 
             if (isPartial) {
@@ -1366,11 +1376,149 @@
                 lines.push(`*Catatan SPK / Finishing:* _${data.production_notes}_`);
             }
 
+            // Public Downloadable & Printable Digital Invoice URL
+            const publicInvUrl = data.public_invoice_url || `${window.location.origin}/invoices/${data.invoice_number}`;
+            lines.push('━━━━━━━━━━━━━━━━━━━━');
+            lines.push('📄 *Download / Cetak Faktur PDF:*');
+            lines.push(publicInvUrl);
+
             lines.push('━━━━━━━━━━━━━━━━━━━━');
             lines.push('Terima kasih telah mencetak di *Snaprint Digital Printing*! 🙏✨');
             lines.push('Simpan pesan ini sebagai bukti transaksi resmi Anda.');
 
             return lines.join('\n');
+        };
+
+        // Global Client-side Invoice PDF Downloader (html2pdf)
+        window.downloadSnaprintInvoicePDF = function(inv) {
+            if (typeof html2pdf === 'undefined') {
+                console.warn('html2pdf library is loading or unavailable.');
+                return;
+            }
+
+            const isPartial = inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0);
+            const logoUrl = "{{ asset('images/logosnaprint.jpeg') }}";
+            const itemsHtml = (inv.items && inv.items.length > 0) ? inv.items.map((it, idx) => `
+                <tr>
+                    <td style="text-align: center; padding: 6px; border: 1px solid #cbd5e1;">${idx + 1}</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;">
+                        <strong>${it.material_name || it.name || '-'}</strong>
+                        ${it.dimension_text ? `<br><small style="color: #1e40af; font-weight: bold;">[${it.dimension_text}]</small>` : ''}
+                    </td>
+                    <td style="text-align: center; padding: 6px; border: 1px solid #cbd5e1;">${it.qty_ordered || it.qty || 1}</td>
+                    <td style="text-align: right; padding: 6px; border: 1px solid #cbd5e1; font-family: monospace;">Rp ${Number(it.selling_price || it.price || 0).toLocaleString('id-ID')}</td>
+                    <td style="text-align: right; padding: 6px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold;">Rp ${Number(it.subtotal || ((it.qty_ordered || it.qty || 1) * (it.selling_price || it.price || 0))).toLocaleString('id-ID')}</td>
+                </tr>
+            `).join('') : `
+                <tr>
+                    <td style="text-align: center; padding: 6px; border: 1px solid #cbd5e1;">1</td>
+                    <td style="padding: 6px; border: 1px solid #cbd5e1;"><strong>${inv.keterangan || 'Transaksi Penjualan Kasir POS'}</strong></td>
+                    <td style="text-align: center; padding: 6px; border: 1px solid #cbd5e1;">1</td>
+                    <td style="text-align: right; padding: 6px; border: 1px solid #cbd5e1; font-family: monospace;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
+                    <td style="text-align: right; padding: 6px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
+                </tr>
+            `;
+
+            const container = document.createElement('div');
+            container.style.position = 'fixed';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+            container.style.width = '750px';
+            container.style.background = '#ffffff';
+            container.style.padding = '25px';
+            container.style.fontFamily = 'Arial, sans-serif';
+            container.style.fontSize = '12px';
+            container.style.color = '#1e293b';
+
+            container.innerHTML = `
+                <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 15px; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${logoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                        <div>
+                            <div style="font-size: 20px; font-weight: bold; color: #1e3a8a;">Snaprint</div>
+                            <div style="font-size: 11px; color: #64748b;">Digital Printing & Advertising Solutions</div>
+                            <div style="font-size: 11px; color: #64748b;">Cabang: <strong>${inv.branch_name || 'Pusat'}</strong></div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="display: inline-block; padding: 3px 10px; border: 2px solid ${isPartial ? '#d97706' : '#059669'}; color: ${isPartial ? '#d97706' : '#059669'}; font-weight: 800; border-radius: 6px; text-transform: uppercase; font-size: 11px;">
+                            ${isPartial ? 'DP / UANG MUKA' : 'PAID (LUNAS)'}
+                        </div>
+                        <div style="font-size: 16px; font-weight: bold; margin-top: 4px;">FAKTUR INVOICE ${isPartial ? '& SPK' : ''}</div>
+                        <div style="font-size: 11px; font-family: monospace; color: #64748b;">No: ${inv.invoice_number || '-'}</div>
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 15px; font-size: 11px;">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="width: 50%;"><strong>Client:</strong> ${inv.customer_name || 'Pelanggan Umum'}</td>
+                            <td><strong>WhatsApp:</strong> ${inv.customer_phone || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 4px;"><strong>Tanggal:</strong> ${inv.created_at || '-'}</td>
+                            <td style="padding-top: 4px;"><strong>Kasir:</strong> ${inv.cashier_name || 'Kasir'}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border: 1px solid #cbd5e1;">
+                            <th style="padding: 6px; width: 30px; text-align: center;">No</th>
+                            <th style="padding: 6px; text-align: left;">Deskripsi Item</th>
+                            <th style="padding: 6px; width: 60px; text-align: center;">Qty</th>
+                            <th style="padding: 6px; width: 110px; text-align: right;">Harga Satuan</th>
+                            <th style="padding: 6px; width: 120px; text-align: right;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px;">
+                    ${(inv.discount_amount && Number(inv.discount_amount) > 0) ? `
+                    <tr>
+                        <td colspan="4" style="text-align: right; color: #64748b;">Total Asli:</td>
+                        <td style="text-align: right; width: 120px; font-family: monospace; text-decoration: line-through; color: #94a3b8;">Rp ${Number(inv.original_price || (Number(inv.total_price) + Number(inv.discount_amount))).toLocaleString('id-ID')}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="text-align: right; color: #059669; font-weight: bold;">Potongan Nego:</td>
+                        <td style="text-align: right; width: 120px; font-family: monospace; color: #059669; font-weight: bold;">- Rp ${Number(inv.discount_amount).toLocaleString('id-ID')}</td>
+                    </tr>` : ''}
+                    <tr>
+                        <td colspan="4" style="text-align: right; font-weight: bold; font-size: 13px;">Total Tagihan:</td>
+                        <td style="text-align: right; width: 120px; font-family: monospace; font-size: 14px; font-weight: bold; color: #1e3a8a;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
+                    </tr>
+                    ${isPartial ? `
+                    <tr>
+                        <td colspan="4" style="text-align: right; color: #059669; font-weight: bold;">DP Diterima:</td>
+                        <td style="text-align: right; font-family: monospace; color: #059669; font-weight: bold;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
+                    </tr>
+                    <tr style="background: #fffbeb;">
+                        <td colspan="4" style="text-align: right; color: #b45309; font-weight: bold;">Sisa Piutang:</td>
+                        <td style="text-align: right; font-family: monospace; color: #b45309; font-weight: bold; font-size: 13px;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
+                    </tr>` : ''}
+                </table>
+
+                <div style="margin-top: 25px; border-top: 1px solid #cbd5e1; padding-top: 10px; text-align: center; font-size: 10px; color: #94a3b8;">
+                    Snaprint "great spot to print" &bull; mysnaprint.com
+                </div>
+            `;
+
+            document.body.appendChild(container);
+            const opt = {
+                margin: [5, 5, 5, 5],
+                filename: `Faktur_${inv.invoice_number || 'Document'}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(container).save().then(() => {
+                container.remove();
+            }).catch(() => {
+                container.remove();
+            });
         };
 
         window.openWhatsAppReceipt = function(phone, data) {
@@ -1379,6 +1527,14 @@
                 alert('Nomor WhatsApp pelanggan tidak valid atau kosong.');
                 return;
             }
+
+            // Also automatically download PDF to device
+            try {
+                window.downloadSnaprintInvoicePDF(data);
+            } catch(e) {
+                console.error(e);
+            }
+
             const message = window.generateWhatsAppReceiptMessage(data);
             const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
