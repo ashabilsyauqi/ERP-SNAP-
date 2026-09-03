@@ -280,7 +280,7 @@
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
                                         @if($trx->customer_phone)
-                                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 text-emerald-600" title="Kirim Struk WhatsApp ({{ $trx->customer_phone }})" onclick='openWhatsAppReceipt("{{ $trx->customer_phone }}", @json($invPayload))'>
+                                            <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 text-emerald-600" title="Kirim Berkas PDF ke WhatsApp ({{ $trx->customer_phone }})" onclick='openWhatsAppReceipt("{{ $trx->customer_phone }}", @json($invPayload))'>
                                                 <i class="fa-brands fa-whatsapp text-xs"></i>
                                             </button>
                                         @endif
@@ -382,7 +382,7 @@
                             </span>
                             <div class="d-flex gap-1">
                                 @if($trx->customer_phone)
-                                    <button type="button" class="btn btn-sm btn-light border border-success text-emerald-600 py-0 px-2 text-xs" title="Kirim Struk WA" onclick='openWhatsAppReceipt("{{ $trx->customer_phone }}", @json($invPayload))'>
+                                    <button type="button" class="btn btn-sm btn-light border border-success text-emerald-600 py-0 px-2 text-xs" title="Kirim Berkas PDF ke WhatsApp" onclick='openWhatsAppReceipt("{{ $trx->customer_phone }}", @json($invPayload))'>
                                         <i class="fa-brands fa-whatsapp"></i>
                                     </button>
                                 @endif

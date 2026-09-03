@@ -244,6 +244,12 @@
             };
             html2pdf().set(opt).from(element).save();
         }
+
+        if (new URLSearchParams(window.location.search).get('download') === '1') {
+            window.addEventListener('DOMContentLoaded', () => {
+                setTimeout(downloadPDF, 600);
+            });
+        }
     </script>
 </body>
 </html>

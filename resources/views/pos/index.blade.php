@@ -479,7 +479,7 @@
                     </button>
                 </div>
                 <button type="button" id="btn-wa-last-receipt" class="hidden btn btn-sm w-full py-1 text-xs font-bold text-white d-flex align-items-center justify-content-center gap-1.5 rounded-lg shadow-sm" style="background-color: #25D366; border-color: #25D366;">
-                    <i class="fa-brands fa-whatsapp text-sm"></i> Kirim Faktur ke WhatsApp
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Kirim PDF ke WhatsApp
                 </button>
             </div>
 
@@ -2705,7 +2705,7 @@
                     if (btnWa) {
                         if (data.customer_phone) {
                             btnWa.classList.remove('hidden');
-                            btnWa.innerHTML = `<i class="fa-brands fa-whatsapp text-sm me-1"></i> Kirim Faktur ke WhatsApp (${data.customer_phone})`;
+                            btnWa.innerHTML = `<i class="fa-brands fa-whatsapp text-sm me-1"></i> Kirim Berkas PDF ke WhatsApp (${data.customer_phone})`;
                             btnWa.onclick = function() {
                                 openWhatsAppReceipt(data.customer_phone, data);
                             };
@@ -2740,7 +2740,7 @@
                     <div class="mt-3 pt-2.5 border-top border-dashed">
                         <button type="button" id="btn-swal-wa" class="btn w-100 py-2 text-xs font-bold text-white d-flex align-items-center justify-content-center gap-2 rounded-xl shadow-md cursor-pointer border-0" style="background-color: #25D366;">
                             <i class="fa-brands fa-whatsapp text-base"></i>
-                            <span>Kirim Faktur & PDF ke WhatsApp (${data.customer_phone})</span>
+                            <span>Kirim Berkas PDF ke WhatsApp (${data.customer_phone})</span>
                         </button>
                     </div>
                 ` : '';

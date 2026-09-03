@@ -983,11 +983,14 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" x-show="inv.customer_phone" @click="openWhatsAppReceipt(inv.customer_phone, inv)" class="btn btn-sm btn-success py-1 px-2.5 text-xs font-semibold text-white d-inline-flex align-items-center gap-1.5 shadow-sm" style="background-color: #25D366; border-color: #25D366;">
-                        <i class="fa-brands fa-whatsapp fs-6"></i> Kirim WA
+                    <button type="button" x-show="inv.customer_phone" @click="openWhatsAppReceipt(inv.customer_phone, inv)" class="btn btn-sm btn-success py-1 px-2.5 text-xs font-semibold text-white d-inline-flex align-items-center gap-1.5 shadow-sm" style="background-color: #25D366; border-color: #25D366;" title="Kirim Berkas PDF ke WhatsApp">
+                        <i class="fa-brands fa-whatsapp fs-6"></i> Kirim PDF ke WA
+                    </button>
+                    <button type="button" @click="downloadSnaprintInvoicePDF(inv)" class="btn btn-sm btn-light border py-1 px-2.5 text-xs font-semibold text-slate-700 d-inline-flex align-items-center gap-1.5 shadow-sm" title="Unduh Berkas PDF Faktur A4">
+                        <i class="fa-solid fa-file-pdf text-rose-600"></i> Unduh PDF
                     </button>
                     <button type="button" @click="printSnaprintInvoice(inv)" class="btn btn-sm btn-primary py-1 px-2.5 text-xs font-semibold">
-                        <i class="fa-solid fa-print me-1"></i> Cetak Invoice / SPK
+                        <i class="fa-solid fa-print me-1"></i> Cetak / SPK
                     </button>
                     <button type="button" class="btn-close btn-close-white text-xs" @click="open = false"></button>
                 </div>
@@ -1402,13 +1405,8 @@
             return lines.join('\n');
         };
 
-        // Global Client-side Invoice PDF Downloader (html2pdf)
-        window.downloadSnaprintInvoicePDF = function(inv) {
-            if (typeof html2pdf === 'undefined') {
-                console.warn('html2pdf library is loading or unavailable.');
-                return;
-            }
-
+        // Global PDF HTML Container Builder
+        window.createInvoicePDFElement = function(inv) {
             const isUnpaid = inv.payment_status === 'UNPAID' || inv.order_status === 'draft';
             const isPartial = !isUnpaid && (inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0));
 
@@ -1559,6 +1557,17 @@
                 </div>
             `;
 
+            return container;
+        };
+
+        // Global Client-side Invoice PDF Downloader (html2pdf)
+        window.downloadSnaprintInvoicePDF = function(inv) {
+            if (typeof html2pdf === 'undefined') {
+                console.warn('html2pdf library is loading or unavailable.');
+                return;
+            }
+
+            const container = window.createInvoicePDFElement(inv);
             document.body.appendChild(container);
             const opt = {
                 margin: [5, 5, 5, 5],
@@ -1575,23 +1584,84 @@
             });
         };
 
-        window.openWhatsAppReceipt = function(phone, data) {
+        // Global Direct PDF Delivery to WhatsApp (Zero Extra Text)
+        window.openWhatsAppReceipt = async function(phone, data) {
             const cleanPhone = window.formatWhatsAppPhoneNumber(phone);
             if (!cleanPhone) {
-                alert('Nomor WhatsApp pelanggan tidak valid atau kosong.');
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Nomor WhatsApp Tidak Valid',
+                        text: 'Nomor WhatsApp pelanggan belum diisi atau format nomor salah.'
+                    });
+                } else {
+                    alert('Nomor WhatsApp pelanggan tidak valid atau kosong.');
+                }
                 return;
             }
 
-            // Also automatically download PDF to device
+            const filename = `Faktur_${data.invoice_number || 'Document'}.pdf`;
+
+            // If browser supports Web Share API with files (Mobile / Tablet / Safari / Modern Browser):
+            if (navigator.canShare && typeof html2pdf !== 'undefined') {
+                try {
+                    const container = window.createInvoicePDFElement(data);
+                    document.body.appendChild(container);
+                    const opt = {
+                        margin: [5, 5, 5, 5],
+                        filename: filename,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+
+                    const pdfBlob = await html2pdf().set(opt).from(container).outputPdf('blob');
+                    container.remove();
+
+                    const pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+                    if (navigator.canShare({ files: [pdfFile] })) {
+                        await navigator.share({
+                            files: [pdfFile],
+                            title: filename,
+                        });
+                        return; // Successfully shared actual PDF file directly to WhatsApp!
+                    }
+                } catch(shareErr) {
+                    console.log('Native Web Share aborted or unhandled, fallback to direct download + chat', shareErr);
+                }
+            }
+
+            // Desktop Browser / Fallback:
+            // 1. Instantly download the official PDF file to device
             try {
                 window.downloadSnaprintInvoicePDF(data);
             } catch(e) {
                 console.error(e);
             }
 
-            const message = window.generateWhatsAppReceiptMessage(data);
-            const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+            // 2. Open WhatsApp Web directly to customer's chat WITHOUT any spammy extra text
+            const url = `https://api.whatsapp.com/send?phone=${cleanPhone}`;
             window.open(url, '_blank');
+
+            // 3. Display clear guidance popup so user knows exactly what to do
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berkas PDF Telah Diunduh',
+                    html: `
+                        <div class="text-xs text-slate-600 text-center p-2 space-y-2">
+                            <p class="mb-2">Chat WhatsApp ke <strong>${data.customer_name || 'Pelanggan'}</strong> (<code>${cleanPhone}</code>) telah dibuka.</p>
+                            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-blue-900 font-medium">
+                                <i class="fa-solid fa-file-pdf text-rose-600 text-xl mb-1 block"></i>
+                                Berkas <strong>${filename}</strong> sudah otomatis terunduh di perangkat.<br>
+                                Cukup tarik (drag & drop) atau klik lampirkan dokumen (📎) di WhatsApp untuk mengirimnya langsung.
+                            </div>
+                        </div>
+                    `,
+                    confirmButtonText: 'Mengerti',
+                    confirmButtonColor: '#2563eb'
+                });
+            }
         };
 
         // Global Invoice Viewer Helper
