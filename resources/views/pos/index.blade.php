@@ -2132,6 +2132,8 @@
             modal.show();
             loadDraftOrders();
         }
+    }
+
     const isUserOperator = @json(auth()->user()->isOperator());
 
     function loadDraftOrders() {
