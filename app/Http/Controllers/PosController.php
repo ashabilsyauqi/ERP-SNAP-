@@ -78,6 +78,7 @@ class PosController extends Controller
             'items.*.area_m2' => 'nullable|numeric|min:0',
             'items.*.billable_area_m2' => 'nullable|numeric|min:0',
             'items.*.is_custom_banner' => 'nullable|boolean',
+            'items.*.custom_unit_price' => 'nullable|numeric|min:0',
             'items.*.eyelet_count' => 'nullable|integer|min:0',
             'items.*.extra_eyelet_cost' => 'nullable|numeric|min:0',
             'items.*.finishing' => 'nullable|string|max:100',
@@ -214,6 +215,11 @@ class PosController extends Controller
                 } else {
                     $unitPrice = $baseUnitPrice;
                     $itemHpp = $materialToDeduct->purchase_price * $qty;
+                }
+
+                // If negotiated per item: directly override unitPrice with negotiated custom_unit_price
+                if (isset($item['custom_unit_price']) && is_numeric($item['custom_unit_price'])) {
+                    $unitPrice = round((float) $item['custom_unit_price']);
                 }
 
                 $totalItemPrice = $qty * $unitPrice;

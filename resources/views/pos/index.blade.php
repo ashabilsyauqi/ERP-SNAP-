@@ -505,7 +505,7 @@
                             <li>
                                 <button type="button" class="dropdown-item py-2 px-3 rounded-xl flex items-center gap-2.5 font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700" onclick="openNegotiationModal()">
                                     <i class="fa-solid fa-handshake text-amber-500 text-sm"></i>
-                                    <span>Negosiasi Diskon Total</span>
+                                    <span>Negosiasi Harga Item</span>
                                 </button>
                             </li>
                             <li><hr class="dropdown-divider my-1 border-slate-100"></li>
@@ -575,9 +575,105 @@
 <!-- Input holds global payment selection state -->
 <input type="hidden" id="global_payment_method" value="Cash">
 
-<!-- Modal Negosiasi Tagihan POS (Comfortable Size & Readable Typography) -->
+<!-- Modal Negosiasi Harga Satuan Item (Per-Item Negotiation) -->
+<div class="modal fade" id="modalItemNegotiation" tabindex="-1" aria-labelledby="modalItemNegotiationLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
+            <!-- Modal Header -->
+            <div class="px-4 py-3 d-flex justify-content-between align-items-center bg-slate-900 text-white">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/20 border border-amber-400/30 text-amber-400">
+                        <i class="fa-solid fa-handshake text-sm"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-sm font-bold mb-0 text-white" id="modalItemNegotiationLabel">Negosiasi Harga Item</h6>
+                        <span class="text-[11px] text-slate-400" id="item_nego_item_name">Katalog Item</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-4 space-y-3" style="background-color: #f8fafc;">
+                <!-- Ringkasan Item & Harga Standar -->
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="d-flex justify-content-between items-start mb-1.5">
+                        <div class="min-w-0 pe-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Item Terpilih</span>
+                            <strong id="item_nego_name_display" class="text-slate-900 text-xs truncate block">-</strong>
+                            <span id="item_nego_specs_display" class="text-[10px] text-blue-700 font-semibold block mt-0.5"></span>
+                        </div>
+                        <span id="item_nego_qty_display" class="badge bg-slate-100 text-slate-800 border text-xs font-mono font-bold px-2 py-1 flex-shrink-0">1 pcs</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-t border-slate-100 text-[11px]">
+                        <span class="text-slate-500">Harga Standar Sistem:</span>
+                        <div class="text-end font-mono">
+                            <span id="item_nego_orig_unit" class="text-slate-700 font-bold">Rp 0 / pcs</span>
+                            <span class="text-slate-400 text-[10px] block">Subtotal: <strong id="item_nego_orig_subtotal" class="text-slate-700">Rp 0</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Nominal Nego -->
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="font-bold text-slate-900 text-xs uppercase mb-0">Harga Satuan Kesepakatan (Nego)</label>
+                        <span class="text-[10px] text-slate-400">per lembar / pcs</span>
+                    </div>
+                    
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text font-bold text-sm bg-slate-100 text-slate-700">Rp</span>
+                        <input type="number" id="item_nego_unit_input" min="0" step="500" 
+                               oninput="calcItemNegoPreview()" 
+                               class="form-control font-mono font-bold text-slate-900 text-base" 
+                               placeholder="Contoh: 45000">
+                    </div>
+
+                    <!-- Quick Action Chips -->
+                    <div class="d-flex flex-wrap gap-1 align-items-center pt-1">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase me-1">Cepat:</span>
+                        <button type="button" onclick="adjustItemNegoDelta(-5000)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-bold">- 5rb</button>
+                        <button type="button" onclick="adjustItemNegoDelta(-10000)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-bold">- 10rb</button>
+                        <button type="button" onclick="adjustItemNegoDelta(-20000)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-bold">- 20rb</button>
+                        <button type="button" onclick="applyItemNegoPercent(5)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-bold">Disc 5%</button>
+                        <button type="button" onclick="applyItemNegoPercent(10)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-bold">Disc 10%</button>
+                        <button type="button" onclick="resetItemNegoModalToOrig()" class="btn btn-xs btn-outline-primary py-0.5 px-2 text-[10px] rounded-pill font-bold">Harga Asli</button>
+                    </div>
+                </div>
+
+                <!-- Preview Box -->
+                <div class="p-3 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-950 text-xs">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-slate-600 font-medium">Subtotal Baru Setelah Nego:</span>
+                        <strong id="item_nego_preview_subtotal" class="font-mono text-sm text-blue-900 font-extrabold">Rp 0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center text-[11px] text-emerald-700">
+                        <span>Penyesuaian per item:</span>
+                        <strong id="item_nego_preview_diff" class="font-mono">- Rp 0 / pcs</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-white px-4 py-2.5 border-top border-slate-200 d-flex justify-content-between align-items-center">
+                <button type="button" onclick="resetItemNegotiationActive()" id="btn-reset-item-nego" class="btn btn-sm btn-outline-danger font-semibold px-2.5 text-xs">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset Asli
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm font-semibold px-3 text-xs" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" onclick="applyItemNegotiation()" class="btn btn-primary btn-sm font-bold shadow-sm px-3 text-xs">
+                        <i class="fa-solid fa-check me-1"></i> Terapkan Nego Item
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Negosiasi Tagihan POS (Per-Item Negotiation Hub) -->
 <div class="modal fade" id="modalNegotiation" tabindex="-1" aria-labelledby="modalNegotiationLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 580px;">
         <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
             <!-- Modal Header -->
             <div class="px-5 py-3.5 d-flex justify-content-between align-items-center bg-slate-900 text-white">
@@ -586,100 +682,43 @@
                         <i class="fa-solid fa-handshake"></i>
                     </div>
                     <div>
-                        <h5 class="text-base font-bold mb-0 text-white" id="modalNegotiationLabel">Negosiasi Total Tagihan</h5>
-                        <span class="text-xs text-slate-400">Penyesuaian potongan diskon atau harga kesepakatan final</span>
+                        <h5 class="text-base font-bold mb-0 text-white" id="modalNegotiationLabel">Negosiasi Harga per Item</h5>
+                        <span class="text-xs text-slate-400">Atur harga kesepakatan langsung pada item tanpa potongan diskon</span>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white text-sm" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <!-- Modal Body -->
-            <div class="p-5 space-y-4" style="background-color: #f8fafc;">
-                <!-- Total Asli Info Box -->
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <span class="text-slate-400 font-bold uppercase tracking-wider text-xs block mb-1">Total Tagihan Asli (Sebelum Nego)</span>
-                        <strong class="text-2xl font-black font-mono text-slate-900 block" id="nego-modal-orig-total">Rp 0</strong>
-                    </div>
-                    <span class="badge bg-slate-100 text-slate-600 border text-xs px-2.5 py-1 rounded-lg">Harga Akumulasi</span>
+            <div class="p-4 space-y-3" style="background-color: #f8fafc; max-height: calc(80vh - 120px); overflow-y: auto;">
+                <div class="text-xs text-slate-500">
+                    Klik tombol <strong>Atur Nego</strong> pada item di bawah untuk menyesuaikan harga satuan:
                 </div>
 
-                <!-- Mode Selection -->
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Pilih Metode Penyesuaian</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" onclick="setNegoMode('discount')" id="btn-nego-mode-discount" 
-                            class="py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-center transition flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-percent text-xs"></i>
-                            <span>Potongan Diskon (Rp)</span>
-                        </button>
-                        <button type="button" onclick="setNegoMode('final')" id="btn-nego-mode-final" 
-                            class="py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-center transition flex items-center justify-center gap-1.5">
-                            <i class="fa-solid fa-tag text-xs"></i>
-                            <span>Harga Pas / Deal (Rp)</span>
-                        </button>
-                    </div>
+                <!-- Container list item nego -->
+                <div id="nego-items-list-container" class="space-y-2.5">
+                    <!-- Populated via JS renderNegoItemsList() -->
                 </div>
 
-                <!-- Input Nominal Diskon -->
-                <div id="nego-input-discount-wrapper" class="space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700 uppercase">Nominal Potongan Diskon (Rp)</label>
-                    <div class="relative flex items-center">
-                        <span class="absolute left-3.5 text-slate-400 font-bold text-sm">Rp</span>
-                        <input type="number" id="input-nego-discount" min="0" placeholder="Contoh: 15000" 
-                            class="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-base font-mono font-bold text-emerald-700 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100" 
-                            oninput="calcNegoResult()">
-                    </div>
-                </div>
-
-                <!-- Input Harga Kesepakatan Final -->
-                <div id="nego-input-final-wrapper" class="space-y-1.5 hidden">
-                    <label class="block text-xs font-bold text-slate-700 uppercase">Harga Kesepakatan Final (Rp)</label>
-                    <div class="relative flex items-center">
-                        <span class="absolute left-3.5 text-slate-400 font-bold text-sm">Rp</span>
-                        <input type="number" id="input-nego-final" min="0" placeholder="Contoh: 150000" 
-                            class="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-base font-mono font-bold text-blue-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100" 
-                            oninput="calcNegoResult()">
-                    </div>
-                </div>
-
-                <!-- Input Catatan Alasan -->
-                <div class="space-y-1.5">
-                    <label class="block text-xs font-bold text-slate-700 uppercase">Catatan / Alasan Negosiasi <span class="text-slate-400 font-normal">(Opsional)</span></label>
-                    <input type="text" id="input-nego-notes" placeholder="Misal: Pelanggan setia, order partai besar, diskon khusus..." 
-                        class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                </div>
-
-                <!-- Preview Result Card -->
-                <div class="bg-emerald-50/90 p-4 rounded-2xl border border-emerald-200 text-xs sm:text-sm space-y-2">
-                    <div class="flex justify-between items-center text-slate-600">
-                        <span class="font-medium">Besaran Potongan:</span>
-                        <span id="nego-preview-discount" class="font-mono font-bold text-emerald-700 text-sm sm:text-base">- Rp 0</span>
-                    </div>
-                    <div class="flex justify-between items-center text-slate-900 font-bold border-t border-emerald-200/80 pt-2">
-                        <span class="text-slate-800">Total Tagihan Akhir:</span>
-                        <span id="nego-preview-final" class="font-mono text-lg sm:text-xl font-black text-blue-900">Rp 0</span>
-                    </div>
+                <!-- Catatan SPK / Nego Opsional -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200 mt-2">
+                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Catatan Kesepakatan (Opsional)</label>
+                    <input type="text" id="input-nego-notes" placeholder="Misal: Order partai besar, kesepakatan khusus..." 
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-none focus:border-blue-500">
                 </div>
             </div>
 
             <!-- Modal Footer -->
-            <div class="bg-white px-5 py-3.5 border-t border-slate-200 d-flex justify-content-between align-items-center gap-3">
-                <button type="button" onclick="resetNegotiation()" class="btn btn-outline-danger text-xs sm:text-sm py-2 px-3 rounded-xl font-semibold flex items-center gap-1.5">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span>Reset Nego</span>
+            <div class="bg-white px-5 py-3 border-t border-slate-200 d-flex justify-content-between align-items-center">
+                <button type="button" onclick="resetAllItemNegotiations()" class="btn btn-outline-danger btn-sm text-xs font-semibold px-3">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset Semua Nego
                 </button>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-light text-slate-700 border text-xs sm:text-sm py-2 px-3 rounded-xl font-semibold" data-bs-dismiss="modal">
-                        Batal
+                    <button type="button" class="btn btn-secondary btn-sm text-xs font-semibold px-3" data-bs-dismiss="modal">
+                        Tutup
                     </button>
-                    <button type="button" onclick="applyNegotiationAndDraft()" class="btn btn-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm py-2 px-3.5 rounded-xl font-bold flex items-center gap-1.5 shadow-sm" style="background-color: #fef3c7; border-color: #fcd34d;">
-                        <i class="fa-solid fa-file-pen text-amber-700"></i>
-                        <span>Simpan sbg Draft</span>
-                    </button>
-                    <button type="button" onclick="applyNegotiation()" class="btn btn-primary text-xs sm:text-sm py-2 px-4 rounded-xl font-bold flex items-center gap-2 shadow-md">
-                        <i class="fa-solid fa-check"></i>
-                        <span>Terapkan Nego</span>
+                    <button type="button" onclick="applyNegotiationAndDraft()" class="btn btn-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 btn-sm text-xs font-bold shadow-sm px-3" style="background-color: #fef3c7; border-color: #fcd34d;">
+                        <i class="fa-solid fa-file-pen text-amber-700 me-1"></i> Simpan sbg Draft
                     </button>
                 </div>
             </div>
@@ -1589,14 +1628,17 @@
         cart.forEach(item => {
             const { price: basePrice, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
             
-            let finalUnitPrice = basePrice;
+            let standardUnitPrice = basePrice;
             if (item.is_custom_banner && (item.billable_area_m2 || item.area_m2)) {
                 const area = item.billable_area_m2 || item.area_m2;
                 const extraEyelet = (item.extra_eyelet_cost !== undefined) 
                     ? item.extra_eyelet_cost 
                     : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0);
-                finalUnitPrice = Math.round(area * basePrice) + extraEyelet;
+                standardUnitPrice = Math.round(area * basePrice) + extraEyelet;
             }
+
+            const isNegotiated = (item.custom_unit_price !== undefined && item.custom_unit_price !== null);
+            const finalUnitPrice = isNegotiated ? item.custom_unit_price : standardUnitPrice;
 
             const itemTotal = finalUnitPrice * item.qty;
             
@@ -1618,11 +1660,18 @@
                             ` : (item.requested_size ? `<span class="block text-[10px] text-blue-600 font-medium">Ukuran: ${item.requested_size}m</span>` : '')}
                             
                             <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                <span class="text-[11px] font-mono text-slate-600">
+                                <span class="text-[11px] font-mono text-slate-700 font-bold">
                                     @ Rp ${Number(finalUnitPrice).toLocaleString('id-ID')}
-                                    ${item.is_custom_banner ? `<small class="text-slate-400">(${Number(basePrice).toLocaleString('id-ID')}/m²)</small>` : ''}
+                                    ${(!isNegotiated && item.is_custom_banner) ? `<small class="text-slate-400 font-normal">(${Number(basePrice).toLocaleString('id-ID')}/m²)</small>` : ''}
                                 </span>
-                                ${isWholesale ? `<span class="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1 rounded">Grosir</span>` : ''}
+                                ${isNegotiated ? `
+                                    <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded font-mono">
+                                        <i class="fa-solid fa-handshake text-amber-600 text-[9px]"></i>
+                                        <span>Nego (Asli: Rp ${Number(standardUnitPrice).toLocaleString('id-ID')})</span>
+                                        <button type="button" onclick="event.stopPropagation(); resetItemNegotiation(${item.id})" class="text-amber-700 hover:text-rose-600 bg-transparent border-0 p-0 ms-0.5 font-bold cursor-pointer text-[10px]" title="Batalkan Nego Item">&times;</button>
+                                    </span>
+                                ` : ''}
+                                ${(!isNegotiated && isWholesale) ? `<span class="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1 rounded">Grosir</span>` : ''}
                             </div>
                         </div>
                         
@@ -1641,6 +1690,9 @@
                                     <i class="fa-solid fa-pen-ruler me-0.5"></i> Ubah Ukuran
                                 </button>
                             ` : ''}
+                            <button type="button" onclick="openItemNegotiationModal(${item.id})" class="text-[10px] font-bold bg-transparent border-0 cursor-pointer p-0 ${isNegotiated ? 'text-amber-700 hover:text-amber-900' : 'text-blue-600 hover:text-blue-800'}" title="Negosiasi harga satuan item">
+                                <i class="fa-solid fa-handshake me-0.5"></i> ${isNegotiated ? 'Ubah Nego' : 'Nego'}
+                            </button>
                         </div>
                         
                         <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm flex-shrink-0">
@@ -1814,10 +1866,176 @@
         }
     }
 
-    // --- Negotiation State and Functions ---
+    // --- Negotiation State and Functions (Per-Item Negotiation) ---
     window.negotiationDiscount = 0;
     window.negotiationNotes = '';
-    window.negotiationMode = 'discount';
+    let activeNegoCartItemId = null;
+    let activeNegoStandardUnitPrice = 0;
+    let activeNegoQty = 1;
+
+    function openItemNegotiationModal(cartItemId) {
+        const item = cart.find(i => i.id === cartItemId);
+        if (!item) return;
+
+        activeNegoCartItemId = cartItemId;
+        activeNegoQty = item.qty || 1;
+
+        // Calculate standard unit price
+        const { price: basePrice } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
+        let standardUnitPrice = basePrice;
+        if (item.is_custom_banner && (item.billable_area_m2 || item.area_m2)) {
+            const area = item.billable_area_m2 || item.area_m2;
+            const extraEyelet = (item.extra_eyelet_cost !== undefined) 
+                ? item.extra_eyelet_cost 
+                : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0);
+            standardUnitPrice = Math.round(area * basePrice) + extraEyelet;
+        }
+        activeNegoStandardUnitPrice = standardUnitPrice;
+
+        // Set modal displays
+        const nameEl = document.getElementById('item_nego_item_name');
+        const nameDispEl = document.getElementById('item_nego_name_display');
+        const specsDispEl = document.getElementById('item_nego_specs_display');
+        const qtyDispEl = document.getElementById('item_nego_qty_display');
+        const origUnitEl = document.getElementById('item_nego_orig_unit');
+        const origSubtotalEl = document.getElementById('item_nego_orig_subtotal');
+
+        if (nameEl) nameEl.innerText = item.material_name_or_type;
+        if (nameDispEl) nameDispEl.innerText = item.material_name_or_type;
+        if (specsDispEl) specsDispEl.innerText = item.dimension_text || (item.requested_size ? `Ukuran: ${item.requested_size}m` : '');
+        if (qtyDispEl) qtyDispEl.innerText = `${item.qty} pcs`;
+
+        if (origUnitEl) origUnitEl.innerText = `Rp ${Number(standardUnitPrice).toLocaleString('id-ID')} / pcs`;
+        if (origSubtotalEl) origSubtotalEl.innerText = `Rp ${Number(standardUnitPrice * item.qty).toLocaleString('id-ID')}`;
+
+        // Current price (negotiated or standard)
+        const currentPrice = (item.custom_unit_price !== undefined && item.custom_unit_price !== null) 
+            ? item.custom_unit_price 
+            : standardUnitPrice;
+        
+        const inputEl = document.getElementById('item_nego_unit_input');
+        if (inputEl) inputEl.value = currentPrice;
+
+        calcItemNegoPreview();
+
+        // Show modal
+        const modalEl = document.getElementById('modalItemNegotiation');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+    }
+
+    function calcItemNegoPreview() {
+        const inputEl = document.getElementById('item_nego_unit_input');
+        let inputVal = parseFloat(inputEl?.value);
+        if (isNaN(inputVal) || inputVal < 0) inputVal = activeNegoStandardUnitPrice;
+
+        const subtotal = inputVal * activeNegoQty;
+        const diff = activeNegoStandardUnitPrice - inputVal;
+
+        const prevSubtotal = document.getElementById('item_nego_preview_subtotal');
+        if (prevSubtotal) prevSubtotal.innerText = `Rp ${Number(subtotal).toLocaleString('id-ID')}`;
+        
+        const diffEl = document.getElementById('item_nego_preview_diff');
+        if (diffEl) {
+            if (diff > 0) {
+                diffEl.innerText = `- Rp ${Number(diff).toLocaleString('id-ID')} / pcs (Hemat Rp ${Number(diff * activeNegoQty).toLocaleString('id-ID')})`;
+                diffEl.className = 'font-mono font-bold text-emerald-700';
+            } else if (diff < 0) {
+                diffEl.innerText = `+ Rp ${Number(Math.abs(diff)).toLocaleString('id-ID')} / pcs`;
+                diffEl.className = 'font-mono font-bold text-amber-700';
+            } else {
+                diffEl.innerText = 'Sama dengan harga standar (Rp 0)';
+                diffEl.className = 'font-mono text-slate-500';
+            }
+        }
+    }
+
+    function adjustItemNegoDelta(delta) {
+        const input = document.getElementById('item_nego_unit_input');
+        let cur = parseFloat(input?.value) || activeNegoStandardUnitPrice;
+        let next = Math.max(0, cur + delta);
+        if (input) input.value = next;
+        calcItemNegoPreview();
+    }
+
+    function applyItemNegoPercent(pct) {
+        const input = document.getElementById('item_nego_unit_input');
+        let next = Math.round(activeNegoStandardUnitPrice * (1 - pct / 100));
+        if (input) input.value = Math.max(0, next);
+        calcItemNegoPreview();
+    }
+
+    function resetItemNegoModalToOrig() {
+        const input = document.getElementById('item_nego_unit_input');
+        if (input) input.value = activeNegoStandardUnitPrice;
+        calcItemNegoPreview();
+    }
+
+    function applyItemNegotiation() {
+        if (activeNegoCartItemId === null) return;
+        const item = cart.find(i => i.id === activeNegoCartItemId);
+        if (!item) return;
+
+        let inputVal = parseFloat(document.getElementById('item_nego_unit_input')?.value);
+        if (isNaN(inputVal) || inputVal < 0) {
+            inputVal = activeNegoStandardUnitPrice;
+        }
+
+        if (inputVal === activeNegoStandardUnitPrice) {
+            delete item.custom_unit_price;
+        } else {
+            item.custom_unit_price = inputVal;
+        }
+
+        renderCart();
+
+        const modalEl = document.getElementById('modalItemNegotiation');
+        if (modalEl) {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+
+        // If hub modal is open, refresh its list
+        renderNegoItemsList();
+    }
+
+    function resetItemNegotiationActive() {
+        if (activeNegoCartItemId === null) return;
+        const item = cart.find(i => i.id === activeNegoCartItemId);
+        if (item) {
+            delete item.custom_unit_price;
+            renderCart();
+        }
+        const modalEl = document.getElementById('modalItemNegotiation');
+        if (modalEl) {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+        renderNegoItemsList();
+    }
+
+    function resetItemNegotiation(cartItemId) {
+        const item = cart.find(i => i.id === cartItemId);
+        if (item) {
+            delete item.custom_unit_price;
+            renderCart();
+        }
+        renderNegoItemsList();
+    }
+
+    function resetAllItemNegotiations() {
+        cart.forEach(item => {
+            delete item.custom_unit_price;
+        });
+        window.negotiationDiscount = 0;
+        window.negotiationNotes = '';
+        renderCart();
+        renderNegoItemsList();
+        const modalEl = document.getElementById('modalNegotiation');
+        if (modalEl) {
+            bootstrap.Modal.getInstance(modalEl)?.hide();
+        }
+    }
 
     function openNegotiationModal() {
         if (!cart || cart.length === 0) {
@@ -1825,14 +2043,7 @@
             return;
         }
 
-        const origTotal = window.currentAccumulatedTotal || 0;
-        document.getElementById('nego-modal-orig-total').innerText = 'Rp ' + Number(origTotal).toLocaleString('id-ID');
-        document.getElementById('input-nego-discount').value = window.negotiationDiscount || '';
-        document.getElementById('input-nego-final').value = (window.negotiationDiscount > 0) ? Math.max(0, origTotal - window.negotiationDiscount) : '';
-        document.getElementById('input-nego-notes').value = window.negotiationNotes || '';
-
-        setNegoMode(window.negotiationMode || 'discount');
-        calcNegoResult();
+        renderNegoItemsList();
 
         const modalEl = document.getElementById('modalNegotiation');
         if (modalEl) {
@@ -1841,101 +2052,67 @@
         }
     }
 
-    function setNegoMode(mode) {
-        window.negotiationMode = mode;
-        const btnDisc = document.getElementById('btn-nego-mode-discount');
-        const btnFinal = document.getElementById('btn-nego-mode-final');
-        const wrapDisc = document.getElementById('nego-input-discount-wrapper');
-        const wrapFinal = document.getElementById('nego-input-final-wrapper');
-
-        if (mode === 'discount') {
-            if (btnDisc) btnDisc.className = 'py-1.5 px-2 text-xs font-bold rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-center transition';
-            if (btnFinal) btnFinal.className = 'py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-600 text-center transition';
-            if (wrapDisc) wrapDisc.classList.remove('hidden');
-            if (wrapFinal) wrapFinal.classList.add('hidden');
-        } else {
-            if (btnFinal) btnFinal.className = 'py-1.5 px-2 text-xs font-bold rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-center transition';
-            if (btnDisc) btnDisc.className = 'py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-600 text-center transition';
-            if (wrapFinal) wrapFinal.classList.remove('hidden');
-            if (wrapDisc) wrapDisc.classList.add('hidden');
-        }
-        calcNegoResult();
-    }
-
-    function calcNegoResult() {
-        const origTotal = window.currentAccumulatedTotal || 0;
-        let discount = 0;
-
-        if (window.negotiationMode === 'discount') {
-            discount = parseFloat(document.getElementById('input-nego-discount')?.value) || 0;
-        } else {
-            const finalPrice = parseFloat(document.getElementById('input-nego-final')?.value) || 0;
-            discount = Math.max(0, origTotal - finalPrice);
+    function renderNegoItemsList() {
+        const container = document.getElementById('nego-items-list-container');
+        if (!container) return;
+        if (!cart || cart.length === 0) {
+            container.innerHTML = '<div class="text-center text-slate-400 py-4 text-xs">Keranjang masih kosong</div>';
+            return;
         }
 
-        discount = Math.max(0, Math.min(origTotal, discount));
-        const finalTotal = Math.max(0, origTotal - discount);
+        let html = '';
+        cart.forEach(item => {
+            const { price: basePrice } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
+            let standardUnitPrice = basePrice;
+            if (item.is_custom_banner && (item.billable_area_m2 || item.area_m2)) {
+                const area = item.billable_area_m2 || item.area_m2;
+                const extraEyelet = (item.extra_eyelet_cost !== undefined) 
+                    ? item.extra_eyelet_cost 
+                    : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0);
+                standardUnitPrice = Math.round(area * basePrice) + extraEyelet;
+            }
+            const isNegotiated = (item.custom_unit_price !== undefined && item.custom_unit_price !== null);
+            const currentUnitPrice = isNegotiated ? item.custom_unit_price : standardUnitPrice;
 
-        const prevDisc = document.getElementById('nego-preview-discount');
-        const prevFinal = document.getElementById('nego-preview-final');
-        if (prevDisc) prevDisc.innerText = '- Rp ' + Number(discount).toLocaleString('id-ID');
-        if (prevFinal) prevFinal.innerText = 'Rp ' + Number(finalTotal).toLocaleString('id-ID');
-    }
-
-    function applyNegotiation() {
-        const origTotal = window.currentAccumulatedTotal || 0;
-        let discount = 0;
-
-        if (window.negotiationMode === 'discount') {
-            discount = parseFloat(document.getElementById('input-nego-discount')?.value) || 0;
-        } else {
-            const finalPrice = parseFloat(document.getElementById('input-nego-final')?.value) || 0;
-            discount = Math.max(0, origTotal - finalPrice);
-        }
-
-        discount = Math.max(0, Math.min(origTotal, discount));
-        window.negotiationDiscount = discount;
-        window.negotiationNotes = (document.getElementById('input-nego-notes')?.value || '').trim();
-
-        renderCart();
-
-        const modalEl = document.getElementById('modalNegotiation');
-        if (modalEl) {
-            bootstrap.Modal.getInstance(modalEl)?.hide();
-        }
-
-        if (discount > 0) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Negosiasi Diterapkan!',
-                html: `Diskon sebesar <strong>Rp ${Number(discount).toLocaleString('id-ID')}</strong> telah dipotong dari total tagihan asli.`,
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }
+            html += `
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-bold text-slate-900 text-xs truncate">${item.material_name_or_type}</div>
+                        <div class="text-[10px] text-slate-500">${item.dimension_text || (item.requested_size ? 'Ukuran: ' + item.requested_size + 'm' : '')} &bull; <strong class="text-slate-700">${item.qty} pcs</strong></div>
+                        <div class="mt-1 flex items-center gap-1.5 font-mono text-xs">
+                            <span class="text-slate-500">Harga Satuan:</span>
+                            <strong class="${isNegotiated ? 'text-amber-800' : 'text-slate-800'}">Rp ${Number(currentUnitPrice).toLocaleString('id-ID')}</strong>
+                            ${isNegotiated ? `<span class="badge bg-amber-100 text-amber-800 text-[9px] px-1 py-0.5 font-sans">Nego (Asli: Rp ${Number(standardUnitPrice).toLocaleString('id-ID')})</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 flex items-center gap-1.5">
+                        <button type="button" onclick="openItemNegotiationModal(${item.id})" class="btn btn-sm ${isNegotiated ? 'btn-amber-50 text-amber-900 border border-amber-300' : 'btn-primary'} text-xs py-1 px-2.5 font-bold">
+                            <i class="fa-solid fa-handshake me-1"></i> ${isNegotiated ? 'Ubah Nego' : 'Atur Nego'}
+                        </button>
+                        ${isNegotiated ? `
+                            <button type="button" onclick="resetItemNegotiation(${item.id})" class="btn btn-sm btn-light border text-rose-600 text-xs py-1 px-2" title="Reset ke Normal">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
     }
 
     function applyNegotiationAndDraft() {
-        applyNegotiation();
-        setTimeout(() => {
-            processCheckout(true);
-        }, 350);
-    }
-
-    function resetNegotiation() {
-        window.negotiationDiscount = 0;
-        window.negotiationNotes = '';
-        if (document.getElementById('input-nego-discount')) document.getElementById('input-nego-discount').value = '';
-        if (document.getElementById('input-nego-final')) document.getElementById('input-nego-final').value = '';
-        if (document.getElementById('input-nego-notes')) document.getElementById('input-nego-notes').value = '';
-
-        calcNegoResult();
-        renderCart();
-
         const modalEl = document.getElementById('modalNegotiation');
         if (modalEl) {
             bootstrap.Modal.getInstance(modalEl)?.hide();
         }
+        setTimeout(() => {
+            processCheckout(true);
+        }, 300);
+    }
+
+    function resetNegotiation() {
+        resetAllItemNegotiations();
     }
 
     // --- Draft Orders Management (Cashier) ---
@@ -1973,7 +2150,7 @@
                     list.innerHTML = '';
                     drafts.forEach(d => {
                         const itemsSummary = (d.transaction_details || []).map(it => 
-                            `<span class="badge bg-slate-100 text-slate-700 border text-[10px] me-1">${it.qty_ordered}x ${it.material?.material_name || 'Item'}</span>`
+                            `<span class="badge bg-slate-100 text-slate-700 border text-[10px] me-1 mb-1">${it.qty_ordered}x ${it.material?.material_name || 'Item'} (@ Rp ${Number(it.selling_price).toLocaleString('id-ID')})</span>`
                         ).join('');
 
                         const card = document.createElement('div');
@@ -1987,7 +2164,7 @@
                                 </div>
                                 <div class="font-bold text-slate-800 text-xs">${d.customer_name || 'Pelanggan Umum'} ${d.customer_phone ? `<small class="text-slate-500 font-mono">(${d.customer_phone})</small>` : ''}</div>
                                 <div class="mt-1 flex flex-wrap gap-1">${itemsSummary}</div>
-                                ${d.negotiation_notes ? `<div class="text-[10px] text-emerald-700 mt-1"><i class="fa-solid fa-handshake me-1"></i>Nego: ${d.negotiation_notes}</div>` : ''}
+                                ${d.negotiation_notes ? `<div class="text-[10px] text-emerald-700 mt-1"><i class="fa-solid fa-handshake me-1"></i>Catatan Nego: ${d.negotiation_notes}</div>` : ''}
                                 <div class="text-[10px] text-slate-400 mt-1">Dibuat oleh: <strong class="text-slate-600">${d.user?.full_name || d.user?.username || 'Operator'}</strong></div>
                             </div>
                             <div class="text-right flex-shrink-0 w-full sm:w-auto flex sm:flex-col justify-between sm:justify-center items-center sm:items-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0">
@@ -1995,9 +2172,14 @@
                                     <span class="text-[10px] text-slate-400 block">Total Tagihan</span>
                                     <span class="font-mono font-extrabold text-blue-900 text-sm">Rp ${Number(d.total_price).toLocaleString('id-ID')}</span>
                                 </div>
-                                <button type="button" onclick="promptSettleDraft(${d.id}, '${d.invoice_number}', ${d.total_price})" class="btn btn-sm btn-primary text-xs py-1.5 px-3 font-bold flex items-center gap-1.5 shadow-sm">
-                                    <i class="fa-solid fa-cash-register"></i> Bayar Sekarang
-                                </button>
+                                <div class="flex items-center gap-1.5">
+                                    <a href="/invoices/${d.invoice_number}" target="_blank" class="btn btn-sm btn-outline-secondary text-xs py-1.5 px-2.5 font-semibold" title="Buka Faktur Draft">
+                                        <i class="fa-solid fa-file-invoice text-slate-600"></i> Faktur
+                                    </a>
+                                    <button type="button" onclick="promptSettleDraft(${d.id}, '${d.invoice_number}', ${d.total_price})" class="btn btn-sm btn-primary text-xs py-1.5 px-3 font-bold flex items-center gap-1.5 shadow-sm">
+                                        <i class="fa-solid fa-cash-register"></i> Bayar
+                                    </button>
+                                </div>
                             </div>
                         `;
                         list.appendChild(card);
@@ -2172,14 +2354,17 @@
 
         const payloadItems = cart.map((item, idx) => {
             const { price: basePrice, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
-            let finalUnitPrice = basePrice;
+            let standardUnitPrice = basePrice;
             if (item.is_custom_banner && (item.billable_area_m2 || item.area_m2)) {
                 const area = item.billable_area_m2 || item.area_m2;
                 const extraEyelet = (item.extra_eyelet_cost !== undefined) 
                     ? item.extra_eyelet_cost 
                     : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0);
-                finalUnitPrice = Math.round(area * basePrice) + extraEyelet;
+                standardUnitPrice = Math.round(area * basePrice) + extraEyelet;
             }
+            const isNegotiated = (item.custom_unit_price !== undefined && item.custom_unit_price !== null);
+            const finalUnitPrice = isNegotiated ? item.custom_unit_price : standardUnitPrice;
+
             const itemSubtotal = finalUnitPrice * item.qty;
             totalItemCount += item.qty;
             calculatedGrandTotal += itemSubtotal;
@@ -2189,6 +2374,7 @@
                     <td style="padding: 6px 8px; text-align: left; vertical-align: middle;">
                         <strong style="color: #1e293b;">${idx + 1}. ${item.material_name_or_type}</strong>
                         ${item.is_custom_banner ? `<div style="color: #2563eb; font-size: 10px; font-weight: 600;">${item.dimension_text || (item.fixed_length_m + 'm x ' + item.custom_width_cm + 'cm')}</div>` : (item.requested_size ? `<div style="color: #2563eb; font-size: 10px;">Ukuran: ${item.requested_size}m</div>` : '')}
+                        ${isNegotiated ? `<div style="color: #b45309; font-size: 9.5px; font-weight: bold;"><i class="fa-solid fa-handshake me-0.5"></i> Nego: Rp ${Number(finalUnitPrice).toLocaleString('id-ID')}</div>` : ''}
                     </td>
                     <td style="padding: 6px 8px; text-align: center; vertical-align: middle; color: #475569; font-weight: bold;">
                         ${item.qty}x
@@ -2213,6 +2399,7 @@
                 area_m2: item.area_m2 || null,
                 billable_area_m2: item.billable_area_m2 || null,
                 is_custom_banner: !!item.is_custom_banner,
+                custom_unit_price: isNegotiated ? item.custom_unit_price : null,
                 eyelet_count: item.eyelet_count || 0,
                 extra_eyelet_cost: (item.extra_eyelet_cost !== undefined) ? item.extra_eyelet_cost : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0),
                 finishing: item.finishing || null,
@@ -2221,7 +2408,7 @@
             };
         });
 
-        const finalAfterNego = Math.max(0, calculatedGrandTotal - (window.negotiationDiscount || 0));
+        const finalAfterNego = calculatedGrandTotal;
 
         // Customer & Breakdown Formatting
         const customerDisplay = customerName 
@@ -2236,18 +2423,8 @@
                         <span style="color: #92400e; font-weight: bold;">Status Draft:</span>
                         <strong style="color: #b45309;">BELUM DIBAYAR</strong>
                     </div>
-                    ${(window.negotiationDiscount > 0) ? `
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b;">
-                            <span>Total Asli:</span>
-                            <span style="font-family: monospace; text-decoration: line-through;">Rp ${Number(calculatedGrandTotal).toLocaleString('id-ID')}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #059669; font-weight: bold;">
-                            <span>Potongan Nego:</span>
-                            <span style="font-family: monospace;">- Rp ${Number(window.negotiationDiscount).toLocaleString('id-ID')}</span>
-                        </div>
-                    ` : ''}
                     <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 800; color: #1e3a8a; border-top: 1px dashed #f59e0b; padding-top: 4px; margin-top: 4px;">
-                        <span>Estimasi Tagihan:</span>
+                        <span>Total Tagihan Pesanan:</span>
                         <span style="font-family: monospace;">Rp ${Number(finalAfterNego).toLocaleString('id-ID')}</span>
                     </div>
                 </div>
