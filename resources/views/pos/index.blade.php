@@ -488,12 +488,40 @@
             <!-- Error Notification Card (Rose Red) -->
             <div id="checkout-error-desktop" class="hidden bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-semibold"></div>
 
-            <!-- Checkout Action Buttons Area (With Titik 3 Negotiation) -->
+            <!-- Checkout Action Buttons Area (With Titik 3 Dropdown & Quick Draft Button) -->
             <div class="flex items-center gap-2 pt-1.5">
                 @if(!auth()->user()->isOperator())
-                    <!-- Titik 3 Tombol Negosiasi (Diskon Total) Tepat di Samping Tombol Bayar -->
-                    <button type="button" onclick="openNegotiationModal()" id="btn-open-nego" class="h-11 w-11 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 border border-slate-300 rounded-xl transition flex items-center justify-center cursor-pointer flex-shrink-0 shadow-sm" title="Negosiasi / Diskon Total Tagihan">
-                        <i class="fa-solid fa-ellipsis-vertical text-lg text-slate-700"></i>
+                    <!-- Titik 3 Dropdown Menu (Negosiasi & Opsi Draft) -->
+                    <div class="dropdown">
+                        <button class="h-11 w-11 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 border border-slate-300 rounded-xl transition flex items-center justify-center cursor-pointer flex-shrink-0 shadow-sm" 
+                                type="button" 
+                                id="btnDropdownActionPos" 
+                                data-bs-toggle="dropdown" 
+                                aria-expanded="false" 
+                                title="Menu Opsi (Negosiasi & Draft)">
+                            <i class="fa-solid fa-ellipsis-vertical text-lg text-slate-700"></i>
+                        </button>
+                        <ul class="dropdown-menu shadow-xl border border-slate-200 rounded-2xl p-1.5 text-xs z-50" aria-labelledby="btnDropdownActionPos">
+                            <li>
+                                <button type="button" class="dropdown-item py-2 px-3 rounded-xl flex items-center gap-2.5 font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700" onclick="openNegotiationModal()">
+                                    <i class="fa-solid fa-handshake text-amber-500 text-sm"></i>
+                                    <span>Negosiasi Diskon Total</span>
+                                </button>
+                            </li>
+                            <li><hr class="dropdown-divider my-1 border-slate-100"></li>
+                            <li>
+                                <button type="button" class="dropdown-item py-2 px-3 rounded-xl flex items-center gap-2.5 font-bold text-amber-800 hover:bg-amber-50 hover:text-amber-900" onclick="processCheckout(true)">
+                                    <i class="fa-solid fa-file-pen text-amber-600 text-sm"></i>
+                                    <span>Simpan Sebagai Draft Pesanan</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Tombol Cepat: Simpan Sebagai Draft (Tanpa Bayar) -->
+                    <button onclick="processCheckout(true)" type="button" class="h-11 px-3 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-900 border border-amber-300 font-bold rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition cursor-pointer flex-shrink-0" title="Simpan sebagai draft pesanan tanpa bayar">
+                        <i class="fa-solid fa-file-pen text-amber-600 text-sm"></i>
+                        <span>Draft</span>
                     </button>
                 @endif
 
@@ -637,15 +665,19 @@
 
             <!-- Modal Footer -->
             <div class="bg-white px-5 py-3.5 border-t border-slate-200 d-flex justify-content-between align-items-center gap-3">
-                <button type="button" onclick="resetNegotiation()" class="btn btn-outline-danger text-xs sm:text-sm py-2 px-4 rounded-xl font-semibold flex items-center gap-1.5">
+                <button type="button" onclick="resetNegotiation()" class="btn btn-outline-danger text-xs sm:text-sm py-2 px-3 rounded-xl font-semibold flex items-center gap-1.5">
                     <i class="fa-solid fa-rotate-left"></i>
                     <span>Reset Nego</span>
                 </button>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-light text-slate-700 border text-xs sm:text-sm py-2 px-4 rounded-xl font-semibold" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-light text-slate-700 border text-xs sm:text-sm py-2 px-3 rounded-xl font-semibold" data-bs-dismiss="modal">
                         Batal
                     </button>
-                    <button type="button" onclick="applyNegotiation()" class="btn btn-primary text-xs sm:text-sm py-2 px-5 rounded-xl font-bold flex items-center gap-2 shadow-md">
+                    <button type="button" onclick="applyNegotiationAndDraft()" class="btn btn-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm py-2 px-3.5 rounded-xl font-bold flex items-center gap-1.5 shadow-sm" style="background-color: #fef3c7; border-color: #fcd34d;">
+                        <i class="fa-solid fa-file-pen text-amber-700"></i>
+                        <span>Simpan sbg Draft</span>
+                    </button>
+                    <button type="button" onclick="applyNegotiation()" class="btn btn-primary text-xs sm:text-sm py-2 px-4 rounded-xl font-bold flex items-center gap-2 shadow-md">
                         <i class="fa-solid fa-check"></i>
                         <span>Terapkan Nego</span>
                     </button>
@@ -1696,6 +1728,13 @@
                 showConfirmButton: false
             });
         }
+    }
+
+    function applyNegotiationAndDraft() {
+        applyNegotiation();
+        setTimeout(() => {
+            processCheckout(true);
+        }, 350);
     }
 
     function resetNegotiation() {
