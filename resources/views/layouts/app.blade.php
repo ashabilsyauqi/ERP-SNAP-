@@ -1639,29 +1639,48 @@
                 console.error(e);
             }
 
-            // 2. Open WhatsApp directly with the Draft PDF Link prefilled in chat
+            // 2. Open WhatsApp directly with the Draft PDF Link prefilled in chat (Supports both WA Web and WA Desktop)
             const invNum = data.invoice_number || '-';
             const publicInvUrl = data.public_invoice_url || `${window.location.origin}/invoices/${invNum}`;
             const draftMessage = `📄 *Faktur PDF Snaprint #${invNum}*\n${publicInvUrl}`;
-            const url = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(draftMessage)}`;
-            window.open(url, '_blank');
+            
+            const universalUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(draftMessage)}`;
+            const waDesktopUri = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(draftMessage)}`;
+            const waWebDirectUrl = `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(draftMessage)}`;
 
-            // 3. Clear, friendly notification
+            // Open universal WhatsApp link in new tab
+            window.open(universalUrl, '_blank');
+
+            // 3. Clear, friendly notification with 1-click switcher for WA Desktop & WA Web
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'success',
                     title: 'Draft Faktur PDF Siap Dikirim!',
                     html: `
-                        <div class="text-xs text-slate-600 text-center p-2 space-y-2">
-                            <p class="mb-2">Chat WhatsApp ke <strong>${data.customer_name || 'Pelanggan'}</strong> (<code>${cleanPhone}</code>) telah dibuka.</p>
+                        <div class="text-xs text-slate-600 text-center p-2 space-y-3">
+                            <p class="mb-1">Chat WhatsApp ke <strong>${data.customer_name || 'Pelanggan'}</strong> (<code>+${cleanPhone}</code>) telah dibuka.</p>
+                            
                             <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-900 font-medium text-left">
-                                <i class="fa-brands fa-whatsapp text-emerald-600 text-lg me-1"></i>
+                                <i class="fa-brands fa-whatsapp text-emerald-600 text-lg me-1 align-middle"></i>
                                 Draft link Faktur PDF sudah otomatis terisi di kolom chat WhatsApp.<br>
                                 <strong>Tinggal klik tombol kirim (panah hijau) di WhatsApp!</strong>
                             </div>
+
+                            <div class="pt-2 border-top">
+                                <span class="text-[11px] text-slate-400 block mb-2 font-semibold uppercase">Buka Langsung di Pilihan Anda:</span>
+                                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                    <a href="${waDesktopUri}" class="btn btn-sm btn-outline-success text-xs font-bold py-1.5 px-3 rounded-xl d-inline-flex align-items-center gap-1.5 text-decoration-none">
+                                        <i class="fa-solid fa-desktop"></i> Buka Aplikasi WA Desktop
+                                    </a>
+                                    <a href="${waWebDirectUrl}" target="_blank" class="btn btn-sm btn-success text-xs font-bold py-1.5 px-3 rounded-xl d-inline-flex align-items-center gap-1.5 text-decoration-none" style="background-color: #25D366; border-color: #25D366;">
+                                        <i class="fa-solid fa-globe"></i> Buka di WhatsApp Web
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     `,
-                    confirmButtonText: 'Siap, Mengerti',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Selesai',
                     confirmButtonColor: '#059669'
                 });
             }
