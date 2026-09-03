@@ -182,25 +182,27 @@
                                             <i class="fa-solid fa-eye text-xs"></i>
                                         </button>
 
-                                        @if($plan->status === 'draft' || $plan->status === 'rejected_by_owner')
+                                        @if($plan->status === 'draft' || $plan->status === 'rejected_by_owner' || auth()->user()->isSuperAdmin())
                                             <!-- Edit / Lanjutkan Draft Button -->
-                                            <a href="{{ route('purchasing.plans.edit', $plan->id) }}" class="btn btn-sm btn-outline-primary py-0 px-2" title="Edit / Lanjutkan Plan">
+                                            <a href="{{ route('purchasing.plans.edit', $plan->id) }}" class="btn btn-sm btn-outline-primary py-0 px-2" title="Edit Plan">
                                                 <i class="fa-solid fa-pen-to-square text-xs"></i>
                                             </a>
 
-                                            <!-- Ajukan RFQ ke Owner Button -->
-                                            <form action="{{ route('purchasing.plans.submit-rfq', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Ajukan Purchase Plan #{{ $plan->plan_number }} ke Owner untuk persetujuan (RFQ)?');">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Ajukan RFQ ke Owner">
-                                                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                                                </button>
-                                            </form>
+                                            @if($plan->status === 'draft' || $plan->status === 'rejected_by_owner')
+                                                <!-- Ajukan RFQ ke Owner Button -->
+                                                <form action="{{ route('purchasing.plans.submit-rfq', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Ajukan Purchase Plan #{{ $plan->plan_number }} ke Owner untuk persetujuan (RFQ)?');">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Ajukan RFQ ke Owner">
+                                                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
 
-                                            <!-- Hapus Draft Button -->
-                                            <form action="{{ route('purchasing.plans.destroy', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus draft Purchase Plan #{{ $plan->plan_number }}?');">
+                                            <!-- Hapus Plan Button -->
+                                            <form action="{{ route('purchasing.plans.destroy', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus Purchase Plan #{{ $plan->plan_number }}?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Hapus Draft">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Hapus Plan (Super Admin)">
                                                     <i class="fa-solid fa-trash-can text-xs"></i>
                                                 </button>
                                             </form>

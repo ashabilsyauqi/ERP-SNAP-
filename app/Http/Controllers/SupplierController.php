@@ -47,7 +47,8 @@ class SupplierController extends Controller
 
     public function destroy(Supplier $supplier)
     {
-        if ($supplier->purchases()->exists()) {
+        $user = auth()->user();
+        if ($supplier->purchases()->exists() && (!$user || !$user->isSuperAdmin())) {
             return back()->with('error', 'Supplier tidak dapat dihapus karena masih terhubung dengan data pembelian.');
         }
 

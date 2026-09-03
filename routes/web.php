@@ -55,14 +55,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/purchasing/plans/create', [\App\Http\Controllers\PurchasePlanController::class, 'create'])->name('purchasing.plans.create');
         Route::post('/purchasing/plans', [\App\Http\Controllers\PurchasePlanController::class, 'store'])->name('purchasing.plans.store');
         Route::get('/purchasing/plans/{plan}', [\App\Http\Controllers\PurchasePlanController::class, 'show'])->name('purchasing.plans.show');
-        Route::get('/purchasing/plans/{plan}/edit', [\App\Http\Controllers\PurchasePlanController::class, 'edit'])->name('purchasing.plans.edit');
-        Route::put('/purchasing/plans/{plan}', [\App\Http\Controllers\PurchasePlanController::class, 'update'])->name('purchasing.plans.update');
-        Route::post('/purchasing/plans/{plan}/submit-rfq', [\App\Http\Controllers\PurchasePlanController::class, 'submitRfq'])->name('purchasing.plans.submit-rfq');
-        Route::delete('/purchasing/plans/{plan}', [\App\Http\Controllers\PurchasePlanController::class, 'destroy'])->name('purchasing.plans.destroy');
-        Route::post('/purchasing/plans/{plan}/approve', [\App\Http\Controllers\PurchasePlanController::class, 'approve'])->name('purchasing.plans.approve');
-        Route::post('/purchasing/plans/{plan}/reject', [\App\Http\Controllers\PurchasePlanController::class, 'reject'])->name('purchasing.plans.reject');
-        Route::post('/purchasing/plans/{plan}/pay', [\App\Http\Controllers\PurchasePlanController::class, 'pay'])->name('purchasing.plans.pay');
+        // RFQ & Purchase Plan Management
+        Route::resource('purchasing/plans', \App\Http\Controllers\PurchasePlanController::class)->names('purchasing.plans');
+        Route::post('purchasing/plans/{plan}/submit-rfq', [\App\Http\Controllers\PurchasePlanController::class, 'submitRfq'])->name('purchasing.plans.submit-rfq');
+        Route::post('purchasing/plans/{plan}/approve', [\App\Http\Controllers\PurchasePlanController::class, 'approve'])->name('purchasing.plans.approve');
+        Route::post('purchasing/plans/{plan}/reject', [\App\Http\Controllers\PurchasePlanController::class, 'reject'])->name('purchasing.plans.reject');
+        Route::post('purchasing/plans/{plan}/pay', [\App\Http\Controllers\PurchasePlanController::class, 'pay'])->name('purchasing.plans.pay');
+        Route::get('purchasing/plans/{plan}/pdf', [\App\Http\Controllers\PurchasePlanController::class, 'exportPdf'])->name('purchasing.plans.pdf');
 
+        // Master Suppliers & Bank Accounts
         Route::resource('suppliers', \App\Http\Controllers\SupplierController::class)->except(['create', 'show', 'edit']);
     });
 
@@ -80,6 +81,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:cashier,owner,manager'])->group(function () {
         Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
         Route::get('/sales/receivables', [SalesController::class, 'receivables'])->name('sales.receivables');
+        Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit');
+        Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update');
         Route::post('/sales/{id}/settle', [SalesController::class, 'settle'])->name('sales.settle');
         Route::patch('/sales/{id}/status', [SalesController::class, 'updateOrderStatus'])->name('sales.status');
         Route::get('/sales/{id}/receipt', [SalesController::class, 'receipt'])->name('sales.receipt');
@@ -99,8 +102,8 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('accounts/{account}/toggle-status', [\App\Http\Controllers\AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
         
         // Transaksi Kas
-        Route::resource('kas-masuk', \App\Http\Controllers\CashInController::class)->except(['edit', 'update']);
-        Route::resource('kas-keluar', \App\Http\Controllers\CashOutController::class)->except(['edit', 'update']);
+        Route::resource('kas-masuk', \App\Http\Controllers\CashInController::class)->except(['create', 'show', 'edit']);
+        Route::resource('kas-keluar', \App\Http\Controllers\CashOutController::class)->except(['create', 'show', 'edit']);
         
         // Laporan
         Route::prefix('reports')->name('reports.')->group(function () {

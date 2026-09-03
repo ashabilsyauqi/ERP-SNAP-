@@ -78,7 +78,8 @@ class AccountController extends Controller
 
     public function destroy(Account $account)
     {
-        if ($account->cashTransactions()->exists() || $account->children()->exists()) {
+        $user = auth()->user();
+        if (($account->cashTransactions()->exists() || $account->children()->exists()) && (!$user || !$user->isSuperAdmin())) {
             return redirect()->route('accounts.index')->with('error', 'Akun tidak dapat dihapus karena masih memiliki transaksi atau sub-akun.');
         }
 

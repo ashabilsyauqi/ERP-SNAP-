@@ -78,6 +78,19 @@ class CashOutController extends Controller
         return redirect()->route('kas-keluar.index')->with('success', 'Kas keluar berhasil ditambahkan.');
     }
 
+    public function update(Request $request, CashTransaction $cashTransaction)
+    {
+        $validated = $request->validate([
+            'account_id' => 'required|exists:accounts,id',
+            'tanggal' => 'required|date',
+            'jumlah' => 'required|numeric|min:1',
+            'keterangan' => 'required|string',
+        ]);
+
+        $cashTransaction->update($validated);
+        return redirect()->route('kas-keluar.index')->with('success', 'Kas keluar berhasil diperbarui.');
+    }
+
     public function destroy(CashTransaction $cashTransaction)
     {
         $cashTransaction->delete();

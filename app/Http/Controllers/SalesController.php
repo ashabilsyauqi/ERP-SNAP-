@@ -238,39 +238,64 @@ class SalesController extends Controller
     }
 
     /**
-     * Show the edit form for a transaction (Owner only).
+     * Show the edit form for a transaction (Owner / Super Admin KINGAshabil).
      */
     public function edit($id)
     {
-        if (!auth()->user()->isOwner()) {
+        $user = auth()->user();
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
             abort(403, 'Unauthorized access.');
         }
 
-        $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
-        return view('sales.edit', compact('transaction'));
+        $transaction = Transaction::with(['transactionDetails.material', 'branch', 'user'])->findOrFail($id);
+        $branches = \App\Models\Branch::orderBy('nama_cabang')->get();
+        return view('sales.edit', compact('transaction', 'branches'));
     }
 
     /**
-     * Update the transaction details and adjust stock (Owner only).
+     * Update the transaction details and adjust stock (Owner / Super Admin KINGAshabil).
      */
     public function update(Request $request, $id)
     {
-        if (!auth()->user()->isOwner()) {
+        $user = auth()->user();
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
             abort(403, 'Unauthorized access.');
         }
 
         $request->validate([
+            'customer_name' => 'nullable|string|max:255',
+            'customer_phone' => 'nullable|string|max:50',
             'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
+            'payment_status' => 'required|string|in:PAID,PARTIAL,UNPAID',
+            'order_status' => 'required|string|in:draft,pending,in_production,completed,cancelled',
+            'branch_id' => 'nullable|exists:branches,id',
+            'due_date' => 'nullable|date',
+            'production_notes' => 'nullable|string|max:1000',
+            'paid_amount' => 'required|numeric|min:0',
             'items' => 'required|array',
             'items.*.id' => 'required|exists:transaction_details,id',
             'items.*.qty' => 'required|integer|min:1',
+            'items.*.selling_price' => 'nullable|numeric|min:0',
         ]);
 
         try {
             DB::beginTransaction();
 
             $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
+            $transaction->customer_name = $request->customer_name;
+            $transaction->customer_phone = $request->customer_phone;
             $transaction->payment_method = $request->payment_method;
+            $transaction->order_status = $request->order_status;
+            $transaction->production_notes = $request->production_notes;
+            if ($request->filled('due_date')) {
+                $transaction->due_date = $request->due_date;
+            }
+            if ($request->filled('branch_id') && ($user->isOwner() || $user->isSuperAdmin())) {
+                $transaction->branch_id = $request->branch_id;
+            }
+
+            $totalPrice = 0;
+            $totalHpp = 0;
 
             foreach ($request->items as $itemData) {
                 $detail = TransactionDetail::with('material')->findOrFail($itemData['id']);
@@ -283,9 +308,6 @@ class SalesController extends Controller
 
                     if ($material) {
                         if ($diff > 0) {
-                            if ($material->stock_qty < $diff) {
-                                throw new \Exception("Insufficient stock for {$material->material_name}. Need {$diff} more, but only {$material->stock_qty} left.");
-                            }
                             $material->stock_qty -= $diff;
                         } else {
                             $material->stock_qty += abs($diff);
@@ -294,55 +316,33 @@ class SalesController extends Controller
                     }
 
                     $detail->qty_ordered = $newQty;
-                    $detail->save();
-                }
-            }
-
-            // Reload details to compute fresh totals with correct wholesale tier pricing
-            $transaction->load('transactionDetails.material');
-            
-            $totalPrice = 0;
-            $totalHpp = 0;
-
-            foreach ($transaction->transactionDetails as $d) {
-                $unitPrice = $d->material->retail_price;
-                
-                $applicableTier = MaterialWholesalePrice::where('material_id', $d->material_id)
-                    ->where('min_qty', '<=', $d->qty_ordered)
-                    ->orderBy('min_qty', 'desc')
-                    ->first();
-
-                if ($applicableTier) {
-                    $unitPrice = $applicableTier->wholesale_price;
                 }
 
-                $d->selling_price = $unitPrice;
-                $d->save();
+                if (isset($itemData['selling_price']) && $itemData['selling_price'] !== '') {
+                    $detail->selling_price = (float) $itemData['selling_price'];
+                }
 
-                $totalPrice += ($d->qty_ordered * $unitPrice);
-                $totalHpp += ($d->qty_ordered * $d->material->purchase_price);
+                $detail->save();
+
+                $totalPrice += ($detail->qty_ordered * $detail->selling_price);
+                $totalHpp += ($detail->qty_ordered * ($detail->material->purchase_price ?? 0));
             }
 
             $transaction->total_price = $totalPrice;
             $transaction->total_hpp = $totalHpp;
-            
-            // Adjust remaining amount based on new total price and current paid amount
+            $transaction->paid_amount = (float) $request->paid_amount;
             $transaction->remaining_amount = max(0, $totalPrice - $transaction->paid_amount);
-            if ($transaction->remaining_amount <= 0) {
-                $transaction->payment_status = 'PAID';
-            } else {
-                $transaction->payment_status = 'PARTIAL';
-            }
+            $transaction->payment_status = $request->payment_status;
 
             $transaction->save();
 
             DB::commit();
 
-            return redirect()->route('sales.index')->with('success', "Transaction {$transaction->invoice_number} updated successfully.");
+            return redirect()->route('sales.index')->with('success', "Transaksi #{$transaction->invoice_number} berhasil diperbarui oleh Super Admin.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal memperbarui transaksi: ' . $e->getMessage());
         }
     }
 
@@ -353,8 +353,8 @@ class SalesController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->isCashier() && !$user->isSuperAdmin()) {
-            abort(403, 'Kegiatan pembatalan / refund transaksi kasir hanya dapat dilakukan oleh petugas Kasir atau Super Admin KINGAshabil.');
+        if (!$user->isCashier() && !$user->isSuperAdmin() && !$user->isOwner()) {
+            abort(403, 'Kegiatan pembatalan / refund transaksi kasir hanya dapat dilakukan oleh petugas Kasir, Owner, atau Super Admin KINGAshabil.');
         }
 
         try {

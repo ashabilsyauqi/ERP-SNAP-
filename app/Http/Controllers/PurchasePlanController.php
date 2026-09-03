@@ -287,18 +287,18 @@ class PurchasePlanController extends Controller
     {
         $user = Auth::user();
 
-        if ($plan->status === 'approved_by_owner' || $plan->status === 'completed') {
+        if (!$user->isSuperAdmin() && ($plan->status === 'approved_by_owner' || $plan->status === 'completed')) {
             return redirect()->route('purchasing.plans.index')->with('error', 'Purchase Plan yang sudah disetujui tidak dapat diedit kembali.');
         }
 
-        if (!$user->isOwner() && $plan->branch_id != $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $plan->branch_id != $user->branch_id) {
             abort(403, 'Anda tidak berhak mengedit Purchase Plan cabang lain.');
         }
 
         $plan->load(['items.material', 'items.supplier']);
 
         $materialQuery = Material::with(['wholesalePrices', 'supplier'])->orderBy('material_name', 'asc');
-        if (!$user->isOwner()) {
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
             $materialQuery->where('branch_id', $user->branch_id);
         }
         
@@ -324,11 +324,11 @@ class PurchasePlanController extends Controller
     {
         $user = Auth::user();
 
-        if ($plan->status === 'approved_by_owner' || $plan->status === 'completed') {
+        if (!$user->isSuperAdmin() && ($plan->status === 'approved_by_owner' || $plan->status === 'completed')) {
             return redirect()->route('purchasing.plans.index')->with('error', 'Purchase Plan yang sudah disetujui tidak dapat diubah.');
         }
 
-        if (!$user->isOwner() && $plan->branch_id != $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $plan->branch_id != $user->branch_id) {
             abort(403, 'Anda tidak berhak mengubah Purchase Plan cabang lain.');
         }
 
@@ -445,29 +445,29 @@ class PurchasePlanController extends Controller
     {
         $user = Auth::user();
 
-        if ($plan->status === 'approved_by_owner' || $plan->status === 'completed') {
+        if (!$user->isSuperAdmin() && ($plan->status === 'approved_by_owner' || $plan->status === 'completed')) {
             return redirect()->back()->with('error', 'Purchase Plan yang sudah disetujui tidak dapat dihapus.');
         }
 
-        if (!$user->isOwner() && $plan->user_id != $user->id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $plan->user_id != $user->id) {
             abort(403, 'Anda hanya dapat menghapus draft rencana yang Anda buat sendiri.');
         }
 
         $planNumber = $plan->plan_number;
         $plan->delete();
 
-        return redirect()->route('purchasing.plans.index')->with('success', "Draft Purchase Plan #{$planNumber} berhasil dihapus.");
+        return redirect()->route('purchasing.plans.index')->with('success', "Purchase Plan #{$planNumber} berhasil dihapus.");
     }
 
     public function pay(Request $request, PurchasePlan $plan)
     {
         $user = Auth::user();
 
-        if (!$user->isOwner()) {
-            abort(403, 'Hanya Owner yang berhak mencatat/melakukan pembayaran tagihan supplier.');
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
+            abort(403, 'Hanya Owner atau Super Admin yang berhak mencatat/melakukan pembayaran tagihan supplier.');
         }
 
-        if ($plan->status !== 'approved_by_owner' && $plan->status !== 'completed') {
+        if (!$user->isSuperAdmin() && $plan->status !== 'approved_by_owner' && $plan->status !== 'completed') {
             return redirect()->back()->with('error', 'Tagihan hanya dapat dibayar jika Purchase Plan telah disetujui (ACC) oleh Owner.');
         }
 
@@ -521,8 +521,8 @@ class PurchasePlanController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->isOwner()) {
-            abort(403, 'Hanya Owner yang berhak menolak Purchase Plan ini.');
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
+            abort(403, 'Hanya Owner atau Super Admin yang berhak menolak Purchase Plan ini.');
         }
 
         if ($plan->status !== 'waiting_owner_approval') {

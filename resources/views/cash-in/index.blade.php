@@ -139,11 +139,11 @@
                                     + Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
                                 </td>
                                 <td class="text-center pe-3">
-                                    @if(!$trx->transaction_id)
+                                    @if(!$trx->transaction_id || auth()->user()->isSuperAdmin())
                                         <form action="{{ route('kas-masuk.destroy', $trx->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data kas masuk ini?');" class="d-inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-light text-danger p-1 border" title="Hapus Kas Masuk">
+                                            <button type="submit" class="btn btn-sm btn-light text-danger p-1 border" title="Hapus Kas Masuk (Super Admin)">
                                                 <i class="fa-solid fa-trash-can text-xs"></i>
                                             </button>
                                         </form>

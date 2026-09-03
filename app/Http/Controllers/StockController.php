@@ -254,7 +254,7 @@ class StockController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->isOwner() && $material->branch_id != $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $material->branch_id != $user->branch_id) {
             abort(403, 'Anda tidak berhak mengubah stok cabang lain.');
         }
 
@@ -309,7 +309,7 @@ class StockController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->isOwner() && $purchase->branch_id != $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $purchase->branch_id != $user->branch_id) {
             abort(403, 'Anda tidak berhak memverifikasi penerimaan barang cabang lain.');
         }
 
@@ -348,7 +348,7 @@ class StockController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->isOwner() && $purchase->branch_id != $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $purchase->branch_id != $user->branch_id) {
             abort(403, 'Anda tidak berhak menolak penerimaan barang cabang lain.');
         }
 

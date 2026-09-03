@@ -54,7 +54,7 @@ class CustomerController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'owner' && $customer->branch_id && $customer->branch_id !== $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $customer->branch_id && $customer->branch_id !== $user->branch_id) {
             abort(403, 'Akses ditolak ke data pelanggan cabang lain.');
         }
 
@@ -82,7 +82,7 @@ class CustomerController extends Controller
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
-        if ($user->role !== 'owner') {
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
             $validated['branch_id'] = $user->branch_id;
         }
 
@@ -105,7 +105,7 @@ class CustomerController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'owner' && $customer->branch_id && $customer->branch_id !== $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $customer->branch_id && $customer->branch_id !== $user->branch_id) {
             abort(403, 'Akses ditolak.');
         }
 
@@ -118,7 +118,7 @@ class CustomerController extends Controller
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
-        if ($user->role !== 'owner') {
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
             unset($validated['branch_id']);
         }
 
@@ -134,7 +134,7 @@ class CustomerController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'owner' && $customer->branch_id && $customer->branch_id !== $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $customer->branch_id && $customer->branch_id !== $user->branch_id) {
             abort(403, 'Akses ditolak.');
         }
 

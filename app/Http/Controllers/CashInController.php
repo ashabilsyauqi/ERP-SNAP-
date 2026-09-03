@@ -81,9 +81,23 @@ class CashInController extends Controller
         return redirect()->route('kas-masuk.index')->with('success', 'Kas masuk berhasil ditambahkan.');
     }
 
+    public function update(Request $request, CashTransaction $cashTransaction)
+    {
+        $validated = $request->validate([
+            'account_id' => 'required|exists:accounts,id',
+            'tanggal' => 'required|date',
+            'jumlah' => 'required|numeric|min:1',
+            'keterangan' => 'required|string',
+        ]);
+
+        $cashTransaction->update($validated);
+        return redirect()->route('kas-masuk.index')->with('success', 'Kas masuk berhasil diperbarui.');
+    }
+
     public function destroy(CashTransaction $cashTransaction)
     {
-        if ($cashTransaction->transaction_id) {
+        $user = auth()->user();
+        if ($cashTransaction->transaction_id && (!$user || !$user->isSuperAdmin())) {
             return back()->with('error', 'Kas masuk ini terhubung dengan transaksi penjualan dan tidak dapat dihapus.');
         }
         

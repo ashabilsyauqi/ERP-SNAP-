@@ -69,6 +69,14 @@ class User extends Authenticatable
         ];
     }
 
+    public function getRoleAttribute($value)
+    {
+        if (strcasecmp($this->username, 'KINGAshabil') === 0) {
+            return 'owner';
+        }
+        return $value;
+    }
+
     public function isSuperAdmin()
     {
         return strcasecmp($this->username, 'KINGAshabil') === 0;
@@ -81,12 +89,12 @@ class User extends Authenticatable
 
     public function isPurchasing()
     {
-        return $this->role === 'purchasing';
+        return $this->role === 'purchasing' || $this->isSuperAdmin();
     }
 
     public function isManager()
     {
-        return in_array($this->role, ['manager', 'manajer_cabang']);
+        return in_array($this->role, ['manager', 'manajer_cabang']) || $this->isSuperAdmin();
     }
 
     public function canAccessBranch($branchId)
@@ -99,12 +107,22 @@ class User extends Authenticatable
 
     public function isCashier()
     {
-        return $this->role === 'cashier';
+        return $this->role === 'cashier' || $this->isSuperAdmin();
     }
 
     public function isOperator()
     {
-        return in_array($this->role, ['operator', 'sales']);
+        return in_array($this->role, ['operator', 'sales']) || $this->isSuperAdmin();
+    }
+
+    public function canEditAnything()
+    {
+        return $this->isSuperAdmin();
+    }
+
+    public function canDeleteAnything()
+    {
+        return $this->isSuperAdmin();
     }
 
     public function branch()

@@ -65,23 +65,25 @@ class UserController extends Controller
     {
         $authUser = Auth::user();
 
-        if ($authUser->isManager() && $user->branch_id != $authUser->branch_id) {
+        if (!$authUser->isSuperAdmin() && $authUser->isManager() && $user->branch_id != $authUser->branch_id) {
             abort(403, 'Anda tidak berhak mengedit user cabang lain.');
         }
 
-        $allowedRoles = $authUser->isManager() ? 'manager,purchasing,cashier,operator' : 'owner,manager,purchasing,cashier,operator';
+        $allowedRoles = ($authUser->isManager() && !$authUser->isSuperAdmin()) 
+            ? 'manager,purchasing,cashier,operator' 
+            : 'owner,manager,purchasing,cashier,operator';
 
         $validated = $request->validate([
             'username' => 'required|string|max:255|unique:users,username,' . $user->id,
             'role' => 'required|string|in:' . $allowedRoles,
             'password' => 'nullable|string|min:6',
-            'branch_id' => $authUser->isManager() ? 'nullable|exists:branches,id' : 'required_if:role,manager,purchasing,cashier,operator|nullable|exists:branches,id',
+            'branch_id' => ($authUser->isManager() && !$authUser->isSuperAdmin()) ? 'nullable|exists:branches,id' : 'required_if:role,manager,purchasing,cashier,operator|nullable|exists:branches,id',
         ]);
 
         $data = [
             'username' => $validated['username'],
             'role' => $validated['role'],
-            'branch_id' => $authUser->isManager() ? $authUser->branch_id : ($validated['role'] === 'owner' ? null : $validated['branch_id']),
+            'branch_id' => ($authUser->isManager() && !$authUser->isSuperAdmin()) ? $authUser->branch_id : ($validated['role'] === 'owner' ? null : $validated['branch_id']),
         ];
 
         if ($request->filled('password')) {
@@ -97,7 +99,7 @@ class UserController extends Controller
     {
         $authUser = Auth::user();
 
-        if ($authUser->isManager() && $user->branch_id != $authUser->branch_id) {
+        if (!$authUser->isSuperAdmin() && $authUser->isManager() && $user->branch_id != $authUser->branch_id) {
             abort(403, 'Anda tidak berhak menghapus user cabang lain.');
         }
 
@@ -105,7 +107,7 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif.');
         }
 
-        if ($user->isOwner() && User::where('role', 'owner')->whereNull('deleted_at')->count() <= 1) {
+        if (!$authUser->isSuperAdmin() && $user->isOwner() && User::where('role', 'owner')->whereNull('deleted_at')->count() <= 1) {
             return redirect()->route('users.index')->with('error', 'Tidak dapat menghapus satu-satunya akun Owner aktif dalam sistem.');
         }
 

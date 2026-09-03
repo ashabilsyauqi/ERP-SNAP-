@@ -155,6 +155,16 @@
                                         )" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Cetak Dokumen PO">
                                             <i class="fa-solid fa-print text-xs"></i>
                                         </button>
+
+                                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isOwner())
+                                            <form action="{{ route('purchasing.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus data Purchase Order #{{ $purchase->po_number }} ini dari sistem?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Hapus PO (Super Admin)">
+                                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

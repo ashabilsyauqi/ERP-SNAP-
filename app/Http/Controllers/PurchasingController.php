@@ -251,11 +251,11 @@ class PurchasingController extends Controller
     {
         $user = auth()->user();
 
-        if (!$user->isOwner() && !$user->isManager()) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && !$user->isManager()) {
             abort(403, 'Hanya Manajer atau Owner yang dapat memberikan persetujuan PO.');
         }
 
-        if ($user->isManager() && $purchase->branch_id != $user->branch_id) {
+        if (!$user->isOwner() && !$user->isSuperAdmin() && $user->isManager() && $purchase->branch_id != $user->branch_id) {
             abort(403, 'Anda hanya dapat menyetujui PO cabang Anda sendiri.');
         }
 
@@ -270,5 +270,28 @@ class PurchasingController extends Controller
         $purchase->save();
 
         return redirect()->back()->with('success', "Purchase Order #{$purchase->po_number} berhasil DISETUJUI (ACC)! Nota PO resmi dapat dicetak dengan Tanda Tangan Digital Manajer.");
+    }
+
+    /**
+     * Delete Purchase Order (Super Admin KINGAshabil / Owner)
+     */
+    public function destroy(Purchase $purchase)
+    {
+        $user = auth()->user();
+
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
+            abort(403, 'Hanya Owner atau Super Admin yang berhak menghapus Purchase Order.');
+        }
+
+        $poNumber = $purchase->po_number;
+
+        // If items were already added to stock, decrement it back
+        if ($purchase->status === 'received' && $purchase->material) {
+            $purchase->material->decrement('stock_qty', $purchase->qty);
+        }
+
+        $purchase->delete();
+
+        return redirect()->back()->with('success', "Purchase Order #{$poNumber} berhasil dihapus dari sistem.");
     }
 }
