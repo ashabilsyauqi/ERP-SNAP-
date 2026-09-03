@@ -78,6 +78,8 @@ class PosController extends Controller
             'items.*.area_m2' => 'nullable|numeric|min:0',
             'items.*.billable_area_m2' => 'nullable|numeric|min:0',
             'items.*.is_custom_banner' => 'nullable|boolean',
+            'items.*.eyelet_count' => 'nullable|integer|min:0',
+            'items.*.extra_eyelet_cost' => 'nullable|numeric|min:0',
             'items.*.finishing' => 'nullable|string|max:100',
             'items.*.dimension_text' => 'nullable|string|max:100',
             'items.*.qty' => 'required|integer|min:1',
@@ -198,9 +200,16 @@ class PosController extends Controller
                     $baseUnitPrice = $applicableTier->wholesale_price;
                 }
 
+                // Eyelet (Mata Ayam) Rule: 4 pcs gratis, jika lebih dari 4 dikenakan 500 perak per pcs
+                $eyeletCount = (int) ($item['eyelet_count'] ?? 0);
+                $extraEyeletCost = 0;
+                if ($eyeletCount > 4) {
+                    $extraEyeletCost = ($eyeletCount - 4) * 500;
+                }
+
                 // Price calculation
                 if ($isCustomBanner && $areaM2 > 0) {
-                    $unitPrice = round($areaM2 * $baseUnitPrice);
+                    $unitPrice = round($areaM2 * $baseUnitPrice) + $extraEyeletCost;
                     $itemHpp = round(($physicalAreaM2 ?: $areaM2) * $materialToDeduct->purchase_price) * $qty;
                 } else {
                     $unitPrice = $baseUnitPrice;

@@ -885,9 +885,10 @@
                             <div class="border-t border-slate-100 pt-2.5 row g-2">
                                 <div class="col-7">
                                     <label class="form-label font-bold text-slate-900 text-xs uppercase mb-1">Finishing Spanduk</label>
-                                    <select id="banner_finishing" class="form-select form-select-sm text-xs font-semibold text-slate-800">
+                                    <select id="banner_finishing" onchange="onFinishingChange(this.value)" class="form-select form-select-sm text-xs font-semibold text-slate-800">
                                         <option value="Mata Ayam 4 Sudut">Mata Ayam 4 Sudut (Standar)</option>
                                         <option value="Mata Ayam Keliling (Per Meter)">Mata Ayam Keliling (Per 1 Meter)</option>
+                                        <option value="Mata Ayam Custom">Mata Ayam Custom (Pilih Jumlah)</option>
                                         <option value="Lipat Pas Gambar">Lipat Press Lem Pas Gambar</option>
                                         <option value="Selongsong Atas Bawah">Selongsong Bambu / Kayu (Atas-Bawah)</option>
                                         <option value="Lebihan Putih (Tanpa Mata Ayam)">Lebihan Putih 5cm (Tanpa Mata Ayam)</option>
@@ -901,6 +902,47 @@
                                         <input type="number" id="dim_qty" min="1" value="1" oninput="calculateDimensionPreview()" class="form-control form-control-sm text-center font-bold font-mono text-slate-900">
                                         <button type="button" onclick="changeDimQty(1)" class="btn btn-outline-secondary font-bold">+</button>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- 4. PENGATURAN MATA AYAM / EYELETS (4 GRATIS, >4 DI-CHARGE 500/PCS) -->
+                            <div id="wrapper_mata_ayam" class="border-t border-slate-100 pt-2.5">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-0">
+                                        <i class="fa-solid fa-circle-dot text-blue-600 me-1"></i>
+                                        <span>Jumlah Mata Ayam / Ring Lubang</span>
+                                    </label>
+                                    <span id="badge_mata_ayam_rule" class="text-[10px] font-bold px-2 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-200">
+                                        4 Sudut Gratis (Rp 0)
+                                    </span>
+                                </div>
+
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-6 col-sm-5">
+                                        <div class="input-group input-group-sm">
+                                            <button type="button" onclick="changeMataAyamQty(-1)" class="btn btn-outline-secondary font-bold">-</button>
+                                            <input type="number" id="mata_ayam_count" min="0" max="100" value="4" 
+                                                   oninput="onMataAyamInput(this.value)" 
+                                                   class="form-control form-control-sm text-center font-bold font-mono text-slate-900" placeholder="4">
+                                            <button type="button" onclick="changeMataAyamQty(1)" class="btn btn-outline-secondary font-bold">+</button>
+                                            <span class="input-group-text font-bold text-xs bg-slate-100 text-slate-700">Pcs</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 col-sm-7">
+                                        <div id="text_mata_ayam_cost_desc" class="text-[11px] font-medium text-slate-500 leading-tight">
+                                            Maks. 4 pcs gratis (tiap sudut). Tambahan dikenakan Rp 500/pcs.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Chips Mata Ayam -->
+                                <div class="d-flex flex-wrap gap-1 align-items-center mt-1.5">
+                                    <span class="text-[10px] text-slate-500 font-semibold me-1">Pilihan Cepat:</span>
+                                    <button type="button" onclick="setMataAyamCount(4)" class="btn btn-xs btn-outline-primary py-0.5 px-2 text-[10px] rounded-pill font-bold">4 Pcs (Gratis)</button>
+                                    <button type="button" onclick="setMataAyamCount(6)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">6 Pcs (+Rp 1.000)</button>
+                                    <button type="button" onclick="setMataAyamCount(8)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">8 Pcs (+Rp 2.000)</button>
+                                    <button type="button" onclick="setMataAyamKelilingAuto()" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">Keliling (Tiap 1m)</button>
+                                    <button type="button" onclick="setMataAyamCount(0)" class="btn btn-xs btn-outline-secondary py-0.5 px-2 text-[10px] rounded-pill font-semibold">Tanpa Lubang (0)</button>
                                 </div>
                             </div>
 
@@ -920,6 +962,16 @@
                                 <div>
                                     <span style="color: #94a3b8;">Luas Cetak:</span>
                                     <strong id="dim_preview_area" class="font-mono font-bold ms-1" style="color: #34d399 !important;">2.00 m²</strong>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-x-3 text-[11px] mb-1" style="color: #cbd5e1;">
+                                <div>
+                                    <span style="color: #94a3b8;">Cetak Bahan:</span>
+                                    <strong id="dim_preview_material_price" class="font-mono text-white font-bold ms-1">Rp 0</strong>
+                                </div>
+                                <div id="dim_preview_eyelet_wrapper">
+                                    <span style="color: #94a3b8;">Mata Ayam:</span>
+                                    <strong id="dim_preview_eyelet_price" class="font-mono font-bold ms-1 text-emerald-400">Gratis (4 pcs)</strong>
                                 </div>
                             </div>
                             <div class="text-[12px]" style="color: #94a3b8;">
@@ -1107,7 +1159,7 @@
         }
         setBannerLength(targetLength);
 
-        // Set Finishing
+        // Set Finishing & Mata Ayam
         const finishEl = document.getElementById('banner_finishing');
         if (finishEl) {
             if (editCartItem && editCartItem.finishing) {
@@ -1117,6 +1169,14 @@
             }
         }
 
+        let defaultEyelets = 4;
+        if (editCartItem && editCartItem.eyelet_count !== undefined) {
+            defaultEyelets = parseInt(editCartItem.eyelet_count, 10) || 0;
+        } else if (finishEl && (finishEl.value.includes('Tanpa') || finishEl.value.includes('Lipat') || finishEl.value.includes('Selongsong') || finishEl.value.includes('Potong'))) {
+            defaultEyelets = 0;
+        }
+        setMataAyamCount(defaultEyelets);
+
         // Set Qty
         const qtyVal = editCartItem ? editCartItem.qty : 1;
         const qtyEl = document.getElementById('dim_qty');
@@ -1124,6 +1184,52 @@
 
         calculateDimensionPreview();
         showBannerModal();
+    }
+
+    // --- Helper Functions for Mata Ayam (Eyelets) ---
+    function onFinishingChange(finishingVal) {
+        if (finishingVal === 'Mata Ayam 4 Sudut') {
+            setMataAyamCount(4);
+        } else if (finishingVal === 'Mata Ayam Keliling (Per Meter)') {
+            setMataAyamKelilingAuto();
+        } else if (finishingVal === 'Mata Ayam Custom') {
+            const cur = parseInt(document.getElementById('mata_ayam_count')?.value, 10) || 4;
+            setMataAyamCount(cur);
+        } else {
+            // Tanpa Mata Ayam (Lipat, Selongsong, Lebihan, Potong)
+            setMataAyamCount(0);
+        }
+    }
+
+    function setMataAyamCount(count) {
+        count = Math.max(0, parseInt(count, 10) || 0);
+        const input = document.getElementById('mata_ayam_count');
+        if (input) input.value = count;
+        calculateDimensionPreview();
+    }
+
+    function changeMataAyamQty(delta) {
+        const input = document.getElementById('mata_ayam_count');
+        let val = (parseInt(input?.value, 10) || 0) + delta;
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+        if (input) input.value = val;
+        calculateDimensionPreview();
+    }
+
+    function onMataAyamInput(val) {
+        let count = parseInt(val, 10);
+        if (isNaN(count) || count < 0) count = 0;
+        calculateDimensionPreview();
+    }
+
+    function setMataAyamKelilingAuto() {
+        let rawWidth = parseFloat(document.getElementById('banner_width_m')?.value) || 1.0;
+        let rawLength = parseFloat(document.getElementById('banner_length_m')?.value) || 1.0;
+        // Keliling: perimeter (4 sudut + jarak tiap 1m)
+        const perimeter = 2 * (rawWidth + rawLength);
+        const autoCount = Math.max(4, Math.round(perimeter));
+        setMataAyamCount(autoCount);
     }
 
     // --- Synchronization between sliders and inputs (Locked Min 1.0m) ---
@@ -1187,9 +1293,11 @@
 
     // --- Dynamic Banner Roll Canvas & Calculation ---
     function calculateDimensionPreview() {
-        let rawWidth = parseFloat(document.getElementById('banner_width_m').value) || 1.0;
-        let rawLength = parseFloat(document.getElementById('banner_length_m').value) || 1.0;
-        const qty = parseInt(document.getElementById('dim_qty').value, 10) || 1;
+        let rawWidth = parseFloat(document.getElementById('banner_width_m')?.value) || 1.0;
+        let rawLength = parseFloat(document.getElementById('banner_length_m')?.value) || 1.0;
+        const qty = parseInt(document.getElementById('dim_qty')?.value, 10) || 1;
+        let eyeletCount = parseInt(document.getElementById('mata_ayam_count')?.value, 10);
+        if (isNaN(eyeletCount) || eyeletCount < 0) eyeletCount = 0;
 
         // Strict Constraints: Lebar [1.0m - 3.0m], Panjang [1.0m - 30.0m]
         rawWidth = Math.max(1.0, Math.min(3.0, rawWidth));
@@ -1199,12 +1307,36 @@
 
         // Price calculation using Wholesale Tier & Area
         const { price: baseUnitPrice } = getUnitPrice(activeDimProduct.retailPrice, activeDimProduct.wholesalePrices, qty);
-        const unitPricePerLembar = Math.round(areaM2 * baseUnitPrice);
+        const materialCostPerLembar = Math.round(areaM2 * baseUnitPrice);
+
+        // Aturan Mata Ayam: 4 pcs gratis, jika lebih dari 4 dikenakan biaya 500 per pcs
+        let extraEyeletCost = 0;
+        if (eyeletCount > 4) {
+            extraEyeletCost = (eyeletCount - 4) * 500;
+        }
+
+        const unitPricePerLembar = materialCostPerLembar + extraEyeletCost;
         const subtotal = unitPricePerLembar * qty;
 
         // Update Labels
         document.getElementById('dim_preview_size').innerText = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
         document.getElementById('dim_preview_area').innerText = `${areaM2.toFixed(2)} m²`;
+        if (document.getElementById('dim_preview_material_price')) {
+            document.getElementById('dim_preview_material_price').innerText = 'Rp ' + Number(materialCostPerLembar).toLocaleString('id-ID');
+        }
+        if (document.getElementById('dim_preview_eyelet_price')) {
+            if (eyeletCount === 0) {
+                document.getElementById('dim_preview_eyelet_price').innerText = 'Tanpa Lubang (Rp 0)';
+                document.getElementById('dim_preview_eyelet_price').className = 'font-mono font-bold ms-1 text-slate-400';
+            } else if (eyeletCount <= 4) {
+                document.getElementById('dim_preview_eyelet_price').innerText = `Gratis (${eyeletCount} pcs)`;
+                document.getElementById('dim_preview_eyelet_price').className = 'font-mono font-bold ms-1 text-emerald-400';
+            } else {
+                document.getElementById('dim_preview_eyelet_price').innerText = `+Rp ${Number(extraEyeletCost).toLocaleString('id-ID')} (${eyeletCount} pcs: 4 Free + ${eyeletCount - 4}x500)`;
+                document.getElementById('dim_preview_eyelet_price').className = 'font-mono font-bold ms-1 text-amber-300';
+            }
+        }
+
         document.getElementById('dim_preview_unit_price').innerText = 'Rp ' + Number(unitPricePerLembar).toLocaleString('id-ID');
         document.getElementById('dim_preview_subtotal').innerText = 'Rp ' + Number(subtotal).toLocaleString('id-ID');
 
@@ -1213,6 +1345,25 @@
 
         document.getElementById('canvas_dim_label').innerText = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
         document.getElementById('canvas_area_label').innerText = `${areaM2.toFixed(2)} m²`;
+
+        // Update Rule Badge & Desc in input section
+        const badgeRule = document.getElementById('badge_mata_ayam_rule');
+        const descCost = document.getElementById('text_mata_ayam_cost_desc');
+        if (badgeRule && descCost) {
+            if (eyeletCount === 0) {
+                badgeRule.className = 'text-[10px] font-bold px-2 py-0.5 rounded border bg-slate-100 text-slate-600 border-slate-200';
+                badgeRule.innerText = 'Tanpa Mata Ayam (Rp 0)';
+                descCost.innerHTML = 'Spanduk diproduksi tanpa ring mata ayam.';
+            } else if (eyeletCount <= 4) {
+                badgeRule.className = 'text-[10px] font-bold px-2 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-200';
+                badgeRule.innerText = `${eyeletCount} Sudut Standar (GRATIS)`;
+                descCost.innerHTML = 'Standar gratis hingga 4 mata ayam di tiap sudut spanduk.';
+            } else {
+                badgeRule.className = 'text-[10px] font-bold px-2 py-0.5 rounded border bg-amber-50 text-amber-800 border-amber-300';
+                badgeRule.innerText = `+ Rp ${Number(extraEyeletCost).toLocaleString('id-ID')} (${eyeletCount - 4} Pcs Tambahan)`;
+                descCost.innerHTML = `<strong>4 pcs pertama gratis</strong>, <strong>${eyeletCount - 4} pcs tambahan</strong> dikenakan Rp 500/pcs (+Rp ${Number(extraEyeletCost).toLocaleString('id-ID')}/lembar).`;
+            }
+        }
 
         // Update Visual Canvas Aspect Ratio
         const canvas = document.getElementById('banner_preview_canvas');
@@ -1239,17 +1390,34 @@
 
     // --- Confirm Custom Banner to Cart ---
     function confirmBannerDimensionAddToCart() {
-        let rawWidth = parseFloat(document.getElementById('banner_width_m').value) || 1.0;
-        let rawLength = parseFloat(document.getElementById('banner_length_m').value) || 1.0;
-        const qty = parseInt(document.getElementById('dim_qty').value, 10) || 1;
-        const finishing = document.getElementById('banner_finishing').value || 'Mata Ayam 4 Sudut';
+        let rawWidth = parseFloat(document.getElementById('banner_width_m')?.value) || 1.0;
+        let rawLength = parseFloat(document.getElementById('banner_length_m')?.value) || 1.0;
+        const qty = parseInt(document.getElementById('dim_qty')?.value, 10) || 1;
+        const finishing = document.getElementById('banner_finishing')?.value || 'Mata Ayam 4 Sudut';
+        let eyeletCount = parseInt(document.getElementById('mata_ayam_count')?.value, 10);
+        if (isNaN(eyeletCount) || eyeletCount < 0) eyeletCount = 0;
 
         // Strict Lock min 1.0m
         rawWidth = Math.max(1.0, Math.min(3.0, rawWidth));
         rawLength = Math.max(1.0, Math.min(30.0, rawLength));
 
         const areaM2 = Math.round((rawWidth * rawLength) * 1000) / 1000;
-        const noteDim = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m (${areaM2.toFixed(2)}m²) - ${finishing}`;
+
+        let extraEyeletCost = 0;
+        if (eyeletCount > 4) {
+            extraEyeletCost = (eyeletCount - 4) * 500;
+        }
+
+        let eyeletDesc = '';
+        if (eyeletCount === 0) {
+            eyeletDesc = 'Tanpa Mata Ayam';
+        } else if (eyeletCount <= 4) {
+            eyeletDesc = `Mata Ayam ${eyeletCount} Sudut (Gratis)`;
+        } else {
+            eyeletDesc = `Mata Ayam ${eyeletCount} Pcs (+Rp ${Number(extraEyeletCost).toLocaleString('id-ID')})`;
+        }
+
+        const noteDim = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m (${areaM2.toFixed(2)}m²) - ${finishing} [${eyeletDesc}]`;
 
         if (activeDimProduct.editCartId !== null) {
             // Edit existing cart item
@@ -1264,6 +1432,8 @@
                 item.area_m2 = areaM2;
                 item.billable_area_m2 = areaM2;
                 item.finishing = finishing;
+                item.eyelet_count = eyeletCount;
+                item.extra_eyelet_cost = extraEyeletCost;
                 item.qty = qty;
                 item.dimension_text = noteDim;
             }
@@ -1280,6 +1450,8 @@
                 area_m2: areaM2,
                 billable_area_m2: areaM2,
                 finishing: finishing,
+                eyelet_count: eyeletCount,
+                extra_eyelet_cost: extraEyeletCost,
                 dimension_text: noteDim,
                 requested_size: rawWidth,
                 is_custom_banner: true,
@@ -1410,7 +1582,10 @@
             let finalUnitPrice = basePrice;
             if (item.is_custom_banner && (item.billable_area_m2 || item.area_m2)) {
                 const area = item.billable_area_m2 || item.area_m2;
-                finalUnitPrice = Math.round(area * basePrice);
+                const extraEyelet = (item.extra_eyelet_cost !== undefined) 
+                    ? item.extra_eyelet_cost 
+                    : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0);
+                finalUnitPrice = Math.round(area * basePrice) + extraEyelet;
             }
 
             const itemTotal = finalUnitPrice * item.qty;
@@ -1990,7 +2165,10 @@
             let finalUnitPrice = basePrice;
             if (item.is_custom_banner && (item.billable_area_m2 || item.area_m2)) {
                 const area = item.billable_area_m2 || item.area_m2;
-                finalUnitPrice = Math.round(area * basePrice);
+                const extraEyelet = (item.extra_eyelet_cost !== undefined) 
+                    ? item.extra_eyelet_cost 
+                    : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0);
+                finalUnitPrice = Math.round(area * basePrice) + extraEyelet;
             }
             const itemSubtotal = finalUnitPrice * item.qty;
             totalItemCount += item.qty;
@@ -2025,6 +2203,8 @@
                 area_m2: item.area_m2 || null,
                 billable_area_m2: item.billable_area_m2 || null,
                 is_custom_banner: !!item.is_custom_banner,
+                eyelet_count: item.eyelet_count || 0,
+                extra_eyelet_cost: (item.extra_eyelet_cost !== undefined) ? item.extra_eyelet_cost : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0),
                 finishing: item.finishing || null,
                 dimension_text: item.dimension_text || null,
                 qty: item.qty
