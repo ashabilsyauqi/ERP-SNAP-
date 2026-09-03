@@ -103,6 +103,7 @@ class SalesController extends Controller
     {
         $user = auth()->user();
         $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])
+            ->whereNotIn('order_status', ['draft', 'cancelled'])
             ->orderBy('created_at', 'desc');
 
         if ($user->isOwner()) {
@@ -132,8 +133,8 @@ class SalesController extends Controller
         $transactions = $query->get();
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        // Calculate KPI Statistics
-        $baseStatQuery = Transaction::query();
+        // Calculate KPI Statistics (exclude draft & cancelled)
+        $baseStatQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
         if ($user->isOwner()) {
             if ($request->filled('branch_id') && $request->branch_id !== 'all') {
                 $baseStatQuery->where('branch_id', $request->branch_id);

@@ -102,8 +102,8 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('accounts/{account}/toggle-status', [\App\Http\Controllers\AccountController::class, 'toggleStatus'])->name('accounts.toggle-status');
         
         // Transaksi Kas
-        Route::resource('kas-masuk', \App\Http\Controllers\CashInController::class)->except(['create', 'show', 'edit']);
-        Route::resource('kas-keluar', \App\Http\Controllers\CashOutController::class)->except(['create', 'show', 'edit']);
+        Route::resource('kas-masuk', \App\Http\Controllers\CashInController::class)->except(['show', 'edit']);
+        Route::resource('kas-keluar', \App\Http\Controllers\CashOutController::class)->except(['show', 'edit']);
         
         // Laporan Tutup Hari (Daily Closing Report)
         Route::resource('daily-closing', \App\Http\Controllers\DailyClosingController::class);
