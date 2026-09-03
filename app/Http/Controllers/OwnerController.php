@@ -106,8 +106,10 @@ class OwnerController extends Controller
                 $timeSlot = sprintf('%02d:00', $h);
                 $chartLabels[] = $timeSlot;
 
-                $hTrx = Transaction::whereDate('created_at', Carbon::today())
-                    ->whereRaw('HOUR(created_at) = ?', [$h])
+                $startTime = Carbon::today()->setTime($h, 0, 0);
+                $endTime = Carbon::today()->setTime($h, 59, 59);
+
+                $hTrx = Transaction::whereBetween('created_at', [$startTime, $endTime])
                     ->where('order_status', '!=', 'cancelled');
 
                 if ($branchId && $branchId !== 'all') {
