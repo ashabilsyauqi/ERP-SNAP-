@@ -561,15 +561,15 @@
                 ]
             ];
         } elseif (Str::startsWith($currentRoute, 'pos') || Str::startsWith($currentRoute, 'sales') || Str::startsWith($currentRoute, 'customers')) {
-            $activeApp = (auth()->check() && auth()->user()->role === 'cashier') ? 'Point of Sale' : 'Orders / Penjualan';
-            $appIcon = (auth()->check() && auth()->user()->role === 'cashier') ? 'fa-cash-register' : 'fa-receipt';
+            $activeApp = (auth()->check() && (auth()->user()->role === 'cashier' || auth()->user()->isOperator())) ? 'Point of Sale' : 'Orders / Penjualan';
+            $appIcon = (auth()->check() && (auth()->user()->role === 'cashier' || auth()->user()->isOperator())) ? 'fa-cash-register' : 'fa-receipt';
             $menuGroups = [
                 [
                     'title' => 'Orders',
                     'type' => 'dropdown',
-                    'role' => 'cashier,owner,manager',
+                    'role' => 'cashier,owner,manager,operator,sales',
                     'items' => [
-                        ['title' => 'Terminal Kasir Checkout (POS)', 'route' => 'pos.index', 'role' => 'cashier'],
+                        ['title' => 'Terminal Kasir / Cek Harga (POS)', 'route' => 'pos.index', 'role' => 'cashier,operator,sales'],
                         ['title' => 'Piutang & Monitoring Pesanan DP', 'route' => 'sales.receivables', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Riwayat Transaksi Penjualan', 'route' => 'sales.index', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Data Pelanggan (Customers)', 'route' => 'customers.index', 'role' => 'cashier,owner,manager'],
@@ -917,6 +917,8 @@
                       @elseif(auth()->user()->role === 'cashier')
                       { name: 'Point of Sale (POS)', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-cash-register', bg: 'bg-gradient-to-tr from-rose-500 to-pink-700' },
                       { name: 'Orders / Penjualan', route: '{{ route('sales.index') }}', icon: 'fa-solid fa-receipt', bg: 'bg-gradient-to-tr from-sky-500 to-blue-700' }
+                      @elseif(auth()->user()->isOperator())
+                      { name: 'Cek Harga & POS', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-calculator', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' }
                       @elseif(auth()->user()->role === 'purchasing')
                       { name: 'Purchase / RFQ', route: '{{ route('purchasing.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700' },
                       { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },

@@ -27,7 +27,9 @@ class AuthController extends Controller
                 return redirect()->route('owner.dashboard');
             } elseif ($user->isPurchasing()) {
                 return redirect()->route('purchasing.index');
-            } elseif ($user->isCashier()) {
+            } elseif ($user->isCashier() || $user->isOperator()) {
+                return redirect()->route('pos.index');
+            } else {
                 return redirect()->route('pos.index');
             }
         }
