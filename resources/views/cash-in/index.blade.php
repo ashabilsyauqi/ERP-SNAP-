@@ -111,7 +111,11 @@
                                                 'cashier_name' => $trx->transaction->user->username ?? 'Kasir',
                                                 'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
                                                 'payment_method' => $trx->transaction->payment_method ?? 'Cash',
-                                                'payment_status' => 'PAID',
+                                                'payment_status' => $trx->transaction->payment_status,
+                                                'paid_amount' => $trx->transaction->paid_amount,
+                                                'remaining_amount' => $trx->transaction->remaining_amount,
+                                                'customer_name' => $trx->transaction->customer_name,
+                                                'customer_phone' => $trx->transaction->customer_phone,
                                                 'total_price' => $trx->transaction->total_price,
                                                 'items' => $invItems
                                             ];
@@ -121,7 +125,13 @@
                                                 onclick='openSnaprintInvoice(@json($invPayload))'>
                                             <i class="fa-solid fa-file-invoice text-blue-600"></i>
                                             <span>Invoice: {{ $trx->transaction->invoice_number }}</span>
-                                            <span class="badge bg-emerald-100 text-emerald-800 text-[9px] px-1 py-0">PAID</span>
+                                            @if($trx->transaction->isPaid())
+                                                <span class="badge bg-emerald-100 text-emerald-800 text-[9px] px-1 py-0">PAID</span>
+                                            @elseif($trx->transaction->isPartial())
+                                                <span class="badge bg-rose-100 text-rose-800 text-[9px] px-1 py-0 font-bold">UNPAID (DP)</span>
+                                            @else
+                                                <span class="badge bg-rose-100 text-rose-800 text-[9px] px-1 py-0 font-bold">UNPAID</span>
+                                            @endif
                                         </button>
                                     @endif
                                 </td>

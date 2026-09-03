@@ -161,6 +161,10 @@
                                             'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
                                             'payment_method' => $trx->transaction->payment_method ?? 'Cash',
                                             'payment_status' => $trx->transaction->payment_status ?? 'PAID',
+                                            'paid_amount' => $trx->transaction->paid_amount ?? $trx->jumlah,
+                                            'remaining_amount' => $trx->transaction->remaining_amount ?? 0,
+                                            'customer_name' => $trx->transaction->customer_name ?? null,
+                                            'customer_phone' => $trx->transaction->customer_phone ?? null,
                                             'total_price' => (float) ($trx->transaction->total_price ?? $trx->jumlah),
                                             'items' => $invItems
                                         ];
@@ -170,7 +174,13 @@
                                             onclick='openSnaprintInvoice(@json($invPayload))'>
                                         <i class="fa-solid fa-file-invoice text-blue-600"></i>
                                         <span>Invoice: {{ $trx->transaction->invoice_number }}</span>
-                                        <span class="badge bg-emerald-100 text-emerald-800 text-[9px] px-1 py-0">PAID</span>
+                                        @if($trx->transaction->isPaid())
+                                            <span class="badge bg-emerald-100 text-emerald-800 text-[9px] px-1 py-0">PAID</span>
+                                        @elseif($trx->transaction->isPartial())
+                                            <span class="badge bg-rose-100 text-rose-800 text-[9px] px-1 py-0 font-bold">UNPAID (DP)</span>
+                                        @else
+                                            <span class="badge bg-rose-100 text-rose-800 text-[9px] px-1 py-0 font-bold">UNPAID</span>
+                                        @endif
                                     </button>
                                 @endif
                             </td>

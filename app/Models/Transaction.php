@@ -61,17 +61,17 @@ class Transaction extends Model
 
     public function isPaid(): bool
     {
-        return $this->payment_status === 'PAID' || $this->remaining_amount <= 0;
+        return $this->payment_status === 'PAID' && ($this->remaining_amount === null || (float) $this->remaining_amount <= 0);
     }
 
     public function isPartial(): bool
     {
-        return $this->payment_status === 'PARTIAL' && $this->remaining_amount > 0;
+        return $this->payment_status === 'PARTIAL' || ((float) $this->remaining_amount > 0 && (float) $this->paid_amount > 0);
     }
 
     public function isUnpaid(): bool
     {
-        return $this->payment_status === 'UNPAID';
+        return $this->payment_status === 'UNPAID' || $this->order_status === 'draft' || ((float) $this->paid_amount <= 0 && (float) $this->total_price > 0);
     }
 
     public function getOrderStatusLabelAttribute(): string

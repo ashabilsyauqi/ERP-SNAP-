@@ -1402,7 +1402,14 @@
             return lines.join('\n');
         };
 
-        // Global Client-side I            const isUnpaid = inv.payment_status === 'UNPAID' || inv.order_status === 'draft';
+        // Global Client-side Invoice PDF Downloader (html2pdf)
+        window.downloadSnaprintInvoicePDF = function(inv) {
+            if (typeof html2pdf === 'undefined') {
+                console.warn('html2pdf library is loading or unavailable.');
+                return;
+            }
+
+            const isUnpaid = inv.payment_status === 'UNPAID' || inv.order_status === 'draft';
             const isPartial = !isUnpaid && (inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0));
 
             let badgeBorder = '#059669';

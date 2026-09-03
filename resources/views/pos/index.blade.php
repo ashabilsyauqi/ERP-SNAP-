@@ -2718,14 +2718,14 @@
                 let statusBadge = '';
 
                 if (isDraftResult) {
-                    titleHtml = '<span style="color: #d97706; font-weight: 800;">Draft Pesanan Berhasil Disimpan!</span>';
-                    statusBadge = `<span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 border border-amber-400 rounded-md text-xs font-extrabold uppercase mb-2">
-                        <i class="fa-solid fa-inbox text-amber-600"></i> STATUS: DRAFT (MENUNGGU KASIR)
+                    titleHtml = '<span style="color: #dc2626; font-weight: 800;">Draft Pesanan (UNPAID) Disimpan!</span>';
+                    statusBadge = `<span class="inline-block px-3 py-1 bg-rose-100 text-rose-800 border-2 border-rose-500 rounded-md text-xs font-black uppercase mb-2">
+                        <i class="fa-solid fa-circle-xmark text-rose-600"></i> STATUS: UNPAID (DRAFT)
                     </span>`;
                 } else if (isPartial) {
-                    titleHtml = '<span style="color: #d97706; font-weight: 800;">Pesanan DP Tercatat!</span>';
-                    statusBadge = `<span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 border border-amber-400 rounded-md text-xs font-extrabold uppercase mb-2">
-                        <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> STATUS: DP (PARSIAL) &bull; SISA PIUTANG: Rp ${Number(data.remaining_amount || 0).toLocaleString('id-ID')}
+                    titleHtml = '<span style="color: #dc2626; font-weight: 800;">Pesanan DP Tercatat (UNPAID)!</span>';
+                    statusBadge = `<span class="inline-block px-3 py-1 bg-rose-100 text-rose-800 border-2 border-rose-500 rounded-md text-xs font-black uppercase mb-2">
+                        <i class="fa-solid fa-clock-rotate-left text-rose-600"></i> STATUS: UNPAID (DP) &bull; SISA PIUTANG: Rp ${Number(data.remaining_amount || 0).toLocaleString('id-ID')}
                     </span>`;
                 } else {
                     titleHtml = '<span style="color: #059669; font-weight: 800;">Transaksi LUNAS (PAID)</span>';

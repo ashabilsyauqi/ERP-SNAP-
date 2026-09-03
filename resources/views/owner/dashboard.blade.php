@@ -279,7 +279,11 @@
                                         'cashier_name' => $tx->user->full_name ?: ($tx->user->username ?? 'Kasir'),
                                         'branch_name' => $tx->branch->nama_cabang ?? 'Pusat',
                                         'payment_method' => $tx->payment_method ?? 'Cash',
-                                        'payment_status' => 'PAID',
+                                        'payment_status' => $tx->payment_status,
+                                        'paid_amount' => $tx->paid_amount,
+                                        'remaining_amount' => $tx->remaining_amount,
+                                        'customer_name' => $tx->customer_name,
+                                        'customer_phone' => $tx->customer_phone,
                                         'total_price' => $tx->total_price,
                                         'items' => $invItems
                                     ];
@@ -299,7 +303,17 @@
                                     <td>
                                         <div class="d-inline-flex align-items-center gap-1">
                                             <span class="badge bg-slate-100 text-slate-700 border px-2 py-0.5 text-[11px]">{{ $tx->payment_method }}</span>
-                                            <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">PAID</span>
+                                            @if($tx->isPaid())
+                                                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold">PAID</span>
+                                            @elseif($tx->isPartial())
+                                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold" title="Sisa Piutang: Rp {{ number_format($tx->remaining_amount, 0, ',', '.') }}">
+                                                    <i class="fa-solid fa-clock-rotate-left me-0.5"></i> UNPAID (DP)
+                                                </span>
+                                            @else
+                                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold">
+                                                    <i class="fa-solid fa-circle-xmark me-0.5"></i> UNPAID
+                                                </span>
+                                            @endif
                                         </div>
                                     </td>
                                     <td class="fw-bold text-blue-900 font-mono">Rp {{ number_format($tx->total_price, 0, ',', '.') }}</td>

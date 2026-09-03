@@ -151,9 +151,13 @@
                                 @if($trx->payment_status === 'PAID')
                                     <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">LUNAS</span>
                                 @elseif($trx->payment_status === 'PARTIAL')
-                                    <span class="badge bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">DP (BELUM LUNAS)</span>
+                                    <span class="badge bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                                        <i class="fa-solid fa-clock-rotate-left me-0.5"></i> UNPAID (DP)
+                                    </span>
                                 @else
-                                    <span class="badge bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">UNPAID</span>
+                                    <span class="badge bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                                        <i class="fa-solid fa-circle-xmark me-0.5"></i> UNPAID
+                                    </span>
                                 @endif
                             </td>
                             <td class="text-center">
