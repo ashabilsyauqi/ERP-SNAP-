@@ -2149,12 +2149,18 @@
             ? '<i class="fa-solid fa-file-signature me-1"></i> Ya, Simpan Draft (Ke Kasir)'
             : (isDp ? '<i class="fa-solid fa-check me-1"></i> Ya, Proses Bayar DP' : '<i class="fa-solid fa-check me-1"></i> Ya, Proses & Bayar');
 
-        // Pre-payment Confirmation Popup
+        if (isDraft) {
+            // Langsung simpan draft tanpa popup konfirmasi
+            executeCheckoutFetch(payloadItems, paymentMethod, false, 0, customerId, customerName, customerPhone, customerEmail, dueDate, productionNotes, true, alpineData, btnDesktop, btnMobile, errContainerDesktop, errContainerMobile, successContainerDesktop, successContainerMobile);
+            return;
+        }
+
+        // Pre-payment Confirmation Popup (Hanya untuk pembayaran riil)
         Swal.fire({
             title: swalTitle,
             html: confirmationModalHtml,
             showCancelButton: true,
-            confirmButtonColor: isDraft ? '#d97706' : '#2563eb',
+            confirmButtonColor: '#2563eb',
             cancelButtonColor: '#64748b',
             confirmButtonText: confirmBtnText,
             cancelButtonText: '<i class="fa-solid fa-xmark me-1"></i> Batal / Periksa Lagi',
@@ -2237,7 +2243,25 @@
                     if (d.drafts) updateDraftBadge(d.drafts.length);
                 }).catch(() => {});
 
-                // Show Green / Amber Success Card in Desktop Cart Panel
+                // Jika DRAFT: Jangan tampilkan note/kartu apa pun di panel keranjang, langsung kosongkan!
+                if (isDraftResult) {
+                    if (successContainerDesktop) successContainerDesktop.classList.add('hidden');
+                    if (successContainerMobile) successContainerMobile.classList.add('hidden');
+                    if (errContainerDesktop) errContainerDesktop.classList.add('hidden');
+                    if (errContainerMobile) errContainerMobile.classList.add('hidden');
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: `Draft #${data.invoice_number} berhasil disimpan`,
+                        showConfirmButton: false,
+                        timer: 1200
+                    });
+                    return;
+                }
+
+                // Show Green / Amber Success Card in Desktop Cart Panel (Hanya untuk Transaksi Pembayaran)
                 if (successContainerDesktop) {
                     document.getElementById('success-inv-text').innerText = '#' + data.invoice_number;
                     
