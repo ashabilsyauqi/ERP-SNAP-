@@ -10,8 +10,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Modify enum to add 'operator' role
-        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('owner', 'manager', 'purchasing', 'cashier', 'operator') NOT NULL DEFAULT 'cashier'");
+        // Modify enum to add 'operator' role only if driver is MySQL
+        // SQLite stores enum as string/text without native ENUM or MODIFY COLUMN syntax
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('owner', 'manager', 'purchasing', 'cashier', 'operator') NOT NULL DEFAULT 'cashier'");
+        }
     }
 
     /**
@@ -19,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('owner', 'manager', 'purchasing', 'cashier') NOT NULL DEFAULT 'cashier'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('owner', 'manager', 'purchasing', 'cashier') NOT NULL DEFAULT 'cashier'");
+        }
     }
 };
