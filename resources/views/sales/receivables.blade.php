@@ -245,8 +245,8 @@
                                     <i class="fa-solid fa-circle-check me-0.5"></i> PAID (LUNAS)
                                 </span>
                             @elseif($t->isPartial())
-                                <span class="badge bg-amber-100 text-amber-800 border border-amber-300 text-[10px] py-1 px-2 font-extrabold rounded-md">
-                                    <i class="fa-solid fa-clock-rotate-left me-0.5"></i> DP (PARSIAL)
+                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] py-1 px-2 font-extrabold rounded-md">
+                                    <i class="fa-solid fa-clock-rotate-left me-0.5"></i> UNPAID (DP)
                                 </span>
                             @else
                                 <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] py-1 px-2 font-extrabold rounded-md">

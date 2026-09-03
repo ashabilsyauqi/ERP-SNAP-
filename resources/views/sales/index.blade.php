@@ -263,16 +263,16 @@
                                             @endif
                                         </span>
                                         @if($trx->isPaid())
-                                            <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 text-[10px] font-bold">
+                                            <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold">
                                                 PAID
                                             </span>
                                         @elseif($trx->isPartial())
-                                            <span class="badge bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 text-[10px] font-bold">
-                                                DP
+                                            <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold" title="Sisa Piutang: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}">
+                                                <i class="fa-solid fa-clock-rotate-left me-0.5"></i> UNPAID (DP)
                                             </span>
                                         @else
-                                            <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-1.5 py-0.5 text-[10px] font-bold">
-                                                UNPAID
+                                            <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold">
+                                                <i class="fa-solid fa-circle-xmark me-0.5"></i> UNPAID
                                             </span>
                                         @endif
                                     </div>
@@ -355,15 +355,15 @@
                                 {{ $trx->invoice_number }}
                             </button>
                             @if($trx->isPaid())
-                                <span class="badge bg-emerald-100 text-emerald-800 text-[10px]">
+                                <span class="badge bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                                     PAID
                                 </span>
                             @elseif($trx->isPartial())
-                                <span class="badge bg-amber-100 text-amber-800 text-[10px]">
-                                    DP
+                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold" title="Sisa Piutang: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}">
+                                    UNPAID (DP)
                                 </span>
                             @else
-                                <span class="badge bg-rose-100 text-rose-800 text-[10px]">
+                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold">
                                     UNPAID
                                 </span>
                             @endif

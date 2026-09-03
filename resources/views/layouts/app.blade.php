@@ -1010,19 +1010,19 @@
                     <div class="text-end">
                         <!-- Payment Status Stamp Badge -->
                         <div class="mb-2">
-                            <template x-if="inv.payment_status === 'PAID' || (!inv.payment_status && (!inv.remaining_amount || inv.remaining_amount <= 0))">
+                            <template x-if="inv.payment_status === 'PAID' && (!inv.remaining_amount || Number(inv.remaining_amount) <= 0)">
                                 <span class="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-500 rounded-md text-xs font-extrabold uppercase tracking-wider">
                                     <i class="fa-solid fa-circle-check text-emerald-600"></i> PAID (LUNAS)
                                 </span>
                             </template>
-                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0)">
-                                <span class="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-800 border border-amber-500 rounded-md text-xs font-extrabold uppercase tracking-wider">
-                                    <i class="fa-solid fa-clock-rotate-left text-amber-600"></i> DP (PARSIAL)
+                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0)">
+                                <span class="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 text-rose-800 border-2 border-rose-500 rounded-md text-xs font-black uppercase tracking-wider shadow-sm">
+                                    <i class="fa-solid fa-clock-rotate-left text-rose-600"></i> UNPAID (SISA: Rp <span x-text="Number(inv.remaining_amount || 0).toLocaleString('id-ID')"></span>)
                                 </span>
                             </template>
-                            <template x-if="inv.payment_status === 'UNPAID'">
-                                <span class="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 text-rose-800 border border-rose-500 rounded-md text-xs font-extrabold uppercase tracking-wider">
-                                    <i class="fa-solid fa-circle-xmark text-rose-600"></i> UNPAID (BELUM LUNAS)
+                            <template x-if="inv.payment_status === 'UNPAID' || inv.order_status === 'draft'">
+                                <span class="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 text-rose-800 border-2 border-rose-500 rounded-md text-xs font-black uppercase tracking-wider shadow-sm">
+                                    <i class="fa-solid fa-circle-xmark text-rose-600"></i> UNPAID (BELUM DIBAYAR)
                                 </span>
                             </template>
                         </div>
@@ -1104,10 +1104,16 @@
                                     <td class="text-end font-mono font-bold text-emerald-700 text-xs" x-text="'Rp ' + Number(inv.paid_amount || 0).toLocaleString('id-ID')"></td>
                                 </tr>
                             </template>
-                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0)">
-                                <tr class="bg-amber-50">
-                                    <td colspan="4" class="text-end fw-bold text-amber-800 text-xs">Sisa Piutang (Pelunasan):</td>
-                                    <td class="text-end font-mono font-extrabold text-amber-700 text-xs" x-text="'Rp ' + Number(inv.remaining_amount || 0).toLocaleString('id-ID')"></td>
+                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0)">
+                                <tr class="bg-rose-50 border border-rose-200">
+                                    <td colspan="4" class="text-end fw-bold text-rose-800 text-xs">Sisa Piutang (UNPAID):</td>
+                                    <td class="text-end font-mono font-extrabold text-rose-700 text-xs" x-text="'Rp ' + Number(inv.remaining_amount || 0).toLocaleString('id-ID')"></td>
+                                </tr>
+                            </template>
+                            <template x-if="inv.payment_status === 'UNPAID' || inv.order_status === 'draft'">
+                                <tr class="bg-rose-50 border border-rose-200">
+                                    <td colspan="4" class="text-end fw-bold text-rose-800 text-xs">Status:</td>
+                                    <td class="text-end font-mono font-black text-rose-700 text-xs">UNPAID (BELUM DIBAYAR)</td>
                                 </tr>
                             </template>
                             <tr>
@@ -1361,15 +1367,20 @@
             }
             lines.push(`*Metode Bayar : ${data.payment_method || 'Cash'}*`);
 
-            if (isPartial) {
-                lines.push(`*Status       : DP (Uang Muka)*`);
+            const isUnpaid = data.payment_status === 'UNPAID' || data.order_status === 'draft';
+
+            if (isUnpaid) {
+                lines.push('*Status       : 🔴 UNPAID (BELUM DIBAYAR)*');
+                lines.push('*Keterangan   : Menunggu pelunasan di kasir*');
+            } else if (isPartial) {
+                lines.push('*Status       : 🔴 UNPAID (BELUM LUNAS / DP)*');
                 lines.push(`*DP Diterima  : Rp ${Number(data.paid_amount || 0).toLocaleString('id-ID')}*`);
                 lines.push(`*Sisa Piutang : Rp ${Number(data.remaining_amount || 0).toLocaleString('id-ID')}*`);
                 if (data.due_date) {
                     lines.push(`*Est. Selesai : ${data.due_date}*`);
                 }
             } else {
-                lines.push(`*Status       : LUNAS (PAID)*`);
+                lines.push('*Status       : 🟢 LUNAS (PAID)*');
                 lines.push(`*Jumlah Bayar : Rp ${Number(data.paid_amount || data.total_price || 0).toLocaleString('id-ID')}*`);
             }
 
@@ -1391,14 +1402,26 @@
             return lines.join('\n');
         };
 
-        // Global Client-side Invoice PDF Downloader (html2pdf)
-        window.downloadSnaprintInvoicePDF = function(inv) {
-            if (typeof html2pdf === 'undefined') {
-                console.warn('html2pdf library is loading or unavailable.');
-                return;
+        // Global Client-side I            const isUnpaid = inv.payment_status === 'UNPAID' || inv.order_status === 'draft';
+            const isPartial = !isUnpaid && (inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0));
+
+            let badgeBorder = '#059669';
+            let badgeBg = '#ecfdf5';
+            let badgeText = '#059669';
+            let badgeLabel = 'PAID (LUNAS)';
+
+            if (isUnpaid) {
+                badgeBorder = '#dc2626';
+                badgeBg = '#fef2f2';
+                badgeText = '#dc2626';
+                badgeLabel = 'UNPAID (BELUM BAYAR)';
+            } else if (isPartial) {
+                badgeBorder = '#dc2626';
+                badgeBg = '#fef2f2';
+                badgeText = '#dc2626';
+                badgeLabel = `UNPAID (SISA: Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')})`;
             }
 
-            const isPartial = inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0);
             const logoUrl = "{{ asset('images/logosnaprint.jpeg') }}";
             const itemsHtml = (inv.items && inv.items.length > 0) ? inv.items.map((it, idx) => `
                 <tr>
@@ -1433,77 +1456,95 @@
             container.style.color = '#1e293b';
 
             container.innerHTML = `
-                <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 15px; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <img src="${logoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
-                        <div>
-                            <div style="font-size: 20px; font-weight: bold; color: #1e3a8a;">Snaprint</div>
-                            <div style="font-size: 11px; color: #64748b;">Digital Printing & Advertising Solutions</div>
-                            <div style="font-size: 11px; color: #64748b;">Cabang: <strong>${inv.branch_name || 'Pusat'}</strong></div>
+                <div style="position: relative; overflow: hidden; padding: 10px;">
+                    ${(isUnpaid || isPartial) ? `
+                        <div style="position: absolute; top: 38%; left: 15%; right: 15%; text-align: center; transform: rotate(-15deg); opacity: 0.08; font-size: 85px; font-weight: 900; color: #dc2626; border: 8px solid #dc2626; padding: 8px 16px; border-radius: 16px; font-family: monospace; pointer-events: none;">
+                            UNPAID
+                        </div>
+                    ` : `
+                        <div style="position: absolute; top: 38%; left: 20%; right: 20%; text-align: center; transform: rotate(-15deg); opacity: 0.06; font-size: 85px; font-weight: 900; color: #059669; border: 8px solid #059669; padding: 8px 16px; border-radius: 16px; font-family: monospace; pointer-events: none;">
+                            PAID
+                        </div>
+                    `}
+
+                    <div style="position: relative; z-index: 10;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 12px; margin-bottom: 15px; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <img src="${logoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover;">
+                                <div>
+                                    <div style="font-size: 20px; font-weight: bold; color: #1e3a8a;">Snaprint</div>
+                                    <div style="font-size: 11px; color: #64748b;">Digital Printing & Advertising Solutions</div>
+                                    <div style="font-size: 11px; color: #64748b;">Cabang: <strong>${inv.branch_name || 'Pusat'}</strong></div>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="display: inline-block; padding: 4px 12px; border: 2px solid ${badgeBorder}; background: ${badgeBg}; color: ${badgeText}; font-weight: 900; border-radius: 6px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">
+                                    ${badgeLabel}
+                                </div>
+                                <div style="font-size: 16px; font-weight: bold; margin-top: 4px;">FAKTUR INVOICE ${isPartial ? '& SPK' : ''}</div>
+                                <div style="font-size: 11px; font-family: monospace; color: #64748b;">No: ${inv.invoice_number || '-'}</div>
+                            </div>
+                        </div>
+
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 15px; font-size: 11px;">
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="width: 50%;"><strong>Client:</strong> ${inv.customer_name || 'Pelanggan Umum'}</td>
+                                    <td><strong>WhatsApp:</strong> ${inv.customer_phone || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-top: 4px;"><strong>Tanggal:</strong> ${inv.created_at || '-'}</td>
+                                    <td style="padding-top: 4px;"><strong>Kasir:</strong> ${inv.cashier_name || 'Kasir'}</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
+                            <thead>
+                                <tr style="background: #f1f5f9; border: 1px solid #cbd5e1;">
+                                    <th style="padding: 6px; width: 30px; text-align: center;">No</th>
+                                    <th style="padding: 6px; text-align: left;">Deskripsi Item</th>
+                                    <th style="padding: 6px; width: 60px; text-align: center;">Qty</th>
+                                    <th style="padding: 6px; width: 110px; text-align: right;">Harga Satuan</th>
+                                    <th style="padding: 6px; width: 120px; text-align: right;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>${itemsHtml}</tbody>
+                        </table>
+
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px;">
+                            ${(inv.discount_amount && Number(inv.discount_amount) > 0) ? `
+                            <tr>
+                                <td colspan="4" style="text-align: right; color: #64748b;">Total Asli:</td>
+                                <td style="text-align: right; width: 120px; font-family: monospace; text-decoration: line-through; color: #94a3b8;">Rp ${Number(inv.original_price || (Number(inv.total_price) + Number(inv.discount_amount))).toLocaleString('id-ID')}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" style="text-align: right; color: #059669; font-weight: bold;">Potongan Nego:</td>
+                                <td style="text-align: right; width: 120px; font-family: monospace; color: #059669; font-weight: bold;">- Rp ${Number(inv.discount_amount).toLocaleString('id-ID')}</td>
+                            </tr>` : ''}
+                            <tr>
+                                <td colspan="4" style="text-align: right; font-weight: bold; font-size: 13px;">Total Tagihan:</td>
+                                <td style="text-align: right; width: 120px; font-family: monospace; font-size: 14px; font-weight: bold; color: #1e3a8a;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
+                            </tr>
+                            ${isPartial ? `
+                            <tr>
+                                <td colspan="4" style="text-align: right; color: #059669; font-weight: bold;">DP Diterima:</td>
+                                <td style="text-align: right; font-family: monospace; color: #059669; font-weight: bold;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
+                            </tr>
+                            <tr style="background: #fef2f2; border: 1px solid #fca5a5;">
+                                <td colspan="4" style="text-align: right; color: #dc2626; font-weight: bold;">Sisa Piutang (UNPAID):</td>
+                                <td style="text-align: right; font-family: monospace; color: #dc2626; font-weight: bold; font-size: 13px;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
+                            </tr>` : (isUnpaid ? `
+                            <tr style="background: #fef2f2; border: 1px solid #fca5a5;">
+                                <td colspan="4" style="text-align: right; color: #dc2626; font-weight: bold;">Status:</td>
+                                <td style="text-align: right; font-family: monospace; color: #dc2626; font-weight: 900; font-size: 13px;">UNPAID</td>
+                            </tr>` : '')}
+                        </table>
+
+                        <div style="margin-top: 25px; border-top: 1px solid #cbd5e1; padding-top: 10px; text-align: center; font-size: 10px; color: #94a3b8;">
+                            Snaprint "great spot to print" &bull; mysnaprint.com
                         </div>
                     </div>
-                    <div style="text-align: right;">
-                        <div style="display: inline-block; padding: 3px 10px; border: 2px solid ${isPartial ? '#d97706' : '#059669'}; color: ${isPartial ? '#d97706' : '#059669'}; font-weight: 800; border-radius: 6px; text-transform: uppercase; font-size: 11px;">
-                            ${isPartial ? 'DP / UANG MUKA' : 'PAID (LUNAS)'}
-                        </div>
-                        <div style="font-size: 16px; font-weight: bold; margin-top: 4px;">FAKTUR INVOICE ${isPartial ? '& SPK' : ''}</div>
-                        <div style="font-size: 11px; font-family: monospace; color: #64748b;">No: ${inv.invoice_number || '-'}</div>
-                    </div>
-                </div>
-
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 15px; font-size: 11px;">
-                    <table style="width: 100%;">
-                        <tr>
-                            <td style="width: 50%;"><strong>Client:</strong> ${inv.customer_name || 'Pelanggan Umum'}</td>
-                            <td><strong>WhatsApp:</strong> ${inv.customer_phone || '-'}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 4px;"><strong>Tanggal:</strong> ${inv.created_at || '-'}</td>
-                            <td style="padding-top: 4px;"><strong>Kasir:</strong> ${inv.cashier_name || 'Kasir'}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
-                    <thead>
-                        <tr style="background: #f1f5f9; border: 1px solid #cbd5e1;">
-                            <th style="padding: 6px; width: 30px; text-align: center;">No</th>
-                            <th style="padding: 6px; text-align: left;">Deskripsi Item</th>
-                            <th style="padding: 6px; width: 60px; text-align: center;">Qty</th>
-                            <th style="padding: 6px; width: 110px; text-align: right;">Harga Satuan</th>
-                            <th style="padding: 6px; width: 120px; text-align: right;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>${itemsHtml}</tbody>
-                </table>
-
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px;">
-                    ${(inv.discount_amount && Number(inv.discount_amount) > 0) ? `
-                    <tr>
-                        <td colspan="4" style="text-align: right; color: #64748b;">Total Asli:</td>
-                        <td style="text-align: right; width: 120px; font-family: monospace; text-decoration: line-through; color: #94a3b8;">Rp ${Number(inv.original_price || (Number(inv.total_price) + Number(inv.discount_amount))).toLocaleString('id-ID')}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="4" style="text-align: right; color: #059669; font-weight: bold;">Potongan Nego:</td>
-                        <td style="text-align: right; width: 120px; font-family: monospace; color: #059669; font-weight: bold;">- Rp ${Number(inv.discount_amount).toLocaleString('id-ID')}</td>
-                    </tr>` : ''}
-                    <tr>
-                        <td colspan="4" style="text-align: right; font-weight: bold; font-size: 13px;">Total Tagihan:</td>
-                        <td style="text-align: right; width: 120px; font-family: monospace; font-size: 14px; font-weight: bold; color: #1e3a8a;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
-                    </tr>
-                    ${isPartial ? `
-                    <tr>
-                        <td colspan="4" style="text-align: right; color: #059669; font-weight: bold;">DP Diterima:</td>
-                        <td style="text-align: right; font-family: monospace; color: #059669; font-weight: bold;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
-                    </tr>
-                    <tr style="background: #fffbeb;">
-                        <td colspan="4" style="text-align: right; color: #b45309; font-weight: bold;">Sisa Piutang:</td>
-                        <td style="text-align: right; font-family: monospace; color: #b45309; font-weight: bold; font-size: 13px;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
-                    </tr>` : ''}
-                </table>
-
-                <div style="margin-top: 25px; border-top: 1px solid #cbd5e1; padding-top: 10px; text-align: center; font-size: 10px; color: #94a3b8;">
-                    Snaprint "great spot to print" &bull; mysnaprint.com
                 </div>
             `;
 
@@ -1551,8 +1592,23 @@
         window.printSnaprintInvoice = function(inv) {
             const printWindow = window.open('', '_blank');
             const logoUrl = "{{ asset('images/logosnaprint.jpeg') }}";
-            const isPartial = inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0);
+            const isUnpaid = inv.payment_status === 'UNPAID' || inv.order_status === 'draft';
+            const isPartial = !isUnpaid && (inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0));
             
+            let stampColor = '#059669';
+            let stampBg = '#ecfdf5';
+            let stampText = '✓ PAID (LUNAS)';
+
+            if (isUnpaid) {
+                stampColor = '#dc2626';
+                stampBg = '#fef2f2';
+                stampText = '✕ UNPAID (BELUM DIBAYAR)';
+            } else if (isPartial) {
+                stampColor = '#dc2626';
+                stampBg = '#fef2f2';
+                stampText = `⚠ UNPAID (SISA: Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')})`;
+            }
+
             const itemsHtml = (inv.items && inv.items.length > 0) ? inv.items.map((it, idx) => `
                 <tr>
                     <td style="text-align: center; padding: 8px; border: 1px solid #cbd5e1;">${idx + 1}</td>
@@ -1580,13 +1636,13 @@
                 <head>
                     <title>Invoice - ${inv.invoice_number || 'Document'}</title>
                     <style>
-                        body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #1e293b; font-size: 13px; }
+                        body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #1e293b; font-size: 13px; position: relative; }
                         .header { display: flex; justify-content: space-between; border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; margin-bottom: 20px; align-items: center; }
                         .brand-container { display: flex; align-items: center; gap: 14px; }
                         .brand-logo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
                         .brand { font-size: 22px; font-weight: bold; color: #1e3a8a; }
                         .title { font-size: 18px; font-weight: bold; text-align: right; color: #0f172a; }
-                        .stamp { display: inline-block; padding: 4px 12px; border: 2px solid ${isPartial ? '#d97706' : '#059669'}; color: ${isPartial ? '#d97706' : '#059669'}; font-weight: 800; border-radius: 6px; text-transform: uppercase; margin-bottom: 8px; font-size: 12px; }
+                        .stamp { display: inline-block; padding: 4px 12px; border: 2px solid ${stampColor}; background: ${stampBg}; color: ${stampColor}; font-weight: 900; border-radius: 6px; text-transform: uppercase; margin-bottom: 8px; font-size: 12px; letter-spacing: 0.5px; }
                         .client-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 20px; }
                         .info-table { width: 100%; margin-bottom: 20px; }
                         .info-table td { padding: 4px 0; font-size: 13px; }
@@ -1598,7 +1654,17 @@
                     </style>
                 </head>
                 <body>
-                    <div class="header">
+                    ${(isUnpaid || isPartial) ? `
+                        <div style="position: absolute; top: 35%; left: 15%; right: 15%; text-align: center; transform: rotate(-15deg); opacity: 0.08; font-size: 110px; font-weight: 900; color: #dc2626; border: 10px solid #dc2626; padding: 10px 20px; border-radius: 20px; font-family: monospace; pointer-events: none;">
+                            UNPAID
+                        </div>
+                    ` : `
+                        <div style="position: absolute; top: 35%; left: 20%; right: 20%; text-align: center; transform: rotate(-15deg); opacity: 0.07; font-size: 110px; font-weight: 900; color: #059669; border: 10px solid #059669; padding: 10px 20px; border-radius: 20px; font-family: monospace; pointer-events: none;">
+                            PAID
+                        </div>
+                    `}
+
+                    <div class="header" style="position: relative; z-index: 10;">
                         <div class="brand-container">
                             <img src="${logoUrl}" alt="Snaprint" class="brand-logo">
                             <div>
@@ -1608,7 +1674,7 @@
                             </div>
                         </div>
                         <div class="title">
-                            <div class="stamp">${isPartial ? '⚠ DP / UANG MUKA' : '✓ PAID (LUNAS)'}</div>
+                            <div class="stamp">${stampText}</div>
                             <div>FAKTUR / INVOICE ${isPartial ? '& SPK' : ''}</div>
                             <div style="font-size: 12px; font-weight: normal; color: #64748b; font-family: monospace;">No: ${inv.invoice_number || '-'}</div>
                         </div>
@@ -1665,11 +1731,21 @@
                             <td colspan="4" style="font-weight: bold; color: #059669;">Uang Muka (DP) Dibayar:</td>
                             <td style="font-weight: bold; font-family: monospace; color: #059669;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
                         </tr>
-                        <tr style="background: #fffbeb;">
-                            <td colspan="4" style="font-weight: bold; color: #b45309;">Sisa Piutang (Pelunasan):</td>
-                            <td style="font-weight: bold; font-family: monospace; font-size: 15px; color: #b45309;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
+                        <tr style="background: #fef2f2; border: 1px solid #fca5a5;">
+                            <td colspan="4" style="font-weight: bold; color: #dc2626;">Sisa Piutang (UNPAID):</td>
+                            <td style="font-weight: 900; font-family: monospace; font-size: 15px; color: #dc2626; width: 140px;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
                         </tr>
-                        ` : ''}
+                        ` : (isUnpaid ? `
+                        <tr style="background: #fef2f2; border: 1px solid #fca5a5;">
+                            <td colspan="4" style="font-weight: bold; color: #dc2626;">Status:</td>
+                            <td style="font-weight: 900; font-family: monospace; font-size: 14px; color: #dc2626; width: 140px;">UNPAID</td>
+                        </tr>
+                        ` : `
+                        <tr>
+                            <td colspan="4" style="font-weight: bold; color: #059669;">Status Pembayaran:</td>
+                            <td style="font-weight: bold; font-family: monospace; color: #059669; width: 140px;">LUNAS (PAID)</td>
+                        </tr>
+                        `)}
                     </table>
 
                     <div class="footer">

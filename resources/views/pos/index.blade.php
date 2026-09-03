@@ -2673,12 +2673,12 @@
                     
                     const badgeEl = document.getElementById('success-badge-tag');
                     if (isDraftResult) {
-                        badgeEl.className = 'badge bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded';
-                        badgeEl.innerHTML = '<i class="fa-solid fa-inbox me-1"></i> DRAFT PESANAN';
+                        badgeEl.className = 'badge bg-rose-600 text-white font-bold text-[10px] px-2 py-0.5 rounded';
+                        badgeEl.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> UNPAID (DRAFT)';
                         document.getElementById('success-msg-text').innerText = `Draft #${data.invoice_number} berhasil disimpan. Berikan ke Kasir untuk pembayaran.`;
                     } else if (isPartial) {
-                        badgeEl.className = 'badge bg-amber-500 text-white font-bold text-[10px] px-2 py-0.5 rounded';
-                        badgeEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-1"></i> DP (UANG MUKA)';
+                        badgeEl.className = 'badge bg-rose-600 text-white font-bold text-[10px] px-2 py-0.5 rounded';
+                        badgeEl.innerHTML = '<i class="fa-solid fa-clock-rotate-left me-1"></i> UNPAID (DP)';
                         document.getElementById('success-msg-text').innerText = `DP Rp ${Number(data.paid_amount).toLocaleString('id-ID')} diterima. Sisa Piutang: Rp ${Number(data.remaining_amount).toLocaleString('id-ID')}`;
                     } else {
                         badgeEl.className = 'badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded';

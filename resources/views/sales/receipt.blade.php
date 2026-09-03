@@ -251,12 +251,21 @@
             <td class="text-right fw-bold">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
         </tr>
         
-        @if($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
+        @if($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID')
+        <tr>
+            <td>Bayar ({{ $transaction->payment_method }})</td>
+            <td class="text-right">Rp 0</td>
+        </tr>
+        <tr style="font-weight: bold; color: #dc2626;">
+            <td>STATUS</td>
+            <td class="text-right">UNPAID (BELUM BAYAR)</td>
+        </tr>
+        @elseif($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
         <tr>
             <td>DP Masuk ({{ $transaction->payment_method }})</td>
             <td class="text-right">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</td>
         </tr>
-        <tr style="font-weight: bold; border-top: 1px dashed #000;">
+        <tr style="font-weight: bold; border-top: 1px dashed #000; color: #dc2626;">
             <td style="padding-top: 2px;">SISA PIUTANG</td>
             <td class="text-right" style="padding-top: 2px;">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</td>
         </tr>
@@ -284,9 +293,12 @@
 
     <!-- Status & Footer -->
     <div class="text-center">
-        @if($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
-            <div class="stamp-lunas">*** BUKTI DP / UANG MUKA ***</div>
-            <div style="font-size: 9px; color: #333;">Sisa tagihan wajib dilunasi saat pengambilan.</div>
+        @if($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID')
+            <div class="stamp-lunas" style="border: 1.5px solid #dc2626; color: #dc2626;">*** UNPAID (BELUM BAYAR) ***</div>
+            <div style="font-size: 9px; color: #dc2626; font-weight: bold;">Pesanan belum dibayar. Mohon lunasi di kasir.</div>
+        @elseif($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
+            <div class="stamp-lunas" style="border: 1.5px solid #dc2626; color: #dc2626;">*** UNPAID (SISA PIUTANG) ***</div>
+            <div style="font-size: 9px; color: #333;">Sisa tagihan Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }} wajib dilunasi saat pengambilan.</div>
         @else
             <div class="stamp-lunas">*** LUNAS (PAID) ***</div>
         @endif

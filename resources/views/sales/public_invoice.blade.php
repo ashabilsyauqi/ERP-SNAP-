@@ -35,10 +35,31 @@
     </div>
 
     <!-- Main Printable Invoice Container -->
-    <div id="invoice-printable" class="invoice-sheet max-w-3xl mx-auto bg-white rounded-2xl shadow-md border border-slate-200/80 p-6 sm:p-10">
+    <div id="invoice-printable" class="invoice-sheet max-w-3xl mx-auto bg-white rounded-2xl shadow-md border border-slate-200/80 p-6 sm:p-10 relative overflow-hidden">
         
+        @php
+            $isDraft = ($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID');
+            $isPartial = ($transaction->payment_status === 'PARTIAL' || ($transaction->remaining_amount && $transaction->remaining_amount > 0));
+            $isUnpaid = $isDraft || ($transaction->payment_status === 'UNPAID');
+        @endphp
+
+        <!-- Watermark Stamp Background -->
+        @if($isUnpaid || $isPartial)
+            <div class="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.07] select-none" style="z-index: 0;">
+                <div class="text-[130px] font-black tracking-widest text-red-600 border-[10px] border-red-600 rounded-3xl px-14 py-4 -rotate-12 uppercase font-mono">
+                    UNPAID
+                </div>
+            </div>
+        @elseif($transaction->isPaid())
+            <div class="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.06] select-none" style="z-index: 0;">
+                <div class="text-[130px] font-black tracking-widest text-emerald-600 border-[10px] border-emerald-600 rounded-3xl px-14 py-4 -rotate-12 uppercase font-mono">
+                    PAID
+                </div>
+            </div>
+        @endif
+
         <!-- Header & Logo -->
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b-2 border-blue-900 gap-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-6 border-b-2 border-blue-900 gap-4 relative z-10">
             <div class="flex items-center gap-3.5">
                 <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint Logo" class="w-14 h-14 rounded-full object-cover border border-slate-200 shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=Snaprint&background=1e3a8a&color=fff'">
                 <div>
@@ -49,22 +70,17 @@
             </div>
             
             <div class="text-left sm:text-right w-full sm:w-auto">
-                @php
-                    $isDraft = ($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID');
-                    $isPartial = ($transaction->payment_status === 'PARTIAL' || ($transaction->remaining_amount && $transaction->remaining_amount > 0));
-                @endphp
-
-                @if($isDraft)
-                    <div class="inline-block px-3 py-1 bg-amber-50 border-2 border-amber-500 text-amber-800 font-extrabold text-xs uppercase tracking-wider rounded-lg mb-1">
-                        DRAFT PESANAN (BELUM BAYAR)
+                @if($isUnpaid)
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border-2 border-red-600 text-red-700 font-black text-xs uppercase tracking-widest rounded-lg mb-1 shadow-sm">
+                        <i class="fa-solid fa-circle-xmark text-red-600"></i> UNPAID (BELUM BAYAR)
                     </div>
                 @elseif($isPartial)
-                    <div class="inline-block px-3 py-1 bg-amber-50 border-2 border-amber-600 text-amber-700 font-extrabold text-xs uppercase tracking-wider rounded-lg mb-1">
-                        DP / UANG MUKA (BELUM LUNAS)
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border-2 border-red-600 text-red-700 font-black text-xs uppercase tracking-widest rounded-lg mb-1 shadow-sm">
+                        <i class="fa-solid fa-clock-rotate-left text-red-600"></i> UNPAID (SISA PIUTANG: Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }})
                     </div>
                 @else
-                    <div class="inline-block px-3 py-1 bg-emerald-50 border-2 border-emerald-600 text-emerald-700 font-extrabold text-xs uppercase tracking-wider rounded-lg mb-1">
-                        LUNAS / PAID
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border-2 border-emerald-600 text-emerald-700 font-extrabold text-xs uppercase tracking-wider rounded-lg mb-1 shadow-sm">
+                        <i class="fa-solid fa-circle-check text-emerald-600"></i> LUNAS / PAID
                     </div>
                 @endif
 
@@ -181,14 +197,23 @@
                         <span>Uang Muka (DP) Diterima:</span>
                         <span class="font-mono">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</span>
                     </div>
-                    <div class="flex justify-between text-amber-800 font-black bg-amber-50 p-2 rounded-lg border border-amber-200">
-                        <span>Sisa Piutang (Pelunasan):</span>
-                        <span class="font-mono text-amber-900">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</span>
+                    <div class="flex justify-between text-red-800 font-black bg-red-50 p-2.5 rounded-lg border-2 border-red-300">
+                        <span class="flex items-center gap-1"><i class="fa-solid fa-circle-exclamation text-red-600"></i> Sisa Piutang (UNPAID):</span>
+                        <span class="font-mono text-base text-red-700">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</span>
                     </div>
-                @elseif(!$isDraft)
+                @elseif($isUnpaid)
+                    <div class="flex justify-between text-red-800 font-black bg-red-50 p-2.5 rounded-lg border-2 border-red-300">
+                        <span class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-600"></i> Status:</span>
+                        <span class="font-mono text-sm uppercase text-red-700 font-black">UNPAID (BELUM DIBAYAR)</span>
+                    </div>
+                @else
                     <div class="flex justify-between text-slate-600 font-semibold">
                         <span>Jumlah Dibayar:</span>
                         <span class="font-mono">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between text-emerald-800 font-black bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                        <span>Status Pembayaran:</span>
+                        <span class="font-mono text-emerald-700 uppercase">LUNAS (PAID)</span>
                     </div>
                 @endif
             </div>
