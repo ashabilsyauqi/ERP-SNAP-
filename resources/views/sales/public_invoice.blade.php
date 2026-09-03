@@ -17,40 +17,40 @@
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen py-6 px-3 sm:px-6">
+<body class="bg-slate-200/70 text-slate-800 font-sans antialiased min-h-screen py-6 sm:py-10 px-3 sm:px-6">
 
     <!-- Top Action Floating Bar (No Print) -->
-    <div class="max-w-3xl mx-auto mb-4 flex items-center justify-between no-print">
-        <a href="javascript:window.close()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1.5">
-            <i class="fa-solid fa-arrow-left"></i> Tutup
+    <div class="max-w-4xl mx-auto mb-4 flex items-center justify-between no-print">
+        <a href="javascript:window.close()" class="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 bg-white py-2 px-3.5 rounded-xl border border-slate-300 shadow-sm transition">
+            <i class="fa-solid fa-arrow-left"></i> Kembali / Tutup
         </a>
         <div class="flex items-center gap-2">
-            <button type="button" onclick="downloadPDF()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3.5 rounded-xl shadow-sm flex items-center gap-1.5 transition">
-                <i class="fa-solid fa-file-pdf"></i> Unduh Berkas PDF
+            <button type="button" onclick="downloadPDF()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-sm flex items-center gap-1.5 transition cursor-pointer">
+                <i class="fa-solid fa-file-pdf"></i> Unduh Berkas PDF (A4)
             </button>
-            <button type="button" onclick="window.print()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold py-2 px-3.5 rounded-xl shadow-sm flex items-center gap-1.5 transition">
+            <button type="button" onclick="window.print()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold py-2 px-4 rounded-xl shadow-sm flex items-center gap-1.5 transition cursor-pointer">
                 <i class="fa-solid fa-print"></i> Cetak Dokumen
             </button>
         </div>
     </div>
 
-    <!-- Main Printable Invoice Container -->
-    <div id="invoice-printable" class="invoice-sheet max-w-3xl mx-auto bg-white rounded-2xl shadow-md border border-slate-200/80 p-6 sm:p-10 relative overflow-hidden">
+    <!-- Main Printable Invoice Container (Paper Sheet Layout) -->
+    <div id="invoice-printable" class="invoice-sheet max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-300/80 p-8 sm:p-12 relative overflow-hidden">
         
         @php
-            $isDraft = ($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID');
-            $isPartial = ($transaction->payment_status === 'PARTIAL' || ($transaction->remaining_amount && $transaction->remaining_amount > 0));
-            $isUnpaid = $isDraft || ($transaction->payment_status === 'UNPAID');
+            $isPaid = $transaction->isPaid();
+            $isPartial = $transaction->isPartial() || ((float)$transaction->paid_amount > 0 && (float)$transaction->remaining_amount > 0);
+            $isUnpaid = !$isPaid && !$isPartial;
         @endphp
 
         <!-- Watermark Stamp Background -->
         @if($isUnpaid || $isPartial)
-            <div class="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.07] select-none" style="z-index: 0;">
+            <div class="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.06] select-none" style="z-index: 0;">
                 <div class="text-[130px] font-black tracking-widest text-red-600 border-[10px] border-red-600 rounded-3xl px-14 py-4 -rotate-12 uppercase font-mono">
                     UNPAID
                 </div>
             </div>
-        @elseif($transaction->isPaid())
+        @elseif($isPaid)
             <div class="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-[0.06] select-none" style="z-index: 0;">
                 <div class="text-[130px] font-black tracking-widest text-emerald-600 border-[10px] border-emerald-600 rounded-3xl px-14 py-4 -rotate-12 uppercase font-mono">
                     PAID
@@ -71,15 +71,15 @@
             
             <div class="text-left sm:text-right w-full sm:w-auto">
                 @if($isUnpaid)
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border-2 border-red-600 text-red-700 font-black text-xs uppercase tracking-widest rounded-lg mb-1 shadow-sm">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border-2 border-red-600 text-red-700 font-black text-xs uppercase tracking-widest rounded-lg mb-1 shadow-sm whitespace-nowrap">
                         <i class="fa-solid fa-circle-xmark text-red-600"></i> UNPAID (BELUM BAYAR)
                     </div>
                 @elseif($isPartial)
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border-2 border-red-600 text-red-700 font-black text-xs uppercase tracking-widest rounded-lg mb-1 shadow-sm">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border-2 border-red-600 text-red-700 font-black text-xs uppercase tracking-widest rounded-lg mb-1 shadow-sm whitespace-nowrap">
                         <i class="fa-solid fa-clock-rotate-left text-red-600"></i> UNPAID (SISA PIUTANG: Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }})
                     </div>
                 @else
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border-2 border-emerald-600 text-emerald-700 font-extrabold text-xs uppercase tracking-wider rounded-lg mb-1 shadow-sm">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border-2 border-emerald-600 text-emerald-700 font-extrabold text-xs uppercase tracking-wider rounded-lg mb-1 shadow-sm whitespace-nowrap">
                         <i class="fa-solid fa-circle-check text-emerald-600"></i> LUNAS / PAID
                     </div>
                 @endif
@@ -133,8 +133,8 @@
                         <th class="py-2.5 px-3 text-center w-10">No</th>
                         <th class="py-2.5 px-3">Deskripsi Item / Pesanan</th>
                         <th class="py-2.5 px-3 text-center w-20">Qty</th>
-                        <th class="py-2.5 px-3 text-right w-32">Harga Satuan</th>
-                        <th class="py-2.5 px-3 text-right w-36">Subtotal</th>
+                        <th class="py-2.5 px-3 text-right w-32 whitespace-nowrap">Harga Satuan</th>
+                        <th class="py-2.5 px-3 text-right w-36 whitespace-nowrap">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
@@ -150,8 +150,8 @@
                                 @endif
                             </td>
                             <td class="py-3 px-3 text-center font-bold text-slate-800">{{ $detail->qty_ordered }}</td>
-                            <td class="py-3 px-3 text-right font-mono text-slate-700">Rp {{ number_format($detail->selling_price, 0, ',', '.') }}</td>
-                            <td class="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                            <td class="py-3 px-3 text-right font-mono text-slate-700 whitespace-nowrap">Rp {{ number_format($detail->selling_price, 0, ',', '.') }}</td>
+                            <td class="py-3 px-3 text-right font-mono font-bold text-slate-900 whitespace-nowrap">
                                 Rp {{ number_format($detail->qty_ordered * $detail->selling_price, 0, ',', '.') }}
                             </td>
                         </tr>
@@ -164,56 +164,61 @@
             </table>
         </div>
 
-        <!-- Totals & Payment Breakdown -->
-        <div class="border-t-2 border-slate-200 pt-4 flex flex-col sm:flex-row justify-between items-start gap-4">
-            <div class="text-xs text-slate-500 max-w-xs">
+        <!-- Totals & Payment Breakdown (Clean Inline Layout) -->
+        <div class="border-t-2 border-slate-200 pt-5 flex flex-col sm:flex-row justify-between items-start gap-6">
+            <div class="text-xs text-slate-500 flex-1 min-w-0">
                 @if($transaction->negotiation_notes)
-                    <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800">
-                        <span class="font-bold block text-[10px] uppercase tracking-wider"><i class="fa-solid fa-handshake me-1"></i> Catatan Negosiasi:</span>
+                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800">
+                        <span class="font-bold block text-[11px] uppercase tracking-wider mb-1"><i class="fa-solid fa-handshake me-1"></i> Catatan Negosiasi:</span>
                         {{ $transaction->negotiation_notes }}
                     </div>
                 @endif
+                <div class="mt-2 text-[11px] text-slate-400 space-y-0.5">
+                    <div>Metode Pembayaran: <strong class="text-slate-700">{{ $transaction->payment_method ?: 'Cash' }}</strong></div>
+                    <div>Petugas Kasir: <strong class="text-slate-700">{{ $transaction->user->full_name ?? ($transaction->user->username ?? 'Kasir') }}</strong></div>
+                </div>
             </div>
 
-            <div class="w-full sm:w-72 text-xs space-y-2">
+            <!-- Total Box with Guaranteed Inline Non-Wrapping Currency -->
+            <div class="w-full sm:w-96 md:w-[440px] text-xs space-y-2.5 flex-shrink-0">
                 @if($transaction->original_price && $transaction->original_price > $transaction->total_price)
-                    <div class="flex justify-between text-slate-500">
-                        <span>Total Akumulasi Asli:</span>
-                        <span class="font-mono line-through">Rp {{ number_format($transaction->original_price, 0, ',', '.') }}</span>
+                    <div class="flex justify-between items-center gap-4 text-slate-500">
+                        <span class="whitespace-nowrap">Total Akumulasi Asli:</span>
+                        <span class="font-mono line-through whitespace-nowrap text-right">Rp {{ number_format($transaction->original_price, 0, ',', '.') }}</span>
                     </div>
-                    <div class="flex justify-between text-emerald-700 font-bold">
-                        <span>Potongan Negosiasi:</span>
-                        <span class="font-mono">- Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
+                    <div class="flex justify-between items-center gap-4 text-emerald-700 font-bold">
+                        <span class="whitespace-nowrap">Potongan Negosiasi:</span>
+                        <span class="font-mono whitespace-nowrap text-right">- Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
                     </div>
                 @endif
 
-                <div class="flex justify-between text-sm font-black text-blue-900 pt-1 border-t border-slate-200">
-                    <span>Total Tagihan:</span>
-                    <span class="font-mono text-base">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
+                <div class="flex justify-between items-center gap-4 text-sm font-black text-blue-900 pt-2 border-t-2 border-slate-200">
+                    <span class="whitespace-nowrap">Total Tagihan:</span>
+                    <span class="font-mono text-base whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
                 </div>
 
                 @if($isPartial)
-                    <div class="flex justify-between text-emerald-700 font-bold pt-1">
-                        <span>Uang Muka (DP) Diterima:</span>
-                        <span class="font-mono">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</span>
+                    <div class="flex justify-between items-center gap-4 text-emerald-700 font-bold pt-1">
+                        <span class="whitespace-nowrap">Uang Muka (DP) Diterima:</span>
+                        <span class="font-mono whitespace-nowrap text-right">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</span>
                     </div>
-                    <div class="flex justify-between text-red-800 font-black bg-red-50 p-2.5 rounded-lg border-2 border-red-300">
-                        <span class="flex items-center gap-1"><i class="fa-solid fa-circle-exclamation text-red-600"></i> Sisa Piutang (UNPAID):</span>
-                        <span class="font-mono text-base text-red-700">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</span>
+                    <div class="flex justify-between items-center gap-4 text-red-800 font-black bg-red-50 p-3 rounded-xl border-2 border-red-400 shadow-sm">
+                        <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-exclamation text-red-600"></i> Sisa Piutang (UNPAID):</span>
+                        <span class="font-mono text-base text-red-700 whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</span>
                     </div>
                 @elseif($isUnpaid)
-                    <div class="flex justify-between text-red-800 font-black bg-red-50 p-2.5 rounded-lg border-2 border-red-300">
-                        <span class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-600"></i> Status:</span>
-                        <span class="font-mono text-sm uppercase text-red-700 font-black">UNPAID (BELUM DIBAYAR)</span>
+                    <div class="flex justify-between items-center gap-4 text-red-800 font-black bg-red-50 p-3 rounded-xl border-2 border-red-400 shadow-sm">
+                        <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-xmark text-red-600"></i> Sisa Pembayaran (UNPAID):</span>
+                        <span class="font-mono text-base text-red-700 whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
                     </div>
                 @else
-                    <div class="flex justify-between text-slate-600 font-semibold">
-                        <span>Jumlah Dibayar:</span>
-                        <span class="font-mono">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</span>
+                    <div class="flex justify-between items-center gap-4 text-slate-600 font-semibold pt-1">
+                        <span class="whitespace-nowrap">Jumlah Dibayar:</span>
+                        <span class="font-mono whitespace-nowrap text-right">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</span>
                     </div>
-                    <div class="flex justify-between text-emerald-800 font-black bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                        <span>Status Pembayaran:</span>
-                        <span class="font-mono text-emerald-700 uppercase">LUNAS (PAID)</span>
+                    <div class="flex justify-between items-center gap-4 text-emerald-800 font-black bg-emerald-50 p-3 rounded-xl border-2 border-emerald-400 shadow-sm">
+                        <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-check text-emerald-600"></i> Status Pembayaran:</span>
+                        <span class="font-mono text-emerald-700 uppercase whitespace-nowrap text-right font-black">LUNAS (PAID)</span>
                     </div>
                 @endif
             </div>

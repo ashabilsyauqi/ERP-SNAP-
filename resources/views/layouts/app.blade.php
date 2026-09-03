@@ -972,7 +972,7 @@
     style="position: fixed; inset: 0; z-index: 999999 !important; display: none;" 
     x-cloak 
     @keydown.window.escape="open = false">
-        <div class="bg-white rounded-3 shadow-2xl border w-full max-w-2xl overflow-hidden my-auto" @click.away="open = false">
+        <div class="bg-white rounded-3 shadow-2xl border w-full max-w-3xl overflow-hidden my-auto" @click.away="open = false">
             <!-- Modal Header -->
             <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
@@ -1095,30 +1095,30 @@
                         </tbody>
                         <tfoot class="bg-slate-50">
                             <tr>
-                                <td colspan="4" class="text-end fw-bold text-slate-700">Total Nilai Pesanan:</td>
-                                <td class="text-end fw-bold font-mono text-blue-900 fs-6" x-text="'Rp ' + Number(inv.total_price || 0).toLocaleString('id-ID')"></td>
+                                <td colspan="4" class="text-end fw-bold text-slate-700 text-nowrap">Total Nilai Pesanan:</td>
+                                <td class="text-end fw-bold font-mono text-blue-900 fs-6 text-nowrap" x-text="'Rp ' + Number(inv.total_price || 0).toLocaleString('id-ID')"></td>
                             </tr>
-                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && inv.remaining_amount > 0)">
+                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0 && Number(inv.paid_amount) > 0)">
                                 <tr>
-                                    <td colspan="4" class="text-end fw-bold text-emerald-700 text-xs">Uang Muka (DP) Diterima:</td>
-                                    <td class="text-end font-mono font-bold text-emerald-700 text-xs" x-text="'Rp ' + Number(inv.paid_amount || 0).toLocaleString('id-ID')"></td>
+                                    <td colspan="4" class="text-end fw-bold text-emerald-700 text-xs text-nowrap">Uang Muka (DP) Diterima:</td>
+                                    <td class="text-end font-mono font-bold text-emerald-700 text-xs text-nowrap" x-text="'Rp ' + Number(inv.paid_amount || 0).toLocaleString('id-ID')"></td>
                                 </tr>
                             </template>
-                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0)">
+                            <template x-if="inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0 && Number(inv.paid_amount) > 0)">
                                 <tr class="bg-rose-50 border border-rose-200">
-                                    <td colspan="4" class="text-end fw-bold text-rose-800 text-xs">Sisa Piutang (UNPAID):</td>
-                                    <td class="text-end font-mono font-extrabold text-rose-700 text-xs" x-text="'Rp ' + Number(inv.remaining_amount || 0).toLocaleString('id-ID')"></td>
+                                    <td colspan="4" class="text-end fw-bold text-rose-800 text-xs text-nowrap">Sisa Piutang (UNPAID):</td>
+                                    <td class="text-end font-mono font-extrabold text-rose-700 text-xs text-nowrap" x-text="'Rp ' + Number(inv.remaining_amount || 0).toLocaleString('id-ID')"></td>
                                 </tr>
                             </template>
-                            <template x-if="inv.payment_status === 'UNPAID' || inv.order_status === 'draft'">
+                            <template x-if="inv.payment_status === 'UNPAID' || inv.order_status === 'draft' || (!inv.paid_amount || Number(inv.paid_amount) <= 0)">
                                 <tr class="bg-rose-50 border border-rose-200">
-                                    <td colspan="4" class="text-end fw-bold text-rose-800 text-xs">Status:</td>
-                                    <td class="text-end font-mono font-black text-rose-700 text-xs">UNPAID (BELUM DIBAYAR)</td>
+                                    <td colspan="4" class="text-end fw-bold text-rose-800 text-xs text-nowrap">Sisa Pembayaran (UNPAID):</td>
+                                    <td class="text-end font-mono font-black text-rose-700 text-xs text-nowrap" x-text="'Rp ' + Number(inv.remaining_amount || inv.total_price || 0).toLocaleString('id-ID')"></td>
                                 </tr>
                             </template>
                             <tr>
-                                <td colspan="4" class="text-end text-slate-500 text-[11px]">Metode Pembayaran:</td>
-                                <td class="text-end text-slate-700 text-[11px] font-semibold" x-text="inv.payment_method || 'Cash / Kas Masuk'"></td>
+                                <td colspan="4" class="text-end text-slate-500 text-[11px] text-nowrap">Metode Pembayaran:</td>
+                                <td class="text-end text-slate-700 text-[11px] font-semibold text-nowrap" x-text="inv.payment_method || 'Cash / Kas Masuk'"></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -1522,30 +1522,34 @@
                         <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px;">
                             ${(inv.discount_amount && Number(inv.discount_amount) > 0) ? `
                             <tr>
-                                <td colspan="4" style="text-align: right; color: #64748b;">Total Asli:</td>
-                                <td style="text-align: right; width: 120px; font-family: monospace; text-decoration: line-through; color: #94a3b8;">Rp ${Number(inv.original_price || (Number(inv.total_price) + Number(inv.discount_amount))).toLocaleString('id-ID')}</td>
+                                <td colspan="4" style="text-align: right; color: #64748b; white-space: nowrap;">Total Asli:</td>
+                                <td style="text-align: right; width: 170px; font-family: monospace; text-decoration: line-through; color: #94a3b8; white-space: nowrap;">Rp ${Number(inv.original_price || (Number(inv.total_price) + Number(inv.discount_amount))).toLocaleString('id-ID')}</td>
                             </tr>
                             <tr>
-                                <td colspan="4" style="text-align: right; color: #059669; font-weight: bold;">Potongan Nego:</td>
-                                <td style="text-align: right; width: 120px; font-family: monospace; color: #059669; font-weight: bold;">- Rp ${Number(inv.discount_amount).toLocaleString('id-ID')}</td>
+                                <td colspan="4" style="text-align: right; color: #059669; font-weight: bold; white-space: nowrap;">Potongan Nego:</td>
+                                <td style="text-align: right; width: 170px; font-family: monospace; color: #059669; font-weight: bold; white-space: nowrap;">- Rp ${Number(inv.discount_amount).toLocaleString('id-ID')}</td>
                             </tr>` : ''}
                             <tr>
-                                <td colspan="4" style="text-align: right; font-weight: bold; font-size: 13px;">Total Tagihan:</td>
-                                <td style="text-align: right; width: 120px; font-family: monospace; font-size: 14px; font-weight: bold; color: #1e3a8a;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
+                                <td colspan="4" style="text-align: right; font-weight: bold; font-size: 13px; white-space: nowrap;">Total Tagihan:</td>
+                                <td style="text-align: right; width: 170px; font-family: monospace; font-size: 14px; font-weight: bold; color: #1e3a8a; white-space: nowrap;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
                             </tr>
                             ${isPartial ? `
                             <tr>
-                                <td colspan="4" style="text-align: right; color: #059669; font-weight: bold;">DP Diterima:</td>
-                                <td style="text-align: right; font-family: monospace; color: #059669; font-weight: bold;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
+                                <td colspan="4" style="text-align: right; color: #059669; font-weight: bold; white-space: nowrap;">DP Diterima:</td>
+                                <td style="text-align: right; font-family: monospace; color: #059669; font-weight: bold; width: 170px; white-space: nowrap;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
                             </tr>
                             <tr style="background: #fef2f2; border: 1px solid #fca5a5;">
-                                <td colspan="4" style="text-align: right; color: #dc2626; font-weight: bold;">Sisa Piutang (UNPAID):</td>
-                                <td style="text-align: right; font-family: monospace; color: #dc2626; font-weight: bold; font-size: 13px;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
+                                <td colspan="4" style="text-align: right; color: #dc2626; font-weight: bold; white-space: nowrap;">Sisa Piutang (UNPAID):</td>
+                                <td style="text-align: right; font-family: monospace; color: #dc2626; font-weight: bold; font-size: 13px; width: 170px; white-space: nowrap;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
                             </tr>` : (isUnpaid ? `
                             <tr style="background: #fef2f2; border: 1px solid #fca5a5;">
-                                <td colspan="4" style="text-align: right; color: #dc2626; font-weight: bold;">Status:</td>
-                                <td style="text-align: right; font-family: monospace; color: #dc2626; font-weight: 900; font-size: 13px;">UNPAID</td>
-                            </tr>` : '')}
+                                <td colspan="4" style="text-align: right; color: #dc2626; font-weight: bold; white-space: nowrap;">Sisa Pembayaran (UNPAID):</td>
+                                <td style="text-align: right; font-family: monospace; color: #dc2626; font-weight: 900; font-size: 13px; width: 170px; white-space: nowrap;">Rp ${Number(inv.remaining_amount || inv.total_price || 0).toLocaleString('id-ID')}</td>
+                            </tr>` : `
+                            <tr>
+                                <td colspan="4" style="text-align: right; color: #059669; font-weight: bold; white-space: nowrap;">Status Pembayaran:</td>
+                                <td style="text-align: right; font-family: monospace; color: #059669; font-weight: bold; width: 170px; white-space: nowrap;">LUNAS (PAID)</td>
+                            </tr>`)}
                         </table>
 
                         <div style="margin-top: 25px; border-top: 1px solid #cbd5e1; padding-top: 10px; text-align: center; font-size: 10px; color: #94a3b8;">
@@ -1730,27 +1734,27 @@
 
                     <table class="totals-table">
                         <tr>
-                            <td colspan="4" style="font-weight: bold;">Total Nilai Pesanan:</td>
-                            <td style="font-weight: bold; font-family: monospace; font-size: 15px; color: #1e3a8a; width: 140px;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
+                            <td colspan="4" style="font-weight: bold; white-space: nowrap;">Total Nilai Pesanan:</td>
+                            <td style="font-weight: bold; font-family: monospace; font-size: 15px; color: #1e3a8a; width: 170px; white-space: nowrap;">Rp ${Number(inv.total_price || 0).toLocaleString('id-ID')}</td>
                         </tr>
                         ${isPartial ? `
                         <tr>
-                            <td colspan="4" style="font-weight: bold; color: #059669;">Uang Muka (DP) Dibayar:</td>
-                            <td style="font-weight: bold; font-family: monospace; color: #059669;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
+                            <td colspan="4" style="font-weight: bold; color: #059669; white-space: nowrap;">Uang Muka (DP) Dibayar:</td>
+                            <td style="font-weight: bold; font-family: monospace; color: #059669; width: 170px; white-space: nowrap;">Rp ${Number(inv.paid_amount || 0).toLocaleString('id-ID')}</td>
                         </tr>
                         <tr style="background: #fef2f2; border: 1px solid #fca5a5;">
-                            <td colspan="4" style="font-weight: bold; color: #dc2626;">Sisa Piutang (UNPAID):</td>
-                            <td style="font-weight: 900; font-family: monospace; font-size: 15px; color: #dc2626; width: 140px;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
+                            <td colspan="4" style="font-weight: bold; color: #dc2626; white-space: nowrap;">Sisa Piutang (UNPAID):</td>
+                            <td style="font-weight: 900; font-family: monospace; font-size: 15px; color: #dc2626; width: 170px; white-space: nowrap;">Rp ${Number(inv.remaining_amount || 0).toLocaleString('id-ID')}</td>
                         </tr>
                         ` : (isUnpaid ? `
                         <tr style="background: #fef2f2; border: 1px solid #fca5a5;">
-                            <td colspan="4" style="font-weight: bold; color: #dc2626;">Status:</td>
-                            <td style="font-weight: 900; font-family: monospace; font-size: 14px; color: #dc2626; width: 140px;">UNPAID</td>
+                            <td colspan="4" style="font-weight: bold; color: #dc2626; white-space: nowrap;">Sisa Pembayaran (UNPAID):</td>
+                            <td style="font-weight: 900; font-family: monospace; font-size: 14px; color: #dc2626; width: 170px; white-space: nowrap;">Rp ${Number(inv.remaining_amount || inv.total_price || 0).toLocaleString('id-ID')}</td>
                         </tr>
                         ` : `
                         <tr>
-                            <td colspan="4" style="font-weight: bold; color: #059669;">Status Pembayaran:</td>
-                            <td style="font-weight: bold; font-family: monospace; color: #059669; width: 140px;">LUNAS (PAID)</td>
+                            <td colspan="4" style="font-weight: bold; color: #059669; white-space: nowrap;">Status Pembayaran:</td>
+                            <td style="font-weight: bold; font-family: monospace; color: #059669; width: 170px; white-space: nowrap;">LUNAS (PAID)</td>
                         </tr>
                         `)}
                     </table>
