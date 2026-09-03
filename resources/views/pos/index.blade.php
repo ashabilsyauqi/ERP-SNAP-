@@ -736,8 +736,18 @@
 
 <!-- Modal Custom Dimension Banner (Interactive Roll Canvas & Adjustable Dimensions) -->
 <div class="modal fade" id="modalBannerDimension" tabindex="-1" aria-labelledby="modalBannerDimensionLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 1050px;">
         <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
+            <style>
+                #modalBannerDimension label {
+                    position: static !important;
+                    background-color: transparent !important;
+                    padding: 0 !important;
+                    letter-spacing: normal !important;
+                    display: inline-block !important;
+                    width: auto !important;
+                }
+            </style>
             <!-- Modal Header with Solid Background -->
             <div class="px-4 py-3 d-flex justify-content-between align-items-center" style="background-color: #0f172a !important; color: #ffffff !important;">
                 <div class="d-flex align-items-center gap-2.5">
@@ -752,7 +762,7 @@
                 <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="p-4" style="background-color: #f8fafc;">
+            <div class="p-4" style="background-color: #f8fafc; max-height: calc(88vh - 120px); overflow-y: auto;">
                 <div class="row g-3">
                     <!-- LEFT COLUMN: Dynamic Banner Roll Visual Preview -->
                     <div class="col-12 col-lg-5">
@@ -790,7 +800,7 @@
 
                                         <!-- Canvas Label Text -->
                                         <div class="z-10 p-1">
-                                            <i class="fa-solid fa-image text-blue-500 text-lg mb-1 block"></i>
+                                             <i class="fa-solid fa-image text-blue-500 text-lg mb-1 block"></i>
                                             <span id="canvas_dim_label" class="font-bold text-slate-900 font-mono text-xs block leading-tight">1.0m x 2.0m</span>
                                             <span id="canvas_area_label" class="text-[10px] text-emerald-700 font-bold font-mono block">2.00 m²</span>
                                         </div>
@@ -818,7 +828,7 @@
                             <!-- 1. LEBAR BANNER (Locked Min 1.0m, Max 3.0m) -->
                             <div>
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-0">
+                                    <label class="font-bold text-slate-900 text-xs uppercase mb-0">
                                         <span>1. Lebar Cetak (1.0m s/d 3.0m) <span class="text-rose-600">*</span></span>
                                     </label>
                                     <span class="text-[11px] font-mono font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
@@ -850,7 +860,7 @@
                             <!-- 2. PANJANG BANNER (Locked Min 1.0m, Max 30.0m) -->
                             <div class="border-t border-slate-100 pt-2.5">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-0">
+                                    <label class="font-bold text-slate-900 text-xs uppercase mb-0">
                                         <span>2. Panjang Cetak (1.0m s/d 30.0m) <span class="text-rose-600">*</span></span>
                                     </label>
                                     <span class="text-[11px] font-mono font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
@@ -884,7 +894,7 @@
                             <!-- 3. FINISHING & JUMLAH LEMBAR (QTY) -->
                             <div class="border-t border-slate-100 pt-2.5 row g-2">
                                 <div class="col-7">
-                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-1">Finishing Spanduk</label>
+                                    <label class="font-bold text-slate-900 text-xs uppercase mb-1 block">Finishing Spanduk</label>
                                     <select id="banner_finishing" onchange="onFinishingChange(this.value)" class="form-select form-select-sm text-xs font-semibold text-slate-800">
                                         <option value="Mata Ayam 4 Sudut">Mata Ayam 4 Sudut (Standar)</option>
                                         <option value="Mata Ayam Keliling (Per Meter)">Mata Ayam Keliling (Per 1 Meter)</option>
@@ -896,7 +906,7 @@
                                     </select>
                                 </div>
                                 <div class="col-5">
-                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-1">Jumlah (Qty)</label>
+                                    <label class="font-bold text-slate-900 text-xs uppercase mb-1 block">Jumlah (Qty)</label>
                                     <div class="input-group input-group-sm">
                                         <button type="button" onclick="changeDimQty(-1)" class="btn btn-outline-secondary font-bold">-</button>
                                         <input type="number" id="dim_qty" min="1" value="1" oninput="calculateDimensionPreview()" class="form-control form-control-sm text-center font-bold font-mono text-slate-900">
@@ -908,8 +918,8 @@
                             <!-- 4. PENGATURAN MATA AYAM / EYELETS (4 GRATIS, >4 DI-CHARGE 500/PCS) -->
                             <div id="wrapper_mata_ayam" class="border-t border-slate-100 pt-2.5">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label class="form-label font-bold text-slate-900 text-xs uppercase mb-0">
-                                        <i class="fa-solid fa-circle-dot text-blue-600 me-1"></i>
+                                    <label class="font-bold text-slate-900 text-xs uppercase mb-0 d-inline-flex align-items-center">
+                                        <i class="fa-solid fa-circle-dot text-blue-600 me-1.5"></i>
                                         <span>Jumlah Mata Ayam / Ring Lubang</span>
                                     </label>
                                     <span id="badge_mata_ayam_rule" class="text-[10px] font-bold px-2 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-200">
