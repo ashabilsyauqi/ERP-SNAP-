@@ -185,16 +185,16 @@
         </div>
         
         <!-- Products Cards Grid (Fluid Responsive Auto-Fill Flex/Grid, Smooth Vertical Scroll) -->
-        <div id="products-grid" class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5 overflow-y-auto pr-1 pb-2 flex-grow min-h-0 w-full content-start">
+        <div id="products-grid" class="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-3 overflow-y-auto pr-1 pb-2 flex-grow min-h-0 w-full content-start">
             @foreach($materials as $material)
-                <div class="product-card bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group min-w-[190px]"
+                <div class="product-card bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-500 transition duration-150 cursor-pointer flex flex-col justify-between group min-w-[230px]"
                      data-id="{{ $material->id }}"
                      data-name="{{ strtolower($material->material_name) }}"
                      data-category="{{ $material->category ?? 'Lainnya' }}"
                      onclick="onSelectProduct({{ $material->id }})">
                     
                     <div class="min-w-0">
-                        <div class="flex justify-between items-start mb-1.5 gap-1">
+                        <div class="flex justify-between items-start mb-2 gap-1.5">
                             @php
                                 $badgeStyle = match($material->category) {
                                     'Print Dokumen dan Sticker' => 'bg-sky-50 text-sky-700 border-sky-200',
@@ -208,40 +208,40 @@
                                     default => 'bg-slate-50 text-slate-700 border-slate-200'
                                 };
                             @endphp
-                            <span class="badge {{ $badgeStyle }} border text-[10px] font-semibold px-2 py-0.5 rounded-md truncate max-w-[120px]" title="{{ $material->category ?? 'Bahan' }}">
+                            <span class="badge {{ $badgeStyle }} border text-[11px] font-semibold px-2.5 py-0.5 rounded-lg truncate max-w-[140px]" title="{{ $material->category ?? 'Bahan' }}">
                                 {{ $material->category ?? 'Bahan' }}
                             </span>
-                            <span class="text-[10px] {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold flex-shrink-0">
+                            <span class="text-xs {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold flex-shrink-0">
                                 {{ $material->stock_qty }} pcs
                             </span>
                         </div>
                         
-                        <h3 class="font-bold text-slate-900 text-xs line-clamp-2 mb-1 group-hover:text-blue-600 transition leading-snug">
+                        <h3 class="font-bold text-slate-900 text-sm line-clamp-2 mb-1.5 group-hover:text-blue-600 transition leading-snug">
                             {{ $material->material_name }}
                         </h3>
                         
                         @if($material->fixed_size)
-                            <div class="text-[10px] text-slate-500 mb-1 truncate">
-                                Lebar Roll: <strong class="text-slate-700">{{ $material->fixed_size }} m</strong>
+                            <div class="text-xs text-slate-500 mb-1 truncate">
+                                Lebar Roll: <strong class="text-slate-700 font-semibold">{{ $material->fixed_size }} m</strong>
                             </div>
                         @endif
 
                         @if($material->wholesalePrices->count() > 0)
-                            <div class="text-[10px] text-blue-600 font-medium mb-1 truncate">
+                            <div class="text-xs text-blue-600 font-semibold mb-1 truncate">
                                 <i class="fa-solid fa-tags me-1"></i>{{ $material->wholesalePrices->count() }} Tier Grosir
                             </div>
                         @endif
                     </div>
 
-                    <div class="pt-2 border-t border-slate-100 flex justify-between items-center mt-2">
+                    <div class="pt-2.5 border-t border-slate-100 flex justify-between items-center mt-3">
                         <div class="min-w-0">
-                            <span class="text-[9.5px] text-slate-400 block leading-tight">Harga Satuan</span>
-                            <span class="font-bold text-blue-900 font-mono text-xs truncate block">
+                            <span class="text-[10px] text-slate-400 block leading-tight font-semibold uppercase tracking-wider">Harga Satuan</span>
+                            <span class="font-black text-blue-900 font-mono text-sm sm:text-base truncate block">
                                 Rp {{ number_format($material->retail_price, 0, ',', '.') }}
                             </span>
                         </div>
                         
-                        <button type="button" class="w-7 h-7 bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white rounded-lg flex items-center justify-center transition border-0 cursor-pointer text-xs flex-shrink-0">
+                        <button type="button" class="w-8 h-8 bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white rounded-xl flex items-center justify-center transition border-0 cursor-pointer text-sm flex-shrink-0 font-bold shadow-sm">
                             <i class="fa-solid fa-plus"></i>
                         </button>
                     </div>
@@ -260,18 +260,18 @@
     </div>
 
     <!-- Right Column: Cart & Checkout (Strict Fixed Responsive Width, Always In View) -->
-    <div class="w-full lg:w-[330px] xl:w-[370px] 2xl:w-[400px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
+    <div class="w-full lg:w-[360px] xl:w-[400px] 2xl:w-[430px] bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden h-full flex-shrink-0"
          :class="activeTab === 'cart' ? 'flex' : 'hidden lg:flex'">
         
         <!-- Cart Header -->
-        <div class="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
-            <div class="flex items-center gap-2">
+        <div class="px-4 py-3 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-2.5">
                 <!-- Back to Catalog button on screens < 1024px -->
-                <button type="button" @click="activeTab = 'catalog'" class="lg:hidden w-7 h-7 bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center border-0 cursor-pointer" title="Kembali ke Katalog">
-                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                <button type="button" @click="activeTab = 'catalog'" class="lg:hidden w-8 h-8 bg-white/10 hover:bg-white/20 text-white rounded-lg flex items-center justify-center border-0 cursor-pointer" title="Kembali ke Katalog">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
                 </button>
-                <i class="fa-solid fa-cart-shopping text-blue-400 text-sm"></i>
-                <h2 class="text-xs font-bold mb-0 text-white">Keranjang Order (POS)</h2>
+                <i class="fa-solid fa-cart-shopping text-blue-400 text-base"></i>
+                <h2 class="text-sm font-bold mb-0 text-white">Keranjang Order (POS)</h2>
             </div>
             <div class="flex items-center gap-2">
                 <button type="button" onclick="clearCart()" class="text-[11px] text-slate-400 hover:text-rose-400 font-semibold bg-transparent border-0 cursor-pointer p-0">
@@ -489,22 +489,22 @@
             <div id="checkout-error-desktop" class="hidden bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-semibold"></div>
 
             <!-- Checkout Action Buttons Area (With Titik 3 Negotiation) -->
-            <div class="flex items-center gap-1.5 pt-1">
+            <div class="flex items-center gap-2 pt-1.5">
                 @if(!auth()->user()->isOperator())
                     <!-- Titik 3 Tombol Negosiasi (Diskon Total) Tepat di Samping Tombol Bayar -->
-                    <button type="button" onclick="openNegotiationModal()" id="btn-open-nego" class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-xl transition flex items-center justify-center cursor-pointer flex-shrink-0 shadow-sm" title="Negosiasi / Diskon Total Tagihan">
-                        <i class="fa-solid fa-ellipsis-vertical text-base text-slate-600"></i>
+                    <button type="button" onclick="openNegotiationModal()" id="btn-open-nego" class="h-11 w-11 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 border border-slate-300 rounded-xl transition flex items-center justify-center cursor-pointer flex-shrink-0 shadow-sm" title="Negosiasi / Diskon Total Tagihan">
+                        <i class="fa-solid fa-ellipsis-vertical text-lg text-slate-700"></i>
                     </button>
                 @endif
 
                 @if(auth()->user()->isOperator())
-                    <button onclick="processCheckout(true)" id="checkout-btn-desktop" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-3 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-xs">
-                        <i class="fa-solid fa-file-signature"></i>
+                    <button onclick="processCheckout(true)" id="checkout-btn-desktop" class="flex-1 h-11 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-sm">
+                        <i class="fa-solid fa-file-signature text-base"></i>
                         <span>Simpan Draft Pesanan (Ke Kasir)</span>
                     </button>
                 @else
-                    <button onclick="processCheckout(false)" id="checkout-btn-desktop" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-3 rounded-xl shadow transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-xs">
-                        <i class="fa-solid fa-circle-check"></i>
+                    <button onclick="processCheckout(false)" id="checkout-btn-desktop" class="flex-1 h-11 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-sm">
+                        <i class="fa-solid fa-circle-check text-base"></i>
                         <span x-text="(isDp && isEligibleForDp) ? 'Proses Bayar DP' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
                     </button>
                 @endif
@@ -547,81 +547,107 @@
 <!-- Input holds global payment selection state -->
 <input type="hidden" id="global_payment_method" value="Cash">
 
-<!-- Modal Negosiasi Tagihan POS -->
+<!-- Modal Negosiasi Tagihan POS (Comfortable Size & Readable Typography) -->
 <div class="modal fade" id="modalNegotiation" tabindex="-1" aria-labelledby="modalNegotiationLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
         <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
-            <div class="px-4 py-3 d-flex justify-content-between align-items-center bg-slate-900 text-white">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500/20 border border-amber-400/30 text-amber-400">
-                        <i class="fa-solid fa-handshake text-sm"></i>
+            <!-- Modal Header -->
+            <div class="px-5 py-3.5 d-flex justify-content-between align-items-center bg-slate-900 text-white">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/20 border border-amber-400/30 text-amber-400 text-lg">
+                        <i class="fa-solid fa-handshake"></i>
                     </div>
                     <div>
-                        <h5 class="fs-6 fw-bold mb-0 text-white" id="modalNegotiationLabel">Negosiasi Total Tagihan</h5>
-                        <span class="text-[11px] text-slate-400">Diskon atau penyesuaian harga total</span>
+                        <h5 class="text-base font-bold mb-0 text-white" id="modalNegotiationLabel">Negosiasi Total Tagihan</h5>
+                        <span class="text-xs text-slate-400">Penyesuaian potongan diskon atau harga kesepakatan final</span>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white text-sm" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="p-4 space-y-3" style="background-color: #f8fafc;">
-                <div class="bg-white p-3 rounded-xl border border-slate-200">
-                    <span class="text-slate-400 font-bold uppercase text-[10px] block">Total Tagihan Asli (Sebelum Nego)</span>
-                    <strong class="text-base font-mono text-slate-900 block" id="nego-modal-orig-total">Rp 0</strong>
+
+            <!-- Modal Body -->
+            <div class="p-5 space-y-4" style="background-color: #f8fafc;">
+                <!-- Total Asli Info Box -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="text-slate-400 font-bold uppercase tracking-wider text-xs block mb-1">Total Tagihan Asli (Sebelum Nego)</span>
+                        <strong class="text-2xl font-black font-mono text-slate-900 block" id="nego-modal-orig-total">Rp 0</strong>
+                    </div>
+                    <span class="badge bg-slate-100 text-slate-600 border text-xs px-2.5 py-1 rounded-lg">Harga Akumulasi</span>
                 </div>
 
-                <div class="space-y-1">
-                    <label class="block text-[11px] font-bold text-slate-600 uppercase">Metode Penyesuaian</label>
-                    <div class="grid grid-cols-2 gap-1.5">
+                <!-- Mode Selection -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">Pilih Metode Penyesuaian</label>
+                    <div class="grid grid-cols-2 gap-2">
                         <button type="button" onclick="setNegoMode('discount')" id="btn-nego-mode-discount" 
-                            class="py-1.5 px-2 text-xs font-bold rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-center transition">
-                            Potongan Diskon (Rp)
+                            class="py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl border-2 border-blue-600 bg-blue-50 text-blue-700 text-center transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-percent text-xs"></i>
+                            <span>Potongan Diskon (Rp)</span>
                         </button>
                         <button type="button" onclick="setNegoMode('final')" id="btn-nego-mode-final" 
-                            class="py-1.5 px-2 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-600 text-center transition">
-                            Harga Pas / Deal (Rp)
+                            class="py-2.5 px-3 text-xs sm:text-sm font-bold rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-center transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-tag text-xs"></i>
+                            <span>Harga Pas / Deal (Rp)</span>
                         </button>
                     </div>
                 </div>
 
-                <div id="nego-input-discount-wrapper" class="space-y-1">
-                    <label class="block text-[11px] font-bold text-slate-600 uppercase">Nominal Potongan Diskon (Rp)</label>
-                    <input type="number" id="input-nego-discount" min="0" placeholder="Contoh: 15000" 
-                        class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-emerald-700 focus:outline-none focus:ring-1 focus:ring-blue-500" 
-                        oninput="calcNegoResult()">
-                </div>
-
-                <div id="nego-input-final-wrapper" class="space-y-1 hidden">
-                    <label class="block text-[11px] font-bold text-slate-600 uppercase">Harga Kesepakatan Final (Rp)</label>
-                    <input type="number" id="input-nego-final" min="0" placeholder="Contoh: 150000" 
-                        class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-blue-900 focus:outline-none focus:ring-1 focus:ring-blue-500" 
-                        oninput="calcNegoResult()">
-                </div>
-
-                <div class="space-y-1">
-                    <label class="block text-[11px] font-bold text-slate-600 uppercase">Catatan / Alasan Negosiasi (Opsional)</label>
-                    <input type="text" id="input-nego-notes" placeholder="Misal: Pelanggan setia, order partai besar..." 
-                        class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
-                </div>
-
-                <div class="bg-emerald-50/80 p-3 rounded-xl border border-emerald-200 text-xs space-y-1.5">
-                    <div class="flex justify-between text-slate-600">
-                        <span>Potongan:</span>
-                        <span id="nego-preview-discount" class="font-mono font-bold text-emerald-700">- Rp 0</span>
+                <!-- Input Nominal Diskon -->
+                <div id="nego-input-discount-wrapper" class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Nominal Potongan Diskon (Rp)</label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3.5 text-slate-400 font-bold text-sm">Rp</span>
+                        <input type="number" id="input-nego-discount" min="0" placeholder="Contoh: 15000" 
+                            class="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-base font-mono font-bold text-emerald-700 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100" 
+                            oninput="calcNegoResult()">
                     </div>
-                    <div class="flex justify-between text-slate-900 font-bold border-t border-emerald-200/80 pt-1.5">
-                        <span>Total Tagihan Akhir:</span>
-                        <span id="nego-preview-final" class="font-mono text-sm text-blue-900">Rp 0</span>
+                </div>
+
+                <!-- Input Harga Kesepakatan Final -->
+                <div id="nego-input-final-wrapper" class="space-y-1.5 hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Harga Kesepakatan Final (Rp)</label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3.5 text-slate-400 font-bold text-sm">Rp</span>
+                        <input type="number" id="input-nego-final" min="0" placeholder="Contoh: 150000" 
+                            class="w-full pl-11 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-base font-mono font-bold text-blue-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100" 
+                            oninput="calcNegoResult()">
+                    </div>
+                </div>
+
+                <!-- Input Catatan Alasan -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Catatan / Alasan Negosiasi <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                    <input type="text" id="input-nego-notes" placeholder="Misal: Pelanggan setia, order partai besar, diskon khusus..." 
+                        class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                </div>
+
+                <!-- Preview Result Card -->
+                <div class="bg-emerald-50/90 p-4 rounded-2xl border border-emerald-200 text-xs sm:text-sm space-y-2">
+                    <div class="flex justify-between items-center text-slate-600">
+                        <span class="font-medium">Besaran Potongan:</span>
+                        <span id="nego-preview-discount" class="font-mono font-bold text-emerald-700 text-sm sm:text-base">- Rp 0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-900 font-bold border-t border-emerald-200/80 pt-2">
+                        <span class="text-slate-800">Total Tagihan Akhir:</span>
+                        <span id="nego-preview-final" class="font-mono text-lg sm:text-xl font-black text-blue-900">Rp 0</span>
                     </div>
                 </div>
             </div>
-            <div class="bg-white px-4 py-3 border-t border-slate-200 d-flex justify-content-between align-items-center gap-2">
-                <button type="button" onclick="resetNegotiation()" class="btn btn-sm btn-outline-danger text-xs py-1.5 px-3">
-                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+
+            <!-- Modal Footer -->
+            <div class="bg-white px-5 py-3.5 border-t border-slate-200 d-flex justify-content-between align-items-center gap-3">
+                <button type="button" onclick="resetNegotiation()" class="btn btn-outline-danger text-xs sm:text-sm py-2 px-4 rounded-xl font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Reset Nego</span>
                 </button>
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-secondary text-xs py-1.5 px-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" onclick="applyNegotiation()" class="btn btn-sm btn-primary text-xs py-1.5 px-4 font-bold">
-                        <i class="fa-solid fa-check me-1"></i> Terapkan Nego
+                    <button type="button" class="btn btn-light text-slate-700 border text-xs sm:text-sm py-2 px-4 rounded-xl font-semibold" data-bs-dismiss="modal">
+                        Batal
+                    </button>
+                    <button type="button" onclick="applyNegotiation()" class="btn btn-primary text-xs sm:text-sm py-2 px-5 rounded-xl font-bold flex items-center gap-2 shadow-md">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Terapkan Nego</span>
                     </button>
                 </div>
             </div>
