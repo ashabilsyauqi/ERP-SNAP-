@@ -76,7 +76,12 @@ return new class extends Migration {
         // 3. Auto cross-synchronize all products across all branches
         if (Schema::hasTable('materials') && Schema::hasTable('branches')) {
             $branches = Branch::all();
-            $distinctMaterials = Material::select('material_name', 'category', 'supplier_id', 'unit', 'fixed_size', 'purchase_price', 'retail_price')
+            $hasUnit = Schema::hasColumn('materials', 'unit');
+            $cols = ['material_name', 'category', 'supplier_id', 'fixed_size', 'purchase_price', 'retail_price'];
+            if ($hasUnit) {
+                $cols[] = 'unit';
+            }
+            $distinctMaterials = Material::select($cols)
                 ->distinct()
                 ->get();
 
@@ -87,17 +92,20 @@ return new class extends Migration {
                         ->first();
 
                     if (!$mat) {
-                        $newMat = Material::create([
+                        $createData = [
                             'branch_id' => $branch->id,
                             'category' => $proto->category ?: 'Lainnya',
                             'supplier_id' => $proto->supplier_id,
                             'material_name' => $proto->material_name,
-                            'unit' => $proto->unit ?: 'Pcs',
                             'fixed_size' => $proto->fixed_size,
                             'purchase_price' => $proto->purchase_price,
                             'retail_price' => $proto->retail_price,
                             'stock_qty' => 0,
-                        ]);
+                        ];
+                        if ($hasUnit) {
+                            $createData['unit'] = $proto->unit ?: 'Pcs';
+                        }
+                        $newMat = Material::create($createData);
 
                         // Copy wholesale prices if source exists
                         $sourceMat = Material::where('material_name', $proto->material_name)->with('wholesalePrices')->first();

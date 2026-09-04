@@ -467,8 +467,13 @@
             </div>
             
             <!-- Success Notification Card (Emerald Green) -->
-            <div id="checkout-success-desktop" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-900 p-3 rounded-xl text-xs space-y-2">
-                <div class="d-flex justify-content-between align-items-center">
+            <div id="checkout-success-desktop" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-900 p-3 rounded-xl text-xs space-y-2 relative transition-all duration-200">
+                <button type="button" onclick="this.closest('#checkout-success-desktop').classList.add('hidden')" 
+                    class="absolute top-2 right-2 text-emerald-600 hover:text-emerald-900 hover:bg-emerald-200 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer border-0" 
+                    title="Tutup Notifikasi">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="d-flex justify-content-between align-items-center pr-6">
                     <span class="badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded" id="success-badge-tag">
                         <i class="fa-solid fa-circle-check me-1"></i> LUNAS (PAID)
                     </span>
@@ -1699,6 +1704,9 @@
     }
     // --- Add regular non-banner items to Cart ---
     function addToCart(materialId, materialName, fixedSize, retailPrice, wholesalePrices) {
+        const sc = document.getElementById('checkout-success-desktop');
+        if (sc) sc.classList.add('hidden');
+
         let size = fixedSize;
 
         let existingItem = cart.find(i => (i.material_id === materialId || i.material_name_or_type === materialName) && !i.is_custom_banner);
@@ -1728,6 +1736,8 @@
             cart = [];
             renderCart();
         }
+        const sc = document.getElementById('checkout-success-desktop');
+        if (sc) sc.classList.add('hidden');
     }
 
     // --- Update Quantities by Increment/Decrement ---
@@ -1805,6 +1815,9 @@
         let totalQty = 0;
         let grandTotal = 0;
         let cartHtml = '<div class="space-y-2">';
+
+        const scDesktop = document.getElementById('checkout-success-desktop');
+        if (scDesktop) scDesktop.classList.add('hidden');
 
         cart.forEach(item => {
             const { price: basePrice, isWholesale } = getUnitPrice(item.retail_price, item.wholesale_prices, item.qty);
@@ -4028,6 +4041,11 @@
 
                     successContainerDesktop.classList.remove('hidden');
 
+                    if (window._successCardTimer) clearTimeout(window._successCardTimer);
+                    window._successCardTimer = setTimeout(() => {
+                        if (successContainerDesktop) successContainerDesktop.classList.add('hidden');
+                    }, 10000);
+
                     document.getElementById('btn-print-last-receipt').onclick = function() {
                         window.open(data.receipt_url, '_blank', 'width=450,height=600');
                     };
@@ -4116,6 +4134,10 @@
                     denyButtonText: '<i class="fa-solid fa-file-pdf me-1"></i> Unduh / Buka Faktur PDF',
                     cancelButtonText: 'Selesai (+ Transaksi Baru)'
                 }).then((result) => {
+                    // Tutup kartu notifikasi sukses di panel keranjang saat modal selesai
+                    if (successContainerDesktop) {
+                        successContainerDesktop.classList.add('hidden');
+                    }
                     if (result.isConfirmed && data.receipt_url) {
                         window.open(data.receipt_url, '_blank', 'width=450,height=600');
                     } else if (result.isDenied) {
