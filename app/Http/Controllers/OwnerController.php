@@ -16,12 +16,17 @@ class OwnerController extends Controller
     public function dashboard(Request $request)
     {
         $user = auth()->user();
-        $branchId = $request->input('branch_id', 'all');
-        $timeframe = $request->input('timeframe', $request->input('period', 'month')); // 'today', '7days', 'month', 'year', 'all'
-        $month = (int) $request->input('month', Carbon::now()->month);
-        $year = (int) $request->input('year', Carbon::now()->year);
 
-        if ($user->isManager()) {
+        // Branch Selection (supports request parameter & session persistence)
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        // Store Managers are strictly locked to their own branch
+        if ($user->isManager() && !$user->isOwner()) {
             $branchId = $user->branch_id;
         }
 

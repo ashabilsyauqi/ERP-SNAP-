@@ -24,13 +24,13 @@
                 <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
             </div>
             
-            @if(Auth::user()->role === 'owner')
+            @if(Auth::user()->isOwner())
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Cabang</label>
                 <select name="branch_id" class="form-select form-select-sm">
-                    <option value="">Semua Cabang</option>
+                    <option value="all" {{ ($branchId ?? 'all') === 'all' || ($branchId ?? '') === '' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
                     @foreach($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
+                        <option value="{{ $branch->id }}" {{ ($branchId ?? '') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
                     @endforeach
                 </select>
             </div>
@@ -69,8 +69,8 @@
         <h5 class="fw-bold text-blue-900 mb-1">BUKU KAS & MUTASI BUKU BESAR (GENERAL LEDGER)</h5>
         <p class="text-xs text-slate-500 mb-0">
             Periode: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Awal' }} s/d {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Sekarang' }}
-            @if(request('branch_id'))
-                &bull; Cabang: {{ $branches->firstWhere('id', request('branch_id'))->nama_cabang ?? '' }}
+            @if(($branchId ?? request('branch_id')) && ($branchId ?? request('branch_id')) !== 'all')
+                &bull; Cabang: {{ $branches->firstWhere('id', ($branchId ?? request('branch_id')))->nama_cabang ?? '' }}
             @else
                 &bull; Semua Cabang (Konsolidasi)
             @endif

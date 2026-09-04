@@ -1,7 +1,13 @@
 @extends('layouts.app')
 
-@section('title', (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Toko' : 'Dashboard Enterprise')
-@section('page-title', (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Monitoring Toko' : 'Dashboard Monitoring ERP Enterprise')
+@php
+    $isStoreManager = auth()->check() && auth()->user()->isManager() && !auth()->user()->isOwner();
+    $isSpecificBranch = ($branchId ?? 'all') !== 'all';
+    $currentBranchName = $isSpecificBranch ? ($branches->firstWhere('id', $branchId)->nama_cabang ?? 'Cabang') : 'Seluruh Cabang (Konsolidasi)';
+@endphp
+
+@section('title', $isStoreManager ? 'Dashboard Toko' : ($isSpecificBranch ? ('Dashboard Toko - ' . $currentBranchName) : 'Dashboard Enterprise'))
+@section('page-title', $isStoreManager ? 'Dashboard Monitoring Toko' : ($isSpecificBranch ? ('Dashboard Monitoring Toko: ' . $currentBranchName) : 'Dashboard Monitoring ERP Enterprise (Konsolidasi)'))
 
 @section('content')
 
@@ -23,6 +29,12 @@
                         </option>
                     @endforeach
                 </select>
+            </div>
+            @else
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl px-3 py-1.5 font-bold text-xs">
+                    <i class="fa-solid fa-store me-1.5"></i> {{ auth()->user()->branch->nama_cabang ?? 'Cabang Toko' }}
+                </span>
             </div>
             @endif
 
@@ -55,7 +67,7 @@
                 </span>
             @else
                 <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-2.5 py-1.5 font-bold text-xs">
-                    <i class="fa-solid fa-shop me-1"></i> Data Cabang Aktif
+                    <i class="fa-solid fa-shop me-1"></i> {{ $branches->firstWhere('id', $branchId)->nama_cabang ?? 'Cabang Aktif' }}
                 </span>
             @endif
         </div>

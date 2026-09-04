@@ -24,15 +24,22 @@ class SalesController extends Controller
         $user = auth()->user();
         $statusFilter = $request->input('status', 'sales'); // 'sales' (default: completed/in_production/ready) or 'draft'
 
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $branchId = $user->branch_id;
+        }
+
         $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])
             ->orderBy('created_at', 'desc');
 
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $query->where('branch_id', $request->branch_id);
-            }
-        } else {
-            $query->where('branch_id', $user->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         if ($statusFilter === 'draft') {
@@ -70,12 +77,8 @@ class SalesController extends Controller
 
         // Calculate Summary Statistics for confirmed sales ONLY (strictly exclude draft & cancelled)
         $summaryBaseQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $summaryBaseQuery->where('branch_id', $request->branch_id);
-            }
-        } else {
-            $summaryBaseQuery->where('branch_id', $user->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $summaryBaseQuery->where('branch_id', $branchId);
         }
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
@@ -138,7 +141,7 @@ class SalesController extends Controller
             'pending_drafts' => $pendingDraftCount,
         ];
 
-        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period', 'statusFilter', 'pendingDraftCount'));
+        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period', 'statusFilter', 'pendingDraftCount', 'branchId'));
     }
 
     /**
@@ -147,16 +150,24 @@ class SalesController extends Controller
     public function receivables(Request $request)
     {
         $user = auth()->user();
+
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $branchId = $user->branch_id;
+        }
+
         $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])
             ->whereNotIn('order_status', ['draft', 'cancelled'])
             ->orderBy('created_at', 'desc');
 
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $query->where('branch_id', $request->branch_id);
-            }
-        } else {
-            $query->where('branch_id', $user->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         // Filter tab: 'unpaid' (default: partial or unpaid), 'production', 'ready', 'all'
@@ -180,12 +191,8 @@ class SalesController extends Controller
 
         // Calculate KPI Statistics (exclude draft & cancelled)
         $baseStatQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $baseStatQuery->where('branch_id', $request->branch_id);
-            }
-        } else {
-            $baseStatQuery->where('branch_id', $user->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $baseStatQuery->where('branch_id', $branchId);
         }
 
         $totalPiutang = (clone $baseStatQuery)->where('remaining_amount', '>', 0)->sum('remaining_amount');
@@ -200,7 +207,8 @@ class SalesController extends Controller
             'totalDpDiterima',
             'countInProduction',
             'countReady',
-            'tab'
+            'tab',
+            'branchId'
         ));
     }
 

@@ -421,11 +421,14 @@
 
         // Dynamic Menu Construction based on Current App Context
         if (Str::startsWith($currentRoute, 'owner.dashboard') || Str::startsWith($currentRoute, 'branches')) {
-            $activeApp = (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Toko' : 'Executive';
-            $appIcon = (auth()->check() && auth()->user()->isManager()) ? 'fa-store' : 'fa-chart-pie';
+            $isStoreManager = (auth()->check() && auth()->user()->isManager() && !auth()->user()->isOwner());
+            $activeBranchId = request('branch_id', session('selected_branch_id', 'all'));
+            $isSpecificBranch = ($activeBranchId !== 'all');
+            $activeApp = ($isStoreManager || $isSpecificBranch) ? 'Dashboard Toko' : 'Executive';
+            $appIcon = ($isStoreManager || $isSpecificBranch) ? 'fa-store' : 'fa-chart-pie';
             $menuGroups = [
                 [
-                    'title' => (auth()->check() && auth()->user()->isManager()) ? 'Dashboard Toko' : 'Dashboard',
+                    'title' => ($isStoreManager || $isSpecificBranch) ? 'Dashboard Toko' : 'Dashboard',
                     'type' => 'link',
                     'route' => 'owner.dashboard',
                     'role' => 'owner,manager'
@@ -440,7 +443,7 @@
                     ]
                 ],
                 [
-                    'title' => (auth()->check() && auth()->user()->isManager()) ? 'Laporan Toko' : 'Laporan Eksekutif',
+                    'title' => ($isStoreManager || $isSpecificBranch) ? 'Laporan Toko' : 'Laporan Eksekutif',
                     'type' => 'dropdown',
                     'role' => 'owner,manager',
                     'items' => [
@@ -729,7 +732,7 @@
                         <i class="fa-solid fa-building text-amber-300 text-xs"></i>
                         <span class="text-xs font-semibold">
                             @php
-                                $selectedBranchId = request('branch_id', 'all');
+                                $selectedBranchId = request('branch_id', session('selected_branch_id', 'all'));
                                 $selectedBranchName = 'Semua Cabang (Global)';
                                 if ($selectedBranchId !== 'all') {
                                     $bModel = \App\Models\Branch::find($selectedBranchId);
@@ -742,7 +745,7 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-1 p-2" :class="{ 'show': open }" x-show="open" style="position: absolute; top: 100%; right: 0; min-width: 220px; display: none;" x-cloak>
                         <li class="px-2 py-1 text-[10px] uppercase font-bold text-slate-400">Pilih Cabang (Company)</li>
                         <li>
-                            <a class="dropdown-item rounded-2 text-xs py-1.5 {{ $selectedBranchId === 'all' ? 'active bg-blue-600 text-white font-bold' : '' }}" href="?branch_id=all">
+                            <a class="dropdown-item rounded-2 text-xs py-1.5 {{ $selectedBranchId === 'all' ? 'active bg-blue-600 text-white font-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['branch_id' => 'all']) }}">
                                 <i class="fa-solid fa-globe me-2"></i> Semua Cabang (Konsolidasi)
                             </a>
                         </li>
@@ -752,7 +755,7 @@
                         @endphp
                         @foreach($allBranches as $br)
                             <li>
-                                <a class="dropdown-item rounded-2 text-xs py-1.5 {{ $selectedBranchId == $br->id ? 'active bg-blue-600 text-white font-bold' : '' }}" href="?branch_id={{ $br->id }}">
+                                <a class="dropdown-item rounded-2 text-xs py-1.5 {{ $selectedBranchId == $br->id ? 'active bg-blue-600 text-white font-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['branch_id' => $br->id]) }}">
                                     <i class="fa-solid fa-shop me-2"></i> {{ $br->nama_cabang }}
                                 </a>
                             </li>

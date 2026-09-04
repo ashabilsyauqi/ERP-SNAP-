@@ -14,12 +14,21 @@ class CashBalanceController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = CashTransaction::query();
 
-        if ($user->role !== 'owner') {
-            $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $query->where('branch_id', $request->branch_id);
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $branchId = $user->branch_id;
+        }
+
+        $query = CashTransaction::query();
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
@@ -32,12 +41,10 @@ class CashBalanceController extends Controller
 
         // Fetch Accounts with their filtered CashTransactions
         $accountQuery = Account::active()->orderBy('kode_akun', 'asc');
-        $accounts = $accountQuery->get()->map(function ($acc) use ($request, $user) {
+        $accounts = $accountQuery->get()->map(function ($acc) use ($request, $user, $branchId) {
             $tQuery = CashTransaction::where('account_id', $acc->id);
-            if ($user->role !== 'owner') {
-                $tQuery->where('branch_id', $user->branch_id);
-            } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $tQuery->where('branch_id', $request->branch_id);
+            if ($branchId && $branchId !== 'all') {
+                $tQuery->where('branch_id', $branchId);
             }
             if ($request->filled('start_date') && $request->filled('end_date')) {
                 $tQuery->whereBetween('tanggal', [$request->start_date, $request->end_date]);
@@ -54,7 +61,7 @@ class CashBalanceController extends Controller
         $perBranch = [];
 
         foreach ($branches as $branch) {
-            if ($user->role !== 'owner' && $user->branch_id !== $branch->id) {
+            if (!$user->isOwner() && $user->branch_id !== $branch->id) {
                 continue;
             }
 
@@ -74,6 +81,6 @@ class CashBalanceController extends Controller
             ];
         }
 
-        return view('reports.cash-balance', compact('totalMasuk', 'totalKeluar', 'saldo', 'accounts', 'perBranch', 'branches'));
+        return view('reports.cash-balance', compact('totalMasuk', 'totalKeluar', 'saldo', 'accounts', 'perBranch', 'branches', 'branchId'));
     }
 }

@@ -19,6 +19,10 @@ class CheckRole
             return redirect()->route('login');
         }
 
+        if ((auth()->user()->isSuperAdmin() || auth()->user()->isOwner()) && $request->has('branch_id')) {
+            session(['selected_branch_id' => $request->input('branch_id')]);
+        }
+
         if (in_array(auth()->user()->role, $roles)) {
             return $next($request);
         }

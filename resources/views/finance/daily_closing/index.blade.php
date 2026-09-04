@@ -55,9 +55,9 @@
                 <div>
                     <label class="block text-[11px] font-bold text-slate-600 mb-1">Cabang</label>
                     <select name="branch_id" class="form-select form-select-sm text-xs">
-                        <option value="all">Semua Cabang</option>
+                        <option value="all" {{ ($branchId ?? 'all') === 'all' ? 'selected' : '' }}>Semua Cabang</option>
                         @foreach($branches as $b)
-                            <option value="{{ $b->id }}" {{ request('branch_id') == $b->id ? 'selected' : '' }}>
+                            <option value="{{ $b->id }}" {{ ($branchId ?? '') == $b->id ? 'selected' : '' }}>
                                 {{ $b->nama_cabang }}
                             </option>
                         @endforeach

@@ -19,12 +19,22 @@ class DailyClosingController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $branchId = $user->branch_id;
+        }
+
         $query = DailyClosingReport::with(['branch', 'manager', 'owner'])->orderBy('closing_date', 'desc')->orderBy('id', 'desc');
 
-        if (!$user->isOwner() && !$user->isSuperAdmin()) {
-            $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $query->where('branch_id', $request->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         if ($request->filled('date_from')) {
@@ -42,7 +52,7 @@ class DailyClosingController extends Controller
 
         $pendingCount = DailyClosingReport::where('status', 'submitted')->count();
 
-        return view('finance.daily_closing.index', compact('reports', 'branches', 'pendingCount'));
+        return view('finance.daily_closing.index', compact('reports', 'branches', 'pendingCount', 'branchId'));
     }
 
     /**

@@ -15,14 +15,23 @@ class CashMutationController extends Controller
     {
         $user = Auth::user();
         
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $branchId = $user->branch_id;
+        }
+
         $query = CashTransaction::with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])
             ->orderBy('tanggal', 'asc')
             ->orderBy('created_at', 'asc');
 
-        if ($user->role !== 'owner') {
-            $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $query->where('branch_id', $request->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
@@ -50,10 +59,8 @@ class CashMutationController extends Controller
         // Hitung saldo awal sebelum tanggal mulai filter
         $effectiveStartDate = $request->input('start_date', $startDate);
         $prevQuery = CashTransaction::where('tanggal', '<', $effectiveStartDate);
-        if ($user->role !== 'owner') {
-            $prevQuery->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $prevQuery->where('branch_id', $request->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $prevQuery->where('branch_id', $branchId);
         }
         if ($request->filled('account_id')) {
             $prevQuery->where('account_id', $request->account_id);
@@ -89,7 +96,8 @@ class CashMutationController extends Controller
             'saldoAwal' => $saldoAwal,
             'totalMasuk' => $totalMasuk,
             'totalKeluar' => $totalKeluar,
-            'saldoAkhir' => $runningBalance
+            'saldoAkhir' => $runningBalance,
+            'branchId' => $branchId
         ]);
     }
 }

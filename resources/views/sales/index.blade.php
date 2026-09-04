@@ -180,9 +180,9 @@
 
             @if(auth()->user()->isOwner())
                 <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm text-xs font-semibold py-1" style="width: auto;">
-                    <option value="all" {{ request('branch_id') === 'all' || !request('branch_id') ? 'selected' : '' }}>Semua Cabang Toko</option>
+                    <option value="all" {{ ($branchId ?? 'all') === 'all' ? 'selected' : '' }}>Semua Cabang Toko</option>
                     @foreach($branches as $b)
-                        <option value="{{ $b->id }}" {{ request('branch_id') == $b->id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
+                        <option value="{{ $b->id }}" {{ ($branchId ?? '') == $b->id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
                     @endforeach
                 </select>
             @endif

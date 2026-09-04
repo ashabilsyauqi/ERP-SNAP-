@@ -17,17 +17,26 @@ class FinanceDashboardController extends Controller
         $startOfMonth = $now->copy()->startOfMonth();
         $endOfMonth = $now->copy()->endOfMonth();
 
+        // Branch Selection
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $branchId = $user->branch_id;
+        }
+
         // Base queries
         $cashQuery = CashTransaction::query();
         $posQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
 
         // Branch scoping
-        if ($user->role !== 'owner') {
-            $cashQuery->where('branch_id', $user->branch_id);
-            $posQuery->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $cashQuery->where('branch_id', $request->branch_id);
-            $posQuery->where('branch_id', $request->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $cashQuery->where('branch_id', $branchId);
+            $posQuery->where('branch_id', $branchId);
         }
 
         // Stats
@@ -77,7 +86,8 @@ class FinanceDashboardController extends Controller
             'jumlahTransaksi', 
             'totalPenjualan', 
             'recentTransactions',
-            'branches'
+            'branches',
+            'branchId'
         ));
     }
 }

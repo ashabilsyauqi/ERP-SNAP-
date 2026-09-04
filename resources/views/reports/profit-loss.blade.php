@@ -44,13 +44,13 @@
                 </select>
             </div>
 
-            @if(Auth::user()->role === 'owner')
+            @if(Auth::user()->isOwner())
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Cabang</label>
                 <select name="branch_id" class="form-select form-select-sm">
-                    <option value="">Semua Cabang (Konsolidasi)</option>
+                    <option value="all" {{ ($branchId ?? 'all') === 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
                     @foreach($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
+                        <option value="{{ $branch->id }}" {{ ($branchId ?? '') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
                     @endforeach
                 </select>
             </div>

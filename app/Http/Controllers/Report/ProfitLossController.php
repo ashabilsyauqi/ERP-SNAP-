@@ -20,12 +20,20 @@ class ProfitLossController extends Controller
         $cashQuery = CashTransaction::with('account');
         $salesQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
 
-        if ($user->role !== 'owner') {
-            $cashQuery->where('branch_id', $user->branch_id);
-            $salesQuery->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $cashQuery->where('branch_id', $request->branch_id);
-            $salesQuery->where('branch_id', $request->branch_id);
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $branchId = $user->branch_id;
+        }
+
+        if ($branchId && $branchId !== 'all') {
+            $cashQuery->where('branch_id', $branchId);
+            $salesQuery->where('branch_id', $branchId);
         }
 
         $periodLabel = '';
@@ -132,7 +140,7 @@ class ProfitLossController extends Controller
             'labaKotor',
             'bebanOperasional', 'totalBebanOperasional',
             'labaBersih',
-            'periodType', 'periodLabel', 'branches'
+            'periodType', 'periodLabel', 'branches', 'branchId'
         ));
     }
 }

@@ -16,7 +16,18 @@ class SalesReportController extends Controller
     {
         $user = Auth::user();
         $period = $request->input('period', 'daily');
-        $selectedBranchId = $request->input('branch_id', 'all');
+
+        if ($request->has('branch_id')) {
+            $selectedBranchId = $request->input('branch_id');
+            session(['selected_branch_id' => $selectedBranchId]);
+        } else {
+            $selectedBranchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $selectedBranchId = $user->branch_id;
+        }
+
         $isAllBranches = ($selectedBranchId === 'all' || empty($selectedBranchId));
 
         $branches = Branch::orderBy('nama_cabang')->get();
@@ -62,12 +73,7 @@ class SalesReportController extends Controller
         }
 
         $query = Transaction::with('branch')->whereNotIn('order_status', ['draft', 'cancelled']);
-
-        if ($user->role !== 'owner') {
-            $query->where('branch_id', $user->branch_id);
-            $selectedBranchId = $user->branch_id;
-            $isAllBranches = false;
-        } elseif (!$isAllBranches) {
+        if (!$isAllBranches) {
             $query->where('branch_id', $selectedBranchId);
         }
 
@@ -279,7 +285,7 @@ class SalesReportController extends Controller
             'datasets' => $chartDatasets
         ];
 
-        return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches', 'branchBreakdown', 'isAllBranches', 'timeframe', 'startDate', 'endDate'));
+        return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches', 'branchBreakdown', 'isAllBranches', 'timeframe', 'startDate', 'endDate', 'selectedBranchId'));
     }
 }
 

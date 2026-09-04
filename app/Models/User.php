@@ -94,7 +94,7 @@ class User extends Authenticatable
 
     public function isManager()
     {
-        return in_array($this->role, ['manager', 'manajer_cabang']) || $this->isSuperAdmin();
+        return in_array($this->role, ['manager', 'manajer_cabang']);
     }
 
     public function canAccessBranch($branchId)

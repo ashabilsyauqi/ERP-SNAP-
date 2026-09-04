@@ -14,12 +14,21 @@ class CashOutController extends Controller
     {
         $user = Auth::user();
         
+        if ($request->has('branch_id')) {
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
+        }
+
+        if (!$user->isOwner()) {
+            $branchId = $user->branch_id;
+        }
+
         $query = CashTransaction::keluar()->with(['account', 'branch', 'user']);
 
-        if ($user->role !== 'owner') {
-            $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
@@ -39,7 +48,7 @@ class CashOutController extends Controller
         $accounts = Account::where('tipe', 'beban')->active()->orderBy('nama_akun')->get();
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        return view('cash-out.index', compact('cashTransactions', 'accounts', 'branches'));
+        return view('cash-out.index', compact('cashTransactions', 'accounts', 'branches', 'branchId'));
     }
 
     public function create()

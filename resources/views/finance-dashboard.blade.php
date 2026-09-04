@@ -16,6 +16,33 @@
 
 @section('content')
 <div id="main-view-wrapper" data-view-wrapper>
+    @if(auth()->user()->isOwner())
+    <div class="bg-white border border-slate-200 rounded-2xl mb-3 p-2.5 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <form method="GET" action="{{ route('dashboard') }}" id="finance-branch-form" class="d-flex align-items-center gap-2 mb-0">
+            <label class="fw-bold text-slate-700 text-xs d-flex align-items-center mb-0">
+                <i class="fa-solid fa-building text-blue-600 me-1.5"></i> Cabang:
+            </label>
+            <select name="branch_id" onchange="document.getElementById('finance-branch-form').submit()" class="form-select form-select-sm fw-bold border-slate-300 rounded-xl text-xs" style="min-width: 200px;">
+                <option value="all" {{ ($branchId ?? 'all') == 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
+                @foreach($branches as $b)
+                    <option value="{{ $b->id }}" {{ ($branchId ?? '') == $b->id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
+                @endforeach
+            </select>
+        </form>
+        <div>
+            @if(($branchId ?? 'all') === 'all')
+                <span class="badge bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1 font-bold text-xs">
+                    <i class="fa-solid fa-globe me-1"></i> Data Konsolidasi Seluruh Cabang
+                </span>
+            @else
+                <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-2.5 py-1 font-bold text-xs">
+                    <i class="fa-solid fa-shop me-1"></i> {{ $branches->firstWhere('id', $branchId)->nama_cabang ?? 'Cabang Aktif' }}
+                </span>
+            @endif
+        </div>
+    </div>
+    @endif
+
     <!-- Top Stat Widgets -->
     <div class="d-flex align-items-center gap-2 mb-3 overflow-x-auto pb-1">
         <div class="o_stat_button bg-white shadow-sm">
