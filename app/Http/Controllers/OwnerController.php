@@ -16,6 +16,9 @@ class OwnerController extends Controller
     public function dashboard(Request $request)
     {
         $user = auth()->user();
+        $timeframe = $request->input('timeframe', $request->input('period', 'month')); // 'today', '7days', 'month', 'year', 'all'
+        $month = (int) $request->input('month', Carbon::now()->month);
+        $year = (int) $request->input('year', Carbon::now()->year);
 
         // Branch Selection (supports request parameter & session persistence)
         if ($request->has('branch_id')) {
