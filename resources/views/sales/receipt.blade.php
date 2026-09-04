@@ -269,6 +269,24 @@
             <td style="padding-top: 2px;">SISA PIUTANG</td>
             <td class="text-right" style="padding-top: 2px;">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</td>
         </tr>
+        @elseif($transaction->payments && $transaction->payments->count() > 0)
+        <tr>
+            <td colspan="2" style="padding-top: 3px; font-weight: bold; font-size: 10px;">Pembayaran Patungan (Split Bill):</td>
+        </tr>
+        @foreach($transaction->payments as $p)
+        <tr>
+            <td style="padding-left: 6px; font-size: 10px;">• {{ $p->payment_method }} {{ $p->payer_name ? '('.$p->payer_name.')' : '' }}</td>
+            <td class="text-right font-mono" style="font-size: 10px;">Rp {{ number_format($p->amount, 0, ',', '.') }}</td>
+        </tr>
+        @endforeach
+        <tr style="border-top: 1px dashed #000;">
+            <td class="fw-bold">Total Terbayar</td>
+            <td class="text-right fw-bold">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</td>
+        </tr>
+        <tr style="font-weight: bold;">
+            <td>STATUS</td>
+            <td class="text-right">LUNAS</td>
+        </tr>
         @else
         <tr>
             <td>Bayar ({{ $transaction->payment_method }})</td>

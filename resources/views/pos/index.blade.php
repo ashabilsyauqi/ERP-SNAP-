@@ -506,6 +506,12 @@
                                     <span>Negosiasi Harga Item</span>
                                 </button>
                             </li>
+                            <li>
+                                <button type="button" class="dropdown-item py-2 px-3 rounded-xl flex items-center gap-2.5 font-bold text-indigo-800 hover:bg-indigo-50 hover:text-indigo-900" onclick="openSplitBillModal()">
+                                    <i class="fa-solid fa-code-fork text-indigo-600 text-sm"></i>
+                                    <span>Bagi Tagihan (Split Bill)</span>
+                                </button>
+                            </li>
                             <li><hr class="dropdown-divider my-1 border-slate-100"></li>
                             <li>
                                 <button type="button" class="dropdown-item py-2 px-3 rounded-xl flex items-center gap-2.5 font-bold text-amber-800 hover:bg-amber-50 hover:text-amber-900" onclick="processCheckout(true)">
@@ -520,6 +526,12 @@
                     <button onclick="processCheckout(true)" type="button" class="h-11 px-3 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-900 border border-amber-300 font-bold rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition cursor-pointer flex-shrink-0" title="Simpan sebagai draft pesanan tanpa bayar">
                         <i class="fa-solid fa-file-pen text-amber-600 text-sm"></i>
                         <span>Draft</span>
+                    </button>
+
+                    <!-- Tombol Cepat: Split Bill (Bagi Tagihan) -->
+                    <button onclick="openSplitBillModal()" type="button" class="h-11 px-3 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-900 border border-indigo-300 font-bold rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition cursor-pointer flex-shrink-0" title="Bagi tagihan pesanan bersama teman (Pisah Nota / Patungan)">
+                        <i class="fa-solid fa-code-fork text-indigo-600 text-sm"></i>
+                        <span>Split Bill</span>
                     </button>
                 @endif
 
@@ -718,6 +730,139 @@
                     <button type="button" onclick="applyNegotiationAndDraft()" class="btn btn-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 btn-sm text-xs font-bold shadow-sm px-3" style="background-color: #fef3c7; border-color: #fcd34d;">
                         <i class="fa-solid fa-file-pen text-amber-700 me-1"></i> Simpan sbg Draft
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Split Bill Kasir (Bagi Tagihan & Patungan) -->
+<div class="modal fade" id="modalSplitBill" tabindex="-1" aria-labelledby="modalSplitBillLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 960px;">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
+            <!-- Modal Header -->
+            <div class="px-5 py-3.5 d-flex justify-content-between align-items-center bg-slate-900 text-white">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-500/20 border border-indigo-400/30 text-indigo-400">
+                        <i class="fa-solid fa-code-fork text-lg"></i>
+                    </div>
+                    <div>
+                        <h5 class="text-base font-bold mb-0 text-white" id="modalSplitBillLabel">Split Bill (Bagi Tagihan Kasir)</h5>
+                        <p class="text-[11px] text-slate-400 mb-0">Bagi pesanan pelanggan bersama teman ke dalam nota terpisah atau patungan bayar.</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Mode Tabs Header -->
+            <div class="bg-slate-100 px-5 pt-3 border-b border-slate-200">
+                <ul class="nav nav-pills gap-2" id="splitBillTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active py-2 px-4 rounded-xl font-bold text-xs d-flex align-items-center gap-2 cursor-pointer transition shadow-none" 
+                                id="tab-split-items" data-bs-toggle="pill" data-bs-target="#pane-split-items" type="button" role="tab" onclick="switchSplitMode('items')">
+                            <i class="fa-solid fa-boxes-stacked text-indigo-600"></i>
+                            <span>1. Pisah per Item (Nota Terpisah)</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link py-2 px-4 rounded-xl font-bold text-xs d-flex align-items-center gap-2 cursor-pointer transition shadow-none" 
+                                id="tab-split-payments" data-bs-toggle="pill" data-bs-target="#pane-split-payments" type="button" role="tab" onclick="switchSplitMode('multi_payment')">
+                            <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i>
+                            <span>2. Patungan Bayar (1 Nota, Banyak Metode)</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Modal Body Content -->
+            <div class="tab-content p-4" style="background-color: #f8fafc; max-height: calc(85vh - 160px); overflow-y: auto;">
+                <!-- PANE 1: Pisah per Item -->
+                <div class="tab-pane fade show active" id="pane-split-items" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-xs font-bold text-slate-700">Daftar Tagihan Terpisah</span>
+                            <p class="text-[11px] text-slate-500 mb-0">Pindahkan item antar tagihan sesuai pesanan masing-masing teman. Setiap tagihan akan mencetak struk mandiri.</p>
+                        </div>
+                        <button type="button" onclick="addSplitBillColumn()" class="btn btn-sm btn-outline-indigo border-indigo-400 text-indigo-700 bg-white hover:bg-indigo-50 font-bold text-xs rounded-xl px-3 py-1.5 shadow-sm">
+                            <i class="fa-solid fa-plus me-1"></i> Tambah Tagihan
+                        </button>
+                    </div>
+
+                    <!-- Container for Bill Columns -->
+                    <div id="split-bills-container" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Dynamically rendered via JS -->
+                    </div>
+
+                    <!-- Summary & Balance Check -->
+                    <div class="mt-4 p-3 bg-white rounded-2xl border border-slate-200 shadow-sm d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                        <div class="text-xs text-slate-600">
+                            <span>Total Keranjang Asli: <strong id="split-items-original-total" class="font-mono text-slate-900">Rp 0</strong></span>
+                            <span class="mx-2 text-slate-300">|</span>
+                            <span>Total Alokasi Tagihan: <strong id="split-items-allocated-total" class="font-mono text-indigo-700">Rp 0</strong></span>
+                            <div id="split-items-status-msg" class="text-[11px] mt-0.5 font-semibold text-emerald-600">
+                                <i class="fa-solid fa-circle-check me-1"></i> Semua item keranjang telah dialokasikan.
+                            </div>
+                        </div>
+                        <button type="button" id="btn-submit-split-items" onclick="submitSplitItemsCheckout()" class="btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md cursor-pointer border-0">
+                            <i class="fa-solid fa-circle-check me-1.5"></i> Proses Checkout Semua Tagihan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PANE 2: Patungan Bayar (Multi-Payment) -->
+                <div class="tab-pane fade" id="pane-split-payments" role="tabpanel">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <span class="text-xs text-slate-500 font-medium">Total Nilai Tagihan Pesanan:</span>
+                                <h3 id="split-payments-grand-total" class="text-xl font-extrabold text-blue-950 font-mono mb-0">Rp 0</h3>
+                            </div>
+                            <!-- Preset Split Buttons -->
+                            <div class="d-flex items-center gap-1.5">
+                                <span class="text-[11px] text-slate-400 font-semibold me-1">Bagi Rata:</span>
+                                <button type="button" onclick="presetSplitPayment(2)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer">2 Orang</button>
+                                <button type="button" onclick="presetSplitPayment(3)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer">3 Orang</button>
+                                <button type="button" onclick="presetSplitPayment(4)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer">4 Orang</button>
+                            </div>
+                        </div>
+
+                        <!-- Customer Info for Multi-Payment -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 pb-1 border-t border-slate-100 text-xs">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Nama Pemesan / Rombongan</label>
+                                <input type="text" id="split-pay-customer-name" placeholder="Misal: Rombongan Andi / Nama Meja" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">No. WhatsApp Pemesan</label>
+                                <input type="text" id="split-pay-customer-phone" placeholder="08xxxxxxxxxx" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payers List -->
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2.5">
+                            <h6 class="text-xs font-bold text-slate-700 mb-0"><i class="fa-solid fa-users text-indigo-600 me-1.5"></i> Rincian Pembayar & Metode</h6>
+                            <button type="button" onclick="addSplitPayerRow()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition cursor-pointer">
+                                <i class="fa-solid fa-user-plus me-1"></i> Tambah Pembayar
+                            </button>
+                        </div>
+
+                        <div id="split-payers-list" class="space-y-2">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Balance Status Indicator -->
+                    <div id="split-payment-status-box" class="p-3.5 rounded-2xl border flex items-center justify-between transition duration-200">
+                        <!-- Dynamically colored box: green, red, or amber -->
+                    </div>
+
+                    <div class="mt-3 text-end">
+                        <button type="button" id="btn-submit-split-payments" onclick="submitSplitPaymentsCheckout()" class="btn bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md cursor-pointer border-0">
+                            <i class="fa-solid fa-circle-check me-1.5"></i> Proses Pembayaran Patungan (Lunas)
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2312,6 +2457,833 @@
             }
         }
     }
+
+    // ==========================================
+    // SPLIT BILL CONTROLLER (Pisah Item & Patungan Bayar)
+    // ==========================================
+    let splitState = {
+        mode: 'items', // 'items' | 'multi_payment'
+        bills: [],
+        payments: []
+    };
+
+    function switchSplitMode(mode) {
+        splitState.mode = mode;
+        if (mode === 'items') {
+            renderSplitBills();
+        } else {
+            renderSplitPayments();
+        }
+    }
+
+    function openSplitBillModal() {
+        if (!cart || cart.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Keranjang Kosong',
+                text: 'Pilih produk terlebih dahulu sebelum membagi tagihan.'
+            });
+            return;
+        }
+
+        // Initialize Split Bills (Mode Items): 2 Bills by default
+        splitState.bills = [
+            {
+                id: 1,
+                title: 'Tagihan 1',
+                customer_name: '',
+                customer_phone: '',
+                payment_method: 'Cash',
+                items: cart.map(item => ({
+                    cart_id: item.id,
+                    qty: item.qty
+                }))
+            },
+            {
+                id: 2,
+                title: 'Tagihan 2',
+                customer_name: '',
+                customer_phone: '',
+                payment_method: 'QRIS',
+                items: []
+            }
+        ];
+
+        // Initialize Split Payments (Mode Multi-Payment)
+        const total = window.currentGrandTotal || 0;
+        const half1 = Math.ceil(total / 2);
+        const half2 = Math.floor(total / 2);
+        splitState.payments = [
+            { payer_name: 'Pembayar 1', payment_method: 'QRIS', amount: half1 },
+            { payer_name: 'Pembayar 2', payment_method: 'Cash', amount: half2 }
+        ];
+
+        // Populate customer fields in multi_payment from Alpine if available
+        const posContainer = document.getElementById('pos-main-container');
+        const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+        const custNameInput = document.getElementById('split-pay-customer-name');
+        const custPhoneInput = document.getElementById('split-pay-customer-phone');
+        if (alpineData && custNameInput) {
+            custNameInput.value = alpineData.customerName || '';
+        }
+        if (alpineData && custPhoneInput) {
+            custPhoneInput.value = alpineData.customerPhone || '';
+        }
+
+        // Default to items tab
+        const tabItemsEl = document.getElementById('tab-split-items');
+        if (tabItemsEl && typeof bootstrap !== 'undefined') {
+            const tab = bootstrap.Tab.getOrCreateInstance(tabItemsEl);
+            tab.show();
+        }
+        splitState.mode = 'items';
+
+        renderSplitBills();
+        renderSplitPayments();
+
+        const modalEl = document.getElementById('modalSplitBill');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+        }
+    }
+
+    // --- Mode 1: Split Bills (Pisah per Item) ---
+    function addSplitBillColumn() {
+        const nextId = splitState.bills.length + 1;
+        splitState.bills.push({
+            id: nextId,
+            title: `Tagihan ${nextId}`,
+            customer_name: '',
+            customer_phone: '',
+            payment_method: 'Cash',
+            items: []
+        });
+        renderSplitBills();
+    }
+
+    function removeSplitBillColumn(billId) {
+        if (splitState.bills.length <= 2) {
+            Swal.fire({ icon: 'info', title: 'Minimal 2 Tagihan', text: 'Split bill membutuhkan minimal 2 tagihan.' });
+            return;
+        }
+
+        const billToRemove = splitState.bills.find(b => b.id === billId);
+        if (billToRemove && billToRemove.items.length > 0) {
+            // Move its items back to the first available bill
+            const targetBill = splitState.bills.find(b => b.id !== billId);
+            billToRemove.items.forEach(bi => {
+                const existing = targetBill.items.find(i => i.cart_id === bi.cart_id);
+                if (existing) {
+                    existing.qty += bi.qty;
+                } else {
+                    targetBill.items.push(bi);
+                }
+            });
+        }
+
+        splitState.bills = splitState.bills.filter(b => b.id !== billId);
+        splitState.bills.forEach((b, idx) => {
+            if (b.title.startsWith('Tagihan ')) {
+                b.title = `Tagihan ${idx + 1}`;
+            }
+        });
+        renderSplitBills();
+    }
+
+    function moveItemToBill(fromBillId, toBillId, cartId, qtyToMove = null) {
+        const fromBill = splitState.bills.find(b => b.id === fromBillId);
+        const toBill = splitState.bills.find(b => b.id === toBillId);
+        if (!fromBill || !toBill) return;
+
+        const fromItemIdx = fromBill.items.findIndex(i => i.cart_id === cartId);
+        if (fromItemIdx === -1) return;
+
+        const fromItem = fromBill.items[fromItemIdx];
+        const moveQty = (qtyToMove === null || qtyToMove >= fromItem.qty) ? fromItem.qty : qtyToMove;
+
+        // Reduce or remove from fromBill
+        if (moveQty >= fromItem.qty) {
+            fromBill.items.splice(fromItemIdx, 1);
+        } else {
+            fromItem.qty -= moveQty;
+        }
+
+        // Add to toBill
+        const toExisting = toBill.items.find(i => i.cart_id === cartId);
+        if (toExisting) {
+            toExisting.qty += moveQty;
+        } else {
+            toBill.items.push({
+                cart_id: cartId,
+                qty: moveQty
+            });
+        }
+
+        renderSplitBills();
+    }
+
+    function setBillPaymentMethod(billId, method) {
+        const bill = splitState.bills.find(b => b.id === billId);
+        if (bill) {
+            bill.payment_method = method;
+            renderSplitBills();
+        }
+    }
+
+    function calculateBillTotal(bill) {
+        let total = 0;
+        bill.items.forEach(bi => {
+            const cartItem = cart.find(c => c.id === bi.cart_id);
+            if (cartItem) {
+                const { price: basePrice } = getUnitPrice(cartItem.retail_price, cartItem.wholesale_prices, bi.qty);
+                let unitPrice = basePrice;
+                if (cartItem.is_custom_banner && (cartItem.billable_area_m2 || cartItem.area_m2)) {
+                    const area = cartItem.billable_area_m2 || cartItem.area_m2;
+                    const extraEyelet = (cartItem.extra_eyelet_cost !== undefined) 
+                        ? cartItem.extra_eyelet_cost 
+                        : (cartItem.eyelet_count > 4 ? (cartItem.eyelet_count - 4) * 500 : 0);
+                    unitPrice = Math.round(area * basePrice) + extraEyelet;
+                }
+                if (cartItem.custom_unit_price !== undefined && cartItem.custom_unit_price !== null) {
+                    unitPrice = cartItem.custom_unit_price;
+                }
+                total += unitPrice * bi.qty;
+            }
+        });
+        return total;
+    }
+
+    function renderSplitBills() {
+        const container = document.getElementById('split-bills-container');
+        if (!container) return;
+
+        let totalAllocated = 0;
+        let billsHtml = '';
+
+        splitState.bills.forEach((bill, bIdx) => {
+            const billTotal = calculateBillTotal(bill);
+            totalAllocated += billTotal;
+
+            let itemsHtml = '';
+            if (bill.items.length === 0) {
+                itemsHtml = `
+                    <div class="py-6 text-center text-slate-400 bg-slate-50/70 rounded-xl border border-dashed border-slate-200 text-xs">
+                        <i class="fa-solid fa-inbox text-slate-300 text-lg mb-1 block"></i>
+                        <span>Tagihan ini masih kosong.</span><br>
+                        <span class="text-[10px]">Pindahkan item dari tagihan lain ke sini.</span>
+                    </div>
+                `;
+            } else {
+                bill.items.forEach(bi => {
+                    const cartItem = cart.find(c => c.id === bi.cart_id);
+                    if (!cartItem) return;
+
+                    const { price: basePrice } = getUnitPrice(cartItem.retail_price, cartItem.wholesale_prices, bi.qty);
+                    let unitPrice = basePrice;
+                    if (cartItem.is_custom_banner && (cartItem.billable_area_m2 || cartItem.area_m2)) {
+                        const area = cartItem.billable_area_m2 || cartItem.area_m2;
+                        const extraEyelet = (cartItem.extra_eyelet_cost !== undefined) 
+                            ? cartItem.extra_eyelet_cost 
+                            : (cartItem.eyelet_count > 4 ? (cartItem.eyelet_count - 4) * 500 : 0);
+                        unitPrice = Math.round(area * basePrice) + extraEyelet;
+                    }
+                    if (cartItem.custom_unit_price !== undefined && cartItem.custom_unit_price !== null) {
+                        unitPrice = cartItem.custom_unit_price;
+                    }
+                    const itemSubtotal = unitPrice * bi.qty;
+
+                    // Options for moving to other bills
+                    let moveButtonsHtml = '';
+                    splitState.bills.forEach(otherBill => {
+                        if (otherBill.id !== bill.id) {
+                            moveButtonsHtml += `
+                                <button type="button" onclick="moveItemToBill(${bill.id}, ${otherBill.id}, ${cartItem.id})" 
+                                    class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 border border-slate-200 cursor-pointer transition flex items-center gap-1"
+                                    title="Pindahkan semua qty ke ${otherBill.title}">
+                                    <span>Pindah ke ${otherBill.title}</span>
+                                    <i class="fa-solid fa-arrow-right text-[8px]"></i>
+                                </button>
+                            `;
+                        }
+                    });
+
+                    // Qty partial move control if qty > 1
+                    let qtyMoveControls = '';
+                    if (bi.qty > 1) {
+                        splitState.bills.forEach(otherBill => {
+                            if (otherBill.id !== bill.id) {
+                                qtyMoveControls += `
+                                    <button type="button" onclick="moveItemToBill(${bill.id}, ${otherBill.id}, ${cartItem.id}, 1)" 
+                                        class="text-[9.5px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 cursor-pointer"
+                                        title="Pindahkan 1 pcs ke ${otherBill.title}">
+                                        +1 ke ${otherBill.title}
+                                    </button>
+                                `;
+                            }
+                        });
+                    }
+
+                    itemsHtml += `
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 hover:border-slate-300 transition text-xs">
+                            <div class="d-flex justify-content-between items-start mb-1">
+                                <div class="min-w-0 pe-2">
+                                    <strong class="text-slate-800 font-bold block truncate">${cartItem.material_name_or_type}</strong>
+                                    ${cartItem.dimension_text ? `<span class="text-[10px] text-blue-600 font-semibold block">${cartItem.dimension_text}</span>` : ''}
+                                </div>
+                                <div class="text-end font-mono">
+                                    <span class="font-bold text-slate-900 block">Rp ${Number(itemSubtotal).toLocaleString('id-ID')}</span>
+                                    <span class="text-[10px] text-slate-500">${bi.qty}x @ Rp ${Number(unitPrice).toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap items-center justify-between gap-1 pt-1.5 border-t border-slate-200/60 mt-1">
+                                <div class="d-flex items-center gap-1">
+                                    ${moveButtonsHtml}
+                                </div>
+                                ${qtyMoveControls ? `<div class="d-flex items-center gap-1">${qtyMoveControls}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            billsHtml += `
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <!-- Bill Card Header -->
+                        <div class="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-b border-slate-100">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">${bIdx + 1}</span>
+                                <input type="text" value="${bill.title}" onchange="splitState.bills[${bIdx}].title = this.value" 
+                                    class="text-xs font-bold text-slate-800 bg-transparent border-0 border-b border-dashed border-slate-300 px-1 py-0.5 focus:border-indigo-500 focus:outline-none w-28">
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="font-mono font-extrabold text-sm text-indigo-700">Rp ${Number(billTotal).toLocaleString('id-ID')}</span>
+                                ${splitState.bills.length > 2 ? `
+                                    <button type="button" onclick="removeSplitBillColumn(${bill.id})" class="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 w-6 h-6 rounded-lg flex items-center justify-center border-0 cursor-pointer" title="Hapus Tagihan">
+                                        <i class="fa-solid fa-xmark text-xs"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Customer Info -->
+                        <div class="grid grid-cols-2 gap-2 mb-2.5">
+                            <div>
+                                <label class="block text-[9.5px] font-bold text-slate-400 uppercase mb-0.5">Nama Pelanggan</label>
+                                <input type="text" value="${bill.customer_name}" placeholder="Misal: ${bill.title}" oninput="splitState.bills[${bIdx}].customer_name = this.value"
+                                    class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[9.5px] font-bold text-slate-400 uppercase mb-0.5">No. WhatsApp</label>
+                                <input type="text" value="${bill.customer_phone}" placeholder="08xxxxxxxxxx" oninput="splitState.bills[${bIdx}].customer_phone = this.value"
+                                    class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:bg-white">
+                            </div>
+                        </div>
+
+                        <!-- Payment Method Toggle -->
+                        <div class="mb-3">
+                            <label class="block text-[9.5px] font-bold text-slate-400 uppercase mb-1">Metode Bayar Tagihan</label>
+                            <div class="grid grid-cols-3 gap-1.5">
+                                <button type="button" onclick="setBillPaymentMethod(${bill.id}, 'Cash')" 
+                                    class="py-1 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${bill.payment_method === 'Cash' ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}">
+                                    <i class="fa-solid fa-money-bill-wave text-[10px]"></i> Tunai
+                                </button>
+                                <button type="button" onclick="setBillPaymentMethod(${bill.id}, 'Transfer')" 
+                                    class="py-1 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${bill.payment_method === 'Transfer' ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}">
+                                    <i class="fa-solid fa-building-columns text-[10px]"></i> Transfer
+                                </button>
+                                <button type="button" onclick="setBillPaymentMethod(${bill.id}, 'QRIS')" 
+                                    class="py-1 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${bill.payment_method === 'QRIS' ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}">
+                                    <i class="fa-solid fa-qrcode text-[10px]"></i> QRIS
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Items List for this Bill -->
+                        <div class="space-y-1.5 mb-2 max-h-56 overflow-y-auto pr-1">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Card Subtotal Footer -->
+                    <div class="pt-2 border-t border-slate-100 d-flex justify-content-between items-center text-xs">
+                        <span class="text-slate-500 font-medium">${bill.items.reduce((s, i) => s + i.qty, 0)} pcs item</span>
+                        <strong class="font-mono text-slate-800">Rp ${Number(billTotal).toLocaleString('id-ID')}</strong>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = billsHtml;
+
+        const originalTotal = window.currentGrandTotal || 0;
+        const elOrig = document.getElementById('split-items-original-total');
+        const elAlloc = document.getElementById('split-items-allocated-total');
+        if (elOrig) elOrig.innerText = 'Rp ' + Number(originalTotal).toLocaleString('id-ID');
+        if (elAlloc) elAlloc.innerText = 'Rp ' + Number(totalAllocated).toLocaleString('id-ID');
+
+        const btnSubmit = document.getElementById('btn-submit-split-items');
+        const statusMsg = document.getElementById('split-items-status-msg');
+
+        // Check if all bills have items
+        const hasEmptyBill = splitState.bills.some(b => b.items.length === 0);
+        if (hasEmptyBill) {
+            if (statusMsg) {
+                statusMsg.className = 'text-[11px] mt-0.5 font-semibold text-amber-600';
+                statusMsg.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Ada tagihan yang masih kosong. Pindahkan item atau hapus tagihan.';
+            }
+            if (btnSubmit) btnSubmit.disabled = true;
+        } else {
+            if (statusMsg) {
+                statusMsg.className = 'text-[11px] mt-0.5 font-semibold text-emerald-600';
+                statusMsg.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Siap proses ${splitState.bills.length} tagihan terpisah.`;
+            }
+            if (btnSubmit) btnSubmit.disabled = false;
+        }
+    }
+
+    // --- Mode 2: Multi-Payment (Patungan Bayar) ---
+    function presetSplitPayment(peopleCount) {
+        const total = window.currentGrandTotal || 0;
+        if (peopleCount <= 0) return;
+
+        const basePerPerson = Math.floor(total / peopleCount);
+        const remainder = total - (basePerPerson * peopleCount);
+
+        const methods = ['QRIS', 'Cash', 'Transfer', 'QRIS'];
+
+        splitState.payments = [];
+        for (let i = 0; i < peopleCount; i++) {
+            const amount = (i === 0) ? (basePerPerson + remainder) : basePerPerson;
+            splitState.payments.push({
+                payer_name: `Pembayar ${i + 1}`,
+                payment_method: methods[i % methods.length],
+                amount: amount
+            });
+        }
+
+        renderSplitPayments();
+    }
+
+    function addSplitPayerRow() {
+        const nextNum = splitState.payments.length + 1;
+        splitState.payments.push({
+            payer_name: `Pembayar ${nextNum}`,
+            payment_method: 'Cash',
+            amount: 0
+        });
+        renderSplitPayments();
+    }
+
+    function removeSplitPayerRow(idx) {
+        if (splitState.payments.length <= 2) {
+            Swal.fire({ icon: 'info', title: 'Minimal 2 Pembayar', text: 'Pembayaran patungan membutuhkan minimal 2 pembayar.' });
+            return;
+        }
+        splitState.payments.splice(idx, 1);
+        renderSplitPayments();
+    }
+
+    function renderSplitPayments() {
+        const grandTotal = window.currentGrandTotal || 0;
+        const grandTotalEl = document.getElementById('split-payments-grand-total');
+        if (grandTotalEl) {
+            grandTotalEl.innerText = 'Rp ' + Number(grandTotal).toLocaleString('id-ID');
+        }
+
+        const container = document.getElementById('split-payers-list');
+        if (!container) return;
+
+        let html = '';
+
+        splitState.payments.forEach((p, idx) => {
+            html += `
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 d-flex flex-column flex-sm-row items-sm-center justify-between gap-2.5">
+                    <div class="d-flex items-center gap-2 flex-1">
+                        <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center flex-shrink-0">${idx + 1}</span>
+                        <input type="text" value="${p.payer_name || ''}" placeholder="Nama Pembayar ${idx + 1}" oninput="splitState.payments[${idx}].payer_name = this.value"
+                            class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold w-full sm:w-44 focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="d-flex items-center gap-2">
+                        <!-- Payment Method Selector -->
+                        <div class="d-flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs">
+                            <button type="button" onclick="splitState.payments[${idx}].payment_method = 'Cash'; renderSplitPayments();"
+                                class="px-2 py-1 rounded font-bold transition cursor-pointer ${p.payment_method === 'Cash' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:text-slate-800'}">
+                                Tunai
+                            </button>
+                            <button type="button" onclick="splitState.payments[${idx}].payment_method = 'Transfer'; renderSplitPayments();"
+                                class="px-2 py-1 rounded font-bold transition cursor-pointer ${p.payment_method === 'Transfer' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:text-slate-800'}">
+                                Transfer
+                            </button>
+                            <button type="button" onclick="splitState.payments[${idx}].payment_method = 'QRIS'; renderSplitPayments();"
+                                class="px-2 py-1 rounded font-bold transition cursor-pointer ${p.payment_method === 'QRIS' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-800'}">
+                                QRIS
+                            </button>
+                        </div>
+
+                        <!-- Amount Input -->
+                        <div class="relative w-36">
+                            <span class="absolute left-2.5 top-1.5 text-[11px] text-slate-400 font-bold">Rp</span>
+                            <input type="number" min="0" step="1000" value="${p.amount || 0}" 
+                                oninput="splitState.payments[${idx}].amount = parseFloat(this.value) || 0; checkSplitPaymentBalance();"
+                                class="w-full pl-8 pr-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-indigo-500 text-end">
+                        </div>
+
+                        ${splitState.payments.length > 2 ? `
+                            <button type="button" onclick="removeSplitPayerRow(${idx})" class="w-8 h-8 rounded-lg text-rose-500 hover:bg-rose-50 flex items-center justify-center border-0 cursor-pointer" title="Hapus Pembayar">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        ` : '<div class="w-8"></div>'}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        checkSplitPaymentBalance();
+    }
+
+    function checkSplitPaymentBalance() {
+        const grandTotal = window.currentGrandTotal || 0;
+        const totalPaid = splitState.payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        const diff = grandTotal - totalPaid;
+
+        const box = document.getElementById('split-payment-status-box');
+        const btnSubmit = document.getElementById('btn-submit-split-payments');
+        if (!box) return;
+
+        if (Math.abs(diff) <= 1) {
+            box.className = 'p-3.5 rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-900 flex items-center justify-between transition duration-200';
+            box.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                    <div>
+                        <strong class="text-xs font-bold block text-emerald-800">Total Pembayaran Pas!</strong>
+                        <span class="text-[11px] text-emerald-700">Total Rp ${Number(totalPaid).toLocaleString('id-ID')} sama dengan total tagihan.</span>
+                    </div>
+                </div>
+                <span class="badge bg-emerald-600 text-white font-bold text-xs px-2.5 py-1 rounded-lg">SIAP PROSES</span>
+            `;
+            if (btnSubmit) btnSubmit.disabled = false;
+        } else if (diff > 0) {
+            box.className = 'p-3.5 rounded-2xl border border-rose-200 bg-rose-50 text-rose-900 flex items-center justify-between transition duration-200';
+            box.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation text-rose-600 text-lg"></i>
+                    <div>
+                        <strong class="text-xs font-bold block text-rose-800">Nominal Pembayaran Masih Kurang</strong>
+                        <span class="text-[11px] text-rose-700">Kurang <strong>Rp ${Number(diff).toLocaleString('id-ID')}</strong> lagi untuk melunasi tagihan.</span>
+                    </div>
+                </div>
+                <span class="font-mono text-xs font-bold text-rose-700">Kurang: Rp ${Number(diff).toLocaleString('id-ID')}</span>
+            `;
+            if (btnSubmit) btnSubmit.disabled = true;
+        } else {
+            box.className = 'p-3.5 rounded-2xl border border-amber-200 bg-amber-50 text-amber-900 flex items-center justify-between transition duration-200';
+            box.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg"></i>
+                    <div>
+                        <strong class="text-xs font-bold block text-amber-800">Nominal Pembayaran Berlebih</strong>
+                        <span class="text-[11px] text-amber-700">Kelebihan <strong>Rp ${Number(Math.abs(diff)).toLocaleString('id-ID')}</strong> dari total tagihan.</span>
+                    </div>
+                </div>
+                <span class="font-mono text-xs font-bold text-amber-700">+Rp ${Number(Math.abs(diff)).toLocaleString('id-ID')}</span>
+            `;
+            if (btnSubmit) btnSubmit.disabled = true;
+        }
+    }
+
+    function submitSplitItemsCheckout() {
+        // Validate each bill has at least 1 item
+        for (let b of splitState.bills) {
+            if (b.items.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tagihan Masih Kosong',
+                    text: `${b.title} belum memiliki item. Silakan pindahkan item atau hapus tagihan tersebut.`
+                });
+                return;
+            }
+        }
+
+        // Build payload
+        const billsPayload = splitState.bills.map(b => {
+            const billItems = b.items.map(bi => {
+                const item = cart.find(c => c.id === bi.cart_id);
+                const isNegotiated = (item.custom_unit_price !== undefined && item.custom_unit_price !== null);
+                return {
+                    material_id: item.material_id || null,
+                    material_name_or_type: item.material_name_or_type,
+                    requested_size: item.requested_size,
+                    width_m: item.width_m || item.fixed_length_m || null,
+                    length_m: item.length_m || (item.custom_width_cm ? item.custom_width_cm / 100 : null),
+                    fixed_length_m: item.fixed_length_m || null,
+                    custom_width_cm: item.custom_width_cm || null,
+                    area_m2: item.area_m2 || null,
+                    billable_area_m2: item.billable_area_m2 || null,
+                    is_custom_banner: !!item.is_custom_banner,
+                    custom_unit_price: isNegotiated ? item.custom_unit_price : null,
+                    eyelet_count: item.eyelet_count || 0,
+                    extra_eyelet_cost: (item.extra_eyelet_cost !== undefined) ? item.extra_eyelet_cost : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0),
+                    finishing: item.finishing || null,
+                    dimension_text: item.dimension_text || null,
+                    qty: bi.qty
+                };
+            });
+
+            return {
+                customer_name: b.customer_name || b.title,
+                customer_phone: b.customer_phone || null,
+                payment_method: b.payment_method || 'Cash',
+                discount_amount: 0,
+                negotiation_notes: null,
+                items: billItems
+            };
+        });
+
+        Swal.fire({
+            title: 'Memproses Split Bill...',
+            text: `Mencatat ${billsPayload.length} tagihan pesanan...`,
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch('{{ route("pos.split-checkout") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                mode: 'items',
+                bills: billsPayload
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success' || data.success) {
+                // Hide modal
+                const modalEl = document.getElementById('modalSplitBill');
+                if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+
+                // Clear cart
+                cart = [];
+                resetNegotiation();
+                renderCart();
+                const posContainer = document.getElementById('pos-main-container');
+                const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+                if (alpineData && alpineData.clearCustomer) alpineData.clearCustomer();
+
+                // Build rich success modal with receipt buttons
+                let receiptsListHtml = '';
+                data.transactions.forEach((tx, idx) => {
+                    receiptsListHtml += `
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 8px; text-align: left;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <div>
+                                    <strong style="color: #0f172a; font-size: 13px;">${idx + 1}. ${tx.customer_name}</strong>
+                                    <span style="color: #64748b; font-size: 11px; margin-left: 6px;">(#${tx.invoice_number})</span>
+                                </div>
+                                <span style="font-family: monospace; font-weight: bold; color: #1e40af; font-size: 13px;">Rp ${Number(tx.total_price).toLocaleString('id-ID')}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #475569;">
+                                <span>Metode: <strong style="color: #0f172a;">${tx.payment_method}</strong></span>
+                                <div style="display: flex; gap: 6px;">
+                                    <a href="${tx.receipt_url}" target="_blank" style="background: #2563eb; color: #fff; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fa-solid fa-print"></i> Cetak Struk
+                                    </a>
+                                    <a href="${tx.public_invoice_url}" target="_blank" style="background: #e2e8f0; color: #334155; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 11px;">
+                                        Lihat Nota
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                Swal.fire({
+                    title: '<span style="color: #1e3a8a; font-weight: 800;"><i class="fa-solid fa-code-fork text-indigo-600 me-2"></i>Split Bill Selesai!</span>',
+                    html: `
+                        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">Sebanyak <strong>${data.transactions.length} nota transaksi</strong> berhasil dibuat dan dicatat pada sistem kasir:</p>
+                        <div style="max-height: 280px; overflow-y: auto;">
+                            ${receiptsListHtml}
+                        </div>
+                    `,
+                    icon: 'success',
+                    confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Selesai & Transaksi Baru',
+                    confirmButtonColor: '#2563eb',
+                    width: '520px'
+                });
+
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Split Bill',
+                    text: data.message || 'Terjadi kesalahan saat memproses split bill.'
+                });
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Jaringan',
+                text: 'Gagal menghubungi server saat memproses split bill.'
+            });
+        });
+    }
+
+    function submitSplitPaymentsCheckout() {
+        const grandTotal = window.currentGrandTotal || 0;
+        const totalPaid = splitState.payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+        if (Math.abs(grandTotal - totalPaid) > 1) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Total Belum Pas',
+                text: 'Total nominal pembayaran patungan harus pas sama dengan total tagihan pesanan.'
+            });
+            return;
+        }
+
+        const customerName = document.getElementById('split-pay-customer-name').value || 'Pelanggan Umum (Split Bill)';
+        const customerPhone = document.getElementById('split-pay-customer-phone').value || '';
+
+        const payloadItems = cart.map(item => {
+            const isNegotiated = (item.custom_unit_price !== undefined && item.custom_unit_price !== null);
+            return {
+                material_id: item.material_id || null,
+                material_name_or_type: item.material_name_or_type,
+                requested_size: item.requested_size,
+                width_m: item.width_m || item.fixed_length_m || null,
+                length_m: item.length_m || (item.custom_width_cm ? item.custom_width_cm / 100 : null),
+                fixed_length_m: item.fixed_length_m || null,
+                custom_width_cm: item.custom_width_cm || null,
+                area_m2: item.area_m2 || null,
+                billable_area_m2: item.billable_area_m2 || null,
+                is_custom_banner: !!item.is_custom_banner,
+                custom_unit_price: isNegotiated ? item.custom_unit_price : null,
+                eyelet_count: item.eyelet_count || 0,
+                extra_eyelet_cost: (item.extra_eyelet_cost !== undefined) ? item.extra_eyelet_cost : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0),
+                finishing: item.finishing || null,
+                dimension_text: item.dimension_text || null,
+                qty: item.qty
+            };
+        });
+
+        Swal.fire({
+            title: 'Memproses Pembayaran Patungan...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        fetch('{{ route("pos.split-checkout") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                mode: 'multi_payment',
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                discount_amount: window.negotiationDiscount || 0,
+                negotiation_notes: window.negotiationNotes || null,
+                items: payloadItems,
+                payments: splitState.payments
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success' || data.success) {
+                // Hide modal
+                const modalEl = document.getElementById('modalSplitBill');
+                if (modalEl) bootstrap.Modal.getInstance(modalEl)?.hide();
+
+                // Clear cart
+                cart = [];
+                resetNegotiation();
+                renderCart();
+                const posContainer = document.getElementById('pos-main-container');
+                const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+                if (alpineData && alpineData.clearCustomer) alpineData.clearCustomer();
+
+                let paymentsBreakdownHtml = '';
+                if (data.payments) {
+                    paymentsBreakdownHtml = data.payments.map(p => `
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px dashed #e2e8f0;">
+                            <span>• ${p.payment_method} (${p.payer_name})</span>
+                            <strong style="font-family: monospace;">Rp ${Number(p.amount).toLocaleString('id-ID')}</strong>
+                        </div>
+                    `).join('');
+                }
+
+                Swal.fire({
+                    title: '<span style="color: #059669; font-weight: 800;"><i class="fa-solid fa-circle-check me-2"></i>Pembayaran Lunas!</span>',
+                    html: `
+                        <div style="text-align: left; font-size: 12px; margin-bottom: 12px;">
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span style="color: #64748b;">No. Invoice:</span>
+                                    <strong style="color: #0f172a;">#${data.invoice_number}</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span style="color: #64748b;">Total Tagihan:</span>
+                                    <strong style="font-family: monospace; color: #1e40af;">Rp ${Number(data.total_price).toLocaleString('id-ID')}</strong>
+                                </div>
+                                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
+                                    <span style="font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase;">Rincian Patungan:</span>
+                                    ${paymentsBreakdownHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-print me-1"></i> Cetak Struk Thermal',
+                    cancelButtonText: '<i class="fa-solid fa-check me-1"></i> Selesai',
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#64748b',
+                    reverseButtons: true
+                }).then((r) => {
+                    if (r.isConfirmed && data.receipt_url) {
+                        window.open(data.receipt_url, '_blank', 'width=420,height=600');
+                    }
+                });
+
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Memproses',
+                    text: data.message || 'Terjadi kesalahan saat memproses pembayaran patungan.'
+                });
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Jaringan',
+                text: 'Gagal menghubungi server saat memproses pembayaran patungan.'
+            });
+        });
+    }
+
+    window.openSplitBillModal = openSplitBillModal;
+    window.switchSplitMode = switchSplitMode;
+    window.addSplitBillColumn = addSplitBillColumn;
+    window.removeSplitBillColumn = removeSplitBillColumn;
+    window.moveItemToBill = moveItemToBill;
+    window.setBillPaymentMethod = setBillPaymentMethod;
+    window.presetSplitPayment = presetSplitPayment;
+    window.addSplitPayerRow = addSplitPayerRow;
+    window.removeSplitPayerRow = removeSplitPayerRow;
+    window.checkSplitPaymentBalance = checkSplitPaymentBalance;
+    window.submitSplitItemsCheckout = submitSplitItemsCheckout;
+    window.submitSplitPaymentsCheckout = submitSplitPaymentsCheckout;
 
     function promptSettleDraft(draftId, invNumber, totalPrice) {
         Swal.fire({

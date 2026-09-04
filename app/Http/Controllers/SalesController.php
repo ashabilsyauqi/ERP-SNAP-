@@ -467,7 +467,7 @@ class SalesController extends Controller
      */
     public function receipt($id)
     {
-        $transaction = Transaction::with(['user', 'transactionDetails.material'])->findOrFail($id);
+        $transaction = Transaction::with(['user', 'branch', 'transactionDetails.material', 'payments'])->findOrFail($id);
         return view('sales.receipt', compact('transaction'));
     }
 
@@ -476,7 +476,7 @@ class SalesController extends Controller
      */
     public function publicInvoice($invoice_number)
     {
-        $transaction = Transaction::with(['user', 'branch', 'transactionDetails.material'])
+        $transaction = Transaction::with(['user', 'branch', 'transactionDetails.material', 'payments'])
             ->where('invoice_number', $invoice_number)
             ->firstOrFail();
 

@@ -180,7 +180,20 @@
                     </div>
                 @endif
                 <div class="mt-2 text-[11px] text-slate-400 space-y-0.5">
-                    <div>Metode Pembayaran: <strong class="text-slate-700">{{ $transaction->payment_method ?: 'Cash' }}</strong></div>
+                    @if($transaction->payments && $transaction->payments->count() > 0)
+                        <div>Metode Pembayaran: <strong class="text-indigo-700 font-bold">Split Bill (Patungan)</strong></div>
+                        <div class="mt-1.5 space-y-1 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                            <span class="block text-[10px] font-bold text-slate-500 uppercase">Rincian Pembayaran Patungan:</span>
+                            @foreach($transaction->payments as $p)
+                                <div class="text-[11px] text-slate-700 flex justify-between items-center">
+                                    <span>• {{ $p->payment_method }} {{ $p->payer_name ? '('.$p->payer_name.')' : '' }}</span>
+                                    <strong class="font-mono text-slate-900">Rp {{ number_format($p->amount, 0, ',', '.') }}</strong>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div>Metode Pembayaran: <strong class="text-slate-700">{{ $transaction->payment_method ?: 'Cash' }}</strong></div>
+                    @endif
                     <div>Petugas Kasir: <strong class="text-slate-700">{{ $transaction->user->full_name ?? ($transaction->user->username ?? 'Kasir') }}</strong></div>
                 </div>
             </div>

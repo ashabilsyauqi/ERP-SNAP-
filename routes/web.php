@@ -71,6 +71,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:cashier,operator,sales,manager,owner'])->group(function () {
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
+        Route::post('/pos/split-checkout', [PosController::class, 'splitCheckout'])->name('pos.split-checkout');
         Route::get('/pos/drafts', [PosController::class, 'getDrafts'])->name('pos.drafts');
         Route::post('/pos/drafts/{id}/settle', [PosController::class, 'settleDraft'])->name('pos.drafts.settle');
         Route::delete('/pos/drafts/{id}', [PosController::class, 'deleteDraft'])->name('pos.drafts.delete');

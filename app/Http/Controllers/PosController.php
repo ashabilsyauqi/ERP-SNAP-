@@ -7,6 +7,9 @@ use App\Models\Material;
 use App\Models\MaterialWholesalePrice;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\TransactionPayment;
+use App\Models\CashTransaction;
+use App\Models\Account;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
@@ -564,5 +567,385 @@ class PosController extends Controller
                 'message' => 'Gagal menghapus draft: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Process Split Bill Checkout (Mode Items or Mode Multi-Payment).
+     */
+    public function splitCheckout(Request $request)
+    {
+        if (auth()->user()->isOperator()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Akun operator hanya berhak membuat draft. Fitur Split Bill hanya untuk Kasir.'
+            ], 403);
+        }
+
+        $mode = $request->input('mode', 'items'); // 'items' or 'multi_payment'
+
+        try {
+            DB::beginTransaction();
+
+            $salesAccount = Account::where('kode_akun', '4-1000')->first();
+            $branchId = auth()->user()->branch_id ?: (\App\Models\Branch::first()->id ?? 1);
+
+            if ($mode === 'items') {
+                $request->validate([
+                    'bills' => 'required|array|min:2',
+                    'bills.*.items' => 'required|array|min:1',
+                    'bills.*.payment_method' => 'required|string|in:Cash,Transfer,QRIS',
+                    'bills.*.customer_name' => 'nullable|string|max:150',
+                    'bills.*.customer_phone' => 'nullable|string|max:50',
+                    'bills.*.discount_amount' => 'nullable|numeric|min:0',
+                    'bills.*.negotiation_notes' => 'nullable|string|max:255',
+                    'bills.*.production_notes' => 'nullable|string',
+                ]);
+
+                $createdTransactions = [];
+
+                foreach ($request->bills as $index => $billData) {
+                    $billCustomerName = trim($billData['customer_name'] ?? '');
+                    $billCustomerPhone = trim($billData['customer_phone'] ?? '');
+                    $customerId = null;
+
+                    if (!empty($billCustomerName) && Schema::hasTable('customers')) {
+                        $custObj = \App\Models\Customer::where('name', $billCustomerName)
+                            ->where(function($b) use ($branchId) {
+                                $b->where('branch_id', $branchId)->orWhereNull('branch_id');
+                            })
+                            ->first();
+
+                        if (!$custObj) {
+                            $custObj = \App\Models\Customer::create([
+                                'branch_id' => $branchId,
+                                'name' => $billCustomerName,
+                                'phone' => $billCustomerPhone ?: null,
+                            ]);
+                        }
+                        $customerId = $custObj->id;
+                    }
+
+                    $transaction = Transaction::create([
+                        'branch_id' => $branchId,
+                        'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5)),
+                        'user_id' => auth()->id(),
+                        'customer_id' => $customerId,
+                        'customer_name' => $billCustomerName ?: ('Pelanggan ' . ($index + 1)),
+                        'customer_phone' => $billCustomerPhone ?: null,
+                        'total_price' => 0,
+                        'total_hpp' => 0,
+                        'payment_method' => $billData['payment_method'],
+                        'payment_status' => 'PAID',
+                        'paid_amount' => 0,
+                        'remaining_amount' => 0,
+                        'order_status' => 'completed',
+                        'production_notes' => $billData['production_notes'] ?? null,
+                    ]);
+
+                    [$accumulatedPrice, $totalHpp, $savedItems] = $this->processItemsForTransaction($transaction, $billData['items']);
+
+                    $discountAmount = min($accumulatedPrice, max(0, (float)($billData['discount_amount'] ?? 0)));
+                    $totalPrice = max(0, $accumulatedPrice - $discountAmount);
+
+                    $transaction->original_price = $accumulatedPrice;
+                    $transaction->discount_amount = $discountAmount;
+                    $transaction->negotiation_notes = $billData['negotiation_notes'] ?? null;
+                    $transaction->total_price = $totalPrice;
+                    $transaction->total_hpp = $totalHpp;
+                    $transaction->paid_amount = $totalPrice;
+                    $transaction->remaining_amount = 0;
+                    $transaction->save();
+
+                    // Record cash inflow for this bill
+                    if ($totalPrice > 0 && $salesAccount) {
+                        CashTransaction::create([
+                            'branch_id' => $branchId,
+                            'account_id' => $salesAccount->id,
+                            'user_id' => auth()->id(),
+                            'tipe' => 'masuk',
+                            'nomor_referensi' => CashTransaction::generateNomorReferensi('masuk'),
+                            'tanggal' => now()->toDateString(),
+                            'jumlah' => $totalPrice,
+                            'keterangan' => "Penjualan POS Split Bill (#{$transaction->invoice_number}) dari {$transaction->customer_name} ({$transaction->payment_method})",
+                            'transaction_id' => $transaction->id,
+                        ]);
+                    }
+
+                    $createdTransactions[] = [
+                        'transaction_id' => $transaction->id,
+                        'invoice_number' => $transaction->invoice_number,
+                        'customer_name' => $transaction->customer_name,
+                        'payment_method' => $transaction->payment_method,
+                        'total_price' => $transaction->total_price,
+                        'paid_amount' => $transaction->paid_amount,
+                        'items_count' => count($savedItems),
+                        'receipt_url' => route('sales.receipt', $transaction->id),
+                        'public_invoice_url' => route('invoices.public', $transaction->invoice_number),
+                    ];
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => 'success',
+                    'success' => true,
+                    'mode' => 'items',
+                    'message' => "Split bill berhasil! " . count($createdTransactions) . " transaksi dan nota terbit.",
+                    'transactions' => $createdTransactions,
+                ]);
+
+            } elseif ($mode === 'multi_payment') {
+                $request->validate([
+                    'items' => 'required|array|min:1',
+                    'payments' => 'required|array|min:2',
+                    'payments.*.payment_method' => 'required|string|in:Cash,Transfer,QRIS',
+                    'payments.*.amount' => 'required|numeric|min:1',
+                    'payments.*.payer_name' => 'nullable|string|max:150',
+                    'customer_name' => 'nullable|string|max:150',
+                    'customer_phone' => 'nullable|string|max:50',
+                    'discount_amount' => 'nullable|numeric|min:0',
+                    'negotiation_notes' => 'nullable|string|max:255',
+                    'production_notes' => 'nullable|string',
+                ]);
+
+                $customerName = trim($request->input('customer_name', ''));
+                $customerPhone = trim($request->input('customer_phone', ''));
+                $customerId = null;
+
+                if (!empty($customerName) && Schema::hasTable('customers')) {
+                    $custObj = \App\Models\Customer::where('name', $customerName)
+                        ->where(function($b) use ($branchId) {
+                            $b->where('branch_id', $branchId)->orWhereNull('branch_id');
+                        })
+                        ->first();
+
+                    if (!$custObj) {
+                        $custObj = \App\Models\Customer::create([
+                            'branch_id' => $branchId,
+                            'name' => $customerName,
+                            'phone' => $customerPhone ?: null,
+                        ]);
+                    }
+                    $customerId = $custObj->id;
+                }
+
+                $methodsUsed = array_map(fn($p) => $p['payment_method'], $request->payments);
+                $uniqueMethods = array_unique($methodsUsed);
+                $paymentMethodSummary = 'Split (' . implode(' + ', $uniqueMethods) . ')';
+
+                $transaction = Transaction::create([
+                    'branch_id' => $branchId,
+                    'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5)),
+                    'user_id' => auth()->id(),
+                    'customer_id' => $customerId,
+                    'customer_name' => $customerName ?: 'Pelanggan Umum (Split Bill)',
+                    'customer_phone' => $customerPhone ?: null,
+                    'total_price' => 0,
+                    'total_hpp' => 0,
+                    'payment_method' => $paymentMethodSummary,
+                    'payment_status' => 'PAID',
+                    'paid_amount' => 0,
+                    'remaining_amount' => 0,
+                    'order_status' => 'completed',
+                    'production_notes' => $request->production_notes,
+                ]);
+
+                [$accumulatedPrice, $totalHpp, $savedItems] = $this->processItemsForTransaction($transaction, $request->items);
+
+                $discountAmount = min($accumulatedPrice, max(0, (float)$request->input('discount_amount', 0)));
+                $totalPrice = max(0, $accumulatedPrice - $discountAmount);
+
+                $totalPaid = array_sum(array_map(fn($p) => (float)$p['amount'], $request->payments));
+
+                if (abs($totalPaid - $totalPrice) > 1) {
+                    throw new \Exception("Total pembayaran patungan (Rp " . number_format($totalPaid, 0, ',', '.') . ") tidak sesuai dengan total tagihan pesanan (Rp " . number_format($totalPrice, 0, ',', '.') . ").");
+                }
+
+                $transaction->original_price = $accumulatedPrice;
+                $transaction->discount_amount = $discountAmount;
+                $transaction->negotiation_notes = $request->negotiation_notes;
+                $transaction->total_price = $totalPrice;
+                $transaction->total_hpp = $totalHpp;
+                $transaction->paid_amount = $totalPrice;
+                $transaction->remaining_amount = 0;
+                $transaction->save();
+
+                $createdPayments = [];
+
+                foreach ($request->payments as $pData) {
+                    $pAmount = (float)$pData['amount'];
+                    $payerName = trim($pData['payer_name'] ?? '');
+                    $pMethod = $pData['payment_method'];
+
+                    $tPayment = TransactionPayment::create([
+                        'transaction_id' => $transaction->id,
+                        'branch_id' => $branchId,
+                        'payer_name' => $payerName ?: null,
+                        'payment_method' => $pMethod,
+                        'amount' => $pAmount,
+                    ]);
+
+                    $createdPayments[] = [
+                        'payer_name' => $payerName ?: 'Pelanggan',
+                        'payment_method' => $pMethod,
+                        'amount' => $pAmount,
+                    ];
+
+                    // Record cash inflow for each split payment
+                    if ($pAmount > 0 && $salesAccount) {
+                        CashTransaction::create([
+                            'branch_id' => $branchId,
+                            'account_id' => $salesAccount->id,
+                            'user_id' => auth()->id(),
+                            'tipe' => 'masuk',
+                            'nomor_referensi' => CashTransaction::generateNomorReferensi('masuk'),
+                            'tanggal' => now()->toDateString(),
+                            'jumlah' => $pAmount,
+                            'keterangan' => "Penjualan POS Split Bill (#{$transaction->invoice_number}) dari " . ($payerName ?: $transaction->customer_name) . " ({$pMethod})",
+                            'transaction_id' => $transaction->id,
+                        ]);
+                    }
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'status' => 'success',
+                    'success' => true,
+                    'mode' => 'multi_payment',
+                    'message' => "Pembayaran patungan split bill berhasil diproses!",
+                    'transaction_id' => $transaction->id,
+                    'invoice_number' => $transaction->invoice_number,
+                    'customer_name' => $transaction->customer_name,
+                    'total_price' => $transaction->total_price,
+                    'paid_amount' => $transaction->paid_amount,
+                    'payment_method' => $transaction->payment_method,
+                    'payments' => $createdPayments,
+                    'receipt_url' => route('sales.receipt', $transaction->id),
+                    'public_invoice_url' => route('invoices.public', $transaction->invoice_number),
+                ]);
+
+            } else {
+                throw new \Exception("Mode split bill tidak valid.");
+            }
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Helper to process, price, deduct stock, and save items for a transaction.
+     */
+    protected function processItemsForTransaction(Transaction $transaction, array $items, bool $isDraft = false): array
+    {
+        $accumulatedPrice = 0;
+        $totalHpp = 0;
+        $savedItems = [];
+        $userBranchId = auth()->user()->branch_id ?: $transaction->branch_id;
+
+        foreach ($items as $item) {
+            $qty = (int) $item['qty'];
+            $isCustomBanner = !empty($item['is_custom_banner']);
+            $materialId = $item['material_id'] ?? null;
+            $materialName = $item['material_name_or_type'];
+
+            $materialToDeduct = null;
+            if ($materialId) {
+                $materialToDeduct = Material::find($materialId);
+            }
+            if (!$materialToDeduct) {
+                $materialToDeduct = Material::where('material_name', $materialName)
+                    ->where('branch_id', $userBranchId)
+                    ->first();
+            }
+
+            if (!$materialToDeduct) {
+                throw new \Exception("Produk '{$materialName}' tidak ditemukan di katalog cabang aktif.");
+            }
+
+            $fixedLength = (float) ($item['fixed_length_m'] ?? 0);
+            $customWidth = (float) ($item['custom_width_cm'] ?? 0);
+            $areaM2 = (float) ($item['billable_area_m2'] ?? $item['area_m2'] ?? 0);
+            $physicalAreaM2 = (float) ($item['area_m2'] ?? 0);
+            $widthM = (float) ($item['width_m'] ?? 0);
+            $lengthM = (float) ($item['length_m'] ?? 0);
+            $dimensionText = $item['dimension_text'] ?? null;
+
+            // Wholesale tier price lookup based on qty
+            $baseUnitPrice = $materialToDeduct->retail_price;
+            $applicableTier = MaterialWholesalePrice::where('material_id', $materialToDeduct->id)
+                 ->where('min_qty', '<=', $qty)
+                 ->orderBy('min_qty', 'desc')
+                 ->first();
+
+            if ($applicableTier) {
+                $baseUnitPrice = $applicableTier->wholesale_price;
+            }
+
+            // Eyelet (Mata Ayam) Rule: 4 pcs gratis, jika lebih dari 4 dikenakan 500 per pcs
+            $eyeletCount = (int) ($item['eyelet_count'] ?? 0);
+            $extraEyeletCost = 0;
+            if ($eyeletCount > 4) {
+                $extraEyeletCost = ($eyeletCount - 4) * 500;
+            }
+
+            // Click charge calculation per unit
+            $clickChargePerUnit = ($materialToDeduct->has_click_charge || (float)($materialToDeduct->click_charge ?? 0) > 0)
+                ? (float)($materialToDeduct->click_charge ?? 0)
+                : 0;
+
+            // Price calculation
+            if ($isCustomBanner && $areaM2 > 0) {
+                $unitPrice = round($areaM2 * $baseUnitPrice) + $extraEyeletCost;
+                $itemHpp = (round(($physicalAreaM2 ?: $areaM2) * $materialToDeduct->purchase_price) + $clickChargePerUnit) * $qty;
+            } else {
+                $unitPrice = $baseUnitPrice;
+                $itemHpp = ($materialToDeduct->purchase_price + $clickChargePerUnit) * $qty;
+            }
+
+            // If negotiated per item: directly override unitPrice with negotiated custom_unit_price
+            if (isset($item['custom_unit_price']) && is_numeric($item['custom_unit_price'])) {
+                $unitPrice = round((float) $item['custom_unit_price']);
+            }
+
+            $totalItemPrice = $qty * $unitPrice;
+            $accumulatedPrice += $totalItemPrice;
+            $totalHpp += $itemHpp;
+
+            // Deduct stock only if not draft
+            if (!$isDraft) {
+                $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($physicalAreaM2 * $qty)) : $qty;
+                $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $stockDeductUnits);
+                $materialToDeduct->save();
+            }
+
+            TransactionDetail::create([
+                'transaction_id' => $transaction->id,
+                'material_id' => $materialToDeduct->id,
+                'qty_ordered' => $qty,
+                'selling_price' => $unitPrice,
+                'click_charge' => $clickChargePerUnit,
+                'fixed_length_m' => $widthM ?: $fixedLength,
+                'custom_width_cm' => $customWidth,
+                'area_m2' => $physicalAreaM2 ?: $areaM2,
+                'dimension_text' => $dimensionText,
+            ]);
+
+            $savedItems[] = [
+                'material_name' => $materialToDeduct->material_name,
+                'qty_ordered' => $qty,
+                'selling_price' => $unitPrice,
+                'dimension_text' => $dimensionText,
+                'subtotal' => $totalItemPrice
+            ];
+        }
+
+        return [$accumulatedPrice, $totalHpp, $savedItems];
     }
 }

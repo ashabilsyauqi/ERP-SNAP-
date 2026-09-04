@@ -8,6 +8,7 @@ use App\Models\Material;
 use App\Models\Purchase;
 use App\Models\Branch;
 use App\Models\CashTransaction;
+use App\Models\TransactionPayment;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -79,10 +80,20 @@ class OwnerController extends Controller
         $lowStockCount = (clone $materialQuery)->where('stock_qty', '<=', 5)->count();
         $pendingPOCount = (clone $purchaseQuery)->whereIn('status', ['waiting_approval', 'pending_verification'])->count();
 
-        // Payment Breakdown
-        $cashSales = (clone $query)->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
-        $qrisSales = (clone $query)->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount');
-        $transferSales = (clone $query)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount');
+        // Payment Breakdown (including split payments)
+        $directCash = (clone $query)->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
+        $directQris = (clone $query)->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount');
+        $directTransfer = (clone $query)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount');
+
+        $splitTxIds = (clone $query)->where('payment_method', 'like', 'Split%')->pluck('id');
+        $splitPaymentsQuery = TransactionPayment::whereIn('transaction_id', $splitTxIds);
+        $splitCash = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');
+        $splitQris = (clone $splitPaymentsQuery)->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
+        $splitTransfer = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('amount');
+
+        $cashSales = (float) $directCash + (float) $splitCash;
+        $qrisSales = (float) $directQris + (float) $splitQris;
+        $transferSales = (float) $directTransfer + (float) $splitTransfer;
 
         // Branch Sales Comparison
         $branchSalesData = Branch::all()->map(function ($branch) use ($timeframe, $month, $year) {

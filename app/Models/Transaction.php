@@ -59,6 +59,11 @@ class Transaction extends Model
         return $this->hasMany(CashTransaction::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(TransactionPayment::class);
+    }
+
     public function isPaid(): bool
     {
         return $this->payment_status === 'PAID' && ($this->remaining_amount === null || (float) $this->remaining_amount <= 0);

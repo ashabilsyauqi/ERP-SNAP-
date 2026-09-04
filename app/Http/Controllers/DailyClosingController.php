@@ -74,15 +74,22 @@ class DailyClosingController extends Controller
         $branches = Branch::orderBy('nama_cabang')->get();
 
         // 1. Calculate sales from transactions for this branch and date
-        $transactions = Transaction::where('branch_id', $branchId)
+        $transactions = Transaction::with('payments')
+            ->where('branch_id', $branchId)
             ->whereDate('created_at', $targetDate)
             ->whereNotIn('order_status', ['draft', 'cancelled'])
             ->get();
 
         $totalOrdersCount = $transactions->count();
-        $totalCashSales = $transactions->where('payment_method', 'Cash')->sum('paid_amount');
-        $totalTransferSales = $transactions->where('payment_method', 'Transfer')->sum('paid_amount');
-        $totalQrisSales = $transactions->where('payment_method', 'QRIS')->sum('paid_amount');
+        $directTransactions = $transactions->filter(fn($t) => $t->payments->isEmpty());
+        $splitPayments = $transactions->flatMap->payments;
+
+        $totalCashSales = (float) $directTransactions->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount')
+            + (float) $splitPayments->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');
+        $totalTransferSales = (float) $directTransactions->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount')
+            + (float) $splitPayments->whereIn('payment_method', ['Transfer', 'transfer'])->sum('amount');
+        $totalQrisSales = (float) $directTransactions->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount')
+            + (float) $splitPayments->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
         $totalSales = $totalCashSales + $totalTransferSales + $totalQrisSales;
 
         // 2. Calculate Cash In and Cash Out
