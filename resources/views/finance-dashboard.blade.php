@@ -16,7 +16,7 @@
 
 @section('content')
 <div id="main-view-wrapper" data-view-wrapper>
-    @if(auth()->user()->isOwner())
+    @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin())
     <div class="bg-white border border-slate-200 rounded-2xl mb-3 p-2.5 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2">
         <form method="GET" action="{{ route('dashboard') }}" id="finance-branch-form" class="d-flex align-items-center gap-2 mb-0">
             <label class="fw-bold text-slate-700 text-xs d-flex align-items-center mb-0">

@@ -19,16 +19,17 @@ class DailyClosingController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
-        if ($request->has('branch_id')) {
-            $branchId = $request->input('branch_id');
-            session(['selected_branch_id' => $branchId]);
-        } else {
-            $branchId = session('selected_branch_id', 'all');
-        }
-
-        if (!$user->isOwner()) {
+        if (!$isOwnerOrSuper) {
             $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
         }
 
         $query = DailyClosingReport::with(['branch', 'manager', 'owner'])->orderBy('closing_date', 'desc')->orderBy('id', 'desc');

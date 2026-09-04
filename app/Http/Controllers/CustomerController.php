@@ -15,12 +15,23 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
+        }
+
         $query = Customer::with('branch');
 
-        if ($user->role !== 'owner') {
-            $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $query->where('branch_id', $request->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         if ($request->filled('search')) {
@@ -44,7 +55,7 @@ class CustomerController extends Controller
         $totalCustomers = (clone $query)->count();
         $totalOmsetCustomers = (clone $query)->withSum('transactions', 'total_price')->get()->sum('transactions_sum_total_price');
 
-        return view('customers.index', compact('customers', 'branches', 'totalCustomers', 'totalOmsetCustomers'));
+        return view('customers.index', compact('customers', 'branches', 'totalCustomers', 'totalOmsetCustomers', 'branchId'));
     }
 
     /**

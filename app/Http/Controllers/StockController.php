@@ -20,12 +20,21 @@ class StockController extends Controller
 
         $query = Material::with(['supplier', 'branch', 'wholesalePrices'])->orderBy('material_name', 'asc');
 
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $query->where('branch_id', $request->branch_id);
-            }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
         } else {
-            $query->where('branch_id', $user->branch_id);
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
+        }
+
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         if ($request->filled('category') && $request->category !== 'all') {
@@ -58,10 +67,8 @@ class StockController extends Controller
         $suppliers = \App\Models\Supplier::orderBy('name')->get();
 
         $catQuery = Material::query();
-        if (!$user->isOwner()) {
-            $catQuery->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $catQuery->where('branch_id', $request->branch_id);
+        if ($branchId && $branchId !== 'all') {
+            $catQuery->where('branch_id', $branchId);
         }
         $categories = $catQuery->whereNotNull('category')->where('category', '!=', '')->distinct()->pluck('category');
 
@@ -77,7 +84,8 @@ class StockController extends Controller
             'branches',
             'suppliers',
             'categories',
-            'selectedCategory'
+            'selectedCategory',
+            'branchId'
         ));
     }
 
@@ -192,12 +200,21 @@ class StockController extends Controller
             ->where('status', 'pending_verification')
             ->orderBy('created_at', 'desc');
 
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $pendingQuery->where('branch_id', $request->branch_id);
-            }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
         } else {
-            $pendingQuery->where('branch_id', $user->branch_id);
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
+        }
+
+        if ($branchId && $branchId !== 'all') {
+            $pendingQuery->where('branch_id', $branchId);
         }
 
         if ($request->filled('search')) {
@@ -215,7 +232,7 @@ class StockController extends Controller
         $pendingCount = $pendingPurchases->count();
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        return view('stock.inspection', compact('pendingPurchases', 'pendingCount', 'branches'));
+        return view('stock.inspection', compact('pendingPurchases', 'pendingCount', 'branches', 'branchId'));
     }
 
     /**
@@ -230,12 +247,21 @@ class StockController extends Controller
             ->where('status', 'rejected')
             ->orderBy('verified_at', 'desc');
 
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $rejectedQuery->where('branch_id', $request->branch_id);
-            }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
         } else {
-            $rejectedQuery->where('branch_id', $user->branch_id);
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
+        }
+
+        if ($branchId && $branchId !== 'all') {
+            $rejectedQuery->where('branch_id', $branchId);
         }
 
         if ($request->filled('search')) {

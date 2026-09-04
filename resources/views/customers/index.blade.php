@@ -49,14 +49,14 @@
                 </div>
             </div>
 
-            @if(auth()->user()->isOwner())
+            @if(auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
             <div class="col-12 col-md-4">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-slate-50 text-slate-700 text-xs"><i class="fa-solid fa-building me-1"></i> Cabang:</span>
                     <select name="branch_id" onchange="this.form.submit()" class="form-select text-xs">
-                        <option value="all">Semua Cabang</option>
+                        <option value="all" {{ ($branchId ?? 'all') === 'all' ? 'selected' : '' }}>Semua Cabang</option>
                         @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
+                            <option value="{{ $branch->id }}" {{ ($branchId ?? request('branch_id')) == $branch->id ? 'selected' : '' }}>
                                 {{ $branch->nama_cabang }}
                             </option>
                         @endforeach

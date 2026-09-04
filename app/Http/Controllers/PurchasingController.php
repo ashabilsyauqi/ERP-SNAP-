@@ -18,14 +18,22 @@ class PurchasingController extends Controller
         $materialQuery = Material::with(['wholesalePrices', 'supplier'])->orderBy('material_name', 'asc');
         $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy', 'approvedBy'])->orderBy('created_at', 'desc');
 
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $materialQuery->where('branch_id', $request->branch_id);
-                $purchaseQuery->where('branch_id', $request->branch_id);
-            }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
         } else {
-            $materialQuery->where('branch_id', $user->branch_id);
-            $purchaseQuery->where('branch_id', $user->branch_id);
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
+        }
+
+        if ($branchId && $branchId !== 'all') {
+            $materialQuery->where('branch_id', $branchId);
+            $purchaseQuery->where('branch_id', $branchId);
         }
 
         // SAP Filters
@@ -103,12 +111,21 @@ class PurchasingController extends Controller
         
         $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy', 'approvedBy'])->orderBy('created_at', 'desc');
 
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $purchaseQuery->where('branch_id', $request->branch_id);
-            }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
         } else {
-            $purchaseQuery->where('branch_id', $user->branch_id);
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
+        }
+
+        if ($branchId && $branchId !== 'all') {
+            $purchaseQuery->where('branch_id', $branchId);
         }
 
         // SAP Filters

@@ -178,7 +178,7 @@
                 <option value="Transfer" {{ request('payment_method') === 'Transfer' ? 'selected' : '' }}>🏦 Transfer Bank</option>
             </select>
 
-            @if(auth()->user()->isOwner())
+            @if(auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
                 <select name="branch_id" onchange="this.form.submit()" class="form-select form-select-sm text-xs font-semibold py-1" style="width: auto;">
                     <option value="all" {{ ($branchId ?? 'all') === 'all' ? 'selected' : '' }}>Semua Cabang Toko</option>
                     @foreach($branches as $b)

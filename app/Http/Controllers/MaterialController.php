@@ -17,10 +17,21 @@ class MaterialController extends Controller
         $user = Auth::user();
         $query = Material::with(['supplier', 'branch', 'wholesalePrices']);
 
-        if ($user->isManager()) {
-            $query->where('branch_id', $user->branch_id);
-        } elseif ($request->filled('branch_id') && $request->branch_id !== 'all') {
-            $query->where('branch_id', $request->branch_id);
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
+        }
+
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         if ($request->filled('search')) {
@@ -37,7 +48,7 @@ class MaterialController extends Controller
         $suppliers = Supplier::orderBy('name')->get();
         $branches = Branch::all();
 
-        return view('materials.index', compact('materials', 'suppliers', 'branches'));
+        return view('materials.index', compact('materials', 'suppliers', 'branches', 'branchId'));
     }
 
     public function store(Request $request)

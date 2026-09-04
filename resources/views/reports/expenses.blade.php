@@ -24,7 +24,7 @@
                 <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
             </div>
             
-            @if(Auth::user()->isOwner())
+            @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin())
             <div class="col-12 col-md-3">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Cabang</label>
                 <select name="branch_id" class="form-select form-select-sm">

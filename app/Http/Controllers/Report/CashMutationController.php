@@ -14,16 +14,17 @@ class CashMutationController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        
-        if ($request->has('branch_id')) {
-            $branchId = $request->input('branch_id');
-            session(['selected_branch_id' => $branchId]);
-        } else {
-            $branchId = session('selected_branch_id', 'all');
-        }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
-        if (!$user->isOwner()) {
+        if (!$isOwnerOrSuper) {
             $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
         }
 
         $query = CashTransaction::with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])

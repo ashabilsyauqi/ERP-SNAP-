@@ -18,10 +18,22 @@ class PosController extends Controller
 {
     public function index()
     {
-        $branchId = auth()->user()->branch_id;
-        if (request()->filled('branch_id') && request('branch_id') !== 'all') {
-            $branchId = request('branch_id');
-        } elseif (!$branchId) {
+        $user = auth()->user();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
+        } else {
+            if (request()->has('branch_id') && request('branch_id') !== 'all') {
+                $branchId = request('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } elseif (session('selected_branch_id') && session('selected_branch_id') !== 'all') {
+                $branchId = session('selected_branch_id');
+            } else {
+                $branchId = $user->branch_id;
+            }
+        }
+        if (!$branchId) {
             $branchId = \App\Models\Branch::first()->id ?? 1;
         }
 
@@ -132,9 +144,17 @@ class PosController extends Controller
                 }
             }
 
+            $checkoutBranchId = auth()->user()->branch_id;
+            if ((auth()->user()->isOwner() || auth()->user()->isSuperAdmin()) && session('selected_branch_id') && session('selected_branch_id') !== 'all') {
+                $checkoutBranchId = session('selected_branch_id');
+            }
+            if (!$checkoutBranchId) {
+                $checkoutBranchId = \App\Models\Branch::first()->id ?? 1;
+            }
+
             // Create Base Transaction
             $transaction = Transaction::create([
-                'branch_id' => auth()->user()->branch_id ?: (\App\Models\Branch::first()->id ?? 1),
+                'branch_id' => $checkoutBranchId,
                 'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5)),
                 'user_id' => auth()->id(),
                 'customer_id' => $customerId,
@@ -587,7 +607,13 @@ class PosController extends Controller
             DB::beginTransaction();
 
             $salesAccount = Account::where('kode_akun', '4-1000')->first();
-            $branchId = auth()->user()->branch_id ?: (\App\Models\Branch::first()->id ?? 1);
+            $branchId = auth()->user()->branch_id;
+            if ((auth()->user()->isOwner() || auth()->user()->isSuperAdmin()) && session('selected_branch_id') && session('selected_branch_id') !== 'all') {
+                $branchId = session('selected_branch_id');
+            }
+            if (!$branchId) {
+                $branchId = \App\Models\Branch::first()->id ?? 1;
+            }
 
             if ($mode === 'items') {
                 $request->validate([

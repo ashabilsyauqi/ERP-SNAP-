@@ -23,7 +23,7 @@
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Sampai Tanggal</label>
                 <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
             </div>
-            @if(auth()->user()->isOwner())
+            @if(auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
             <div class="col-12 col-md-3">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Pilih Cabang</label>
                 <select name="branch_id" class="form-select form-select-sm">

@@ -14,19 +14,18 @@ class CashOutReportController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $isManager = $user->isManager();
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
         
-        // Branch resolution: Owner, SuperAdmin (KINGAshabil), and Manager can choose branch or all branches
-        if ($request->has('branch_id')) {
-            $branchId = $request->input('branch_id');
-            session(['selected_branch_id' => $branchId]);
-        } else {
-            $branchId = session('selected_branch_id', 'all');
-        }
-
-        if (!$isOwnerOrSuper && !$isManager) {
+        if (!$isOwnerOrSuper) {
+            // Store Managers and staff are strictly restricted to their own branch
             $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
         }
 
         $query = CashTransaction::with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])

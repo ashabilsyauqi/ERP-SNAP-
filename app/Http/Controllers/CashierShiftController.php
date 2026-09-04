@@ -56,16 +56,17 @@ class CashierShiftController extends Controller
         }
 
         // Calculate expected closing cash = opening cash + total cash sales during shift (direct cash + split payments cash)
+        $shiftBranch = $activeShift->branch_id ?: $user->branch_id;
         $directCashSales = Transaction::where('user_id', $user->id)
-            ->where('branch_id', $user->branch_id)
+            ->where('branch_id', $shiftBranch)
             ->whereIn('payment_method', ['Cash', 'cash'])
             ->whereNotIn('order_status', ['draft', 'cancelled'])
             ->whereBetween('created_at', [$activeShift->opened_at, now()])
             ->sum('paid_amount');
 
-        $splitCashSales = TransactionPayment::whereHas('transaction', function($q) use ($user, $activeShift) {
+        $splitCashSales = TransactionPayment::whereHas('transaction', function($q) use ($user, $activeShift, $shiftBranch) {
             $q->where('user_id', $user->id)
-              ->where('branch_id', $user->branch_id)
+              ->where('branch_id', $shiftBranch)
               ->whereNotIn('order_status', ['draft', 'cancelled'])
               ->whereBetween('created_at', [$activeShift->opened_at, now()]);
         })->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');

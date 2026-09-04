@@ -14,18 +14,18 @@ class CashOutController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $isManager = $user->isManager();
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
-        
-        if ($request->has('branch_id')) {
-            $branchId = $request->input('branch_id');
-            session(['selected_branch_id' => $branchId]);
-        } else {
-            $branchId = session('selected_branch_id', 'all');
-        }
 
-        if (!$isOwnerOrSuper && !$isManager) {
+        if (!$isOwnerOrSuper) {
+            // Store Managers and staff are strictly restricted to their own branch
             $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
         }
 
         $query = CashTransaction::keluar()->with(['account', 'branch', 'user']);
@@ -107,11 +107,16 @@ class CashOutController extends Controller
     public function update(Request $request, $id)
     {
         $user = Auth::user();
-        if (!$user->isSuperAdmin() && !$user->isOwner() && !$user->isManager()) {
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+        if (!$isOwnerOrSuper && !$user->isManager()) {
             abort(403, 'Akses ditolak. Hanya Manager dan KINGAshabil / Owner yang dapat mengedit kas keluar.');
         }
 
         $cashTransaction = CashTransaction::findOrFail($id);
+
+        if (!$isOwnerOrSuper && $cashTransaction->branch_id != $user->branch_id) {
+            abort(403, 'Akses ditolak. Anda hanya dapat mengedit pengeluaran kas di cabang Anda.');
+        }
 
         $validated = $request->validate([
             'account_id' => 'required|exists:accounts,id',
@@ -121,6 +126,10 @@ class CashOutController extends Controller
             'keterangan' => 'required|string',
             'bukti_transaksi' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf|max:10240',
         ]);
+
+        if (!$isOwnerOrSuper) {
+            $validated['branch_id'] = $user->branch_id;
+        }
 
         if ($request->hasFile('bukti_transaksi')) {
             if ($cashTransaction->bukti_transaksi && Storage::disk('public')->exists($cashTransaction->bukti_transaksi)) {
@@ -136,11 +145,16 @@ class CashOutController extends Controller
     public function destroy($id)
     {
         $user = Auth::user();
-        if (!$user->isSuperAdmin() && !$user->isOwner() && !$user->isManager()) {
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+        if (!$isOwnerOrSuper && !$user->isManager()) {
             abort(403, 'Akses ditolak. Hanya Manager dan KINGAshabil / Owner yang dapat menghapus kas keluar.');
         }
 
         $cashTransaction = CashTransaction::findOrFail($id);
+
+        if (!$isOwnerOrSuper && $cashTransaction->branch_id != $user->branch_id) {
+            abort(403, 'Akses ditolak. Anda hanya dapat menghapus pengeluaran kas di cabang Anda.');
+        }
 
         if ($cashTransaction->bukti_transaksi && Storage::disk('public')->exists($cashTransaction->bukti_transaksi)) {
             Storage::disk('public')->delete($cashTransaction->bukti_transaksi);

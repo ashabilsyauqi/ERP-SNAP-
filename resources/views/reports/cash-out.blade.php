@@ -45,7 +45,7 @@
                     <input type="date" name="end_date" id="filter-end-date" value="{{ $endDate ?? '' }}" class="form-control form-control-sm">
                 </div>
                 
-                @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin() || Auth::user()->isManager())
+                @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin())
                 <div class="col-12 col-md-2">
                     <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Cabang</label>
                     <select name="branch_id" class="form-select form-select-sm">

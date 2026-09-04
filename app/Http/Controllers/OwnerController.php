@@ -22,16 +22,17 @@ class OwnerController extends Controller
         $year = (int) $request->input('year', Carbon::now()->year);
 
         // Branch Selection (supports request parameter & session persistence)
-        if ($request->has('branch_id')) {
-            $branchId = $request->input('branch_id');
-            session(['selected_branch_id' => $branchId]);
-        } else {
-            $branchId = session('selected_branch_id', 'all');
-        }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
-        // Store Managers are strictly locked to their own branch
-        if ($user->isManager() && !$user->isOwner()) {
+        if (!$isOwnerOrSuper) {
             $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
         }
 
         $query = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);

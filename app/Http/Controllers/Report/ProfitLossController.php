@@ -20,15 +20,17 @@ class ProfitLossController extends Controller
         $cashQuery = CashTransaction::with('account');
         $salesQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
 
-        if ($request->has('branch_id')) {
-            $branchId = $request->input('branch_id');
-            session(['selected_branch_id' => $branchId]);
-        } else {
-            $branchId = session('selected_branch_id', 'all');
-        }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
-        if (!$user->isOwner()) {
+        if (!$isOwnerOrSuper) {
             $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
         }
 
         if ($branchId && $branchId !== 'all') {

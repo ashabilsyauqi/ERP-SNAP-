@@ -17,15 +17,17 @@ class SalesReportController extends Controller
         $user = Auth::user();
         $period = $request->input('period', 'daily');
 
-        if ($request->has('branch_id')) {
-            $selectedBranchId = $request->input('branch_id');
-            session(['selected_branch_id' => $selectedBranchId]);
-        } else {
-            $selectedBranchId = session('selected_branch_id', 'all');
-        }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
-        if (!$user->isOwner()) {
+        if (!$isOwnerOrSuper) {
             $selectedBranchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $selectedBranchId = $request->input('branch_id');
+                session(['selected_branch_id' => $selectedBranchId]);
+            } else {
+                $selectedBranchId = session('selected_branch_id', 'all');
+            }
         }
 
         $isAllBranches = ($selectedBranchId === 'all' || empty($selectedBranchId));

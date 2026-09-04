@@ -22,17 +22,18 @@ class SalesController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
         $statusFilter = $request->input('status', 'sales'); // 'sales' (default: completed/in_production/ready) or 'draft'
 
-        if ($request->has('branch_id')) {
-            $branchId = $request->input('branch_id');
-            session(['selected_branch_id' => $branchId]);
-        } else {
-            $branchId = session('selected_branch_id', 'all');
-        }
-
-        if (!$user->isOwner()) {
+        if (!$isOwnerOrSuper) {
             $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
         }
 
         $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])
@@ -150,16 +151,17 @@ class SalesController extends Controller
     public function receivables(Request $request)
     {
         $user = auth()->user();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
-        if ($request->has('branch_id')) {
-            $branchId = $request->input('branch_id');
-            session(['selected_branch_id' => $branchId]);
-        } else {
-            $branchId = session('selected_branch_id', 'all');
-        }
-
-        if (!$user->isOwner()) {
+        if (!$isOwnerOrSuper) {
             $branchId = $user->branch_id;
+        } else {
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
         }
 
         $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])

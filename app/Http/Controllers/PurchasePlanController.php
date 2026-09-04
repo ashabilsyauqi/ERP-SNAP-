@@ -22,12 +22,21 @@ class PurchasePlanController extends Controller
         $query = PurchasePlan::with(['branch', 'user', 'approvedBy', 'rejectedBy', 'items.material', 'items.supplier', 'purchases.verifiedBy'])
             ->orderBy('created_at', 'desc');
 
-        if ($user->isOwner()) {
-            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
-                $query->where('branch_id', $request->branch_id);
-            }
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        if (!$isOwnerOrSuper) {
+            $branchId = $user->branch_id;
         } else {
-            $query->where('branch_id', $user->branch_id);
+            if ($request->has('branch_id')) {
+                $branchId = $request->input('branch_id');
+                session(['selected_branch_id' => $branchId]);
+            } else {
+                $branchId = session('selected_branch_id', 'all');
+            }
+        }
+
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
         }
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -71,7 +80,8 @@ class PurchasePlanController extends Controller
             'rejectedCount',
             'draftCount',
             'branches',
-            'paymentAccounts'
+            'paymentAccounts',
+            'branchId'
         ));
     }
 
