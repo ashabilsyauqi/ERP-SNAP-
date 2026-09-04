@@ -55,7 +55,7 @@ class PosController extends Controller
 
     public function checkout(Request $request)
     {
-        $isDraft = auth()->user()->isOperator() || $request->boolean('is_draft');
+        $isDraft = (auth()->user()->isOperator() && !auth()->user()->isSuperAdmin()) || $request->boolean('is_draft');
 
         $request->validate([
             'items' => 'required|array|min:1',
@@ -402,7 +402,7 @@ class PosController extends Controller
      */
     public function settleDraft(Request $request, $id)
     {
-        if (auth()->user()->isOperator()) {
+        if (auth()->user()->isOperator() && !auth()->user()->isSuperAdmin()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Akun operator hanya berhak membuat draft. Pelunasan harus dilakukan oleh akun Kasir.'
@@ -574,7 +574,7 @@ class PosController extends Controller
      */
     public function splitCheckout(Request $request)
     {
-        if (auth()->user()->isOperator()) {
+        if (auth()->user()->isOperator() && !auth()->user()->isSuperAdmin()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Akun operator hanya berhak membuat draft. Fitur Split Bill hanya untuk Kasir.'

@@ -395,7 +395,7 @@
             </div>
 
             <!-- Payment Method Tiles (Desktop & Mobile) -->
-            @if(auth()->user()->isOperator())
+            @if(auth()->user()->isOperator() && !auth()->user()->isSuperAdmin())
                 <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] flex items-center gap-2 font-medium">
                     <i class="fa-solid fa-circle-info text-amber-600 text-sm flex-shrink-0"></i>
                     <span>Mode Cek Harga Aktif: Pesanan akan disimpan sebagai <strong>Draft Antrean Kasir</strong> tanpa pembayaran langsung.</span>
@@ -488,7 +488,7 @@
 
             <!-- Checkout Action Buttons Area (With Titik 3 Dropdown & Quick Draft Button) -->
             <div class="flex items-center gap-2 pt-1.5">
-                @if(!auth()->user()->isOperator())
+                @if(!auth()->user()->isOperator() || auth()->user()->isSuperAdmin())
                     <!-- Titik 3 Dropdown Menu (Negosiasi & Opsi Draft) -->
                     <div class="dropdown">
                         <button class="h-11 w-11 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 border border-slate-300 rounded-xl transition flex items-center justify-center cursor-pointer flex-shrink-0 shadow-sm" 
@@ -535,7 +535,7 @@
                     </button>
                 @endif
 
-                @if(auth()->user()->isOperator())
+                @if(auth()->user()->isOperator() && !auth()->user()->isSuperAdmin())
                     <button onclick="processCheckout(true)" id="checkout-btn-desktop" class="flex-1 h-11 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-sm">
                         <i class="fa-solid fa-file-signature text-base"></i>
                         <span>Simpan Draft Pesanan (Ke Kasir)</span>
@@ -2279,7 +2279,7 @@
         }
     }
 
-    const isUserOperator = @json(auth()->user()->isOperator());
+    const isUserOperator = @json(auth()->user()->isOperator() && !auth()->user()->isSuperAdmin());
 
     function loadDraftOrders() {
         const loading = document.getElementById('draft-orders-loading');

@@ -112,7 +112,11 @@ class User extends Authenticatable
 
     public function isOperator()
     {
-        return in_array($this->role, ['operator', 'sales']) || $this->isSuperAdmin();
+        // SuperAdmin (KINGAshabil) has full cashier & checkout privileges, never restricted to operator-only mode
+        if ($this->isSuperAdmin()) {
+            return false;
+        }
+        return in_array($this->role, ['operator', 'sales']);
     }
 
     public function canEditAnything()
