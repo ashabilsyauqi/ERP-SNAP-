@@ -403,24 +403,31 @@
             @else
                 <div>
                     <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Metode Pembayaran (DP / Full)</label>
-                    <div class="grid grid-cols-3 gap-1.5">
+                    <div class="grid grid-cols-4 gap-1.5">
                         <!-- Cash Button -->
                         <button type="button" onclick="setPaymentMethod('Cash')" id="pm-desktop-Cash" 
-                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-1 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
                             <i class="fa-solid fa-money-bill-wave text-sm mb-0.5 text-emerald-600"></i>
                             <span class="text-[11px] font-bold">Tunai</span>
                         </button>
                         <!-- Transfer Button -->
                         <button type="button" onclick="setPaymentMethod('Transfer')" id="pm-desktop-Transfer" 
-                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-1 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
                             <i class="fa-solid fa-building-columns text-sm mb-0.5 text-blue-600"></i>
                             <span class="text-[11px] font-bold">Transfer</span>
                         </button>
                         <!-- QRIS Button -->
                         <button type="button" onclick="setPaymentMethod('QRIS')" id="pm-desktop-QRIS" 
-                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-2 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
+                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-1 border border-slate-200 rounded-xl transition duration-150 text-slate-600 bg-white hover:bg-slate-50 cursor-pointer">
                             <i class="fa-solid fa-qrcode text-sm mb-0.5 text-indigo-600"></i>
                             <span class="text-[11px] font-bold">QRIS</span>
+                        </button>
+                        <!-- Split Bill Button -->
+                        <button type="button" onclick="openSplitBillModal()" id="pm-desktop-Split" 
+                            class="pm-tile flex flex-col items-center justify-center py-1.5 px-1 border border-indigo-200 rounded-xl transition duration-150 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100 hover:border-indigo-400 cursor-pointer"
+                            title="Split Bill (Bagi Tagihan Bill A & Bill B)">
+                            <i class="fa-solid fa-code-fork text-sm mb-0.5 text-indigo-600"></i>
+                            <span class="text-[11px] font-bold">Split Bill</span>
                         </button>
                     </div>
                 </div>
@@ -738,7 +745,7 @@
 
 <!-- Modal Split Bill Kasir (Bagi Tagihan & Patungan) -->
 <div class="modal fade" id="modalSplitBill" tabindex="-1" aria-labelledby="modalSplitBillLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 960px;">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 980px;">
         <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
             <!-- Modal Header -->
             <div class="px-5 py-3.5 d-flex justify-content-between align-items-center bg-slate-900 text-white">
@@ -747,8 +754,8 @@
                         <i class="fa-solid fa-code-fork text-lg"></i>
                     </div>
                     <div>
-                        <h5 class="text-base font-bold mb-0 text-white" id="modalSplitBillLabel">Split Bill (Bagi Tagihan Kasir)</h5>
-                        <p class="text-[11px] text-slate-400 mb-0">Bagi pesanan pelanggan bersama teman ke dalam nota terpisah atau patungan bayar.</p>
+                        <h5 class="text-base font-bold mb-0 text-white" id="modalSplitBillLabel">Split Bill (Bagi Tagihan Bill A & Bill B)</h5>
+                        <p class="text-[11px] text-slate-400 mb-0">Bagi pesanan antara Bill A & Bill B — bisa split dari item pesanan maupun split dari totalan pembayaran.</p>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -761,14 +768,14 @@
                         <button class="nav-link active py-2 px-4 rounded-xl font-bold text-xs d-flex align-items-center gap-2 cursor-pointer transition shadow-none" 
                                 id="tab-split-items" data-bs-toggle="pill" data-bs-target="#pane-split-items" type="button" role="tab" onclick="switchSplitMode('items')">
                             <i class="fa-solid fa-boxes-stacked text-indigo-600"></i>
-                            <span>1. Pisah per Item (Nota Terpisah)</span>
+                            <span>1. Split dari Item (Bill A & Bill B)</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link py-2 px-4 rounded-xl font-bold text-xs d-flex align-items-center gap-2 cursor-pointer transition shadow-none" 
                                 id="tab-split-payments" data-bs-toggle="pill" data-bs-target="#pane-split-payments" type="button" role="tab" onclick="switchSplitMode('multi_payment')">
-                            <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i>
-                            <span>2. Patungan Bayar (1 Nota, Banyak Metode)</span>
+                            <i class="fa-solid fa-calculator text-emerald-600"></i>
+                            <span>2. Split dari Totalan (Bill A & Bill B)</span>
                         </button>
                     </li>
                 </ul>
@@ -778,14 +785,22 @@
             <div class="tab-content p-4" style="background-color: #f8fafc; max-height: calc(85vh - 160px); overflow-y: auto;">
                 <!-- PANE 1: Pisah per Item -->
                 <div class="tab-pane fade show active" id="pane-split-items" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3">
                         <div>
-                            <span class="text-xs font-bold text-slate-700">Daftar Tagihan Terpisah</span>
-                            <p class="text-[11px] text-slate-500 mb-0">Pindahkan item antar tagihan sesuai pesanan masing-masing teman. Setiap tagihan akan mencetak struk mandiri.</p>
+                            <span class="text-xs font-bold text-slate-800">Alokasi Item (Bill A & Bill B)</span>
+                            <p class="text-[11px] text-slate-500 mb-0">Pindahkan item antar Bill A dan Bill B sesuai pesanan masing-masing teman. Setiap tagihan mencetak struk mandiri.</p>
                         </div>
-                        <button type="button" onclick="addSplitBillColumn()" class="btn btn-sm btn-outline-indigo border-indigo-400 text-indigo-700 bg-white hover:bg-indigo-50 font-bold text-xs rounded-xl px-3 py-1.5 shadow-sm">
-                            <i class="fa-solid fa-plus me-1"></i> Tambah Tagihan
-                        </button>
+                        <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                            <button type="button" onclick="distributeAllItemsEvenly()" class="btn btn-sm btn-light border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-[11px] rounded-xl px-2.5 py-1.5 shadow-sm cursor-pointer" title="Bagi rata seluruh produk pesanan antara Bill A dan Bill B">
+                                <i class="fa-solid fa-scale-balanced text-indigo-600 me-1"></i> Bagi 50:50 Semua
+                            </button>
+                            <button type="button" onclick="resetAllItemsToBillA()" class="btn btn-sm btn-light border border-slate-300 text-slate-600 hover:bg-slate-100 font-semibold text-[11px] rounded-xl px-2.5 py-1.5 shadow-sm cursor-pointer" title="Kembalikan semua item ke Bill A">
+                                <i class="fa-solid fa-rotate-left me-1"></i> Reset ke Bill A
+                            </button>
+                            <button type="button" onclick="addSplitBillColumn()" class="btn btn-sm btn-outline-indigo border-indigo-400 text-indigo-700 bg-white hover:bg-indigo-50 font-bold text-[11px] rounded-xl px-3 py-1.5 shadow-sm cursor-pointer">
+                                <i class="fa-solid fa-plus me-1"></i> Tambah Tagihan
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Container for Bill Columns -->
@@ -812,25 +827,37 @@
                 <!-- PANE 2: Patungan Bayar (Multi-Payment) -->
                 <div class="tab-pane fade" id="pane-split-payments" role="tabpanel">
                     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
                             <div>
                                 <span class="text-xs text-slate-500 font-medium">Total Nilai Tagihan Pesanan:</span>
-                                <h3 id="split-payments-grand-total" class="text-xl font-extrabold text-blue-950 font-mono mb-0">Rp 0</h3>
+                                <h3 id="split-payments-grand-total" class="text-2xl font-extrabold text-blue-950 font-mono mb-0">Rp 0</h3>
                             </div>
                             <!-- Preset Split Buttons -->
-                            <div class="d-flex items-center gap-1.5">
-                                <span class="text-[11px] text-slate-400 font-semibold me-1">Bagi Rata:</span>
-                                <button type="button" onclick="presetSplitPayment(2)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer">2 Orang</button>
-                                <button type="button" onclick="presetSplitPayment(3)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer">3 Orang</button>
-                                <button type="button" onclick="presetSplitPayment(4)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer">4 Orang</button>
+                            <div class="d-flex flex-wrap items-center gap-1.5">
+                                <span class="text-[11px] text-slate-400 font-semibold me-1">Preset Rasio:</span>
+                                <button type="button" onclick="presetSplitPaymentRatio(50, 50)" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 rounded-lg text-xs font-bold border border-indigo-200 cursor-pointer transition">50% : 50%</button>
+                                <button type="button" onclick="presetSplitPaymentRatio(60, 40)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer transition">60% : 40%</button>
+                                <button type="button" onclick="presetSplitPaymentRatio(70, 30)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer transition">70% : 30%</button>
+                                <button type="button" onclick="presetSplitPaymentRatio(80, 20)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold border border-slate-300 cursor-pointer transition">80% : 20%</button>
+                                <button type="button" onclick="presetSplitPayment(3)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold border border-slate-300 cursor-pointer" title="Bagi rata 3 orang">3 Org</button>
                             </div>
                         </div>
 
-                        <!-- Customer Info for Multi-Payment -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 pb-1 border-t border-slate-100 text-xs">
+                        <!-- Auto-Balance Switch & Customer Info -->
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 pt-2.5 pb-2 border-t border-slate-100">
+                            <div class="form-check form-switch text-xs font-semibold text-slate-700 mb-0 d-flex align-items-center gap-2">
+                                <input class="form-check-input cursor-pointer" type="checkbox" id="split-auto-balance" checked onchange="toggleAutoBalance(this.checked)">
+                                <label class="form-check-label cursor-pointer mb-0" for="split-auto-balance">
+                                    <span>Auto-Seimbangkan Bill B</span>
+                                    <span class="text-[10px] text-slate-400 font-normal block sm:inline">(Input Bill A otomatis menghitung sisa Bill B)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs">
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Nama Pemesan / Rombongan</label>
-                                <input type="text" id="split-pay-customer-name" placeholder="Misal: Rombongan Andi / Nama Meja" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
+                                <input type="text" id="split-pay-customer-name" placeholder="Misal: Rombongan Andi / Bill Gabungan" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">No. WhatsApp Pemesan</label>
@@ -839,16 +866,16 @@
                         </div>
                     </div>
 
-                    <!-- Payers List -->
+                    <!-- Payers List (Bill A & Bill B) -->
                     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2.5">
-                            <h6 class="text-xs font-bold text-slate-700 mb-0"><i class="fa-solid fa-users text-indigo-600 me-1.5"></i> Rincian Pembayar & Metode</h6>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-xs font-bold text-slate-700 mb-0"><i class="fa-solid fa-users text-indigo-600 me-1.5"></i> Pembagian Total Tagihan (Bill A & Bill B)</h6>
                             <button type="button" onclick="addSplitPayerRow()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition cursor-pointer">
-                                <i class="fa-solid fa-user-plus me-1"></i> Tambah Pembayar
+                                <i class="fa-solid fa-user-plus me-1"></i> Tambah Pembayar (Bill C)
                             </button>
                         </div>
 
-                        <div id="split-payers-list" class="space-y-2">
+                        <div id="split-payers-list" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                             <!-- Rendered dynamically -->
                         </div>
                     </div>
@@ -860,7 +887,7 @@
 
                     <div class="mt-3 text-end">
                         <button type="button" id="btn-submit-split-payments" onclick="submitSplitPaymentsCheckout()" class="btn bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md cursor-pointer border-0">
-                            <i class="fa-solid fa-circle-check me-1.5"></i> Proses Pembayaran Patungan (Lunas)
+                            <i class="fa-solid fa-circle-check me-1.5"></i> Proses Pembayaran Split Bill (Lunas)
                         </button>
                     </div>
                 </div>
@@ -2464,7 +2491,8 @@
     let splitState = {
         mode: 'items', // 'items' | 'multi_payment'
         bills: [],
-        payments: []
+        payments: [],
+        autoBalance: true
     };
 
     function switchSplitMode(mode) {
@@ -2486,13 +2514,18 @@
             return;
         }
 
-        // Initialize Split Bills (Mode Items): 2 Bills by default
+        const posContainer = document.getElementById('pos-main-container');
+        const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+        const initialCustName = (alpineData && alpineData.customerName) ? alpineData.customerName : '';
+        const initialCustPhone = (alpineData && alpineData.customerPhone) ? alpineData.customerPhone : '';
+
+        // Initialize Split Bills (Mode 1: Split dari Item) - Default: Bill A & Bill B
         splitState.bills = [
             {
                 id: 1,
-                title: 'Tagihan 1',
-                customer_name: '',
-                customer_phone: '',
+                title: 'Bill A',
+                customer_name: initialCustName || '',
+                customer_phone: initialCustPhone || '',
                 payment_method: 'Cash',
                 items: cart.map(item => ({
                     cart_id: item.id,
@@ -2501,7 +2534,7 @@
             },
             {
                 id: 2,
-                title: 'Tagihan 2',
+                title: 'Bill B',
                 customer_name: '',
                 customer_phone: '',
                 payment_method: 'QRIS',
@@ -2509,26 +2542,38 @@
             }
         ];
 
-        // Initialize Split Payments (Mode Multi-Payment)
+        // Initialize Split Payments (Mode 2: Split dari Totalan) - Default: Bill A & Bill B
         const total = window.currentGrandTotal || 0;
         const half1 = Math.ceil(total / 2);
         const half2 = Math.floor(total / 2);
+        splitState.autoBalance = true;
         splitState.payments = [
-            { payer_name: 'Pembayar 1', payment_method: 'QRIS', amount: half1 },
-            { payer_name: 'Pembayar 2', payment_method: 'Cash', amount: half2 }
+            { 
+                payer_name: initialCustName ? `${initialCustName} (Bill A)` : 'Bill A', 
+                payment_method: 'Cash', 
+                amount: half1, 
+                percent: total > 0 ? parseFloat(((half1 / total) * 100).toFixed(1)) : 50 
+            },
+            { 
+                payer_name: 'Bill B', 
+                payment_method: 'QRIS', 
+                amount: half2, 
+                percent: total > 0 ? parseFloat(((half2 / total) * 100).toFixed(1)) : 50 
+            }
         ];
 
-        // Populate customer fields in multi_payment from Alpine if available
-        const posContainer = document.getElementById('pos-main-container');
-        const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+        // Populate customer fields in multi_payment
         const custNameInput = document.getElementById('split-pay-customer-name');
         const custPhoneInput = document.getElementById('split-pay-customer-phone');
-        if (alpineData && custNameInput) {
-            custNameInput.value = alpineData.customerName || '';
+        if (custNameInput) {
+            custNameInput.value = initialCustName ? `${initialCustName} (Rombongan)` : 'Rombongan (Split Bill)';
         }
-        if (alpineData && custPhoneInput) {
-            custPhoneInput.value = alpineData.customerPhone || '';
+        if (custPhoneInput) {
+            custPhoneInput.value = initialCustPhone || '';
         }
+
+        const autoBalEl = document.getElementById('split-auto-balance');
+        if (autoBalEl) autoBalEl.checked = true;
 
         // Default to items tab
         const tabItemsEl = document.getElementById('tab-split-items');
@@ -2550,13 +2595,15 @@
 
     // --- Mode 1: Split Bills (Pisah per Item) ---
     function addSplitBillColumn() {
-        const nextId = splitState.bills.length + 1;
+        const nextIdx = splitState.bills.length;
+        const letter = String.fromCharCode(65 + nextIdx);
+        const nextTitle = (nextIdx < 26) ? `Bill ${letter}` : `Tagihan ${nextIdx + 1}`;
         splitState.bills.push({
-            id: nextId,
-            title: `Tagihan ${nextId}`,
+            id: Date.now() + Math.random(),
+            title: nextTitle,
             customer_name: '',
             customer_phone: '',
-            payment_method: 'Cash',
+            payment_method: nextIdx % 2 === 0 ? 'Cash' : 'QRIS',
             items: []
         });
         renderSplitBills();
@@ -2564,14 +2611,14 @@
 
     function removeSplitBillColumn(billId) {
         if (splitState.bills.length <= 2) {
-            Swal.fire({ icon: 'info', title: 'Minimal 2 Tagihan', text: 'Split bill membutuhkan minimal 2 tagihan.' });
+            Swal.fire({ icon: 'info', title: 'Minimal 2 Tagihan', text: 'Split bill membutuhkan minimal Bill A dan Bill B.' });
             return;
         }
 
         const billToRemove = splitState.bills.find(b => b.id === billId);
         if (billToRemove && billToRemove.items.length > 0) {
-            // Move its items back to the first available bill
-            const targetBill = splitState.bills.find(b => b.id !== billId);
+            // Move its items back to Bill A (first bill)
+            const targetBill = splitState.bills[0].id !== billId ? splitState.bills[0] : splitState.bills[1];
             billToRemove.items.forEach(bi => {
                 const existing = targetBill.items.find(i => i.cart_id === bi.cart_id);
                 if (existing) {
@@ -2584,8 +2631,8 @@
 
         splitState.bills = splitState.bills.filter(b => b.id !== billId);
         splitState.bills.forEach((b, idx) => {
-            if (b.title.startsWith('Tagihan ')) {
-                b.title = `Tagihan ${idx + 1}`;
+            if (/^Bill [A-Z]$/.test(b.title) || /^Tagihan \d+$/.test(b.title)) {
+                b.title = `Bill ${String.fromCharCode(65 + idx)}`;
             }
         });
         renderSplitBills();
@@ -2620,6 +2667,55 @@
             });
         }
 
+        renderSplitBills();
+    }
+
+    function splitItemInHalf(fromBillId, toBillId, cartId) {
+        const fromBill = splitState.bills.find(b => b.id === fromBillId);
+        if (!fromBill) return;
+        const item = fromBill.items.find(i => i.cart_id === cartId);
+        if (!item || item.qty < 2) return;
+
+        const half = Math.floor(item.qty / 2);
+        moveItemToBill(fromBillId, toBillId, cartId, half);
+    }
+
+    function distributeAllItemsEvenly() {
+        if (!splitState.bills || splitState.bills.length < 2) return;
+        const billA = splitState.bills[0];
+        const billB = splitState.bills[1];
+
+        // Reset items in all bills
+        splitState.bills.forEach(b => b.items = []);
+
+        // Distribute cart items evenly
+        cart.forEach((cItem, idx) => {
+            if (cItem.qty >= 2) {
+                const halfA = Math.ceil(cItem.qty / 2);
+                const halfB = cItem.qty - halfA;
+                billA.items.push({ cart_id: cItem.id, qty: halfA });
+                if (halfB > 0) billB.items.push({ cart_id: cItem.id, qty: halfB });
+            } else {
+                if (idx % 2 === 0) {
+                    billA.items.push({ cart_id: cItem.id, qty: cItem.qty });
+                } else {
+                    billB.items.push({ cart_id: cItem.id, qty: cItem.qty });
+                }
+            }
+        });
+
+        renderSplitBills();
+    }
+
+    function resetAllItemsToBillA() {
+        if (!splitState.bills || splitState.bills.length === 0) return;
+        splitState.bills.forEach((b, idx) => {
+            if (idx === 0) {
+                b.items = cart.map(item => ({ cart_id: item.id, qty: item.qty }));
+            } else {
+                b.items = [];
+            }
+        });
         renderSplitBills();
     }
 
@@ -2664,13 +2760,21 @@
         splitState.bills.forEach((bill, bIdx) => {
             const billTotal = calculateBillTotal(bill);
             totalAllocated += billTotal;
+            const letter = String.fromCharCode(65 + bIdx);
+            const isBillA = bIdx === 0;
+            const isBillB = bIdx === 1;
+
+            const cardBorder = isBillA ? 'border-indigo-300 ring-1 ring-indigo-200' : (isBillB ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-amber-300');
+            const badgeBg = isBillA ? 'bg-indigo-600' : (isBillB ? 'bg-emerald-600' : 'bg-amber-600');
+            const headerBg = isBillA ? 'bg-indigo-50/70 border-indigo-100' : (isBillB ? 'bg-emerald-50/70 border-emerald-100' : 'bg-amber-50/70 border-amber-100');
+            const titleColor = isBillA ? 'text-indigo-900' : (isBillB ? 'text-emerald-900' : 'text-amber-900');
 
             let itemsHtml = '';
             if (bill.items.length === 0) {
                 itemsHtml = `
                     <div class="py-6 text-center text-slate-400 bg-slate-50/70 rounded-xl border border-dashed border-slate-200 text-xs">
                         <i class="fa-solid fa-inbox text-slate-300 text-lg mb-1 block"></i>
-                        <span>Tagihan ini masih kosong.</span><br>
+                        <span>${bill.title} masih kosong.</span><br>
                         <span class="text-[10px]">Pindahkan item dari tagihan lain ke sini.</span>
                     </div>
                 `;
@@ -2700,8 +2804,8 @@
                             moveButtonsHtml += `
                                 <button type="button" onclick="moveItemToBill(${bill.id}, ${otherBill.id}, ${cartItem.id})" 
                                     class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 border border-slate-200 cursor-pointer transition flex items-center gap-1"
-                                    title="Pindahkan semua qty ke ${otherBill.title}">
-                                    <span>Pindah ke ${otherBill.title}</span>
+                                    title="Pindahkan semua (${bi.qty} pcs) ke ${otherBill.title}">
+                                    <span>Semua ke ${otherBill.title}</span>
                                     <i class="fa-solid fa-arrow-right text-[8px]"></i>
                                 </button>
                             `;
@@ -2713,6 +2817,7 @@
                     if (bi.qty > 1) {
                         splitState.bills.forEach(otherBill => {
                             if (otherBill.id !== bill.id) {
+                                const half = Math.floor(bi.qty / 2);
                                 qtyMoveControls += `
                                     <button type="button" onclick="moveItemToBill(${bill.id}, ${otherBill.id}, ${cartItem.id}, 1)" 
                                         class="text-[9.5px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 cursor-pointer"
@@ -2720,6 +2825,15 @@
                                         +1 ke ${otherBill.title}
                                     </button>
                                 `;
+                                if (bi.qty >= 2) {
+                                    qtyMoveControls += `
+                                        <button type="button" onclick="splitItemInHalf(${bill.id}, ${otherBill.id}, ${cartItem.id})" 
+                                            class="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-pointer"
+                                            title="Bagi rata kuantiti (${half} pcs) ke ${otherBill.title}">
+                                            ⑂ 50:50 (${half})
+                                        </button>
+                                    `;
+                                }
                             }
                         });
                     }
@@ -2740,7 +2854,7 @@
                                 <div class="d-flex items-center gap-1">
                                     ${moveButtonsHtml}
                                 </div>
-                                ${qtyMoveControls ? `<div class="d-flex items-center gap-1">${qtyMoveControls}</div>` : ''}
+                                ${qtyMoveControls ? `<div class="d-flex items-center gap-1 flex-wrap">${qtyMoveControls}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -2748,14 +2862,14 @@
             }
 
             billsHtml += `
-                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div class="bg-white p-3.5 rounded-2xl border ${cardBorder} shadow-sm flex flex-col justify-between">
                     <div>
                         <!-- Bill Card Header -->
-                        <div class="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-b border-slate-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-b ${headerBg} p-2 rounded-xl">
                             <div class="d-flex align-items-center gap-2">
-                                <span class="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">${bIdx + 1}</span>
+                                <span class="w-6 h-6 rounded-lg ${badgeBg} text-white font-extrabold text-xs flex items-center justify-center">${letter}</span>
                                 <input type="text" value="${bill.title}" onchange="splitState.bills[${bIdx}].title = this.value" 
-                                    class="text-xs font-bold text-slate-800 bg-transparent border-0 border-b border-dashed border-slate-300 px-1 py-0.5 focus:border-indigo-500 focus:outline-none w-28">
+                                    class="text-xs font-bold ${titleColor} bg-transparent border-0 border-b border-dashed border-slate-300 px-1 py-0.5 focus:border-indigo-500 focus:outline-none w-28">
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="font-mono font-extrabold text-sm text-indigo-700">Rp ${Number(billTotal).toLocaleString('id-ID')}</span>
@@ -2771,7 +2885,7 @@
                         <div class="grid grid-cols-2 gap-2 mb-2.5">
                             <div>
                                 <label class="block text-[9.5px] font-bold text-slate-400 uppercase mb-0.5">Nama Pelanggan</label>
-                                <input type="text" value="${bill.customer_name}" placeholder="Misal: ${bill.title}" oninput="splitState.bills[${bIdx}].customer_name = this.value"
+                                <input type="text" value="${bill.customer_name}" placeholder="Misal: Pemesan ${bill.title}" oninput="splitState.bills[${bIdx}].customer_name = this.value"
                                     class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium focus:bg-white">
                             </div>
                             <div>
@@ -2783,7 +2897,7 @@
 
                         <!-- Payment Method Toggle -->
                         <div class="mb-3">
-                            <label class="block text-[9.5px] font-bold text-slate-400 uppercase mb-1">Metode Bayar Tagihan</label>
+                            <label class="block text-[9.5px] font-bold text-slate-400 uppercase mb-1">Metode Bayar ${bill.title}</label>
                             <div class="grid grid-cols-3 gap-1.5">
                                 <button type="button" onclick="setBillPaymentMethod(${bill.id}, 'Cash')" 
                                     class="py-1 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${bill.payment_method === 'Cash' ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}">
@@ -2843,7 +2957,26 @@
         }
     }
 
-    // --- Mode 2: Multi-Payment (Patungan Bayar) ---
+    // --- Mode 2: Split Totalan (Bill A & Bill B) ---
+    function presetSplitPaymentRatio(ratioA, ratioB) {
+        const total = window.currentGrandTotal || 0;
+        if (!splitState.payments || splitState.payments.length < 2) {
+            splitState.payments = [
+                { payer_name: 'Bill A', payment_method: 'Cash', amount: 0, percent: ratioA },
+                { payer_name: 'Bill B', payment_method: 'QRIS', amount: 0, percent: ratioB }
+            ];
+        }
+        const amountA = Math.round((ratioA / 100) * total);
+        const amountB = total - amountA;
+
+        splitState.payments[0].amount = amountA;
+        splitState.payments[0].percent = ratioA;
+        splitState.payments[1].amount = amountB;
+        splitState.payments[1].percent = ratioB;
+
+        renderSplitPayments();
+    }
+
     function presetSplitPayment(peopleCount) {
         const total = window.currentGrandTotal || 0;
         if (peopleCount <= 0) return;
@@ -2851,15 +2984,18 @@
         const basePerPerson = Math.floor(total / peopleCount);
         const remainder = total - (basePerPerson * peopleCount);
 
-        const methods = ['QRIS', 'Cash', 'Transfer', 'QRIS'];
+        const methods = ['Cash', 'QRIS', 'Transfer', 'Cash'];
 
         splitState.payments = [];
         for (let i = 0; i < peopleCount; i++) {
+            const letter = String.fromCharCode(65 + i);
             const amount = (i === 0) ? (basePerPerson + remainder) : basePerPerson;
+            const pct = total > 0 ? parseFloat(((amount / total) * 100).toFixed(1)) : 0;
             splitState.payments.push({
-                payer_name: `Pembayar ${i + 1}`,
+                payer_name: `Bill ${letter}`,
                 payment_method: methods[i % methods.length],
-                amount: amount
+                amount: amount,
+                percent: pct
             });
         }
 
@@ -2867,22 +3003,103 @@
     }
 
     function addSplitPayerRow() {
-        const nextNum = splitState.payments.length + 1;
+        const nextIdx = splitState.payments.length;
+        const letter = String.fromCharCode(65 + nextIdx);
         splitState.payments.push({
-            payer_name: `Pembayar ${nextNum}`,
+            payer_name: `Bill ${letter}`,
             payment_method: 'Cash',
-            amount: 0
+            amount: 0,
+            percent: 0
         });
         renderSplitPayments();
     }
 
     function removeSplitPayerRow(idx) {
         if (splitState.payments.length <= 2) {
-            Swal.fire({ icon: 'info', title: 'Minimal 2 Pembayar', text: 'Pembayaran patungan membutuhkan minimal 2 pembayar.' });
+            Swal.fire({ icon: 'info', title: 'Minimal 2 Pembayar', text: 'Pembagian totalan membutuhkan minimal Bill A dan Bill B.' });
             return;
         }
         splitState.payments.splice(idx, 1);
         renderSplitPayments();
+    }
+
+    function toggleAutoBalance(enabled) {
+        splitState.autoBalance = !!enabled;
+    }
+
+    function onPayerAmountInput(idx, rawVal) {
+        const total = window.currentGrandTotal || 0;
+        const val = parseFloat(rawVal) || 0;
+        splitState.payments[idx].amount = val;
+        splitState.payments[idx].percent = total > 0 ? parseFloat(((val / total) * 100).toFixed(1)) : 0;
+
+        // Update my percent badge and input
+        const myPctInput = document.getElementById(`split-pay-pct-${idx}`);
+        if (myPctInput) myPctInput.value = splitState.payments[idx].percent;
+        const myPctBadge = document.getElementById(`split-pay-pct-badge-${idx}`);
+        if (myPctBadge) myPctBadge.innerText = `${splitState.payments[idx].percent}%`;
+
+        // 2-way auto balance between Bill A and Bill B
+        if (splitState.autoBalance !== false && splitState.payments.length === 2) {
+            const otherIdx = idx === 0 ? 1 : 0;
+            const remainder = Math.max(0, total - val);
+            splitState.payments[otherIdx].amount = remainder;
+            splitState.payments[otherIdx].percent = total > 0 ? parseFloat(((remainder / total) * 100).toFixed(1)) : 0;
+
+            const otherInput = document.getElementById(`split-pay-amount-${otherIdx}`);
+            if (otherInput) otherInput.value = remainder;
+            const otherPctInput = document.getElementById(`split-pay-pct-${otherIdx}`);
+            if (otherPctInput) otherPctInput.value = splitState.payments[otherIdx].percent;
+            const otherPctBadge = document.getElementById(`split-pay-pct-badge-${otherIdx}`);
+            if (otherPctBadge) otherPctBadge.innerText = `${splitState.payments[otherIdx].percent}%`;
+        }
+
+        checkSplitPaymentBalance();
+    }
+
+    function onPayerPercentInput(idx, rawPct) {
+        const total = window.currentGrandTotal || 0;
+        const pct = Math.min(100, Math.max(0, parseFloat(rawPct) || 0));
+        const amount = Math.round((pct / 100) * total);
+
+        splitState.payments[idx].amount = amount;
+        splitState.payments[idx].percent = pct;
+
+        const myAmountInput = document.getElementById(`split-pay-amount-${idx}`);
+        if (myAmountInput) myAmountInput.value = amount;
+        const myPctBadge = document.getElementById(`split-pay-pct-badge-${idx}`);
+        if (myPctBadge) myPctBadge.innerText = `${pct}%`;
+
+        if (splitState.autoBalance !== false && splitState.payments.length === 2) {
+            const otherIdx = idx === 0 ? 1 : 0;
+            const otherPct = Math.max(0, 100 - pct);
+            const remainder = total - amount;
+
+            splitState.payments[otherIdx].amount = remainder;
+            splitState.payments[otherIdx].percent = otherPct;
+
+            const otherAmountInput = document.getElementById(`split-pay-amount-${otherIdx}`);
+            if (otherAmountInput) otherAmountInput.value = remainder;
+            const otherPctInput = document.getElementById(`split-pay-pct-${otherIdx}`);
+            if (otherPctInput) otherPctInput.value = otherPct;
+            const otherPctBadge = document.getElementById(`split-pay-pct-badge-${otherIdx}`);
+            if (otherPctBadge) otherPctBadge.innerText = `${otherPct}%`;
+        }
+
+        checkSplitPaymentBalance();
+    }
+
+    function setPayerPercentPreset(idx, targetPct) {
+        onPayerPercentInput(idx, targetPct);
+        const input = document.getElementById(`split-pay-pct-${idx}`);
+        if (input) input.value = targetPct;
+    }
+
+    function setPayerMethod(idx, method) {
+        if (splitState.payments[idx]) {
+            splitState.payments[idx].payment_method = method;
+            renderSplitPayments();
+        }
     }
 
     function renderSplitPayments() {
@@ -2898,44 +3115,97 @@
         let html = '';
 
         splitState.payments.forEach((p, idx) => {
-            html += `
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 d-flex flex-column flex-sm-row items-sm-center justify-between gap-2.5">
-                    <div class="d-flex items-center gap-2 flex-1">
-                        <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center flex-shrink-0">${idx + 1}</span>
-                        <input type="text" value="${p.payer_name || ''}" placeholder="Nama Pembayar ${idx + 1}" oninput="splitState.payments[${idx}].payer_name = this.value"
-                            class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold w-full sm:w-44 focus:outline-none focus:border-indigo-500">
-                    </div>
+            const letter = String.fromCharCode(65 + idx);
+            const isBillA = idx === 0;
+            const isBillB = idx === 1;
 
-                    <div class="d-flex items-center gap-2">
-                        <!-- Payment Method Selector -->
-                        <div class="d-flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs">
-                            <button type="button" onclick="splitState.payments[${idx}].payment_method = 'Cash'; renderSplitPayments();"
-                                class="px-2 py-1 rounded font-bold transition cursor-pointer ${p.payment_method === 'Cash' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:text-slate-800'}">
-                                Tunai
-                            </button>
-                            <button type="button" onclick="splitState.payments[${idx}].payment_method = 'Transfer'; renderSplitPayments();"
-                                class="px-2 py-1 rounded font-bold transition cursor-pointer ${p.payment_method === 'Transfer' ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:text-slate-800'}">
-                                Transfer
-                            </button>
-                            <button type="button" onclick="splitState.payments[${idx}].payment_method = 'QRIS'; renderSplitPayments();"
-                                class="px-2 py-1 rounded font-bold transition cursor-pointer ${p.payment_method === 'QRIS' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-800'}">
-                                QRIS
-                            </button>
+            const cardBorder = isBillA ? 'border-indigo-300 ring-1 ring-indigo-200' : (isBillB ? 'border-emerald-300 ring-1 ring-emerald-200' : 'border-amber-300');
+            const badgeBg = isBillA ? 'bg-indigo-600' : (isBillB ? 'bg-emerald-600' : 'bg-amber-600');
+            const headerBg = isBillA ? 'bg-indigo-50/70 border-indigo-100' : (isBillB ? 'bg-emerald-50/70 border-emerald-100' : 'bg-amber-50/70 border-amber-100');
+            const titleColor = isBillA ? 'text-indigo-900' : (isBillB ? 'text-emerald-900' : 'text-amber-900');
+
+            // Quick preset percentage badges
+            const presetPcts = isBillA ? [50, 60, 70, 80] : [50, 40, 30, 20];
+            let presetBtnsHtml = '';
+            presetPcts.forEach(pct => {
+                presetBtnsHtml += `
+                    <button type="button" onclick="setPayerPercentPreset(${idx}, ${pct})"
+                        class="text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 transition cursor-pointer">
+                        ${pct}%
+                    </button>
+                `;
+            });
+
+            html += `
+                <div class="bg-white p-3.5 rounded-2xl border ${cardBorder} shadow-sm flex flex-col justify-between transition">
+                    <div>
+                        <!-- Header Card -->
+                        <div class="d-flex justify-content-between align-items-center mb-2.5 pb-2 border-b ${headerBg} p-2 rounded-xl">
+                            <div class="d-flex align-items-center gap-2 flex-1">
+                                <span class="${badgeBg} text-white font-extrabold text-[11px] px-2.5 py-0.5 rounded-lg flex-shrink-0">
+                                    BILL ${letter}
+                                </span>
+                                <input type="text" value="${p.payer_name || ''}" placeholder="Nama Pemesan Bill ${letter}" 
+                                    oninput="splitState.payments[${idx}].payer_name = this.value"
+                                    class="text-xs font-bold ${titleColor} bg-transparent border-0 border-b border-dashed border-slate-300 px-1 py-0.5 focus:border-indigo-500 focus:outline-none w-full">
+                            </div>
+                            <div class="d-flex align-items-center gap-1.5 ms-2">
+                                <span id="split-pay-pct-badge-${idx}" class="badge bg-slate-100 text-slate-800 border border-slate-200 font-mono font-bold text-[11px] px-2 py-1 rounded-md">
+                                    ${p.percent || 0}%
+                                </span>
+                                ${splitState.payments.length > 2 ? `
+                                    <button type="button" onclick="removeSplitPayerRow(${idx})" class="w-6 h-6 rounded-lg text-rose-500 hover:bg-rose-50 flex items-center justify-center border-0 cursor-pointer" title="Hapus Bill ${letter}">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Payment Method Toggle -->
+                        <div class="mb-2.5">
+                            <label class="block text-[9.5px] font-bold text-slate-400 uppercase mb-1">Metode Bayar Bill ${letter}</label>
+                            <div class="grid grid-cols-3 gap-1.5">
+                                <button type="button" onclick="setPayerMethod(${idx}, 'Cash')" 
+                                    class="py-1 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${p.payment_method === 'Cash' ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}">
+                                    <i class="fa-solid fa-money-bill-wave text-[10px]"></i> Tunai
+                                </button>
+                                <button type="button" onclick="setPayerMethod(${idx}, 'Transfer')" 
+                                    class="py-1 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${p.payment_method === 'Transfer' ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}">
+                                    <i class="fa-solid fa-building-columns text-[10px]"></i> Transfer
+                                </button>
+                                <button type="button" onclick="setPayerMethod(${idx}, 'QRIS')" 
+                                    class="py-1 px-1.5 rounded-lg text-xs font-bold border transition flex items-center justify-center gap-1 cursor-pointer ${p.payment_method === 'QRIS' ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}">
+                                    <i class="fa-solid fa-qrcode text-[10px]"></i> QRIS
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Amount Input -->
-                        <div class="relative w-36">
-                            <span class="absolute left-2.5 top-1.5 text-[11px] text-slate-400 font-bold">Rp</span>
-                            <input type="number" min="0" step="1000" value="${p.amount || 0}" 
-                                oninput="splitState.payments[${idx}].amount = parseFloat(this.value) || 0; checkSplitPaymentBalance();"
-                                class="w-full pl-8 pr-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-indigo-500 text-end">
+                        <div class="mb-2">
+                            <label class="block text-[9.5px] font-bold text-slate-400 uppercase mb-1">Nominal Pembayaran (Rp)</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2 text-xs text-slate-400 font-extrabold">Rp</span>
+                                <input type="number" id="split-pay-amount-${idx}" min="0" step="1000" value="${p.amount || 0}"
+                                    oninput="onPayerAmountInput(${idx}, this.value)"
+                                    class="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-extrabold text-slate-900 focus:bg-white focus:border-indigo-500 text-end">
+                            </div>
                         </div>
 
-                        ${splitState.payments.length > 2 ? `
-                            <button type="button" onclick="removeSplitPayerRow(${idx})" class="w-8 h-8 rounded-lg text-rose-500 hover:bg-rose-50 flex items-center justify-center border-0 cursor-pointer" title="Hapus Pembayar">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
-                            </button>
-                        ` : '<div class="w-8"></div>'}
+                        <!-- Percent Control & Quick Badges -->
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-[9.5px] font-bold text-slate-400 uppercase">Porsi Persentase (%)</span>
+                                <div class="d-flex align-items-center gap-1">
+                                    <input type="number" id="split-pay-pct-${idx}" min="0" max="100" step="0.5" value="${p.percent || 0}"
+                                        oninput="onPayerPercentInput(${idx}, this.value)"
+                                        class="w-14 px-1.5 py-0.5 text-end bg-slate-50 border border-slate-200 rounded-md text-[11px] font-mono font-bold text-slate-800 focus:bg-white">
+                                    <span class="text-[10px] text-slate-500 font-bold">%</span>
+                                </div>
+                            </div>
+                            <div class="d-flex items-center gap-1">
+                                ${presetBtnsHtml}
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -2960,11 +3230,11 @@
                 <div class="d-flex align-items-center gap-2">
                     <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
                     <div>
-                        <strong class="text-xs font-bold block text-emerald-800">Total Pembayaran Pas!</strong>
-                        <span class="text-[11px] text-emerald-700">Total Rp ${Number(totalPaid).toLocaleString('id-ID')} sama dengan total tagihan.</span>
+                        <strong class="text-xs font-bold block text-emerald-800">Total Pembayaran Pas (Lunas)!</strong>
+                        <span class="text-[11px] text-emerald-700">Total alokasi Rp ${Number(totalPaid).toLocaleString('id-ID')} pas dengan total tagihan pesanan.</span>
                     </div>
                 </div>
-                <span class="badge bg-emerald-600 text-white font-bold text-xs px-2.5 py-1 rounded-lg">SIAP PROSES</span>
+                <span class="badge bg-emerald-600 text-white font-bold text-xs px-2.5 py-1.5 rounded-lg shadow-sm">SIAP PROSES</span>
             `;
             if (btnSubmit) btnSubmit.disabled = false;
         } else if (diff > 0) {
@@ -2973,11 +3243,11 @@
                 <div class="d-flex align-items-center gap-2">
                     <i class="fa-solid fa-circle-exclamation text-rose-600 text-lg"></i>
                     <div>
-                        <strong class="text-xs font-bold block text-rose-800">Nominal Pembayaran Masih Kurang</strong>
+                        <strong class="text-xs font-bold block text-rose-800">Total Pembayaran Masih Kurang</strong>
                         <span class="text-[11px] text-rose-700">Kurang <strong>Rp ${Number(diff).toLocaleString('id-ID')}</strong> lagi untuk melunasi tagihan.</span>
                     </div>
                 </div>
-                <span class="font-mono text-xs font-bold text-rose-700">Kurang: Rp ${Number(diff).toLocaleString('id-ID')}</span>
+                <span class="font-mono text-xs font-bold text-rose-700 bg-rose-100 px-2 py-1 rounded-lg">Kurang: Rp ${Number(diff).toLocaleString('id-ID')}</span>
             `;
             if (btnSubmit) btnSubmit.disabled = true;
         } else {
@@ -2990,7 +3260,7 @@
                         <span class="text-[11px] text-amber-700">Kelebihan <strong>Rp ${Number(Math.abs(diff)).toLocaleString('id-ID')}</strong> dari total tagihan.</span>
                     </div>
                 </div>
-                <span class="font-mono text-xs font-bold text-amber-700">+Rp ${Number(Math.abs(diff)).toLocaleString('id-ID')}</span>
+                <span class="font-mono text-xs font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded-lg">+Rp ${Number(Math.abs(diff)).toLocaleString('id-ID')}</span>
             `;
             if (btnSubmit) btnSubmit.disabled = true;
         }
@@ -3277,10 +3547,19 @@
     window.addSplitBillColumn = addSplitBillColumn;
     window.removeSplitBillColumn = removeSplitBillColumn;
     window.moveItemToBill = moveItemToBill;
+    window.splitItemInHalf = splitItemInHalf;
+    window.distributeAllItemsEvenly = distributeAllItemsEvenly;
+    window.resetAllItemsToBillA = resetAllItemsToBillA;
     window.setBillPaymentMethod = setBillPaymentMethod;
+    window.presetSplitPaymentRatio = presetSplitPaymentRatio;
     window.presetSplitPayment = presetSplitPayment;
     window.addSplitPayerRow = addSplitPayerRow;
     window.removeSplitPayerRow = removeSplitPayerRow;
+    window.toggleAutoBalance = toggleAutoBalance;
+    window.onPayerAmountInput = onPayerAmountInput;
+    window.onPayerPercentInput = onPayerPercentInput;
+    window.setPayerPercentPreset = setPayerPercentPreset;
+    window.setPayerMethod = setPayerMethod;
     window.checkSplitPaymentBalance = checkSplitPaymentBalance;
     window.submitSplitItemsCheckout = submitSplitItemsCheckout;
     window.submitSplitPaymentsCheckout = submitSplitPaymentsCheckout;
@@ -3583,6 +3862,19 @@
                 ${financialSummaryHtml}
 
                 ${productionNotes ? `<div style="font-size: 10.5px; color: #475569; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 6px 8px; margin-top: 8px;"><i class="fa-solid fa-note-sticky text-amber-500 me-1"></i> Catatan SPK: <em>${productionNotes}</em></div>` : ''}
+
+                <!-- Split Bill Option in Confirmation -->
+                <div style="margin-top: 10px; padding: 9px 12px; background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%); border: 1.5px dashed #6366f1; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 800; color: #3730a3; display: flex; align-items: center; gap: 5px;">
+                            <i class="fa-solid fa-code-fork text-indigo-600"></i> Customer Mau Split Bill?
+                        </div>
+                        <div style="font-size: 10px; color: #4338ca;">Bagi tagihan ke Bill A & Bill B (per item / totalan).</div>
+                    </div>
+                    <button type="button" onclick="Swal.close(); openSplitBillModal();" style="background: #4f46e5; color: #ffffff; border: none; border-radius: 8px; padding: 5px 11px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                        Buka Split Bill &rarr;
+                    </button>
+                </div>
             </div>
         `;
 
@@ -3607,14 +3899,21 @@
             title: swalTitle,
             html: confirmationModalHtml,
             showCancelButton: true,
+            showDenyButton: true,
             confirmButtonColor: '#2563eb',
             cancelButtonColor: '#64748b',
+            denyButtonColor: '#4f46e5',
             confirmButtonText: confirmBtnText,
-            cancelButtonText: '<i class="fa-solid fa-xmark me-1"></i> Batal / Periksa Lagi',
+            cancelButtonText: '<i class="fa-solid fa-xmark me-1"></i> Batal',
+            denyButtonText: '<i class="fa-solid fa-code-fork me-1"></i> Split Bill (A & B)',
             reverseButtons: true,
             focusConfirm: true,
-            width: '460px'
+            width: '480px'
         }).then((confirmResult) => {
+            if (confirmResult.isDenied) {
+                openSplitBillModal();
+                return;
+            }
             if (!confirmResult.isConfirmed) {
                 return;
             }
