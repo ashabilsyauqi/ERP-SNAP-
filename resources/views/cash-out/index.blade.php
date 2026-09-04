@@ -12,6 +12,20 @@
 
 @section('content')
 <div id="main-view-wrapper" data-view-wrapper>
+
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show text-xs py-2 px-3 mb-3 border-0 shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check me-1"></i> {{ session('success') }}
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+    @if(session('error') || $errors->any())
+        <div class="alert alert-danger alert-dismissible fade show text-xs py-2 px-3 mb-3 border-0 shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ session('error') ?? $errors->first() }}
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <!-- Filter Toolbar -->
     <div class="o_form_sheet mb-3 p-3 bg-white">
         <form method="GET" action="{{ route('kas-keluar.index') }}" class="row g-2 align-items-end">
@@ -24,7 +38,7 @@
                 <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
             </div>
             
-            @if(Auth::user()->isOwner())
+            @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin() || Auth::user()->isManager())
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Cabang</label>
                 <select name="branch_id" class="form-select form-select-sm">
@@ -41,7 +55,7 @@
                 <select name="account_id" class="form-select form-select-sm">
                     <option value="">Semua Akun Beban</option>
                     @foreach($accounts as $acc)
-                        <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>{{ $acc->nama_akun }}</option>
+                        <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>{{ $acc->nama_akun }} ({{ $acc->kode_akun }})</option>
                     @endforeach
                 </select>
             </div>
@@ -52,7 +66,7 @@
             </div>
 
             <div class="col-12 col-md-2 d-flex gap-1">
-                <button type="submit" class="btn-odoo-primary flex-grow-1 py-1 text-xs justify-center">
+                <button type="submit" class="btn-odoo-primary flex-grow-1 py-1 text-xs justify-center font-bold">
                     <i class="fa-solid fa-filter me-1"></i> Filter
                 </button>
                 <a href="{{ route('kas-keluar.index') }}" class="btn-odoo-secondary py-1 text-xs" title="Reset Filter">
@@ -75,7 +89,7 @@
                             <th class="sortable">Keterangan / Keperluan</th>
                             <th class="sortable text-end pe-3">Jumlah Keluar (Rp)</th>
                             <th class="text-center" style="width: 110px;">Bukti Nota</th>
-                            <th class="text-center pe-3" style="width: 70px;">Aksi</th>
+                            <th class="text-center pe-3" style="width: 90px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -120,13 +134,25 @@
                                     @endif
                                 </td>
                                 <td class="text-center pe-3">
-                                    <form action="{{ route('kas-keluar.destroy', $trx->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data kas keluar ini?');" class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-light text-danger p-1 border" title="Hapus Kas Keluar">
-                                            <i class="fa-solid fa-trash-can text-xs"></i>
+                                    @if(Auth::user()->isSuperAdmin() || Auth::user()->isOwner() || Auth::user()->isManager())
+                                    <div class="d-inline-flex align-items-center gap-1">
+                                        <button type="button" 
+                                                onclick="openEditCashOutModal({{ $trx->id }}, '{{ $trx->nomor_referensi }}', {{ $trx->account_id }}, {{ $trx->branch_id ?? 'null' }}, '{{ \Carbon\Carbon::parse($trx->tanggal)->format('Y-m-d') }}', {{ (float)$trx->jumlah }}, '{{ addslashes($trx->keterangan ?? '') }}', '{{ $trx->bukti_url ?? '' }}')" 
+                                                class="btn btn-sm btn-light text-amber-600 hover:text-amber-700 hover:bg-amber-50 p-1 border rounded shadow-xs" 
+                                                title="Edit Kas Keluar">
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
                                         </button>
-                                    </form>
+                                        <form action="{{ route('kas-keluar.destroy', $trx->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data kas keluar {{ $trx->nomor_referensi }} sebesar Rp {{ number_format($trx->jumlah, 0, ',', '.') }}?');" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-light text-danger hover:bg-rose-50 p-1 border rounded shadow-xs" title="Hapus Kas Keluar">
+                                                <i class="fa-solid fa-trash-can text-xs"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    @else
+                                        <span class="text-slate-300 text-xs font-mono">-</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -177,6 +203,80 @@
     </div>
 </div>
 
+<!-- Modal Edit Kas Keluar -->
+<div class="modal fade" id="editCashOutModal" tabindex="-1" aria-labelledby="editCashOutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 border-0 shadow-2xl">
+            <form id="editCashOutForm" method="POST" action="" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <div class="modal-header bg-slate-900 text-white py-3 px-4">
+                    <div>
+                        <h6 class="modal-title font-bold text-sm mb-0 d-flex align-items-center gap-2" id="editCashOutModalLabel">
+                            <i class="fa-solid fa-pen-to-square text-amber-400"></i>
+                            <span>Edit Pengeluaran Kas: <span id="editModalRef" class="text-amber-300 font-mono"></span></span>
+                        </h6>
+                        <p class="text-[11px] text-slate-300 mb-0 mt-0.5">Perbarui rincian pengeluaran kas operasional / biaya</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 space-y-3">
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Akun Beban & Operasional <span class="text-danger">*</span></label>
+                        <select name="account_id" id="edit_account_id" class="form-select form-select-sm" required>
+                            @foreach($accounts as $acc)
+                                <option value="{{ $acc->id }}">{{ $acc->nama_akun }} ({{ $acc->kode_akun }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Cabang Toko</label>
+                            <select name="branch_id" id="edit_branch_id" class="form-select form-select-sm">
+                                @foreach($branches as $br)
+                                    <option value="{{ $br->id }}">{{ $br->nama_cabang }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Tanggal <span class="text-danger">*</span></label>
+                            <input type="date" name="tanggal" id="edit_tanggal" class="form-control form-control-sm" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Jumlah Pengeluaran (Rp) <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text font-bold bg-slate-100 text-slate-600">Rp</span>
+                            <input type="number" name="jumlah" id="edit_jumlah" min="1" step="1" class="form-control form-control-sm font-mono font-bold text-rose-700" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Keterangan / Keperluan <span class="text-danger">*</span></label>
+                        <textarea name="keterangan" id="edit_keterangan" rows="2" class="form-control form-control-sm" placeholder="Contoh: Beli lakban 5 roll, bensin antar barang..." required></textarea>
+                    </div>
+
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Upload Bukti Nota / Struk Baru (Opsional)</label>
+                        <input type="file" name="bukti_transaksi" class="form-control form-control-sm" accept="image/*,.pdf">
+                        <div id="editCurrentBuktiWrapper" class="mt-1 text-xs text-slate-500 hidden">
+                            Bukti saat ini: <a href="#" id="editCurrentBuktiLink" target="_blank" class="text-blue-600 underline font-semibold">Lihat Berkas Nota</a> (Biarkan kosong jika tidak ingin mengubah)
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-slate-50 py-2.5 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn-odoo-secondary text-xs" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn-odoo-primary text-xs font-bold">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function showReceiptModal(url, ref, account, amount) {
     document.getElementById('modalRefNo').textContent = ref;
@@ -184,6 +284,33 @@ function showReceiptModal(url, ref, account, amount) {
     document.getElementById('receiptImage').src = url;
     document.getElementById('modalDownloadBtn').href = url;
     const modalEl = document.getElementById('receiptModal');
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+}
+
+function openEditCashOutModal(id, ref, accountId, branchId, tanggal, jumlah, keterangan, buktiUrl) {
+    document.getElementById('editModalRef').textContent = ref;
+    document.getElementById('editCashOutForm').action = '/kas-keluar/' + id;
+    document.getElementById('edit_account_id').value = accountId;
+    if (branchId && document.getElementById('edit_branch_id')) {
+        document.getElementById('edit_branch_id').value = branchId;
+    }
+    document.getElementById('edit_tanggal').value = tanggal;
+    document.getElementById('edit_jumlah').value = jumlah;
+    document.getElementById('edit_keterangan').value = keterangan;
+
+    const buktiWrap = document.getElementById('editCurrentBuktiWrapper');
+    const buktiLink = document.getElementById('editCurrentBuktiLink');
+    if (buktiUrl && buktiUrl !== '') {
+        buktiLink.href = buktiUrl;
+        buktiWrap.classList.remove('hidden');
+    } else {
+        buktiWrap.classList.add('hidden');
+    }
+
+    const modalEl = document.getElementById('editCashOutModal');
     if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
         modal.show();

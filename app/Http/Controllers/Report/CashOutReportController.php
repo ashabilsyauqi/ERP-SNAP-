@@ -14,7 +14,10 @@ class CashOutReportController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $isManager = $user->isManager();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
         
+        // Branch resolution: Owner, SuperAdmin (KINGAshabil), and Manager can choose branch or all branches
         if ($request->has('branch_id')) {
             $branchId = $request->input('branch_id');
             session(['selected_branch_id' => $branchId]);
@@ -22,7 +25,7 @@ class CashOutReportController extends Controller
             $branchId = session('selected_branch_id', 'all');
         }
 
-        if (!$user->isOwner()) {
+        if (!$isOwnerOrSuper && !$isManager) {
             $branchId = $user->branch_id;
         }
 
@@ -38,22 +41,50 @@ class CashOutReportController extends Controller
             $query->where('branch_id', $branchId);
         }
 
-        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', now()->toDateString());
+        // Date filter handling
+        $isAllTime = $request->boolean('all_time') || $request->input('period') === 'all';
+        $isExplicitFilterAction = $request->has('filter');
 
-        if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+        $startDate = null;
+        $endDate = null;
+
+        if ($isAllTime) {
+            // No date bounds applied
+            $startDate = null;
+            $endDate = null;
+        } elseif ($request->filled('start_date') && $request->filled('end_date')) {
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
         } elseif ($request->filled('start_date')) {
-            $query->where('tanggal', '>=', $request->start_date);
+            $startDate = $request->input('start_date');
+            $query->where('tanggal', '>=', $startDate);
         } elseif ($request->filled('end_date')) {
-            $query->where('tanggal', '<=', $request->end_date);
+            $endDate = $request->input('end_date');
+            $query->where('tanggal', '<=', $endDate);
+        } elseif ($isExplicitFilterAction) {
+            // User intentionally cleared dates and clicked filter -> show all
+            $startDate = null;
+            $endDate = null;
         } else {
-            // Default load current month to prevent memory overload
+            // Default initial load: current month to keep page snappy and clean
+            $startDate = now()->startOfMonth()->toDateString();
+            $endDate = now()->toDateString();
             $query->whereBetween('tanggal', [$startDate, $endDate]);
         }
 
+        // Account filter
         if ($request->filled('account_id')) {
             $query->where('account_id', $request->account_id);
+        }
+
+        // Keyword search (nomor_referensi or keterangan)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nomor_referensi', 'like', "%{$search}%")
+                  ->orWhere('keterangan', 'like', "%{$search}%");
+            });
         }
 
         $totalKeluar = (clone $query)->sum('jumlah');
@@ -62,6 +93,15 @@ class CashOutReportController extends Controller
         $accounts = Account::where('tipe', 'beban')->active()->orderBy('nama_akun')->get();
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        return view('reports.cash-out', compact('cashTransactions', 'accounts', 'branches', 'totalKeluar', 'startDate', 'endDate', 'branchId'));
+        return view('reports.cash-out', compact(
+            'cashTransactions', 
+            'accounts', 
+            'branches', 
+            'totalKeluar', 
+            'startDate', 
+            'endDate', 
+            'branchId',
+            'isAllTime'
+        ));
     }
 }

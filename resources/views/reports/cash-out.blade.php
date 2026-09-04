@@ -4,52 +4,96 @@
 @section('page-title', 'Laporan Pengeluaran Kas Keluar (Disbursements)')
 
 @section('action-buttons')
-<button type="button" onclick="window.print()" class="btn-odoo-primary" title="Cetak Laporan PDF / Print">
-    <i class="fa-solid fa-print"></i>
+<a href="{{ route('kas-keluar.create') }}" class="btn-odoo-primary text-decoration-none" title="Catat Pengeluaran Kas Keluar Baru">
+    <i class="fa-solid fa-plus"></i>
+    <span>Tambah Kas Keluar</span>
+</a>
+<button type="button" onclick="window.print()" class="btn-odoo-secondary" title="Cetak Laporan PDF / Print">
+    <i class="fa-solid fa-print text-slate-600"></i>
     <span>Print Laporan</span>
 </button>
 @endsection
 
 @section('content')
 <div id="main-view-wrapper" data-view-wrapper>
+
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show text-xs py-2 px-3 mb-3 border-0 shadow-sm print:hidden" role="alert">
+            <i class="fa-solid fa-circle-check me-1"></i> {{ session('success') }}
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+    @if(session('error') || $errors->any())
+        <div class="alert alert-danger alert-dismissible fade show text-xs py-2 px-3 mb-3 border-0 shadow-sm print:hidden" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ session('error') ?? $errors->first() }}
+            <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <!-- Filter Toolbar -->
     <div class="o_form_sheet mb-3 p-3 bg-white print:hidden">
-        <form method="GET" action="{{ route('reports.cash-out') }}" class="row g-2 align-items-end">
-            <div class="col-12 col-md-3">
-                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Dari Tanggal</label>
-                <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm">
-            </div>
-            <div class="col-12 col-md-3">
-                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Sampai Tanggal</label>
-                <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
-            </div>
+        <form id="filter-form" method="GET" action="{{ route('reports.cash-out') }}" class="space-y-2">
+            <input type="hidden" name="filter" value="1">
             
-            @if(Auth::user()->isOwner())
-            <div class="col-12 col-md-2">
-                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Cabang</label>
-                <select name="branch_id" class="form-select form-select-sm">
-                    <option value="all" {{ ($branchId ?? 'all') === 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
-                    @foreach($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ ($branchId ?? '') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @endif
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-2">
+                    <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Dari Tanggal</label>
+                    <input type="date" name="start_date" id="filter-start-date" value="{{ $startDate ?? '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-12 col-md-2">
+                    <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Sampai Tanggal</label>
+                    <input type="date" name="end_date" id="filter-end-date" value="{{ $endDate ?? '' }}" class="form-control form-control-sm">
+                </div>
+                
+                @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin() || Auth::user()->isManager())
+                <div class="col-12 col-md-2">
+                    <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Cabang</label>
+                    <select name="branch_id" class="form-select form-select-sm">
+                        <option value="all" {{ ($branchId ?? 'all') === 'all' ? 'selected' : '' }}>Semua Cabang (Konsolidasi)</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ ($branchId ?? '') == $branch->id ? 'selected' : '' }}>{{ $branch->nama_cabang }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
 
-            <div class="col-12 col-md-2">
-                <label class="form-label font-semibold text-slate-700 text-xs uppercase">Pilih Akun Beban</label>
-                <select name="account_id" class="form-select form-select-sm">
-                    <option value="">Semua Akun Beban</option>
-                    @foreach($accounts as $acc)
-                        <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>{{ $acc->nama_akun }}</option>
-                    @endforeach
-                </select>
+                <div class="col-12 col-md-2">
+                    <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Akun Beban</label>
+                    <select name="account_id" class="form-select form-select-sm">
+                        <option value="">Semua Akun Beban</option>
+                        @foreach($accounts as $acc)
+                            <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>{{ $acc->nama_akun }} ({{ $acc->kode_akun }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-2">
+                    <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Cari Ref / Keterangan</label>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Ketik kata kunci..." class="form-control form-control-sm table-search-input">
+                </div>
+
+                <div class="col-12 col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn-odoo-primary flex-grow-1 py-1 text-xs justify-center font-bold">
+                        <i class="fa-solid fa-filter me-1"></i> Filter
+                    </button>
+                    <a href="{{ route('reports.cash-out') }}?all_time=1" class="btn-odoo-secondary py-1 text-xs px-2.5" title="Reset Filter (Semua Data)">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
             </div>
 
-            <div class="col-12 col-md-2">
-                <button type="submit" class="btn-odoo-primary w-100 py-1 text-xs">
-                    <i class="fa-solid fa-filter me-1"></i> Terapkan Filter
+            <!-- Quick Presets -->
+            <div class="d-flex items-center gap-1.5 pt-1 border-t border-slate-100 text-[11px] text-slate-500">
+                <span class="font-semibold text-slate-400 uppercase text-[10px] me-1">Filter Cepat:</span>
+                <button type="button" onclick="setDatePreset('today')" class="btn btn-xs btn-light border py-0.5 px-2 text-slate-600 rounded">
+                    Hari Ini
                 </button>
+                <button type="button" onclick="setDatePreset('month')" class="btn btn-xs btn-light border py-0.5 px-2 text-slate-600 rounded">
+                    Bulan Ini
+                </button>
+                <a href="{{ route('reports.cash-out') }}?all_time=1" class="btn btn-xs {{ !empty($isAllTime) ? 'btn-primary font-bold' : 'btn-light border text-slate-600' }} py-0.5 px-2 rounded text-decoration-none">
+                    Semua Periode (Keseluruhan)
+                </a>
             </div>
         </form>
     </div>
@@ -62,9 +106,18 @@
             <h4 class="fw-bold text-slate-900 mb-0 uppercase tracking-wide">SNAPPRINT ERP &bull; PERCETAKAN</h4>
             <h5 class="fw-bold text-rose-800 mb-1">LAPORAN PENGELUARAN KAS KELUAR (DISBURSEMENTS)</h5>
             <p class="text-xs text-slate-500 mb-0">
-                Periode: {{ request('start_date') ? \Carbon\Carbon::parse(request('start_date'))->format('d M Y') : 'Awal' }} s/d {{ request('end_date') ? \Carbon\Carbon::parse(request('end_date'))->format('d M Y') : 'Sekarang' }}
-                @if(($branchId ?? request('branch_id')) && ($branchId ?? request('branch_id')) !== 'all')
-                    &bull; Cabang: {{ $branches->firstWhere('id', ($branchId ?? request('branch_id')))->nama_cabang ?? '' }}
+                Periode: 
+                @if(!empty($startDate) && !empty($endDate))
+                    {{ \Carbon\Carbon::parse($startDate)->format('d M Y') }} s/d {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}
+                @elseif(!empty($startDate))
+                    Mulai {{ \Carbon\Carbon::parse($startDate)->format('d M Y') }}
+                @elseif(!empty($endDate))
+                    Sampai {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}
+                @else
+                    Semua Periode (Keseluruhan)
+                @endif
+                @if(($branchId ?? 'all') !== 'all')
+                    &bull; Cabang: {{ $branches->firstWhere('id', $branchId)->nama_cabang ?? '' }}
                 @else
                     &bull; Semua Cabang (Konsolidasi)
                 @endif
@@ -80,7 +133,8 @@
                         <th class="sortable">Cabang</th>
                         <th class="sortable">Keterangan / Keperluan</th>
                         <th class="text-center" style="width: 100px;">Bukti Nota</th>
-                        <th class="sortable text-end pe-4">Jumlah Keluar (Rp)</th>
+                        <th class="sortable text-end pe-3">Jumlah Keluar (Rp)</th>
+                        <th class="text-center pe-3 print:hidden" style="width: 90px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,7 +146,7 @@
                             </td>
                             <td>
                                 <div class="fw-bold text-slate-800">{{ $trx->account->nama_akun ?? 'Akun Beban' }}</div>
-                                <span class="text-[10px] text-slate-400">{{ $trx->account->kode_akun ?? '' }}</span>
+                                <span class="font-mono text-[10px] text-slate-400">{{ $trx->account->kode_akun ?? '' }}</span>
                             </td>
                             <td>
                                 <span class="badge bg-slate-100 text-slate-700 border text-[11px] font-normal">
@@ -121,13 +175,34 @@
                                     <span class="text-slate-300 text-xs font-mono">-</span>
                                 @endif
                             </td>
-                            <td class="text-end pe-4 font-mono fw-bold text-rose-700 fs-6">
+                            <td class="text-end pe-3 font-mono fw-bold text-rose-700 fs-6">
                                 - Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
+                            </td>
+                            <td class="text-center pe-3 print:hidden">
+                                @if(Auth::user()->isSuperAdmin() || Auth::user()->isOwner() || Auth::user()->isManager())
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <button type="button" 
+                                            onclick="openEditCashOutModal({{ $trx->id }}, '{{ $trx->nomor_referensi }}', {{ $trx->account_id }}, {{ $trx->branch_id ?? 'null' }}, '{{ \Carbon\Carbon::parse($trx->tanggal)->format('Y-m-d') }}', {{ (float)$trx->jumlah }}, '{{ addslashes($trx->keterangan ?? '') }}', '{{ $trx->bukti_url ?? '' }}')" 
+                                            class="btn btn-sm btn-light text-amber-600 hover:text-amber-700 hover:bg-amber-50 p-1 border rounded shadow-xs" 
+                                            title="Edit Kas Keluar">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </button>
+                                    <form action="{{ route('kas-keluar.destroy', $trx->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data kas keluar {{ $trx->nomor_referensi }} sebesar Rp {{ number_format($trx->jumlah, 0, ',', '.') }}?');" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-light text-danger hover:bg-rose-50 p-1 border rounded shadow-xs" title="Hapus Kas Keluar">
+                                            <i class="fa-solid fa-trash-can text-xs"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                @else
+                                    <span class="text-slate-300 text-xs font-mono">-</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">Belum ada data kas keluar pada periode ini.</td>
+                            <td colspan="7" class="text-center py-5 text-muted">Belum ada data kas keluar pada periode ini.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -135,14 +210,15 @@
                 <tfoot>
                     <tr class="fw-bold bg-rose-50 border-top border-rose-200">
                         <td colspan="5" class="ps-3 text-uppercase text-rose-900 fw-bold">TOTAL PENGELUARAN KAS KELUAR</td>
-                        <td class="text-end pe-4 font-mono fw-extrabold text-emerald-600 fs-5">- Rp {{ number_format($totalKeluar, 0, ',', '.') }}</td>
+                        <td class="text-end pe-3 font-mono fw-extrabold text-rose-700 fs-5">- Rp {{ number_format($totalKeluar, 0, ',', '.') }}</td>
+                        <td class="print:hidden"></td>
                     </tr>
                 </tfoot>
                 @endif
             </table>
         </div>
         @if($cashTransactions->hasPages())
-            <div class="p-3 border-top bg-slate-50 d-flex justify-content-between align-items-center">
+            <div class="p-3 border-top bg-slate-50 d-flex justify-content-between align-items-center print:hidden">
                 <span class="text-xs text-slate-500">Menampilkan {{ $cashTransactions->firstItem() }} - {{ $cashTransactions->lastItem() }} dari {{ $cashTransactions->total() }} data</span>
                 <div>{{ $cashTransactions->links('pagination::bootstrap-4') }}</div>
             </div>
@@ -176,6 +252,80 @@
     </div>
 </div>
 
+<!-- Modal Edit Kas Keluar -->
+<div class="modal fade" id="editCashOutModal" tabindex="-1" aria-labelledby="editCashOutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-3 border-0 shadow-2xl">
+            <form id="editCashOutForm" method="POST" action="" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <div class="modal-header bg-slate-900 text-white py-3 px-4">
+                    <div>
+                        <h6 class="modal-title font-bold text-sm mb-0 d-flex align-items-center gap-2" id="editCashOutModalLabel">
+                            <i class="fa-solid fa-pen-to-square text-amber-400"></i>
+                            <span>Edit Pengeluaran Kas: <span id="editModalRef" class="text-amber-300 font-mono"></span></span>
+                        </h6>
+                        <p class="text-[11px] text-slate-300 mb-0 mt-0.5">Perbarui rincian pengeluaran kas operasional / biaya</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 space-y-3">
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Akun Beban & Operasional <span class="text-danger">*</span></label>
+                        <select name="account_id" id="edit_account_id" class="form-select form-select-sm" required>
+                            @foreach($accounts as $acc)
+                                <option value="{{ $acc->id }}">{{ $acc->nama_akun }} ({{ $acc->kode_akun }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Cabang Toko</label>
+                            <select name="branch_id" id="edit_branch_id" class="form-select form-select-sm">
+                                @foreach($branches as $br)
+                                    <option value="{{ $br->id }}">{{ $br->nama_cabang }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Tanggal <span class="text-danger">*</span></label>
+                            <input type="date" name="tanggal" id="edit_tanggal" class="form-control form-control-sm" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Jumlah Pengeluaran (Rp) <span class="text-danger">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text font-bold bg-slate-100 text-slate-600">Rp</span>
+                            <input type="number" name="jumlah" id="edit_jumlah" min="1" step="1" class="form-control form-control-sm font-mono font-bold text-rose-700" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Keterangan / Keperluan <span class="text-danger">*</span></label>
+                        <textarea name="keterangan" id="edit_keterangan" rows="2" class="form-control form-control-sm" placeholder="Contoh: Beli lakban 5 roll, bensin antar barang..." required></textarea>
+                    </div>
+
+                    <div>
+                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Upload Bukti Nota / Struk Baru (Opsional)</label>
+                        <input type="file" name="bukti_transaksi" class="form-control form-control-sm" accept="image/*,.pdf">
+                        <div id="editCurrentBuktiWrapper" class="mt-1 text-xs text-slate-500 hidden">
+                            Bukti saat ini: <a href="#" id="editCurrentBuktiLink" target="_blank" class="text-blue-600 underline font-semibold">Lihat Berkas Nota</a> (Biarkan kosong jika tidak ingin mengubah)
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-slate-50 py-2.5 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn-odoo-secondary text-xs" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn-odoo-primary text-xs font-bold">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function showReceiptModal(url, ref, account, amount) {
     document.getElementById('modalRefNo').textContent = ref;
@@ -188,5 +338,50 @@ function showReceiptModal(url, ref, account, amount) {
         modal.show();
     }
 }
+
+function openEditCashOutModal(id, ref, accountId, branchId, tanggal, jumlah, keterangan, buktiUrl) {
+    document.getElementById('editModalRef').textContent = ref;
+    document.getElementById('editCashOutForm').action = '/kas-keluar/' + id;
+    document.getElementById('edit_account_id').value = accountId;
+    if (branchId && document.getElementById('edit_branch_id')) {
+        document.getElementById('edit_branch_id').value = branchId;
+    }
+    document.getElementById('edit_tanggal').value = tanggal;
+    document.getElementById('edit_jumlah').value = jumlah;
+    document.getElementById('edit_keterangan').value = keterangan;
+
+    const buktiWrap = document.getElementById('editCurrentBuktiWrapper');
+    const buktiLink = document.getElementById('editCurrentBuktiLink');
+    if (buktiUrl && buktiUrl !== '') {
+        buktiLink.href = buktiUrl;
+        buktiWrap.classList.remove('hidden');
+    } else {
+        buktiWrap.classList.add('hidden');
+    }
+
+    const modalEl = document.getElementById('editCashOutModal');
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+}
+
+function setDatePreset(preset) {
+    const startInput = document.getElementById('filter-start-date');
+    const endInput = document.getElementById('filter-end-date');
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+    if (preset === 'today') {
+        startInput.value = todayStr;
+        endInput.value = todayStr;
+    } else if (preset === 'month') {
+        startInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+        endInput.value = todayStr;
+    }
+    document.getElementById('filter-form').submit();
+}
 </script>
 @endsection
+
