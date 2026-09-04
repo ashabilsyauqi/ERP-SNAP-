@@ -601,63 +601,71 @@ class PosController extends Controller
                     'bills.*.production_notes' => 'nullable|string',
                 ]);
 
-                $createdTransactions = [];
+                // 1 Transaksi Induk untuk seluruh pesanan split item
+                $firstBill = $request->bills[0] ?? [];
+                $mainCustomerName = trim($firstBill['customer_name'] ?? '') ?: 'Pelanggan Umum (Split Bill)';
+                $mainCustomerPhone = trim($firstBill['customer_phone'] ?? '') ?: null;
+
+                $methodsUsed = array_map(fn($b) => $b['payment_method'], $request->bills);
+                $uniqueMethods = array_unique($methodsUsed);
+                $paymentMethodSummary = 'Split (' . implode(' + ', $uniqueMethods) . ')';
+
+                $transaction = Transaction::create([
+                    'branch_id' => $branchId,
+                    'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5)),
+                    'user_id' => auth()->id(),
+                    'customer_id' => null,
+                    'customer_name' => $mainCustomerName,
+                    'customer_phone' => $mainCustomerPhone,
+                    'total_price' => 0,
+                    'total_hpp' => 0,
+                    'payment_method' => $paymentMethodSummary,
+                    'payment_status' => 'PAID',
+                    'paid_amount' => 0,
+                    'remaining_amount' => 0,
+                    'order_status' => 'completed',
+                    'production_notes' => $firstBill['production_notes'] ?? null,
+                ]);
+
+                $totalAccumulatedPrice = 0;
+                $totalCombinedHpp = 0;
+                $createdPayments = [];
 
                 foreach ($request->bills as $index => $billData) {
-                    $billCustomerName = trim($billData['customer_name'] ?? '');
-                    $billCustomerPhone = trim($billData['customer_phone'] ?? '');
-                    $customerId = null;
+                    $letter = chr(65 + $index);
+                    $subInvoiceNumber = $transaction->invoice_number . '-' . $letter;
+                    $billCustomerName = trim($billData['customer_name'] ?? '') ?: ('Bill ' . $letter);
 
-                    if (!empty($billCustomerName) && Schema::hasTable('customers')) {
-                        $custObj = \App\Models\Customer::where('name', $billCustomerName)
-                            ->where(function($b) use ($branchId) {
-                                $b->where('branch_id', $branchId)->orWhereNull('branch_id');
-                            })
-                            ->first();
+                    [$billPrice, $billHpp, $savedItems] = $this->processItemsForTransaction($transaction, $billData['items']);
 
-                        if (!$custObj) {
-                            $custObj = \App\Models\Customer::create([
-                                'branch_id' => $branchId,
-                                'name' => $billCustomerName,
-                                'phone' => $billCustomerPhone ?: null,
-                            ]);
-                        }
-                        $customerId = $custObj->id;
-                    }
+                    $billDiscount = min($billPrice, max(0, (float)($billData['discount_amount'] ?? 0)));
+                    $billFinalAmount = max(0, $billPrice - $billDiscount);
 
-                    $transaction = Transaction::create([
+                    $totalAccumulatedPrice += $billFinalAmount;
+                    $totalCombinedHpp += $billHpp;
+
+                    $tPayment = TransactionPayment::create([
+                        'transaction_id' => $transaction->id,
                         'branch_id' => $branchId,
-                        'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5)),
-                        'user_id' => auth()->id(),
-                        'customer_id' => $customerId,
-                        'customer_name' => $billCustomerName ?: ('Pelanggan ' . ($index + 1)),
-                        'customer_phone' => $billCustomerPhone ?: null,
-                        'total_price' => 0,
-                        'total_hpp' => 0,
+                        'payer_name' => $billCustomerName,
                         'payment_method' => $billData['payment_method'],
-                        'payment_status' => 'PAID',
-                        'paid_amount' => 0,
-                        'remaining_amount' => 0,
-                        'order_status' => 'completed',
-                        'production_notes' => $billData['production_notes'] ?? null,
+                        'amount' => $billFinalAmount,
+                        'reference_note' => "Sub-Faktur {$letter} ({$subInvoiceNumber})",
                     ]);
 
-                    [$accumulatedPrice, $totalHpp, $savedItems] = $this->processItemsForTransaction($transaction, $billData['items']);
+                    $createdPayments[] = [
+                        'payment_id' => $tPayment->id,
+                        'letter' => $letter,
+                        'sub_invoice_number' => $subInvoiceNumber,
+                        'payer_name' => $billCustomerName,
+                        'payment_method' => $billData['payment_method'],
+                        'amount' => $billFinalAmount,
+                        'percent' => 0,
+                        'receipt_url' => route('sales.receipt', ['id' => $transaction->id, 'payment_id' => $tPayment->id]),
+                        'public_invoice_url' => route('invoices.public', ['invoice_number' => $transaction->invoice_number, 'payment_id' => $tPayment->id]),
+                    ];
 
-                    $discountAmount = min($accumulatedPrice, max(0, (float)($billData['discount_amount'] ?? 0)));
-                    $totalPrice = max(0, $accumulatedPrice - $discountAmount);
-
-                    $transaction->original_price = $accumulatedPrice;
-                    $transaction->discount_amount = $discountAmount;
-                    $transaction->negotiation_notes = $billData['negotiation_notes'] ?? null;
-                    $transaction->total_price = $totalPrice;
-                    $transaction->total_hpp = $totalHpp;
-                    $transaction->paid_amount = $totalPrice;
-                    $transaction->remaining_amount = 0;
-                    $transaction->save();
-
-                    // Record cash inflow for this bill
-                    if ($totalPrice > 0 && $salesAccount) {
+                    if ($billFinalAmount > 0 && $salesAccount) {
                         CashTransaction::create([
                             'branch_id' => $branchId,
                             'account_id' => $salesAccount->id,
@@ -665,24 +673,25 @@ class PosController extends Controller
                             'tipe' => 'masuk',
                             'nomor_referensi' => CashTransaction::generateNomorReferensi('masuk'),
                             'tanggal' => now()->toDateString(),
-                            'jumlah' => $totalPrice,
-                            'keterangan' => "Penjualan POS Split Bill (#{$transaction->invoice_number}) dari {$transaction->customer_name} ({$transaction->payment_method})",
+                            'jumlah' => $billFinalAmount,
+                            'keterangan' => "Penjualan POS Split Bill (#{$transaction->invoice_number} / {$billCustomerName}) metode {$billData['payment_method']}",
                             'transaction_id' => $transaction->id,
                         ]);
                     }
-
-                    $createdTransactions[] = [
-                        'transaction_id' => $transaction->id,
-                        'invoice_number' => $transaction->invoice_number,
-                        'customer_name' => $transaction->customer_name,
-                        'payment_method' => $transaction->payment_method,
-                        'total_price' => $transaction->total_price,
-                        'paid_amount' => $transaction->paid_amount,
-                        'items_count' => count($savedItems),
-                        'receipt_url' => route('sales.receipt', $transaction->id),
-                        'public_invoice_url' => route('invoices.public', $transaction->invoice_number),
-                    ];
                 }
+
+                foreach ($createdPayments as &$cp) {
+                    $cp['percent'] = $totalAccumulatedPrice > 0 ? round(($cp['amount'] / $totalAccumulatedPrice) * 100, 1) : 0;
+                }
+                unset($cp);
+
+                $transaction->original_price = $totalAccumulatedPrice;
+                $transaction->discount_amount = 0;
+                $transaction->total_price = $totalAccumulatedPrice;
+                $transaction->total_hpp = $totalCombinedHpp;
+                $transaction->paid_amount = $totalAccumulatedPrice;
+                $transaction->remaining_amount = 0;
+                $transaction->save();
 
                 DB::commit();
 
@@ -690,8 +699,17 @@ class PosController extends Controller
                     'status' => 'success',
                     'success' => true,
                     'mode' => 'items',
-                    'message' => "Split bill berhasil! " . count($createdTransactions) . " transaksi dan nota terbit.",
-                    'transactions' => $createdTransactions,
+                    'message' => "Split bill berhasil! 1 transaksi dengan " . count($createdPayments) . " faktur & struk diterbitkan.",
+                    'transaction_id' => $transaction->id,
+                    'invoice_number' => $transaction->invoice_number,
+                    'customer_name' => $transaction->customer_name,
+                    'total_price' => $transaction->total_price,
+                    'paid_amount' => $transaction->paid_amount,
+                    'payment_method' => $transaction->payment_method,
+                    'payments' => $createdPayments,
+                    'all_receipts_url' => route('sales.receipt', ['id' => $transaction->id, 'all_split' => 1]),
+                    'receipt_url' => route('sales.receipt', $transaction->id),
+                    'public_invoice_url' => route('invoices.public', $transaction->invoice_number),
                 ]);
 
             } elseif ($mode === 'multi_payment') {
@@ -772,23 +790,32 @@ class PosController extends Controller
 
                 $createdPayments = [];
 
-                foreach ($request->payments as $pData) {
+                foreach ($request->payments as $index => $pData) {
+                    $letter = chr(65 + $index);
                     $pAmount = (float)$pData['amount'];
-                    $payerName = trim($pData['payer_name'] ?? '');
+                    $payerName = trim($pData['payer_name'] ?? '') ?: ('Bill ' . $letter);
                     $pMethod = $pData['payment_method'];
+                    $subInvoiceNumber = $transaction->invoice_number . '-' . $letter;
 
                     $tPayment = TransactionPayment::create([
                         'transaction_id' => $transaction->id,
                         'branch_id' => $branchId,
-                        'payer_name' => $payerName ?: null,
+                        'payer_name' => $payerName,
                         'payment_method' => $pMethod,
                         'amount' => $pAmount,
+                        'reference_note' => "Sub-Faktur {$letter} ({$subInvoiceNumber})",
                     ]);
 
                     $createdPayments[] = [
-                        'payer_name' => $payerName ?: 'Pelanggan',
+                        'payment_id' => $tPayment->id,
+                        'letter' => $letter,
+                        'sub_invoice_number' => $subInvoiceNumber,
+                        'payer_name' => $payerName,
                         'payment_method' => $pMethod,
                         'amount' => $pAmount,
+                        'percent' => $totalPrice > 0 ? round(($pAmount / $totalPrice) * 100, 1) : 0,
+                        'receipt_url' => route('sales.receipt', ['id' => $transaction->id, 'payment_id' => $tPayment->id]),
+                        'public_invoice_url' => route('invoices.public', ['invoice_number' => $transaction->invoice_number, 'payment_id' => $tPayment->id]),
                     ];
 
                     // Record cash inflow for each split payment
@@ -801,7 +828,7 @@ class PosController extends Controller
                             'nomor_referensi' => CashTransaction::generateNomorReferensi('masuk'),
                             'tanggal' => now()->toDateString(),
                             'jumlah' => $pAmount,
-                            'keterangan' => "Penjualan POS Split Bill (#{$transaction->invoice_number}) dari " . ($payerName ?: $transaction->customer_name) . " ({$pMethod})",
+                            'keterangan' => "Penjualan POS Split Bill (#{$transaction->invoice_number} / {$payerName}) metode {$pMethod}",
                             'transaction_id' => $transaction->id,
                         ]);
                     }
@@ -813,7 +840,7 @@ class PosController extends Controller
                     'status' => 'success',
                     'success' => true,
                     'mode' => 'multi_payment',
-                    'message' => "Pembayaran patungan split bill berhasil diproses!",
+                    'message' => "Split bill berhasil! 1 transaksi dengan " . count($createdPayments) . " faktur & struk diterbitkan.",
                     'transaction_id' => $transaction->id,
                     'invoice_number' => $transaction->invoice_number,
                     'customer_name' => $transaction->customer_name,
@@ -821,6 +848,7 @@ class PosController extends Controller
                     'paid_amount' => $transaction->paid_amount,
                     'payment_method' => $transaction->payment_method,
                     'payments' => $createdPayments,
+                    'all_receipts_url' => route('sales.receipt', ['id' => $transaction->id, 'all_split' => 1]),
                     'receipt_url' => route('sales.receipt', $transaction->id),
                     'public_invoice_url' => route('invoices.public', $transaction->invoice_number),
                 ]);

@@ -40,6 +40,34 @@
         </div>
     </div>
 
+    @if($transaction->payments && $transaction->payments->count() > 0)
+        <!-- Split Bill Sub-Invoices Navigation Bar (No Print) -->
+        <div class="max-w-4xl mx-auto mb-4 bg-white p-3 rounded-2xl border border-slate-300 shadow-sm flex flex-wrap items-center justify-between gap-2 no-print text-xs">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-indigo-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-code-fork text-indigo-600"></i> Split Bill ({{ $transaction->payments->count() }} Faktur):
+                </span>
+                <span class="text-slate-500">Pilih dokumen yang ingin dilihat/dicetak:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+                <a href="{{ route('invoices.public', $transaction->invoice_number) }}" 
+                    class="px-2.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1 {{ empty($activePayment) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">
+                    <i class="fa-solid fa-file-invoice"></i> Faktur Induk (Gabungan)
+                </a>
+                @foreach($transaction->payments as $idx => $p)
+                    @php 
+                        $pLetter = chr(65 + $idx); 
+                        $isActiveP = !empty($activePayment) && $activePayment->id === $p->id; 
+                    @endphp
+                    <a href="{{ route('invoices.public', ['invoice_number' => $transaction->invoice_number, 'payment_id' => $p->id]) }}" 
+                        class="px-2.5 py-1.5 rounded-xl font-bold transition flex items-center gap-1 {{ $isActiveP ? 'bg-indigo-600 text-white shadow-sm' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200' }}">
+                        <span>Faktur {{ $p->payer_name ?: ('Bill ' . $pLetter) }}</span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <!-- Main Printable Invoice Container (Paper Sheet Layout) -->
     <div id="invoice-printable" class="invoice-sheet max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-300/80 p-8 sm:p-12 relative overflow-hidden">
         
@@ -90,8 +118,14 @@
                     </div>
                 @endif
 
-                <div class="text-lg font-black text-slate-900 mt-1">FAKTUR / INVOICE {{ $isPartial ? '& SPK' : '' }}</div>
-                <div class="text-xs font-mono font-bold text-slate-500">No: {{ $transaction->invoice_number }}</div>
+                @if($activePayment)
+                    <div class="text-lg font-black text-slate-900 mt-1">FAKTUR SPLIT BILL &bull; {{ strtoupper($activePayment->payer_name) }}</div>
+                    <div class="text-xs font-mono font-bold text-indigo-700">Sub-Faktur: {{ $transaction->invoice_number }}-{{ chr(65 + $transaction->payments->search($activePayment)) }}</div>
+                    <div class="text-[10.5px] font-mono text-slate-400">Transaksi Induk: #{{ $transaction->invoice_number }}</div>
+                @else
+                    <div class="text-lg font-black text-slate-900 mt-1">FAKTUR / INVOICE {{ $isPartial ? '& SPK' : '' }}</div>
+                    <div class="text-xs font-mono font-bold text-slate-500">No: {{ $transaction->invoice_number }}</div>
+                @endif
             </div>
         </div>
 
@@ -100,15 +134,22 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <span class="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Pelanggan / Customer</span>
-                    <strong class="text-slate-900 text-sm block">{{ $transaction->customer_name ?: 'Pelanggan Umum' }}</strong>
-                    @if($transaction->customer_phone)
-                        <span class="text-slate-600 font-mono"><i class="fa-brands fa-whatsapp text-emerald-600 me-1"></i>{{ $transaction->customer_phone }}</span>
+                    @if($activePayment)
+                        <strong class="text-slate-900 text-sm block">{{ $activePayment->payer_name }}</strong>
+                        <span class="text-indigo-700 font-semibold text-[11px] block mt-0.5">
+                            <i class="fa-solid fa-code-fork me-1"></i>Pembayar Split Bill dari Pesanan Induk #{{ $transaction->invoice_number }}
+                        </span>
+                    @else
+                        <strong class="text-slate-900 text-sm block">{{ $transaction->customer_name ?: 'Pelanggan Umum' }}</strong>
+                        @if($transaction->customer_phone)
+                            <span class="text-slate-600 font-mono"><i class="fa-brands fa-whatsapp text-emerald-600 me-1"></i>{{ $transaction->customer_phone }}</span>
+                        @endif
                     @endif
                 </div>
                 <div class="sm:text-right">
                     <span class="text-slate-400 font-bold uppercase tracking-wider block text-[10px]">Detail Transaksi</span>
                     <span class="text-slate-700 block">Tanggal: <strong>{{ $transaction->created_at->format('d M Y H:i') }}</strong></span>
-                    <span class="text-slate-700 block">Metode Bayar: <strong>{{ $transaction->payment_method }}</strong></span>
+                    <span class="text-slate-700 block">Metode Bayar: <strong>{{ $activePayment ? $activePayment->payment_method : $transaction->payment_method }}</strong></span>
                     <span class="text-slate-700 block">Petugas: <strong>{{ $transaction->user->full_name ?? ($transaction->user->username ?? 'Kasir') }}</strong></span>
                 </div>
             </div>
@@ -200,45 +241,64 @@
 
             <!-- Total Box with Guaranteed Inline Non-Wrapping Currency -->
             <div class="w-full sm:w-96 md:w-[440px] text-xs space-y-2.5 flex-shrink-0">
-                @if($transaction->original_price && $transaction->original_price > $transaction->total_price)
+                @if($activePayment)
                     <div class="flex justify-between items-center gap-4 text-slate-500">
-                        <span class="whitespace-nowrap">Total Akumulasi Asli:</span>
-                        <span class="font-mono line-through whitespace-nowrap text-right">Rp {{ number_format($transaction->original_price, 0, ',', '.') }}</span>
+                        <span class="whitespace-nowrap">Total Nilai Pesanan Induk:</span>
+                        <span class="font-mono whitespace-nowrap text-right font-bold">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
                     </div>
-                    <div class="flex justify-between items-center gap-4 text-emerald-700 font-bold">
-                        <span class="whitespace-nowrap">Potongan Negosiasi:</span>
-                        <span class="font-mono whitespace-nowrap text-right">- Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
+                    <div class="flex justify-between items-center gap-4 text-sm font-black text-indigo-950 pt-2 border-t-2 border-slate-200">
+                        <span class="whitespace-nowrap">Porsi Alokasi ({{ $activePayment->payer_name }}):</span>
+                        <span class="font-mono text-base text-indigo-700 whitespace-nowrap text-right font-black">Rp {{ number_format($activePayment->amount, 0, ',', '.') }}</span>
                     </div>
-                @endif
-
-                <div class="flex justify-between items-center gap-4 text-sm font-black text-blue-900 pt-2 border-t-2 border-slate-200">
-                    <span class="whitespace-nowrap">Total Tagihan:</span>
-                    <span class="font-mono text-base whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
-                </div>
-
-                @if($isPartial)
-                    <div class="flex justify-between items-center gap-4 text-emerald-700 font-bold pt-1">
-                        <span class="whitespace-nowrap">Uang Muka (DP) Diterima:</span>
-                        <span class="font-mono whitespace-nowrap text-right">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="flex justify-between items-center gap-4 text-red-800 font-black bg-red-50 p-3 rounded-xl border-2 border-red-400 shadow-sm">
-                        <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-exclamation text-red-600"></i> Sisa Piutang (UNPAID):</span>
-                        <span class="font-mono text-base text-red-700 whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</span>
-                    </div>
-                @elseif($isUnpaid)
-                    <div class="flex justify-between items-center gap-4 text-red-800 font-black bg-red-50 p-3 rounded-xl border-2 border-red-400 shadow-sm">
-                        <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-xmark text-red-600"></i> Sisa Pembayaran (UNPAID):</span>
-                        <span class="font-mono text-base text-red-700 whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
-                    </div>
-                @else
                     <div class="flex justify-between items-center gap-4 text-slate-600 font-semibold pt-1">
-                        <span class="whitespace-nowrap">Jumlah Dibayar:</span>
-                        <span class="font-mono whitespace-nowrap text-right">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</span>
+                        <span class="whitespace-nowrap">Metode Pembayaran:</span>
+                        <span class="font-mono whitespace-nowrap text-right font-bold">{{ $activePayment->payment_method }}</span>
                     </div>
                     <div class="flex justify-between items-center gap-4 text-emerald-800 font-black bg-emerald-50 p-3 rounded-xl border-2 border-emerald-400 shadow-sm">
                         <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-check text-emerald-600"></i> Status Pembayaran:</span>
                         <span class="font-mono text-emerald-700 uppercase whitespace-nowrap text-right font-black">LUNAS (PAID)</span>
                     </div>
+                @else
+                    @if($transaction->original_price && $transaction->original_price > $transaction->total_price)
+                        <div class="flex justify-between items-center gap-4 text-slate-500">
+                            <span class="whitespace-nowrap">Total Akumulasi Asli:</span>
+                            <span class="font-mono line-through whitespace-nowrap text-right">Rp {{ number_format($transaction->original_price, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="flex justify-between items-center gap-4 text-emerald-700 font-bold">
+                            <span class="whitespace-nowrap">Potongan Negosiasi:</span>
+                            <span class="font-mono whitespace-nowrap text-right">- Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }}</span>
+                        </div>
+                    @endif
+
+                    <div class="flex justify-between items-center gap-4 text-sm font-black text-blue-900 pt-2 border-t-2 border-slate-200">
+                        <span class="whitespace-nowrap">Total Tagihan:</span>
+                        <span class="font-mono text-base whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
+                    </div>
+
+                    @if($isPartial)
+                        <div class="flex justify-between items-center gap-4 text-emerald-700 font-bold pt-1">
+                            <span class="whitespace-nowrap">Uang Muka (DP) Diterima:</span>
+                            <span class="font-mono whitespace-nowrap text-right">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="flex justify-between items-center gap-4 text-red-800 font-black bg-red-50 p-3 rounded-xl border-2 border-red-400 shadow-sm">
+                            <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-exclamation text-red-600"></i> Sisa Piutang (UNPAID):</span>
+                            <span class="font-mono text-base text-red-700 whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</span>
+                        </div>
+                    @elseif($isUnpaid)
+                        <div class="flex justify-between items-center gap-4 text-red-800 font-black bg-red-50 p-3 rounded-xl border-2 border-red-400 shadow-sm">
+                            <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-xmark text-red-600"></i> Sisa Pembayaran (UNPAID):</span>
+                            <span class="font-mono text-base text-red-700 whitespace-nowrap text-right font-black">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</span>
+                        </div>
+                    @else
+                        <div class="flex justify-between items-center gap-4 text-slate-600 font-semibold pt-1">
+                            <span class="whitespace-nowrap">Jumlah Dibayar:</span>
+                            <span class="font-mono whitespace-nowrap text-right">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</span>
+                        </div>
+                        <div class="flex justify-between items-center gap-4 text-emerald-800 font-black bg-emerald-50 p-3 rounded-xl border-2 border-emerald-400 shadow-sm">
+                            <span class="flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-check text-emerald-600"></i> Status Pembayaran:</span>
+                            <span class="font-mono text-emerald-700 uppercase whitespace-nowrap text-right font-black">LUNAS (PAID)</span>
+                        </div>
+                    @endif
                 @endif
             </div>
         </div>
@@ -256,7 +316,7 @@
             const element = document.getElementById('invoice-printable');
             const opt = {
                 margin:       [10, 10, 10, 10],
-                filename:     'Faktur_{{ $transaction->invoice_number }}.pdf',
+                filename:     'Faktur_{{ $transaction->invoice_number }}{{ !empty($activePayment) ? "_".\Illuminate\Support\Str::slug($activePayment->payer_name) : "" }}.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }

@@ -465,35 +465,6 @@
                     </div>
                 </template>
             </div>
-            
-            <!-- Success Notification Card (Emerald Green) -->
-            <div id="checkout-success-desktop" class="hidden bg-emerald-50 border border-emerald-300 text-emerald-900 p-3 rounded-xl text-xs space-y-2 relative transition-all duration-200">
-                <button type="button" onclick="this.closest('#checkout-success-desktop').classList.add('hidden')" 
-                    class="absolute top-2 right-2 text-emerald-600 hover:text-emerald-900 hover:bg-emerald-200 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer border-0" 
-                    title="Tutup Notifikasi">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-                <div class="d-flex justify-content-between align-items-center pr-6">
-                    <span class="badge bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded" id="success-badge-tag">
-                        <i class="fa-solid fa-circle-check me-1"></i> LUNAS (PAID)
-                    </span>
-                    <span class="font-mono font-bold text-blue-900 text-xs" id="success-inv-text">INV-XXXX</span>
-                </div>
-                <div class="text-[11px] text-emerald-800 fw-semibold" id="success-msg-text">
-                    Transaksi berhasil diproses & tercatat pada kasir.
-                </div>
-                <div class="d-flex gap-2 pt-1">
-                    <button type="button" id="btn-print-last-receipt" class="btn btn-sm btn-primary text-xs flex-1 py-1 font-semibold d-inline-flex align-items-center justify-content-center gap-1">
-                        <i class="fa-solid fa-print"></i> Struk 58mm
-                    </button>
-                    <button type="button" id="btn-open-last-inv" class="btn btn-sm btn-outline-secondary text-xs flex-1 py-1 font-semibold d-inline-flex align-items-center justify-content-center gap-1">
-                        <i class="fa-solid fa-file-invoice text-blue-600"></i> Buka Faktur
-                    </button>
-                </div>
-                <button type="button" id="btn-wa-last-receipt" class="hidden btn btn-sm w-full py-1 text-xs font-bold text-white d-flex align-items-center justify-content-center gap-1.5 rounded-lg shadow-sm" style="background-color: #25D366; border-color: #25D366;">
-                    <i class="fa-brands fa-whatsapp text-sm"></i> Kirim PDF ke WhatsApp
-                </button>
-            </div>
 
             <!-- Error Notification Card (Rose Red) -->
             <div id="checkout-error-desktop" class="hidden bg-rose-50 border border-rose-200 text-rose-700 p-2.5 rounded-xl text-xs font-semibold"></div>
@@ -538,12 +509,6 @@
                     <button onclick="processCheckout(true)" type="button" class="h-11 px-3 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-900 border border-amber-300 font-bold rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition cursor-pointer flex-shrink-0" title="Simpan sebagai draft pesanan tanpa bayar">
                         <i class="fa-solid fa-file-pen text-amber-600 text-sm"></i>
                         <span>Draft</span>
-                    </button>
-
-                    <!-- Tombol Cepat: Split Bill (Bagi Tagihan) -->
-                    <button onclick="openSplitBillModal()" type="button" class="h-11 px-3 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-900 border border-indigo-300 font-bold rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition cursor-pointer flex-shrink-0" title="Bagi tagihan pesanan bersama teman (Pisah Nota / Patungan)">
-                        <i class="fa-solid fa-code-fork text-indigo-600 text-sm"></i>
-                        <span>Split Bill</span>
                     </button>
                 @endif
 
@@ -3279,6 +3244,97 @@
         }
     }
 
+    function showSplitBillCompletionModal(data) {
+        let splitReceiptsHtml = '';
+        const paymentsList = data.payments || [];
+        
+        if (paymentsList.length > 0) {
+            splitReceiptsHtml = paymentsList.map((p, idx) => {
+                const letter = p.letter || String.fromCharCode(65 + idx);
+                const payerTitle = p.payer_name || p.customer_name || ('Bill ' + letter);
+                const subInv = p.sub_invoice_number || p.invoice_number || data.invoice_number;
+                const payMethod = p.payment_method || 'Cash';
+                const pAmount = p.amount || p.total_price || 0;
+                const receiptUrl = p.receipt_url || data.receipt_url;
+                const invoiceUrl = p.public_invoice_url || data.public_invoice_url;
+
+                return `
+                    <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                        <div style="text-align: left; min-width: 0; flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                                <span style="background: #4f46e5; color: #ffffff; font-weight: 800; font-size: 10px; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;">BILL ${letter}</span>
+                                <strong style="color: #0f172a; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${payerTitle}</strong>
+                            </div>
+                            <div style="font-size: 10.5px; color: #64748b;">
+                                <span>Sub-Inv: <strong style="color: #334155; font-family: monospace;">#${subInv}</strong></span> &bull; 
+                                <span>Metode: <strong style="color: #2563eb;">${payMethod}</strong></span>
+                            </div>
+                        </div>
+                        <div style="text-align: right; flex-shrink: 0;">
+                            <div style="font-family: monospace; font-weight: 900; color: #1e3a8a; font-size: 13px; margin-bottom: 4px;">
+                                Rp ${Number(pAmount).toLocaleString('id-ID')}
+                            </div>
+                            <div style="display: flex; gap: 4px; justify-content: flex-end;">
+                                <button type="button" onclick="window.open('${receiptUrl}', '_blank', 'width=420,height=600')" 
+                                    style="background: #2563eb; color: #ffffff; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                                    <i class="fa-solid fa-print"></i> Struk ${letter}
+                                </button>
+                                <button type="button" onclick="window.open('${invoiceUrl}', '_blank')" 
+                                    style="background: #0f172a; color: #ffffff; border: none; border-radius: 6px; padding: 4px 8px; font-size: 10.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                                    <i class="fa-solid fa-file-invoice"></i> Faktur ${letter}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const totalTagihan = data.total_price || 0;
+        const totalCount = paymentsList.length;
+
+        Swal.fire({
+            title: '<span style="color: #059669; font-weight: 800;"><i class="fa-solid fa-circle-check me-2"></i>Split Bill Selesai (Lunas)!</span>',
+            html: `
+                <div style="text-align: left; font-size: 12px; margin-bottom: 10px;">
+                    <div style="background: #f1f5f9; border-radius: 10px; padding: 9px 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 10.5px; color: #64748b;">Transaksi Induk (1 Transaksi):</div>
+                            <strong style="color: #0f172a; font-family: monospace; font-size: 13px;">#${data.invoice_number}</strong>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 10.5px; color: #64748b;">Total Tagihan:</div>
+                            <strong style="color: #059669; font-family: monospace; font-size: 14px;">Rp ${Number(totalTagihan).toLocaleString('id-ID')} (Lunas)</strong>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 11px; color: #475569; font-weight: 700; margin-bottom: 6px; text-transform: uppercase;">
+                        <i class="fa-solid fa-receipt text-indigo-600 me-1"></i> Rincian ${totalCount} Struk & Faktur:
+                    </p>
+                    <div style="max-height: 250px; overflow-y: auto; padding-right: 2px;">
+                        ${splitReceiptsHtml}
+                    </div>
+                </div>
+            `,
+            icon: 'success',
+            width: '560px',
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonColor: '#2563eb',
+            denyButtonColor: '#0f172a',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `<i class="fa-solid fa-print me-1"></i> Cetak Semua ${totalCount} Struk (Thermal)`,
+            denyButtonText: '<i class="fa-solid fa-file-pdf me-1"></i> Faktur Induk Gabungan',
+            cancelButtonText: 'Selesai (+ Transaksi Baru)'
+        }).then((r) => {
+            if (r.isConfirmed && data.all_receipts_url) {
+                window.open(data.all_receipts_url, '_blank', 'width=420,height=650');
+            } else if (r.isDenied && data.public_invoice_url) {
+                window.open(data.public_invoice_url, '_blank');
+            }
+        });
+    }
+
     function submitSplitItemsCheckout() {
         // Validate each bill has at least 1 item
         for (let b of splitState.bills) {
@@ -3360,47 +3416,7 @@
                 const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
                 if (alpineData && alpineData.clearCustomer) alpineData.clearCustomer();
 
-                // Build rich success modal with receipt buttons
-                let receiptsListHtml = '';
-                data.transactions.forEach((tx, idx) => {
-                    receiptsListHtml += `
-                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 8px; text-align: left;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <div>
-                                    <strong style="color: #0f172a; font-size: 13px;">${idx + 1}. ${tx.customer_name}</strong>
-                                    <span style="color: #64748b; font-size: 11px; margin-left: 6px;">(#${tx.invoice_number})</span>
-                                </div>
-                                <span style="font-family: monospace; font-weight: bold; color: #1e40af; font-size: 13px;">Rp ${Number(tx.total_price).toLocaleString('id-ID')}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #475569;">
-                                <span>Metode: <strong style="color: #0f172a;">${tx.payment_method}</strong></span>
-                                <div style="display: flex; gap: 6px;">
-                                    <a href="${tx.receipt_url}" target="_blank" style="background: #2563eb; color: #fff; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
-                                        <i class="fa-solid fa-print"></i> Cetak Struk
-                                    </a>
-                                    <a href="${tx.public_invoice_url}" target="_blank" style="background: #e2e8f0; color: #334155; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 11px;">
-                                        Lihat Nota
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                Swal.fire({
-                    title: '<span style="color: #1e3a8a; font-weight: 800;"><i class="fa-solid fa-code-fork text-indigo-600 me-2"></i>Split Bill Selesai!</span>',
-                    html: `
-                        <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">Sebanyak <strong>${data.transactions.length} nota transaksi</strong> berhasil dibuat dan dicatat pada sistem kasir:</p>
-                        <div style="max-height: 280px; overflow-y: auto;">
-                            ${receiptsListHtml}
-                        </div>
-                    `,
-                    icon: 'success',
-                    confirmButtonText: '<i class="fa-solid fa-check me-1"></i> Selesai & Transaksi Baru',
-                    confirmButtonColor: '#2563eb',
-                    width: '520px'
-                });
-
+                showSplitBillCompletionModal(data);
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -3493,50 +3509,7 @@
                 const posContainer = document.getElementById('pos-main-container');
                 const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
                 if (alpineData && alpineData.clearCustomer) alpineData.clearCustomer();
-
-                let paymentsBreakdownHtml = '';
-                if (data.payments) {
-                    paymentsBreakdownHtml = data.payments.map(p => `
-                        <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; border-bottom: 1px dashed #e2e8f0;">
-                            <span>• ${p.payment_method} (${p.payer_name})</span>
-                            <strong style="font-family: monospace;">Rp ${Number(p.amount).toLocaleString('id-ID')}</strong>
-                        </div>
-                    `).join('');
-                }
-
-                Swal.fire({
-                    title: '<span style="color: #059669; font-weight: 800;"><i class="fa-solid fa-circle-check me-2"></i>Pembayaran Lunas!</span>',
-                    html: `
-                        <div style="text-align: left; font-size: 12px; margin-bottom: 12px;">
-                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span style="color: #64748b;">No. Invoice:</span>
-                                    <strong style="color: #0f172a;">#${data.invoice_number}</strong>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                                    <span style="color: #64748b;">Total Tagihan:</span>
-                                    <strong style="font-family: monospace; color: #1e40af;">Rp ${Number(data.total_price).toLocaleString('id-ID')}</strong>
-                                </div>
-                                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0;">
-                                    <span style="font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase;">Rincian Patungan:</span>
-                                    ${paymentsBreakdownHtml}
-                                </div>
-                            </div>
-                        </div>
-                    `,
-                    icon: 'success',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="fa-solid fa-print me-1"></i> Cetak Struk Thermal',
-                    cancelButtonText: '<i class="fa-solid fa-check me-1"></i> Selesai',
-                    confirmButtonColor: '#2563eb',
-                    cancelButtonColor: '#64748b',
-                    reverseButtons: true
-                }).then((r) => {
-                    if (r.isConfirmed && data.receipt_url) {
-                        window.open(data.receipt_url, '_blank', 'width=420,height=600');
-                    }
-                });
-
+                showSplitBillCompletionModal(data);
             } else {
                 Swal.fire({
                     icon: 'error',

@@ -468,7 +468,16 @@ class SalesController extends Controller
     public function receipt($id)
     {
         $transaction = Transaction::with(['user', 'branch', 'transactionDetails.material', 'payments'])->findOrFail($id);
-        return view('sales.receipt', compact('transaction'));
+        
+        $paymentId = request('payment_id');
+        $activePayment = null;
+        if ($paymentId && $transaction->payments) {
+            $activePayment = $transaction->payments->where('id', $paymentId)->first();
+        }
+
+        $allSplit = request()->boolean('all_split');
+
+        return view('sales.receipt', compact('transaction', 'activePayment', 'allSplit'));
     }
 
     /**
@@ -480,7 +489,13 @@ class SalesController extends Controller
             ->where('invoice_number', $invoice_number)
             ->firstOrFail();
 
-        return view('sales.public_invoice', compact('transaction'));
+        $paymentId = request('payment_id');
+        $activePayment = null;
+        if ($paymentId && $transaction->payments) {
+            $activePayment = $transaction->payments->where('id', $paymentId)->first();
+        }
+
+        return view('sales.public_invoice', compact('transaction', 'activePayment'));
     }
 
     /**

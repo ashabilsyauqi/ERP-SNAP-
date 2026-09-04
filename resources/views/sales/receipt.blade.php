@@ -159,179 +159,262 @@
             background: #64748B;
             color: #ffffff;
         }
+        .receipt-split-cut {
+            page-break-after: always;
+            margin: 18px 0;
+            padding-top: 6px;
+            border-top: 1.5px dashed #000;
+            text-align: center;
+            font-size: 8.5px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Header & Logo -->
-    <div class="header">
-        <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint">
-        <h1>SNAPRINT</h1>
-        <p>Digital Printing & Adv.</p>
-        <p>Cabang: <strong>{{ $transaction->branch->nama_cabang ?? 'Pusat' }}</strong></p>
-        <p>{{ $transaction->branch->alamat ?? 'Jl. Margonda Raya No. 45' }}</p>
+@php
+    $renderList = [];
+    if (!empty($allSplit) && $transaction->payments && $transaction->payments->count() > 0) {
+        $renderList = $transaction->payments;
+    } elseif (!empty($activePayment)) {
+        $renderList = [$activePayment];
+    } else {
+        $renderList = [null];
+    }
+@endphp
+
+@foreach($renderList as $pIndex => $currentPay)
+    @php
+        $letter = chr(65 + $pIndex);
+        $isSplitPayer = !empty($currentPay);
+    @endphp
+
+    <div class="receipt-sheet">
+        <!-- Header & Logo -->
+        <div class="header">
+            <img src="{{ asset('images/logosnaprint.jpeg') }}" alt="Snaprint">
+            <h1>SNAPRINT</h1>
+            <p>Digital Printing & Adv.</p>
+            <p>Cabang: <strong>{{ $transaction->branch->nama_cabang ?? 'Pusat' }}</strong></p>
+            <p>{{ $transaction->branch->alamat ?? 'Jl. Margonda Raya No. 45' }}</p>
+            @if($isSplitPayer)
+                <div style="margin-top: 3px; font-size: 10px; font-weight: 900; background: #000; color: #fff; padding: 2px 4px; border-radius: 3px; display: inline-block;">
+                    STRUK SPLIT BILL &bull; {{ strtoupper($currentPay->payer_name ?: ('BILL ' . $letter)) }}
+                </div>
+            @endif
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Meta Info -->
+        <table class="meta-table">
+            <tr>
+                <td style="width: 35%;">No. Inv</td>
+                <td>: <strong>{{ $transaction->invoice_number }}{{ $isSplitPayer ? '-' . $letter : '' }}</strong></td>
+            </tr>
+            <tr>
+                <td>Waktu</td>
+                <td>: {{ $transaction->created_at->format('d/m/Y H:i') }}</td>
+            </tr>
+            <tr>
+                <td>Kasir</td>
+                <td>: {{ $transaction->user->full_name ?: ($transaction->user->username ?? 'Kasir') }}</td>
+            </tr>
+            @if($isSplitPayer)
+            <tr>
+                <td>Pembayar</td>
+                <td>: <strong>{{ $currentPay->payer_name ?: ('Bill ' . $letter) }}</strong></td>
+            </tr>
+            <tr>
+                <td>Metode</td>
+                <td>: <strong>{{ $currentPay->payment_method }}</strong></td>
+            </tr>
+            @else
+                @php
+                    $custName = $transaction->customer_name ?: ($transaction->customer->name ?? null);
+                    $custPhone = $transaction->customer_phone ?: ($transaction->customer->phone ?? null);
+                @endphp
+                @if($custName)
+                <tr>
+                    <td>Pelanggan</td>
+                    <td>: <strong>{{ $custName }}</strong></td>
+                </tr>
+                @endif
+                @if($custPhone)
+                <tr>
+                    <td>WhatsApp</td>
+                    <td>: {{ $custPhone }}</td>
+                </tr>
+                @endif
+            @endif
+            @if($transaction->due_date)
+            <tr>
+                <td>Deadline</td>
+                <td>: <strong>{{ $transaction->due_date->format('d/m/Y') }}</strong></td>
+            </tr>
+            @endif
+        </table>
+
+        <div class="divider"></div>
+
+        <!-- Line Items Table -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="text-left">Item / Qty</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($transaction->transactionDetails as $detail)
+                <tr>
+                    <td class="text-left">
+                        <div class="item-name">{{ $detail->material->material_name ?? 'Bahan Cetak' }}</div>
+                        @if($detail->dimension_text || ($detail->fixed_length_m && $detail->custom_width_cm))
+                            <div class="item-meta" style="color: #000; font-weight: bold;">
+                                [{{ $detail->dimension_text ?: ($detail->fixed_length_m . 'm x ' . $detail->custom_width_cm . 'cm (' . ($detail->area_m2 ?: round($detail->fixed_length_m * ($detail->custom_width_cm / 100), 2)) . ' m²)') }}]
+                            </div>
+                        @endif
+                        <div class="item-meta">{{ $detail->qty_ordered }} x Rp {{ number_format($detail->selling_price, 0, ',', '.') }}</div>
+                    </td>
+                    <td class="text-right fw-bold" style="white-space: nowrap;">
+                        Rp {{ number_format($detail->qty_ordered * $detail->selling_price, 0, ',', '.') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <div class="divider"></div>
+
+        <!-- Totals Table -->
+        <table class="totals-table">
+            @if($transaction->original_price && $transaction->original_price > $transaction->total_price)
+            <tr>
+                <td>Subtotal Asli</td>
+                <td class="text-right" style="text-decoration: line-through;">Rp {{ number_format($transaction->original_price, 0, ',', '.') }}</td>
+            </tr>
+            <tr>
+                <td>Diskon Nego</td>
+                <td class="text-right">- Rp {{ number_format($transaction->discount_amount, 0, ',', '.') }}</td>
+            </tr>
+            @endif
+
+            <tr>
+                <td>Total Tagihan Pesanan</td>
+                <td class="text-right fw-bold">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
+            </tr>
+
+            @if($isSplitPayer)
+                <tr style="border-top: 1px dashed #000;">
+                    <td class="fw-bold" style="padding-top: 3px;">Porsi {{ $currentPay->payer_name ?: ('Bill ' . $letter) }}</td>
+                    <td class="text-right fw-bold font-mono" style="padding-top: 3px;">
+                        Rp {{ number_format($currentPay->amount, 0, ',', '.') }}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Metode Bayar</td>
+                    <td class="text-right font-bold">{{ $currentPay->payment_method }}</td>
+                </tr>
+                <tr style="font-weight: bold;">
+                    <td>STATUS</td>
+                    <td class="text-right">LUNAS (SPLIT)</td>
+                </tr>
+            @else
+                @if($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID')
+                <tr>
+                    <td>Bayar ({{ $transaction->payment_method }})</td>
+                    <td class="text-right">Rp 0</td>
+                </tr>
+                <tr style="font-weight: bold; color: #dc2626;">
+                    <td>STATUS</td>
+                    <td class="text-right">UNPAID (BELUM BAYAR)</td>
+                </tr>
+                @elseif($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
+                <tr>
+                    <td>DP Masuk ({{ $transaction->payment_method }})</td>
+                    <td class="text-right">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</td>
+                </tr>
+                <tr style="font-weight: bold; border-top: 1px dashed #000; color: #dc2626;">
+                    <td style="padding-top: 2px;">SISA PIUTANG</td>
+                    <td class="text-right" style="padding-top: 2px;">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</td>
+                </tr>
+                @elseif($transaction->payments && $transaction->payments->count() > 0)
+                <tr>
+                    <td colspan="2" style="padding-top: 3px; font-weight: bold; font-size: 10px;">Pembayaran Patungan (Split Bill):</td>
+                </tr>
+                @foreach($transaction->payments as $p)
+                <tr>
+                    <td style="padding-left: 6px; font-size: 10px;">• {{ $p->payment_method }} {{ $p->payer_name ? '('.$p->payer_name.')' : '' }}</td>
+                    <td class="text-right font-mono" style="font-size: 10px;">Rp {{ number_format($p->amount, 0, ',', '.') }}</td>
+                </tr>
+                @endforeach
+                <tr style="border-top: 1px dashed #000;">
+                    <td class="fw-bold">Total Terbayar</td>
+                    <td class="text-right fw-bold">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</td>
+                </tr>
+                <tr style="font-weight: bold;">
+                    <td>STATUS</td>
+                    <td class="text-right">LUNAS</td>
+                </tr>
+                @else
+                <tr>
+                    <td>Bayar ({{ $transaction->payment_method }})</td>
+                    <td class="text-right">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</td>
+                </tr>
+                <tr style="font-weight: bold;">
+                    <td>STATUS</td>
+                    <td class="text-right">LUNAS</td>
+                </tr>
+                @endif
+            @endif
+        </table>
+
+        @if($transaction->production_notes)
+        <div class="divider"></div>
+        <div style="font-size: 9.5px; margin: 2px 0;">
+            <strong>Catatan Produksi:</strong><br>
+            {{ $transaction->production_notes }}
+        </div>
+        @endif
+
+        <div class="divider"></div>
+
+        <!-- Status & Footer -->
+        <div class="text-center">
+            @if($isSplitPayer)
+                <div class="stamp-lunas">*** LUNAS (BILL {{ $letter }}) ***</div>
+                <div style="font-size: 9px; color: #333;">Bagian pembayaran split bill pesanan #{{ $transaction->invoice_number }}.</div>
+            @elseif($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID')
+                <div class="stamp-lunas" style="border: 1.5px solid #dc2626; color: #dc2626;">*** UNPAID (BELUM BAYAR) ***</div>
+                <div style="font-size: 9px; color: #dc2626; font-weight: bold;">Pesanan belum dibayar. Mohon lunasi di kasir.</div>
+            @elseif($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
+                <div class="stamp-lunas" style="border: 1.5px solid #dc2626; color: #dc2626;">*** UNPAID (SISA PIUTANG) ***</div>
+                <div style="font-size: 9px; color: #333;">Sisa tagihan Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }} wajib dilunasi saat pengambilan.</div>
+            @else
+                <div class="stamp-lunas">*** LUNAS (PAID) ***</div>
+            @endif
+        </div>
+
+        <div class="footer">
+            <p>Terima kasih atas pesanan Anda!</p>
+            <p class="fw-bold" style="margin-top: 3px; font-size: 10px;">Kunjungi halaman kami: mysnaprint.com</p>
+            <p style="font-size: 8.5px; color: #555;">Snaprint "great spot to print"</p>
+        </div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- Meta Info -->
-    <table class="meta-table">
-        <tr>
-            <td style="width: 35%;">No. Inv</td>
-            <td>: <strong>{{ $transaction->invoice_number }}</strong></td>
-        </tr>
-        <tr>
-            <td>Waktu</td>
-            <td>: {{ $transaction->created_at->format('d/m/Y H:i') }}</td>
-        </tr>
-        <tr>
-            <td>Kasir</td>
-            <td>: {{ $transaction->user->full_name ?: ($transaction->user->username ?? 'Kasir') }}</td>
-        </tr>
-        @php
-            $custName = $transaction->customer_name ?: ($transaction->customer->name ?? null);
-            $custPhone = $transaction->customer_phone ?: ($transaction->customer->phone ?? null);
-        @endphp
-        @if($custName)
-        <tr>
-            <td>Pelanggan</td>
-            <td>: <strong>{{ $custName }}</strong></td>
-        </tr>
-        @endif
-        @if($custPhone)
-        <tr>
-            <td>WhatsApp</td>
-            <td>: {{ $custPhone }}</td>
-        </tr>
-        @endif
-        @if($transaction->due_date)
-        <tr>
-            <td>Deadline</td>
-            <td>: <strong>{{ $transaction->due_date->format('d/m/Y') }}</strong></td>
-        </tr>
-        @endif
-    </table>
-
-    <div class="divider"></div>
-
-    <!-- Line Items Table -->
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th class="text-left">Item / Qty</th>
-                <th class="text-right">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($transaction->transactionDetails as $detail)
-            <tr>
-                <td class="text-left">
-                    <div class="item-name">{{ $detail->material->material_name ?? 'Bahan Cetak' }}</div>
-                    @if($detail->dimension_text || ($detail->fixed_length_m && $detail->custom_width_cm))
-                        <div class="item-meta" style="color: #000; font-weight: bold;">
-                            [{{ $detail->dimension_text ?: ($detail->fixed_length_m . 'm x ' . $detail->custom_width_cm . 'cm (' . ($detail->area_m2 ?: round($detail->fixed_length_m * ($detail->custom_width_cm / 100), 2)) . ' m²)') }}]
-                        </div>
-                    @endif
-                    <div class="item-meta">{{ $detail->qty_ordered }} x Rp {{ number_format($detail->selling_price, 0, ',', '.') }}</div>
-                </td>
-                <td class="text-right fw-bold" style="white-space: nowrap;">
-                    Rp {{ number_format($detail->qty_ordered * $detail->selling_price, 0, ',', '.') }}
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <div class="divider"></div>
-
-    <!-- Totals Table -->
-    <table class="totals-table">
-        <tr>
-            <td>Total Tagihan</td>
-            <td class="text-right fw-bold">Rp {{ number_format($transaction->total_price, 0, ',', '.') }}</td>
-        </tr>
-        
-        @if($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID')
-        <tr>
-            <td>Bayar ({{ $transaction->payment_method }})</td>
-            <td class="text-right">Rp 0</td>
-        </tr>
-        <tr style="font-weight: bold; color: #dc2626;">
-            <td>STATUS</td>
-            <td class="text-right">UNPAID (BELUM BAYAR)</td>
-        </tr>
-        @elseif($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
-        <tr>
-            <td>DP Masuk ({{ $transaction->payment_method }})</td>
-            <td class="text-right">Rp {{ number_format($transaction->paid_amount, 0, ',', '.') }}</td>
-        </tr>
-        <tr style="font-weight: bold; border-top: 1px dashed #000; color: #dc2626;">
-            <td style="padding-top: 2px;">SISA PIUTANG</td>
-            <td class="text-right" style="padding-top: 2px;">Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }}</td>
-        </tr>
-        @elseif($transaction->payments && $transaction->payments->count() > 0)
-        <tr>
-            <td colspan="2" style="padding-top: 3px; font-weight: bold; font-size: 10px;">Pembayaran Patungan (Split Bill):</td>
-        </tr>
-        @foreach($transaction->payments as $p)
-        <tr>
-            <td style="padding-left: 6px; font-size: 10px;">• {{ $p->payment_method }} {{ $p->payer_name ? '('.$p->payer_name.')' : '' }}</td>
-            <td class="text-right font-mono" style="font-size: 10px;">Rp {{ number_format($p->amount, 0, ',', '.') }}</td>
-        </tr>
-        @endforeach
-        <tr style="border-top: 1px dashed #000;">
-            <td class="fw-bold">Total Terbayar</td>
-            <td class="text-right fw-bold">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</td>
-        </tr>
-        <tr style="font-weight: bold;">
-            <td>STATUS</td>
-            <td class="text-right">LUNAS</td>
-        </tr>
-        @else
-        <tr>
-            <td>Bayar ({{ $transaction->payment_method }})</td>
-            <td class="text-right">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</td>
-        </tr>
-        <tr style="font-weight: bold;">
-            <td>STATUS</td>
-            <td class="text-right">LUNAS</td>
-        </tr>
-        @endif
-    </table>
-
-    @if($transaction->production_notes)
-    <div class="divider"></div>
-    <div style="font-size: 9.5px; margin: 2px 0;">
-        <strong>Catatan Produksi:</strong><br>
-        {{ $transaction->production_notes }}
-    </div>
+    @if(!empty($allSplit) && $pIndex < count($renderList) - 1)
+        <div class="receipt-split-cut">
+            &bull; &bull; &bull; GUNTING / POTONG STRUK DI SINI &bull; &bull; &bull;
+        </div>
     @endif
-
-    <div class="divider"></div>
-
-    <!-- Status & Footer -->
-    <div class="text-center">
-        @if($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID')
-            <div class="stamp-lunas" style="border: 1.5px solid #dc2626; color: #dc2626;">*** UNPAID (BELUM BAYAR) ***</div>
-            <div style="font-size: 9px; color: #dc2626; font-weight: bold;">Pesanan belum dibayar. Mohon lunasi di kasir.</div>
-        @elseif($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
-            <div class="stamp-lunas" style="border: 1.5px solid #dc2626; color: #dc2626;">*** UNPAID (SISA PIUTANG) ***</div>
-            <div style="font-size: 9px; color: #333;">Sisa tagihan Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }} wajib dilunasi saat pengambilan.</div>
-        @else
-            <div class="stamp-lunas">*** LUNAS (PAID) ***</div>
-        @endif
-    </div>
-
-    <div class="footer">
-        <p>Terima kasih atas pesanan Anda!</p>
-        <p class="fw-bold" style="margin-top: 3px; font-size: 10px;">Kunjungi halaman kami: mysnaprint.com</p>
-        <p style="font-size: 8.5px; color: #555;">Snaprint "great spot to print"</p>
-    </div>
+@endforeach
 
     <!-- Screen Buttons (Hidden when printing) -->
     <div class="action-buttons no-print">
         <button onclick="window.print()" class="btn-action btn-print">
-            🖨️ Cetak Struk 58mm
+            🖨️ Cetak Struk 58mm {{ !empty($allSplit) ? '('.count($renderList).' Struk Sekaligus)' : '' }}
         </button>
         <a href="{{ route('pos.index') }}" class="btn-action btn-back">
             &larr; Kembali ke Kasir (POS)
