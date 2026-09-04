@@ -22,6 +22,8 @@ class SalesController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+        $statusFilter = $request->input('status', 'sales'); // 'sales' (default: completed/in_production/ready) or 'draft'
+
         $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])
             ->orderBy('created_at', 'desc');
 
@@ -31,6 +33,12 @@ class SalesController extends Controller
             }
         } else {
             $query->where('branch_id', $user->branch_id);
+        }
+
+        if ($statusFilter === 'draft') {
+            $query->where('order_status', 'draft');
+        } else {
+            $query->whereNotIn('order_status', ['draft', 'cancelled']);
         }
 
         // Period filter (today, yesterday, 7days, this_month, all, or custom date range)
@@ -60,21 +68,57 @@ class SalesController extends Controller
             $query->where('payment_status', $request->payment_status);
         }
 
-        // Calculate Summary Statistics for current filtered scope
-        $summaryQuery = clone $query;
-        $cashTotal = (clone $summaryQuery)->where('payment_method', 'Cash')->sum('paid_amount');
-        $cashCount = (clone $summaryQuery)->where('payment_method', 'Cash')->count();
+        // Calculate Summary Statistics for confirmed sales ONLY (strictly exclude draft & cancelled)
+        $summaryBaseQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
+        if ($user->isOwner()) {
+            if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+                $summaryBaseQuery->where('branch_id', $request->branch_id);
+            }
+        } else {
+            $summaryBaseQuery->where('branch_id', $user->branch_id);
+        }
 
-        $qrisTotal = (clone $summaryQuery)->where('payment_method', 'QRIS')->sum('paid_amount');
-        $qrisCount = (clone $summaryQuery)->where('payment_method', 'QRIS')->count();
+        if ($request->filled('date_from') && $request->filled('date_to')) {
+            $summaryBaseQuery->whereDate('created_at', '>=', $request->date_from)
+                             ->whereDate('created_at', '<=', $request->date_to);
+        } elseif ($period === 'today') {
+            $summaryBaseQuery->whereDate('created_at', now()->toDateString());
+        } elseif ($period === 'yesterday') {
+            $summaryBaseQuery->whereDate('created_at', now()->subDay()->toDateString());
+        } elseif ($period === '7days') {
+            $summaryBaseQuery->where('created_at', '>=', now()->subDays(6)->startOfDay());
+        } elseif ($period === 'this_month') {
+            $summaryBaseQuery->whereMonth('created_at', now()->month)
+                             ->whereYear('created_at', now()->year);
+        }
 
-        $transferTotal = (clone $summaryQuery)->where('payment_method', 'Transfer')->sum('paid_amount');
-        $transferCount = (clone $summaryQuery)->where('payment_method', 'Transfer')->count();
+        if ($request->filled('payment_method') && $request->payment_method !== 'all') {
+            $summaryBaseQuery->where('payment_method', $request->payment_method);
+        }
 
-        $totalOmset = (clone $summaryQuery)->sum('total_price');
-        $totalPaid = (clone $summaryQuery)->sum('paid_amount');
-        $totalReceivables = (clone $summaryQuery)->sum('remaining_amount');
-        $totalTrx = (clone $summaryQuery)->count();
+        if ($request->filled('payment_status') && $request->payment_status !== 'all') {
+            $summaryBaseQuery->where('payment_status', $request->payment_status);
+        }
+
+        $cashTotal = (clone $summaryBaseQuery)->where('payment_method', 'Cash')->sum('paid_amount');
+        $cashCount = (clone $summaryBaseQuery)->where('payment_method', 'Cash')->count();
+
+        $qrisTotal = (clone $summaryBaseQuery)->where('payment_method', 'QRIS')->sum('paid_amount');
+        $qrisCount = (clone $summaryBaseQuery)->where('payment_method', 'QRIS')->count();
+
+        $transferTotal = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->sum('paid_amount');
+        $transferCount = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->count();
+
+        $totalOmset = (clone $summaryBaseQuery)->sum('total_price');
+        $totalPaid = (clone $summaryBaseQuery)->sum('paid_amount');
+        $totalReceivables = (clone $summaryBaseQuery)->sum('remaining_amount');
+        $totalTrx = (clone $summaryBaseQuery)->count();
+
+        // Count pending drafts for badge display
+        $pendingDraftCount = Transaction::query()
+            ->where('order_status', 'draft')
+            ->when(!$user->isOwner(), fn($q) => $q->where('branch_id', $user->branch_id))
+            ->count();
 
         $transactions = $query->get();
         $branches = Branch::orderBy('nama_cabang')->get();
@@ -91,9 +135,10 @@ class SalesController extends Controller
             'total_paid' => $totalPaid,
             'total_receivables' => $totalReceivables,
             'total_trx' => $totalTrx,
+            'pending_drafts' => $pendingDraftCount,
         ];
 
-        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period'));
+        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period', 'statusFilter', 'pendingDraftCount'));
     }
 
     /**

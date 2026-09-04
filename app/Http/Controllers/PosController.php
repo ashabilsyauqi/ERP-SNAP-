@@ -256,7 +256,7 @@ class PosController extends Controller
             // Determine Payment & Order Status
             if ($isDraft) {
                 $paidAmount = 0;
-                $remainingAmount = $totalPrice;
+                $remainingAmount = 0;
                 $paymentStatus = 'UNPAID';
                 $orderStatus = 'draft';
             } elseif ($isDp && $totalPrice >= 500000) {

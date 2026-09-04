@@ -112,6 +112,31 @@
         </div>
     </div>
 
+    <!-- Status Filter Tabs: Faktur Penjualan vs Draft Kasir -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-1.5">
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['status' => 'sales'])) }}" 
+               class="btn btn-sm {{ ($statusFilter ?? 'sales') !== 'draft' ? 'btn-primary font-bold shadow-sm' : 'btn-light border text-slate-600' }} rounded-pill px-3 py-1.5 text-xs d-inline-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-receipt"></i>
+                <span>Faktur Penjualan (Selesai & DP)</span>
+            </a>
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['status' => 'draft'])) }}" 
+               class="btn btn-sm {{ ($statusFilter ?? 'sales') === 'draft' ? 'btn-warning font-bold shadow-sm text-amber-950' : 'btn-light border text-slate-600' }} rounded-pill px-3 py-1.5 text-xs d-inline-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-file-pen"></i>
+                <span>Draft Kasir Pending</span>
+                @if(($pendingDraftCount ?? 0) > 0)
+                    <span class="badge {{ ($statusFilter ?? 'sales') === 'draft' ? 'bg-amber-950 text-white' : 'bg-amber-500 text-white' }} rounded-pill px-1.5 py-0.5 text-[10px]">{{ $pendingDraftCount }}</span>
+                @endif
+            </a>
+        </div>
+        @if(($statusFilter ?? 'sales') === 'draft')
+            <div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-pill px-3 py-1 font-medium d-inline-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-circle-info text-amber-600"></i>
+                <span>Draft kasir adalah antrean pesanan yang belum dibayar / belum masuk omset.</span>
+            </div>
+        @endif
+    </div>
+
     <!-- Filter Control Toolbar -->
     <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm d-flex flex-wrap align-items-center justify-content-between gap-2">
         <!-- Timeframe Preset Buttons -->
@@ -143,6 +168,7 @@
         <!-- Filter Dropdowns (Payment Method, Branch) -->
         <form method="GET" action="{{ route('sales.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
             <input type="hidden" name="period" value="{{ $period }}">
+            <input type="hidden" name="status" value="{{ $statusFilter ?? 'sales' }}">
 
             <!-- Filter Metode Pembayaran -->
             <select name="payment_method" onchange="this.form.submit()" class="form-select form-select-sm text-xs font-semibold py-1" style="width: auto;">
@@ -243,7 +269,11 @@
                                 </td>
                                 <td class="text-end font-mono fw-bold text-blue-900">
                                     Rp {{ number_format($trx->total_price, 0, ',', '.') }}
-                                    @if($trx->remaining_amount > 0)
+                                    @if($trx->order_status === 'draft')
+                                        <div class="text-[10px] text-amber-600 font-semibold">
+                                            (Draft Belum Bayar)
+                                        </div>
+                                    @elseif($trx->remaining_amount > 0)
                                         <div class="text-[10px] text-amber-700 font-normal">
                                             Sisa: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}
                                         </div>
@@ -251,34 +281,45 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="d-inline-flex align-items-center gap-1">
-                                        <span class="badge bg-light text-slate-800 border px-2 py-0.5 text-[11px] font-mono">
-                                            @if($trx->payment_method === 'Cash')
-                                                💵 CASH
-                                            @elseif($trx->payment_method === 'QRIS')
-                                                📱 QRIS
-                                            @elseif($trx->payment_method === 'Transfer')
-                                                🏦 TF BANK
-                                            @else
-                                                {{ strtoupper($trx->payment_method) }}
-                                            @endif
-                                        </span>
-                                        @if($trx->isPaid())
-                                            <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold">
-                                                PAID
-                                            </span>
-                                        @elseif($trx->isPartial())
-                                            <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold" title="Sisa Piutang: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}">
-                                                <i class="fa-solid fa-clock-rotate-left me-0.5"></i> UNPAID (DP)
+                                        @if($trx->order_status === 'draft')
+                                            <span class="badge bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 text-[10px] font-bold">
+                                                <i class="fa-solid fa-file-pen me-0.5"></i> DRAFT KASIR
                                             </span>
                                         @else
-                                            <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold">
-                                                <i class="fa-solid fa-circle-xmark me-0.5"></i> UNPAID
+                                            <span class="badge bg-light text-slate-800 border px-2 py-0.5 text-[11px] font-mono">
+                                                @if($trx->payment_method === 'Cash')
+                                                    💵 CASH
+                                                @elseif($trx->payment_method === 'QRIS')
+                                                    📱 QRIS
+                                                @elseif($trx->payment_method === 'Transfer')
+                                                    🏦 TF BANK
+                                                @else
+                                                    {{ strtoupper($trx->payment_method) }}
+                                                @endif
                                             </span>
+                                            @if($trx->isPaid())
+                                                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold">
+                                                    PAID
+                                                </span>
+                                            @elseif($trx->isPartial())
+                                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold" title="Sisa Piutang: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}">
+                                                    <i class="fa-solid fa-clock-rotate-left me-0.5"></i> UNPAID (DP)
+                                                </span>
+                                            @else
+                                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold">
+                                                    <i class="fa-solid fa-circle-xmark me-0.5"></i> UNPAID
+                                                </span>
+                                            @endif
                                         @endif
                                     </div>
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
+                                        @if($trx->order_status === 'draft')
+                                            <a href="{{ route('pos.index') }}" class="btn btn-sm btn-primary py-0 px-2 text-xs font-semibold" title="Buka Kasir POS untuk Pelunasan">
+                                                <i class="fa-solid fa-cash-register me-1"></i> Bayar
+                                            </a>
+                                        @endif
                                         @if($trx->customer_phone)
                                             <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 text-emerald-600" title="Kirim Berkas PDF ke WhatsApp ({{ $trx->customer_phone }})" onclick='openWhatsAppReceipt("{{ $trx->customer_phone }}", @json($invPayload))'>
                                                 <i class="fa-brands fa-whatsapp text-xs"></i>
@@ -311,7 +352,7 @@
                                 <td colspan="8" class="text-center py-5 text-muted">
                                     <div class="p-4">
                                         <i class="fa-solid fa-receipt fs-1 text-slate-300 mb-2"></i>
-                                        <p class="mb-0 fw-semibold">Tidak ada data transaksi pada filter periode ini.</p>
+                                        <p class="mb-0 fw-semibold">{{ ($statusFilter ?? 'sales') === 'draft' ? 'Tidak ada draft kasir yang menunggu pembayaran.' : 'Tidak ada data transaksi pada filter periode ini.' }}</p>
                                     </div>
                                 </td>
                             </tr>

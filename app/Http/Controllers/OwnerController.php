@@ -25,7 +25,7 @@ class OwnerController extends Controller
             $branchId = $user->branch_id;
         }
 
-        $query = Transaction::query()->where('order_status', '!=', 'cancelled');
+        $query = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
         $materialQuery = Material::query();
         $purchaseQuery = Purchase::query();
         $opexQuery = CashTransaction::keluar()->whereHas('account', function($q) {
@@ -78,7 +78,7 @@ class OwnerController extends Controller
 
         // Branch Sales Comparison
         $branchSalesData = Branch::all()->map(function ($branch) use ($timeframe, $month, $year) {
-            $bQuery = Transaction::where('branch_id', $branch->id)->where('order_status', '!=', 'cancelled');
+            $bQuery = Transaction::where('branch_id', $branch->id)->whereNotIn('order_status', ['draft', 'cancelled']);
             if ($timeframe === 'today' || $timeframe === '1D') {
                 $bQuery->whereDate('created_at', Carbon::today());
             } elseif ($timeframe === '7days' || $timeframe === '7D') {
@@ -110,7 +110,7 @@ class OwnerController extends Controller
                 $endTime = Carbon::today()->setTime($h, 59, 59);
 
                 $hTrx = Transaction::whereBetween('created_at', [$startTime, $endTime])
-                    ->where('order_status', '!=', 'cancelled');
+                    ->whereNotIn('order_status', ['draft', 'cancelled']);
 
                 if ($branchId && $branchId !== 'all') {
                     $hTrx->where('branch_id', $branchId);
@@ -128,7 +128,7 @@ class OwnerController extends Controller
                 $chartLabels[] = $targetDate->format('d M');
 
                 $dTrx = Transaction::whereDate('created_at', $targetDate)
-                    ->where('order_status', '!=', 'cancelled');
+                    ->whereNotIn('order_status', ['draft', 'cancelled']);
                 if ($branchId && $branchId !== 'all') {
                     $dTrx->where('branch_id', $branchId);
                 }
@@ -145,7 +145,7 @@ class OwnerController extends Controller
 
                 $mTrx = Transaction::whereYear('created_at', $year)
                     ->whereMonth('created_at', $m)
-                    ->where('order_status', '!=', 'cancelled');
+                    ->whereNotIn('order_status', ['draft', 'cancelled']);
                 if ($branchId && $branchId !== 'all') {
                     $mTrx->where('branch_id', $branchId);
                 }
@@ -164,7 +164,7 @@ class OwnerController extends Controller
 
                 $mSalesQuery = Transaction::whereYear('created_at', $date->year)
                     ->whereMonth('created_at', $date->month)
-                    ->where('order_status', '!=', 'cancelled');
+                    ->whereNotIn('order_status', ['draft', 'cancelled']);
                 $mOpexQuery = CashTransaction::keluar()
                     ->whereYear('tanggal', $date->year)
                     ->whereMonth('tanggal', $date->month);

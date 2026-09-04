@@ -19,7 +19,7 @@ class FinanceDashboardController extends Controller
 
         // Base queries
         $cashQuery = CashTransaction::query();
-        $posQuery = Transaction::query();
+        $posQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
 
         // Branch scoping
         if ($user->role !== 'owner') {

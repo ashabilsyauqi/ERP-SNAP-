@@ -66,7 +66,7 @@ class DailyClosingController extends Controller
         // 1. Calculate sales from transactions for this branch and date
         $transactions = Transaction::where('branch_id', $branchId)
             ->whereDate('created_at', $targetDate)
-            ->where('order_status', '!=', 'cancelled')
+            ->whereNotIn('order_status', ['draft', 'cancelled'])
             ->get();
 
         $totalOrdersCount = $transactions->count();

@@ -57,9 +57,10 @@ class CashierShiftController extends Controller
         // Calculate expected closing cash = opening cash + total cash sales during shift
         $cashSalesDuringShift = Transaction::where('user_id', $user->id)
             ->where('branch_id', $user->branch_id)
-            ->where('payment_method', 'cash')
+            ->whereIn('payment_method', ['Cash', 'cash'])
+            ->whereNotIn('order_status', ['draft', 'cancelled'])
             ->whereBetween('created_at', [$activeShift->opened_at, now()])
-            ->sum('total_amount');
+            ->sum('paid_amount');
 
         $expectedClosingCash = $activeShift->opening_cash + $cashSalesDuringShift;
         $discrepancy = $request->actual_closing_cash - $expectedClosingCash;

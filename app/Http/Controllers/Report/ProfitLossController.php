@@ -18,7 +18,7 @@ class ProfitLossController extends Controller
         $periodType = $request->input('period_type', 'monthly'); // monthly or yearly
         
         $cashQuery = CashTransaction::with('account');
-        $salesQuery = Transaction::query();
+        $salesQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
 
         if ($user->role !== 'owner') {
             $cashQuery->where('branch_id', $user->branch_id);

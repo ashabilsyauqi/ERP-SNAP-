@@ -61,7 +61,7 @@ class SalesReportController extends Controller
             }
         }
 
-        $query = Transaction::with('branch');
+        $query = Transaction::with('branch')->whereNotIn('order_status', ['draft', 'cancelled']);
 
         if ($user->role !== 'owner') {
             $query->where('branch_id', $user->branch_id);
