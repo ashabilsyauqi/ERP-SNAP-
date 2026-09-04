@@ -353,35 +353,47 @@ class SalesController extends Controller
     public function refund($id)
     {
         $user = auth()->user();
+        $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
 
-        if (!$user->isCashier() && !$user->isSuperAdmin() && !$user->isOwner()) {
-            abort(403, 'Kegiatan pembatalan / refund transaksi kasir hanya dapat dilakukan oleh petugas Kasir, Owner, atau Super Admin KINGAshabil.');
+        $isSuperAdmin = $user->isSuperAdmin() || $user->isOwner() || ($user->username === 'KINGAshabil');
+        $isCashier = $user->isCashier();
+        $isDrafter = ($transaction->order_status === 'draft' && (int)$transaction->user_id === (int)$user->id);
+
+        if (!$isSuperAdmin && !$isCashier && !$isDrafter) {
+            abort(403, 'Kegiatan pembatalan / penghapusan transaksi hanya dapat dilakukan oleh petugas Kasir, pembuat draft, atau Super Admin KINGAshabil.');
+        }
+
+        if (!$isSuperAdmin && !$isDrafter && $transaction->branch_id && $user->branch_id && $transaction->branch_id !== $user->branch_id) {
+            abort(403, 'Anda hanya dapat mengelola transaksi pada cabang Anda.');
         }
 
         try {
             DB::beginTransaction();
 
-            $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
+            $isDraft = ($transaction->order_status === 'draft');
 
-            if (!$user->isSuperAdmin() && $transaction->branch_id && $transaction->branch_id !== $user->branch_id) {
-                abort(403, 'Anda hanya dapat me-refund transaksi pada cabang Anda.');
-            }
-
-            // Restore all items stock
-            foreach ($transaction->transactionDetails as $detail) {
-                $material = $detail->material;
-                if ($material) {
-                    $material->stock_qty += $detail->qty_ordered;
-                    $material->save();
+            // Restore all items stock ONLY IF NOT DRAFT (drafts never deducted stock)
+            if (!$isDraft) {
+                foreach ($transaction->transactionDetails as $detail) {
+                    $material = $detail->material;
+                    if ($material) {
+                        $material->stock_qty += $detail->qty_ordered;
+                        $material->save();
+                    }
                 }
             }
 
             $invoiceNumber = $transaction->invoice_number;
+            $transaction->transactionDetails()->delete();
             $transaction->delete();
 
             DB::commit();
 
-            return redirect()->back()->with('success', "Transaksi {$invoiceNumber} berhasil dihapus/dibatalkan. Seluruh stok bahan telah dikembalikan.");
+            $msg = $isDraft 
+                ? "Draft pesanan {$invoiceNumber} berhasil dihapus."
+                : "Transaksi {$invoiceNumber} berhasil dihapus/dibatalkan. Seluruh stok bahan telah dikembalikan.";
+
+            return redirect()->back()->with('success', $msg);
 
         } catch (\Exception $e) {
             DB::rollBack();

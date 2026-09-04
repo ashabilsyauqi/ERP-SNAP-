@@ -2178,10 +2178,16 @@
 
                 if (list) {
                     list.innerHTML = '';
+                    const isSuperAdmin = data.is_super_admin || data.is_owner;
+                    const isCashier = data.is_cashier;
+                    const currentUserId = data.current_user_id;
+
                     drafts.forEach(d => {
                         const itemsSummary = (d.transaction_details || []).map(it => 
                             `<span class="badge bg-slate-100 text-slate-700 border text-[10px] me-1 mb-1">${it.qty_ordered}x ${it.material?.material_name || 'Item'} (@ Rp ${Number(it.selling_price).toLocaleString('id-ID')})</span>`
                         ).join('');
+
+                        const canDelete = isSuperAdmin || isCashier || (Number(d.user_id) === Number(currentUserId));
 
                         const card = document.createElement('div');
                         card.className = 'bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-amber-400 transition';
@@ -2205,10 +2211,15 @@
                                     <span class="text-[10px] text-slate-400 block">Total Tagihan</span>
                                     <span class="font-mono font-extrabold text-blue-900 text-sm">Rp ${Number(d.total_price).toLocaleString('id-ID')}</span>
                                 </div>
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex items-center gap-1.5 flex-wrap justify-end">
                                     <a href="/invoices/${d.invoice_number}" target="_blank" class="btn btn-sm btn-outline-secondary text-xs py-1.5 px-2.5 font-semibold" title="Buka Faktur Draft">
                                         <i class="fa-solid fa-file-invoice text-slate-600"></i> Faktur
                                     </a>
+                                    ${canDelete ? `
+                                        <button type="button" onclick="confirmDeleteDraft(${d.id}, '${d.invoice_number}')" class="btn btn-sm btn-outline-danger text-xs py-1.5 px-2.5 font-semibold text-rose-600 hover:bg-rose-50 border-rose-200" title="Hapus Draft Pesanan (KINGAshabil, Kasir, atau Pembuat Draft)">
+                                            <i class="fa-solid fa-trash-can"></i> Hapus
+                                        </button>
+                                    ` : ''}
                                     ${isUserOperator ? `
                                         <span class="badge bg-amber-50 text-amber-700 border border-amber-300 text-[11px] py-1 px-2 font-semibold">
                                             <i class="fa-solid fa-clock me-1"></i> Menunggu Kasir
@@ -2230,6 +2241,62 @@
                 if (loading) loading.classList.add('hidden');
                 console.error(err);
             });
+    }
+
+    function confirmDeleteDraft(draftId, invNumber) {
+        Swal.fire({
+            title: `<span style="font-size: 16px; font-weight: 800; color: #e11d48;">Hapus Draft #${invNumber}?</span>`,
+            text: 'Draft pesanan ini akan dihapus permanen dari antrean kasir.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="fa-solid fa-trash-can me-1"></i> Ya, Hapus Draft',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Menghapus Draft...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                fetch(`/pos/drafts/${draftId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil Dihapus',
+                            text: data.message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        loadDraftOrders();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Menghapus',
+                            text: data.message || 'Terjadi kesalahan saat menghapus draft.'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Terjadi kendala jaringan saat menghubungi server.'
+                    });
+                });
+            }
+        });
     }
 
     function updateDraftBadge(count) {

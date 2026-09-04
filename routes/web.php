@@ -73,6 +73,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
         Route::get('/pos/drafts', [PosController::class, 'getDrafts'])->name('pos.drafts');
         Route::post('/pos/drafts/{id}/settle', [PosController::class, 'settleDraft'])->name('pos.drafts.settle');
+        Route::delete('/pos/drafts/{id}', [PosController::class, 'deleteDraft'])->name('pos.drafts.delete');
         Route::post('/cashier-shift/open', [\App\Http\Controllers\CashierShiftController::class, 'openShift'])->name('cashier-shift.open');
         Route::post('/cashier-shift/close', [\App\Http\Controllers\CashierShiftController::class, 'closeShift'])->name('cashier-shift.close');
     });

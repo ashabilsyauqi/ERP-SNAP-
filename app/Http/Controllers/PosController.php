@@ -380,7 +380,10 @@ class PosController extends Controller
             'status' => 'success',
             'drafts' => $drafts,
             'branches' => $branches,
-            'is_owner' => $user->isOwner() || $user->isSuperAdmin(),
+            'is_owner' => $user->isOwner() || $user->isSuperAdmin() || ($user->username === 'KINGAshabil'),
+            'is_super_admin' => $user->isSuperAdmin() || ($user->username === 'KINGAshabil'),
+            'is_cashier' => $user->isCashier(),
+            'current_user_id' => $user->id,
             'user_branch_id' => $user->branch_id
         ]);
     }
@@ -490,6 +493,70 @@ class PosController extends Controller
                 'status' => 'error',
                 'message' => $e->getMessage()
             ], 400);
+        }
+    }
+
+    /**
+     * Delete a draft order (Super Admin KINGAshabil, Kasir, or Drafter).
+     */
+    public function deleteDraft(Request $request, $id)
+    {
+        $user = auth()->user();
+        $transaction = Transaction::findOrFail($id);
+
+        if ($transaction->order_status !== 'draft') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Pesanan ini sudah bukan draft dan tidak dapat dihapus melalui antrean draft.'
+            ], 400);
+        }
+
+        // Authorization check:
+        // 1. KINGAshabil / SuperAdmin / Owner
+        // 2. Cashier (in their branch or global)
+        // 3. Drafter (the user who created this draft: $transaction->user_id === $user->id)
+        $isSuperAdmin = $user->isSuperAdmin() || $user->isOwner() || ($user->username === 'KINGAshabil');
+        $isCashier = $user->isCashier();
+        $isDrafter = ((int)$transaction->user_id === (int)$user->id);
+
+        if (!$isSuperAdmin && !$isCashier && !$isDrafter) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Anda tidak memiliki izin menghapus draft ini. Hanya KINGAshabil, Kasir, atau pembuat draft yang berhak menghapus.'
+            ], 403);
+        }
+
+        // Cashier branch check (SuperAdmin & Drafter can delete regardless of branch)
+        if ($isCashier && !$isSuperAdmin && !$isDrafter) {
+            if ($transaction->branch_id && $user->branch_id && $transaction->branch_id !== $user->branch_id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kasir hanya dapat menghapus draft pesanan pada cabang sendiri.'
+                ], 403);
+            }
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $invoiceNumber = $transaction->invoice_number;
+            
+            // Delete related details and transaction (draft stock was never deducted, so no stock rollback needed)
+            $transaction->transactionDetails()->delete();
+            $transaction->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Draft pesanan #{$invoiceNumber} berhasil dihapus."
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menghapus draft: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

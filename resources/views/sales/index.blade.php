@@ -295,10 +295,10 @@
                                                 <i class="fa-solid fa-pen-to-square text-xs"></i>
                                             </a>
                                         @endif
-                                        @if(auth()->user()->isCashier() || auth()->user()->isSuperAdmin() || auth()->user()->isOwner())
-                                            <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus / Batalkan invoice {{ $trx->invoice_number }} ini? Seluruh stok bahan akan dikembalikan ke inventori.');">
+                                        @if(auth()->user()->isCashier() || auth()->user()->isSuperAdmin() || auth()->user()->isOwner() || (auth()->user()->username === 'KINGAshabil') || ($trx->order_status === 'draft' && $trx->user_id === auth()->id()))
+                                            <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus / Batalkan pesanan {{ $trx->invoice_number }} ini?');">
                                                 @csrf
-                                                <button class="btn btn-sm btn-outline-danger py-0 px-2" type="submit" title="Hapus / Batalkan Transaksi (Kembalikan Stok)">
+                                                <button class="btn btn-sm btn-outline-danger py-0 px-2" type="submit" title="Hapus / Batalkan Transaksi atau Draft">
                                                     <i class="fa-solid fa-trash-can text-xs"></i>
                                                 </button>
                                             </form>
@@ -402,10 +402,10 @@
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
                                 @endif
-                                @if(auth()->user()->isCashier() || auth()->user()->isSuperAdmin() || auth()->user()->isOwner())
-                                    <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus / Batalkan invoice {{ $trx->invoice_number }} ini?');">
+                                @if(auth()->user()->isCashier() || auth()->user()->isSuperAdmin() || auth()->user()->isOwner() || (auth()->user()->username === 'KINGAshabil') || ($trx->order_status === 'draft' && $trx->user_id === auth()->id()))
+                                    <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus / Batalkan pesanan {{ $trx->invoice_number }} ini?');">
                                         @csrf
-                                        <button class="btn btn-sm btn-light border border-danger text-danger py-0 px-2 text-xs" type="submit" title="Hapus / Batalkan Transaksi">
+                                        <button class="btn btn-sm btn-light border border-danger text-danger py-0 px-2 text-xs" type="submit" title="Hapus / Batalkan Transaksi atau Draft">
                                             <i class="fa-solid fa-trash-can"></i>
                                         </button>
                                     </form>
