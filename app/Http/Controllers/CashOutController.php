@@ -7,6 +7,7 @@ use App\Models\Account;
 use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class CashOutController extends Controller
 {
@@ -64,6 +65,7 @@ class CashOutController extends Controller
             'tanggal' => 'required|date',
             'jumlah' => 'required|numeric|min:1',
             'keterangan' => 'required|string',
+            'bukti_transaksi' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf|max:10240',
         ]);
 
         $user = Auth::user();
@@ -71,6 +73,11 @@ class CashOutController extends Controller
         if (!$branchId) {
             $centralBranch = Branch::where('nama_cabang', 'like', '%Pusat%')->first() ?: Branch::first();
             $branchId = $centralBranch ? $centralBranch->id : null;
+        }
+
+        $buktiPath = null;
+        if ($request->hasFile('bukti_transaksi')) {
+            $buktiPath = $request->file('bukti_transaksi')->store('receipts', 'public');
         }
 
         CashTransaction::create([
@@ -82,9 +89,10 @@ class CashOutController extends Controller
             'tanggal' => $validated['tanggal'],
             'jumlah' => $validated['jumlah'],
             'keterangan' => $validated['keterangan'],
+            'bukti_transaksi' => $buktiPath,
         ]);
 
-        return redirect()->route('kas-keluar.index')->with('success', 'Kas keluar berhasil ditambahkan.');
+        return redirect()->route('kas-keluar.index')->with('success', 'Kas keluar beserta bukti nota/struk berhasil ditambahkan.');
     }
 
     public function update(Request $request, CashTransaction $cashTransaction)
@@ -102,6 +110,9 @@ class CashOutController extends Controller
 
     public function destroy(CashTransaction $cashTransaction)
     {
+        if ($cashTransaction->bukti_transaksi && Storage::disk('public')->exists($cashTransaction->bukti_transaksi)) {
+            Storage::disk('public')->delete($cashTransaction->bukti_transaksi);
+        }
         $cashTransaction->delete();
         return back()->with('success', 'Kas keluar berhasil dihapus.');
     }

@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Carbon\Carbon;
 
-#[Fillable(['branch_id', 'account_id', 'user_id', 'tipe', 'nomor_referensi', 'tanggal', 'jumlah', 'keterangan', 'transaction_id'])]
+#[Fillable(['branch_id', 'account_id', 'user_id', 'tipe', 'nomor_referensi', 'tanggal', 'jumlah', 'keterangan', 'transaction_id', 'bukti_transaksi'])]
 class CashTransaction extends Model
 {
     protected function casts(): array
@@ -19,6 +19,16 @@ class CashTransaction extends Model
     public function account() { return $this->belongsTo(Account::class); }
     public function user() { return $this->belongsTo(User::class); }
     public function transaction() { return $this->belongsTo(Transaction::class); }
+
+    public function getBuktiUrlAttribute()
+    {
+        return $this->bukti_transaksi ? asset('storage/' . $this->bukti_transaksi) : null;
+    }
+
+    public function isBuktiPdf(): bool
+    {
+        return $this->bukti_transaksi && strtolower(pathinfo($this->bukti_transaksi, PATHINFO_EXTENSION)) === 'pdf';
+    }
 
     public function scopeMasuk($query) {
         return $query->where('tipe', 'masuk');

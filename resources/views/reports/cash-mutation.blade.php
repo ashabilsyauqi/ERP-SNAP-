@@ -144,6 +144,19 @@
                             </td>
                             <td class="text-slate-700 text-xs">
                                 <div>{{ $trx->keterangan ?? '-' }}</div>
+                                @if($trx->bukti_transaksi)
+                                    <div class="mt-1">
+                                        @if($trx->isBuktiPdf())
+                                            <a href="{{ $trx->bukti_url }}" target="_blank" class="badge bg-red-50 text-red-700 border border-red-200 text-[10px] text-decoration-none" title="Buka Bukti PDF">
+                                                <i class="fa-solid fa-file-pdf me-1"></i> Bukti PDF
+                                            </a>
+                                        @else
+                                            <a href="{{ $trx->bukti_url }}" target="_blank" class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] text-decoration-none" title="Lihat Foto Bukti Nota">
+                                                <i class="fa-solid fa-receipt me-1"></i> Bukti Nota
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endif
                                 @if($trx->transaction)
                                     @php
                                         $invItems = $trx->transaction->transactionDetails ? $trx->transaction->transactionDetails->map(function($d) {

@@ -7,7 +7,7 @@
 
 <div class="max-w-3xl">
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <form action="{{ route('kas-keluar.store') }}" method="POST" class="p-6 md:p-8">
+        <form action="{{ route('kas-keluar.store') }}" method="POST" enctype="multipart/form-data" class="p-6 md:p-8">
             @csrf
             
             <div class="space-y-6">
@@ -58,6 +58,90 @@
                     @error('keterangan')
                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                     @enderror
+                </div>
+
+                <!-- Bukti Dokumen Pengeluaran (Nota / Struk) -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">
+                        Lampiran Bukti Pengeluaran (Nota / Struk / Kuitansi)
+                        <span class="text-xs font-normal text-gray-500">(Opsional, Foto/Scan Nota)</span>
+                    </label>
+                    <div class="mt-1" x-data="{ 
+                        hasFile: false, 
+                        fileName: '', 
+                        isImage: false, 
+                        previewUrl: '', 
+                        fileSize: '',
+                        handleFileSelect(e) {
+                            const file = e.target.files[0];
+                            if (file) {
+                                this.hasFile = true;
+                                this.fileName = file.name;
+                                this.fileSize = (file.size / 1024 > 1024) ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' : (file.size / 1024).toFixed(1) + ' KB';
+                                if (file.type.startsWith('image/')) {
+                                    this.isImage = true;
+                                    this.previewUrl = URL.createObjectURL(file);
+                                } else {
+                                    this.isImage = false;
+                                    this.previewUrl = '';
+                                }
+                            } else {
+                                this.reset();
+                            }
+                        },
+                        reset() {
+                            this.hasFile = false;
+                            this.fileName = '';
+                            this.isImage = false;
+                            this.previewUrl = '';
+                            this.fileSize = '';
+                            document.getElementById('bukti_transaksi').value = '';
+                        }
+                    }">
+                        <!-- Drag & Drop / Click Zone -->
+                        <div x-show="!hasFile" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-rose-400 hover:bg-rose-50/20 transition-all cursor-pointer"
+                             onclick="document.getElementById('bukti_transaksi').click()">
+                            <input type="file" name="bukti_transaksi" id="bukti_transaksi" class="hidden" accept="image/*,.pdf" @change="handleFileSelect">
+                            <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-3 shadow-xs border border-rose-100">
+                                <i class="fa-solid fa-receipt text-xl"></i>
+                            </div>
+                            <p class="text-sm font-bold text-gray-800 mb-1">
+                                Klik untuk upload foto nota / struk belanja
+                            </p>
+                            <p class="text-xs text-gray-500 mb-0">
+                                Format: <b>JPG, PNG, WEBP, atau PDF</b> (Maks. 10 MB)
+                            </p>
+                        </div>
+
+                        <!-- Preview Area -->
+                        <div x-show="hasFile" x-cloak class="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <!-- Thumbnail or PDF Icon -->
+                                    <template x-if="isImage">
+                                        <img :src="previewUrl" alt="Preview Nota" class="w-16 h-16 object-cover rounded-lg border border-gray-300 shadow-xs flex-shrink-0">
+                                    </template>
+                                    <template x-if="!isImage">
+                                        <div class="w-16 h-16 rounded-lg bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 border border-red-200">
+                                            <i class="fa-solid fa-file-pdf text-2xl"></i>
+                                        </div>
+                                    </template>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-gray-800 truncate mb-0.5" x-text="fileName"></p>
+                                        <span class="text-xs text-gray-500 font-mono" x-text="fileSize"></span>
+                                        <span class="badge bg-emerald-100 text-emerald-800 text-[10px] ms-2 px-1.5 py-0.5 font-bold">Siap diunggah</span>
+                                    </div>
+                                </div>
+                                <button type="button" @click="reset()" class="btn btn-sm btn-outline-danger px-2.5 py-1 text-xs rounded-lg font-bold d-flex items-center gap-1.5 flex-shrink-0">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                    <span>Hapus</span>
+                                </button>
+                            </div>
+                        </div>
+                        @error('bukti_transaksi')
+                            <p class="mt-1.5 text-sm text-red-500 font-medium">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
             </div>
 

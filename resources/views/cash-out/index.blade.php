@@ -74,6 +74,7 @@
                             <th class="sortable">Cabang Toko</th>
                             <th class="sortable">Keterangan / Keperluan</th>
                             <th class="sortable text-end pe-3">Jumlah Keluar (Rp)</th>
+                            <th class="text-center" style="width: 110px;">Bukti Nota</th>
                             <th class="text-center pe-3" style="width: 70px;">Aksi</th>
                         </tr>
                     </thead>
@@ -99,6 +100,25 @@
                                 <td class="text-end pe-3 font-mono fw-bold text-rose-700 fs-6">
                                     - Rp {{ number_format($trx->jumlah, 0, ',', '.') }}
                                 </td>
+                                <td class="text-center">
+                                    @if($trx->bukti_transaksi)
+                                        @if($trx->isBuktiPdf())
+                                            <a href="{{ $trx->bukti_url }}" target="_blank" class="btn btn-xs btn-outline-danger px-2 py-1 rounded-pill font-bold text-[10px] d-inline-flex align-items-center gap-1 shadow-xs" title="Buka Dokumen PDF">
+                                                <i class="fa-solid fa-file-pdf"></i>
+                                                <span>PDF</span>
+                                            </a>
+                                        @else
+                                            <button type="button" 
+                                                    onclick="showReceiptModal('{{ $trx->bukti_url }}', '{{ $trx->nomor_referensi }}', '{{ addslashes($trx->account->nama_akun ?? '') }}', '{{ number_format($trx->jumlah, 0, ',', '.') }}')" 
+                                                    class="btn btn-xs btn-outline-primary px-2 py-1 rounded-pill font-bold text-[10px] d-inline-flex align-items-center gap-1 shadow-xs" title="Lihat Foto Struk / Nota">
+                                                <i class="fa-solid fa-receipt"></i>
+                                                <span>Lihat</span>
+                                            </button>
+                                        @endif
+                                    @else
+                                        <span class="text-slate-300 text-xs font-mono">-</span>
+                                    @endif
+                                </td>
                                 <td class="text-center pe-3">
                                     <form action="{{ route('kas-keluar.destroy', $trx->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data kas keluar ini?');" class="d-inline">
                                         @csrf
@@ -111,7 +131,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     <div class="p-4">
                                         <i class="fa-solid fa-circle-arrow-up fs-1 text-slate-300 mb-2"></i>
                                         <p class="mb-0">Belum ada transaksi pengeluaran kas keluar.</p>
@@ -130,4 +150,44 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Preview Bukti Nota -->
+<div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-3 border-0 shadow-2xl overflow-hidden">
+            <div class="modal-header bg-slate-900 text-white py-3 px-4">
+                <div>
+                    <h6 class="modal-title font-bold text-sm mb-0 d-flex align-items-center gap-2" id="receiptModalLabel">
+                        <i class="fa-solid fa-receipt text-rose-400"></i>
+                        <span>Bukti Pengeluaran Kas: <span id="modalRefNo" class="text-rose-300 font-mono"></span></span>
+                    </h6>
+                    <p class="text-[11px] text-slate-300 mb-0 mt-0.5" id="modalSubTitle"></p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="#" id="modalDownloadBtn" target="_blank" download class="btn btn-sm btn-outline-light text-xs rounded-lg px-2.5 py-1 font-semibold">
+                        <i class="fa-solid fa-download me-1"></i> Unduh
+                    </a>
+                    <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-3 bg-slate-100 text-center d-flex align-items-center justify-content-center" style="min-height: 350px; max-height: 80vh; overflow: auto;">
+                <img src="" id="receiptImage" alt="Bukti Nota" class="img-fluid rounded-2 shadow-sm border border-slate-300" style="max-height: 72vh; object-fit: contain;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showReceiptModal(url, ref, account, amount) {
+    document.getElementById('modalRefNo').textContent = ref;
+    document.getElementById('modalSubTitle').textContent = account + ' • Rp ' + amount;
+    document.getElementById('receiptImage').src = url;
+    document.getElementById('modalDownloadBtn').href = url;
+    const modalEl = document.getElementById('receiptModal');
+    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+}
+</script>
 @endsection
