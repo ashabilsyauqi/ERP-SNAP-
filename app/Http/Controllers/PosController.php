@@ -196,13 +196,18 @@ class PosController extends Controller
                     $extraEyeletCost = ($eyeletCount - 4) * 500;
                 }
 
+                // Click charge calculation per unit (if product has machine click charge)
+                $clickChargePerUnit = ($materialToDeduct->has_click_charge || (float)($materialToDeduct->click_charge ?? 0) > 0)
+                    ? (float)($materialToDeduct->click_charge ?? 0)
+                    : 0;
+
                 // Price calculation
                 if ($isCustomBanner && $areaM2 > 0) {
                     $unitPrice = round($areaM2 * $baseUnitPrice) + $extraEyeletCost;
-                    $itemHpp = round(($physicalAreaM2 ?: $areaM2) * $materialToDeduct->purchase_price) * $qty;
+                    $itemHpp = (round(($physicalAreaM2 ?: $areaM2) * $materialToDeduct->purchase_price) + $clickChargePerUnit) * $qty;
                 } else {
                     $unitPrice = $baseUnitPrice;
-                    $itemHpp = $materialToDeduct->purchase_price * $qty;
+                    $itemHpp = ($materialToDeduct->purchase_price + $clickChargePerUnit) * $qty;
                 }
 
                 // If negotiated per item: directly override unitPrice with negotiated custom_unit_price
@@ -226,6 +231,7 @@ class PosController extends Controller
                     'material_id' => $materialToDeduct->id,
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
+                    'click_charge' => $clickChargePerUnit,
                     'fixed_length_m' => $widthM ?: $fixedLength,
                     'custom_width_cm' => $customWidth,
                     'area_m2' => $physicalAreaM2 ?: $areaM2,

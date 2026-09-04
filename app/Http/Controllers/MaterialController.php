@@ -48,6 +48,8 @@ class MaterialController extends Controller
             'supplier_id'   => 'nullable|exists:suppliers,id',
             'fixed_size'    => 'nullable|numeric|min:0',
             'purchase_price'=> 'required|numeric|min:0',
+            'has_click_charge' => 'nullable|boolean',
+            'click_charge'  => 'nullable|numeric|min:0',
             'retail_price'  => 'required|numeric|min:0',
             'stock_qty'     => 'required|numeric|min:0',
         ]);
@@ -57,6 +59,9 @@ class MaterialController extends Controller
             ? $request->branch_id
             : ($user->branch_id ?: (\App\Models\Branch::first()->id ?? 1));
 
+        $hasClickCharge = $request->boolean('has_click_charge');
+        $clickCharge = $hasClickCharge ? (float) $request->input('click_charge', 0) : 0;
+
         $material = Material::create([
             'branch_id'     => $branchId,
             'category'      => $request->category ?: 'Lainnya',
@@ -64,6 +69,8 @@ class MaterialController extends Controller
             'material_name' => $request->material_name,
             'fixed_size'    => $request->fixed_size,
             'purchase_price'=> $request->purchase_price,
+            'has_click_charge' => $hasClickCharge,
+            'click_charge'  => $clickCharge,
             'retail_price'  => $request->retail_price,
             'stock_qty'     => $request->stock_qty,
         ]);
@@ -97,6 +104,8 @@ class MaterialController extends Controller
                     'unit'          => $material->unit ?: 'Pcs',
                     'fixed_size'    => $material->fixed_size,
                     'purchase_price'=> $material->purchase_price,
+                    'has_click_charge' => $material->has_click_charge,
+                    'click_charge'  => $material->click_charge,
                     'retail_price'  => $material->retail_price,
                     'stock_qty'     => 0, // initial stock 0 for other branches
                 ]);
@@ -122,9 +131,14 @@ class MaterialController extends Controller
             'supplier_id'   => 'nullable|exists:suppliers,id',
             'fixed_size'    => 'nullable|numeric|min:0',
             'purchase_price'=> 'required|numeric|min:0',
+            'has_click_charge' => 'nullable|boolean',
+            'click_charge'  => 'nullable|numeric|min:0',
             'retail_price'  => 'required|numeric|min:0',
             'stock_qty'     => 'required|numeric|min:0',
         ]);
+
+        $hasClickCharge = $request->boolean('has_click_charge');
+        $clickCharge = $hasClickCharge ? (float) $request->input('click_charge', 0) : 0;
 
         $material->update([
             'category'      => $request->category ?: $material->category,
@@ -132,6 +146,8 @@ class MaterialController extends Controller
             'material_name' => $request->material_name,
             'fixed_size'    => $request->fixed_size,
             'purchase_price'=> $request->purchase_price,
+            'has_click_charge' => $hasClickCharge,
+            'click_charge'  => $clickCharge,
             'retail_price'  => $request->retail_price,
             'stock_qty'     => $request->stock_qty,
         ]);

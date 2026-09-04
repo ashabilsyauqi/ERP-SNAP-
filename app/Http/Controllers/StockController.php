@@ -93,6 +93,8 @@ class StockController extends Controller
             'unit'           => 'nullable|string|max:50',
             'fixed_size'     => 'nullable|numeric|min:0',
             'purchase_price' => 'required|numeric|min:0',
+            'has_click_charge' => 'nullable|boolean',
+            'click_charge'   => 'nullable|numeric|min:0',
             'retail_price'   => 'required|numeric|min:0',
             'stock_qty'      => 'required|numeric|min:0',
         ]);
@@ -102,6 +104,9 @@ class StockController extends Controller
             ? $request->branch_id 
             : ($user->branch_id ?: (\App\Models\Branch::first()->id ?? 1));
 
+        $hasClickCharge = $request->boolean('has_click_charge');
+        $clickCharge = $hasClickCharge ? (float) $request->input('click_charge', 0) : 0;
+
         $material = Material::create([
             'branch_id'      => $branchId,
             'category'       => $request->category ?: 'Lainnya',
@@ -110,6 +115,8 @@ class StockController extends Controller
             'unit'           => $request->unit ?: 'Pcs',
             'fixed_size'     => $request->fixed_size,
             'purchase_price' => $request->purchase_price,
+            'has_click_charge' => $hasClickCharge,
+            'click_charge'   => $clickCharge,
             'retail_price'   => $request->retail_price,
             'stock_qty'      => $request->stock_qty,
         ]);
@@ -154,6 +161,8 @@ class StockController extends Controller
                     'unit'           => $material->unit ?: 'Pcs',
                     'fixed_size'     => $material->fixed_size,
                     'purchase_price' => $material->purchase_price,
+                    'has_click_charge' => $material->has_click_charge,
+                    'click_charge'   => $material->click_charge,
                     'retail_price'   => $material->retail_price,
                     'stock_qty'      => 0, // initial stock 0 for other branches
                 ]);
@@ -262,7 +271,10 @@ class StockController extends Controller
             'category' => 'nullable|string|max:100',
             'stock_qty' => 'required|integer|min:0',
             'purchase_price' => 'nullable|numeric|min:0',
+            'has_click_charge' => 'nullable|boolean',
+            'click_charge' => 'nullable|numeric|min:0',
             'retail_price' => 'nullable|numeric|min:0',
+            'opname_notes' => 'nullable|string|max:500',
             'wholesale' => 'nullable|array',
             'wholesale.*.min_qty' => 'nullable|integer|min:1',
             'wholesale.*.price' => 'nullable|numeric|min:0',
@@ -276,6 +288,10 @@ class StockController extends Controller
             }
             if ($request->filled('purchase_price')) {
                 $material->purchase_price = $validated['purchase_price'];
+            }
+            if ($request->has('has_click_charge')) {
+                $material->has_click_charge = $request->boolean('has_click_charge');
+                $material->click_charge = $material->has_click_charge ? (float) $request->input('click_charge', 0) : 0;
             }
             if ($request->filled('retail_price')) {
                 $material->retail_price = $validated['retail_price'];

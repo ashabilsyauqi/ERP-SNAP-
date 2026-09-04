@@ -22,7 +22,29 @@
 @section('content')
 <div x-data="{ 
     editOpen: false, 
-    editMaterial: { id: '', name: '', stock_qty: 0, purchase_price: 0, retail_price: 0, wholesale: [] },
+    showAdvanced: false,
+    editMaterial: { 
+        id: '', 
+        name: '', 
+        branch: '',
+        category: '', 
+        system_stock: 0, 
+        stock_qty: 0, 
+        purchase_price: 0, 
+        has_click_charge: false, 
+        click_charge: 0, 
+        retail_price: 0, 
+        wholesale: [] 
+    },
+    get variance() {
+        return (parseInt(this.editMaterial.stock_qty) || 0) - (parseInt(this.editMaterial.system_stock) || 0);
+    },
+    adjustQty(delta) {
+        let current = parseInt(this.editMaterial.stock_qty) || 0;
+        let next = current + delta;
+        if (next < 0) next = 0;
+        this.editMaterial.stock_qty = next;
+    },
     addWholesaleTier() {
         if (!this.editMaterial.wholesale) this.editMaterial.wholesale = [];
         this.editMaterial.wholesale.push({ min_qty: '', price: '' });
@@ -167,7 +189,12 @@
                                     @endif
                                 </td>
                                 <td class="text-end font-mono text-slate-700">
-                                    Rp {{ number_format($material->purchase_price, 0, ',', '.') }}
+                                    <div>Rp {{ number_format($material->purchase_price, 0, ',', '.') }}</div>
+                                    @if($material->has_click_charge && $material->click_charge > 0)
+                                        <div class="text-[10px] text-indigo-600 font-sans mt-0.5" title="Biaya Mesin per Lembar">
+                                            <i class="fa-solid fa-print me-0.5"></i>+Klik Rp {{ number_format($material->click_charge, 0, ',', '.') }}
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="text-end">
                                     <div class="font-mono fw-bold text-teal-700">
@@ -196,13 +223,18 @@
                                 </td>
                                 <td class="text-center">
                                     <button @click="
+                                        showAdvanced = false;
                                         editMaterial = {
                                             id: '{{ $material->id }}',
                                             name: '{{ addslashes($material->material_name) }}',
+                                            branch: '{{ addslashes($material->branch->nama_cabang ?? 'Pusat') }}',
                                             category: '{{ addslashes($material->category ?? '') }}',
-                                            stock_qty: '{{ $material->stock_qty }}',
-                                            purchase_price: '{{ $material->purchase_price }}',
-                                            retail_price: '{{ $material->retail_price }}',
+                                            system_stock: {{ (int)$material->stock_qty }},
+                                            stock_qty: {{ (int)$material->stock_qty }},
+                                            purchase_price: {{ (float)$material->purchase_price }},
+                                            has_click_charge: {{ $material->has_click_charge ? 'true' : 'false' }},
+                                            click_charge: {{ (float)($material->click_charge ?? 0) }},
+                                            retail_price: {{ (float)$material->retail_price }},
                                             wholesale: {{ json_encode($material->wholesalePrices->map(fn($w) => ['min_qty' => $w->min_qty, 'price' => $w->wholesale_price])) }}
                                         };
                                         if (!editMaterial.wholesale) editMaterial.wholesale = [];
@@ -245,13 +277,18 @@
                         <div class="d-flex justify-content-between align-items-center pt-2 border-top">
                             <span class="text-slate-400 font-mono text-[10px]">#MAT-{{ $material->id }}</span>
                             <button @click="
+                                showAdvanced = false;
                                 editMaterial = {
                                     id: '{{ $material->id }}',
                                     name: '{{ addslashes($material->material_name) }}',
+                                    branch: '{{ addslashes($material->branch->nama_cabang ?? 'Pusat') }}',
                                     category: '{{ addslashes($material->category ?? '') }}',
-                                    stock_qty: '{{ $material->stock_qty }}',
-                                    purchase_price: '{{ $material->purchase_price }}',
-                                    retail_price: '{{ $material->retail_price }}',
+                                    system_stock: {{ (int)$material->stock_qty }},
+                                    stock_qty: {{ (int)$material->stock_qty }},
+                                    purchase_price: {{ (float)$material->purchase_price }},
+                                    has_click_charge: {{ $material->has_click_charge ? 'true' : 'false' }},
+                                    click_charge: {{ (float)($material->click_charge ?? 0) }},
+                                    retail_price: {{ (float)$material->retail_price }},
                                     wholesale: {{ json_encode($material->wholesalePrices->map(fn($w) => ['min_qty' => $w->min_qty, 'price' => $w->wholesale_price])) }}
                                 };
                                 if (!editMaterial.wholesale) editMaterial.wholesale = [];
@@ -399,8 +436,36 @@
                                 </div>
                             </div>
 
+                            <!-- Click Charge Mesin (Opsional) -->
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 bg-slate-50 border border-slate-200">
+                                    <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+                                        <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="toggleClickChargeStockAdd" name="has_click_charge" value="1" onchange="document.getElementById('clickChargeStockAddWrapper').style.display = this.checked ? 'block' : 'none'">
+                                        <label class="form-check-label fw-bold text-slate-800 text-xs text-uppercase cursor-pointer mb-0" for="toggleClickChargeStockAdd">
+                                            <i class="fa-solid fa-print text-indigo-600 me-1"></i> Biaya Klik Mesin Digital (Click Charge) [Opsional]
+                                        </label>
+                                    </div>
+                                    <div id="clickChargeStockAddWrapper" style="display: none;" class="mt-2 pt-2 border-top border-slate-200">
+                                        <div class="row g-2 align-items-center">
+                                            <div class="col-md-6">
+                                                <label class="form-label text-slate-600 text-xs fw-semibold mb-1">Tarif Klik Mesin per Lembar / Unit (Rp):</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-white fw-bold text-indigo-700">Rp</span>
+                                                    <input type="number" name="click_charge" class="form-control form-control-sm fw-bold font-monospace" placeholder="1000" min="0" value="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="text-[11px] text-slate-500 mb-0 mt-3">
+                                                    <i class="fa-solid fa-info-circle text-indigo-500 me-1"></i> Biaya klik mesin sewa per lembar (cth: Fuji Xerox/Konica). Otomatis ditambahkan ke HPP saat kasir checkout.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- 9. Tiering Harga Grosir (Wholesale Price) -->
-                            <div class="col-12 mt-3">
+                            <div class="col-12 mt-2">
                                 <div class="card border border-indigo-200 bg-indigo-50/40 p-3 rounded-3">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <div>
@@ -433,93 +498,236 @@
         </div>
     </div>
 
-    <!-- Stock Opname Modal (Odoo Form Style with Wholesale Tiers) -->
+    <!-- Stock Opname Modal (Seamless, Simple & Focused) -->
     <div x-show="editOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
-        <div class="bg-white rounded-xl shadow-2xl border w-full max-w-lg overflow-hidden animate-fade-in" @click.away="editOpen = false">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-fade-in" @click.away="editOpen = false">
             <form :action="'/stock/materials/' + editMaterial.id" method="POST">
                 @csrf
                 @method('PUT')
-                <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center">
-                    <h5 class="fs-6 fw-bold text-white mb-0 d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-sliders text-teal-400"></i> Stock Opname & Penyetelan Harga
-                    </h5>
+                
+                <!-- Modal Header -->
+                <div class="bg-slate-900 text-white px-4 py-3.5 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-teal-500/20 text-teal-300 border border-teal-500/30 text-[10px] px-2 py-0.5 uppercase tracking-wide">Stock Opname</span>
+                            <span class="text-slate-400 text-xs font-mono" x-text="'#MAT-' + editMaterial.id"></span>
+                            <span class="text-slate-400 text-xs" x-text="'&bull; ' + (editMaterial.branch || 'Pusat')"></span>
+                        </div>
+                        <h5 class="fs-6 fw-bold text-white mb-0 mt-1 line-clamp-1" x-text="editMaterial.name"></h5>
+                    </div>
                     <button type="button" class="btn-close btn-close-white text-xs" @click="editOpen = false"></button>
                 </div>
-                <div class="p-4 space-y-3 text-xs">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Nama Produk / Bahan</label>
-                            <input type="text" x-model="editMaterial.name" class="form-control form-control-sm bg-light" readonly>
+
+                <div class="p-4 space-y-3 text-xs bg-white">
+                    <!-- Core Opname Card: System vs Physical vs Variance -->
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <div class="row g-3 align-items-center">
+                            <!-- Stok Tercatat Sistem -->
+                            <div class="col-5">
+                                <label class="text-slate-500 text-[11px] fw-bold text-uppercase d-block mb-1">
+                                    <i class="fa-solid fa-database text-slate-400 me-1"></i> Stok Sistem
+                                </label>
+                                <div class="bg-white border rounded-lg px-3 py-2 text-center">
+                                    <div class="fs-4 fw-black text-slate-700 font-mono" x-text="editMaterial.system_stock"></div>
+                                    <div class="text-[10px] text-slate-400 text-uppercase fw-semibold">Tercatat</div>
+                                </div>
+                            </div>
+
+                            <!-- Panah Transformasi -->
+                            <div class="col-2 text-center">
+                                <div class="w-8 h-8 mx-auto rounded-full bg-slate-200 d-flex align-items-center justify-center text-slate-500">
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            </div>
+
+                            <!-- Input Fisik Aktual -->
+                            <div class="col-5">
+                                <label class="text-slate-800 text-[11px] fw-bold text-uppercase d-block mb-1">
+                                    <i class="fa-solid fa-clipboard-check text-teal-600 me-1"></i> Fisik Aktual <span class="text-danger">*</span>
+                                </label>
+                                <div class="bg-white border-2 border-teal-500 rounded-lg p-1 text-center shadow-sm">
+                                    <input type="number" name="stock_qty" x-model="editMaterial.stock_qty" 
+                                        class="form-control form-control-lg border-0 text-center fw-black text-teal-800 font-mono p-0 fs-3 focus-none shadow-none" 
+                                        required min="0">
+                                    <div class="text-[10px] text-teal-600 text-uppercase fw-semibold">Hitungan Fisik</div>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Kategori Produk</label>
-                            <input type="text" name="category" x-model="editMaterial.category" list="category-options" class="form-control form-control-sm font-semibold">
-                            <datalist id="category-options">
-                                @foreach($categories as $cat)
-                                    <option value="{{ $cat }}"></option>
-                                @endforeach
-                            </datalist>
+
+                        <!-- Quick Adjust Buttons -->
+                        <div class="d-flex justify-content-center gap-1.5 mt-3 pt-2 border-top border-slate-200/80">
+                            <button type="button" @click="adjustQty(-10)" class="btn btn-sm btn-outline-secondary px-2.5 py-0.5 text-xs fw-bold rounded-lg">-10</button>
+                            <button type="button" @click="adjustQty(-1)" class="btn btn-sm btn-outline-secondary px-2.5 py-0.5 text-xs fw-bold rounded-lg">-1</button>
+                            <button type="button" @click="editMaterial.stock_qty = editMaterial.system_stock" class="btn btn-sm btn-light border px-2.5 py-0.5 text-[11px] text-slate-600 rounded-lg" title="Samakan dengan stok sistem">Reset Sama</button>
+                            <button type="button" @click="adjustQty(1)" class="btn btn-sm btn-outline-secondary px-2.5 py-0.5 text-xs fw-bold rounded-lg">+1</button>
+                            <button type="button" @click="adjustQty(10)" class="btn btn-sm btn-outline-secondary px-2.5 py-0.5 text-xs fw-bold rounded-lg">+10</button>
                         </div>
                     </div>
+
+                    <!-- Live Selisih / Variance Alert Card -->
                     <div>
-                        <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Sisa Stok Fisik (Real On Hand)</label>
-                        <input type="number" name="stock_qty" x-model="editMaterial.stock_qty" class="form-control form-control-sm font-bold" required min="0">
-                        <small class="text-slate-400 text-[11px]">Masukkan jumlah fisik aktual hasil perhitungan opname gudang.</small>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Harga Modal HPP (Rp)</label>
-                            <input type="number" name="purchase_price" x-model="editMaterial.purchase_price" class="form-control form-control-sm font-mono" required min="0">
-                        </div>
-                        <div>
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-1">Harga Jual Eceran (Rp)</label>
-                            <input type="number" name="retail_price" x-model="editMaterial.retail_price" class="form-control form-control-sm font-mono font-bold text-teal-800" required min="0">
-                        </div>
-                    </div>
-
-                    <!-- Wholesale Price Tiers (Harga Grosir) -->
-                    <div class="border-t pt-3 space-y-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <label class="form-label font-semibold text-slate-700 text-xs uppercase mb-0">
-                                <i class="fa-solid fa-tags text-indigo-600 me-1"></i> Tiering Harga Grosir (Wholesale)
-                            </label>
-                            <button type="button" @click="addWholesaleTier()" class="btn btn-sm btn-outline-primary py-0.5 px-2 text-[11px]">
-                                <i class="fa-solid fa-plus me-1"></i> Tambah Tier Grosir
-                            </button>
-                        </div>
-
-                        <template x-if="!editMaterial.wholesale || editMaterial.wholesale.length === 0">
-                            <div class="text-[11px] text-slate-400 italic bg-slate-50 p-2 rounded text-center">
-                                Belum ada tier harga grosir untuk produk ini. Klik tombol di atas untuk menambahkan.
+                        <template x-if="variance === 0">
+                            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-circle-check text-emerald-600 fs-5"></i>
+                                    <div>
+                                        <div class="fw-bold text-xs">Stok Sesuai (Match)</div>
+                                        <div class="text-[11px] text-emerald-700">Tidak ada selisih antara sistem & fisik gudang.</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-emerald-600 text-white px-2.5 py-1 text-xs font-mono font-bold">Selisih: 0</span>
                             </div>
                         </template>
 
-                        <div class="space-y-2 max-h-36 overflow-y-auto pr-1">
-                            <template x-for="(tier, idx) in editMaterial.wholesale" :key="idx">
-                                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                                    <div class="w-1/2">
-                                        <label class="block text-[10px] text-slate-500 font-bold mb-0.5">Min. Beli (Qty/Pcs)</label>
-                                        <input type="number" min="1" :name="'wholesale[' + idx + '][min_qty]'" x-model="tier.min_qty" placeholder="Misal: 10" 
-                                            class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs focus:border-blue-600 focus:outline-none" required>
-                                    </div>
-                                    <div class="w-1/2">
-                                        <label class="block text-[10px] text-slate-500 font-bold mb-0.5">Harga Grosir (Rp)</label>
-                                        <input type="number" min="0" :name="'wholesale[' + idx + '][price]'" x-model="tier.price" placeholder="Misal: 45000" 
-                                            class="w-full px-2 py-1 bg-white border border-slate-300 rounded text-xs font-mono focus:border-blue-600 focus:outline-none" required>
-                                    </div>
-                                    <div class="pt-3">
-                                        <button type="button" @click="removeWholesaleTier(idx)" class="text-rose-500 hover:text-rose-700 p-1 border-0 bg-transparent" title="Hapus Tier">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
+                        <template x-if="variance < 0">
+                            <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-circle-xmark text-rose-600 fs-5"></i>
+                                    <div>
+                                        <div class="fw-bold text-xs">Stok Kurang / Hilang (Defisit)</div>
+                                        <div class="text-[11px] text-rose-700">Fisik lebih sedikit <strong x-text="Math.abs(variance) + ' unit'"></strong> dari sistem.</div>
                                     </div>
                                 </div>
-                            </template>
+                                <span class="badge bg-rose-600 text-white px-2.5 py-1 text-xs font-mono font-bold" x-text="variance + ' Unit'"></span>
+                            </div>
+                        </template>
+
+                        <template x-if="variance > 0">
+                            <div class="p-2.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-800 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-circle-plus text-sky-600 fs-5"></i>
+                                    <div>
+                                        <div class="fw-bold text-xs">Stok Lebih (Surplus)</div>
+                                        <div class="text-[11px] text-sky-700">Fisik lebih banyak <strong x-text="'+' + variance + ' unit'"></strong> dari sistem.</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-sky-600 text-white px-2.5 py-1 text-xs font-mono font-bold" x-text="'+' + variance + ' Unit'"></span>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Keterangan / Alasan Penyesuaian (Opsional) -->
+                    <div>
+                        <label class="form-label text-slate-700 fw-semibold text-xs mb-1">
+                            <i class="fa-solid fa-note-sticky text-slate-400 me-1"></i> Catatan Opname / Alasan Selisih (Opsional)
+                        </label>
+                        <input type="text" name="opname_notes" class="form-control form-control-sm" placeholder="Contoh: 2 lembar rusak tertekuk saat cetak / salah hitung">
+                    </div>
+
+                    <!-- Collapsible: Penyetelan Harga & Tier Grosir -->
+                    <div class="border rounded-xl p-3 bg-slate-50/60">
+                        <button type="button" @click="showAdvanced = !showAdvanced" class="w-full d-flex justify-content-between align-items-center text-slate-700 hover:text-slate-900 border-0 bg-transparent p-0 text-left cursor-pointer">
+                            <span class="fw-bold text-xs d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-tags text-teal-600"></i>
+                                <span>Penyetelan Harga, Mesin & Grosir (Opsional)</span>
+                            </span>
+                            <div class="d-flex align-items-center gap-1 text-slate-500 text-[11px]">
+                                <span x-text="showAdvanced ? 'Tutup' : 'Buka Pengaturan'"></span>
+                                <i class="fa-solid" :class="showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                            </div>
+                        </button>
+
+                        <div x-show="showAdvanced" x-transition class="mt-3 pt-3 border-top border-slate-200 space-y-3" style="display: none;">
+                            <!-- Category -->
+                            <div>
+                                <label class="form-label font-semibold text-slate-700 text-[11px] uppercase mb-1">Kategori Produk</label>
+                                <input type="text" name="category" x-model="editMaterial.category" list="category-options-opname" class="form-control form-control-sm font-semibold">
+                                <datalist id="category-options-opname">
+                                    @foreach($categories as $cat)
+                                        <option value="{{ $cat }}"></option>
+                                    @endforeach
+                                </datalist>
+                            </div>
+
+                            <div class="row g-2">
+                                <!-- Modal HPP Bahan -->
+                                <div class="col-6">
+                                    <label class="form-label font-semibold text-slate-700 text-[11px] uppercase mb-1">Modal Bahan (HPP)</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white text-slate-500">Rp</span>
+                                        <input type="number" name="purchase_price" x-model="editMaterial.purchase_price" class="form-control form-control-sm font-mono" min="0">
+                                    </div>
+                                </div>
+
+                                <!-- Sales Price -->
+                                <div class="col-6">
+                                    <label class="form-label font-semibold text-teal-800 text-[11px] uppercase mb-1">Harga Jual Eceran</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white text-teal-600">Rp</span>
+                                        <input type="number" name="retail_price" x-model="editMaterial.retail_price" class="form-control form-control-sm font-mono font-bold text-teal-800" min="0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Click Charge Toggle & Input -->
+                            <div class="p-2.5 rounded-lg bg-white border border-slate-200">
+                                <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+                                    <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="toggleClickChargeOpname" name="has_click_charge" value="1" x-model="editMaterial.has_click_charge">
+                                    <label class="form-check-label fw-bold text-slate-800 text-[11px] text-uppercase cursor-pointer mb-0" for="toggleClickChargeOpname">
+                                        <i class="fa-solid fa-print text-indigo-600 me-1"></i> Biaya Klik Mesin (Click Charge)
+                                    </label>
+                                </div>
+                                <div x-show="editMaterial.has_click_charge" class="mt-2 pt-2 border-top border-slate-100">
+                                    <label class="form-label text-slate-600 text-[11px] fw-semibold mb-1">Tarif Klik per Lembar (Rp):</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light text-indigo-700 fw-bold">Rp</span>
+                                        <input type="number" name="click_charge" x-model="editMaterial.click_charge" class="form-control form-control-sm font-mono font-bold" placeholder="1000" min="0">
+                                    </div>
+                                    <small class="text-[10px] text-slate-500 mt-1 d-block">
+                                        Total HPP kasir: Rp <span x-text="(parseFloat(editMaterial.purchase_price || 0) + parseFloat(editMaterial.click_charge || 0)).toLocaleString('id-ID')"></span>
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Wholesale Pricing Tiers -->
+                            <div class="border-t border-slate-200 pt-2 space-y-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label class="form-label font-semibold text-slate-700 text-[11px] uppercase mb-0">
+                                        <i class="fa-solid fa-tags text-indigo-600 me-1"></i> Tiering Harga Grosir
+                                    </label>
+                                    <button type="button" @click="addWholesaleTier()" class="btn btn-sm btn-outline-primary py-0.5 px-2 text-[10px] font-semibold">
+                                        <i class="fa-solid fa-plus me-1"></i> Tambah Tier
+                                    </button>
+                                </div>
+
+                                <template x-if="!editMaterial.wholesale || editMaterial.wholesale.length === 0">
+                                    <div class="text-[11px] text-slate-400 italic bg-white p-2 rounded text-center border">
+                                        Belum ada tier harga grosir untuk produk ini.
+                                    </div>
+                                </template>
+
+                                <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                                    <template x-for="(tier, idx) in editMaterial.wholesale" :key="idx">
+                                        <div class="d-flex align-items-center gap-2 bg-white p-1.5 rounded-lg border">
+                                            <div class="flex-fill">
+                                                <label class="form-label text-slate-500 text-[9px] fw-bold mb-0">Min Qty:</label>
+                                                <input type="number" min="1" :name="'wholesale[' + idx + '][min_qty]'" x-model="tier.min_qty" placeholder="10" 
+                                                    class="form-control form-control-sm text-xs py-0.5" required>
+                                            </div>
+                                            <div class="flex-fill">
+                                                <label class="form-label text-slate-500 text-[9px] fw-bold mb-0">Harga Satuan (Rp):</label>
+                                                <input type="number" min="0" :name="'wholesale[' + idx + '][price]'" x-model="tier.price" placeholder="45000" 
+                                                    class="form-control form-control-sm font-mono text-xs py-0.5" required>
+                                            </div>
+                                            <div class="pt-2">
+                                                <button type="button" @click="removeWholesaleTier(idx)" class="btn btn-sm text-rose-500 hover:text-rose-700 p-0 border-0 bg-transparent" title="Hapus Tier">
+                                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-odoo-secondary" @click="editOpen = false">Cancel</button>
-                    <button type="submit" class="btn-odoo-primary">Simpan Opname & Grosir</button>
+
+                <!-- Modal Footer -->
+                <div class="bg-slate-50 border-top px-4 py-3 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn-odoo-secondary" @click="editOpen = false">Batal</button>
+                    <button type="submit" class="btn-odoo-primary px-4">
+                        <i class="fa-solid fa-floppy-disk me-1.5"></i> Simpan Hasil Opname
+                    </button>
                 </div>
             </form>
         </div>

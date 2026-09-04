@@ -71,7 +71,15 @@
                                     @endif
                                 </td>
                                 <td class="text-end font-mono text-slate-700">
-                                    Rp {{ number_format($mat->purchase_price, 0, ',', '.') }}
+                                    <div>Rp {{ number_format($mat->purchase_price, 0, ',', '.') }}</div>
+                                    @if($mat->has_click_charge && $mat->click_charge > 0)
+                                        <div class="text-[10px] text-indigo-600 font-sans mt-0.5" title="Biaya Mesin per Lembar">
+                                            <i class="fa-solid fa-print me-0.5"></i>+Klik Rp {{ number_format($mat->click_charge, 0, ',', '.') }}
+                                        </div>
+                                        <div class="text-[10px] text-slate-400 font-sans">
+                                            Total: Rp {{ number_format($mat->total_hpp, 0, ',', '.') }}
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="text-end font-mono fw-bold text-teal-700">
                                     Rp {{ number_format($mat->retail_price, 0, ',', '.') }}
@@ -320,8 +328,36 @@
                             </div>
                         </div>
 
+                        <!-- Click Charge Mesin (Opsional) -->
+                        <div class="col-12">
+                            <div class="p-3 rounded-3 bg-slate-50 border border-slate-200">
+                                <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+                                    <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="toggleClickChargeAdd" name="has_click_charge" value="1" onchange="document.getElementById('clickChargeAddInputWrapper').style.display = this.checked ? 'block' : 'none'">
+                                    <label class="form-check-label fw-bold text-slate-800 text-xs text-uppercase cursor-pointer mb-0" for="toggleClickChargeAdd">
+                                        <i class="fa-solid fa-print text-indigo-600 me-1"></i> Biaya Klik Mesin Digital (Click Charge) [Opsional]
+                                    </label>
+                                </div>
+                                <div id="clickChargeAddInputWrapper" style="display: none;" class="mt-2 pt-2 border-top border-slate-200">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-md-6">
+                                            <label class="form-label text-slate-600 text-xs fw-semibold mb-1">Tarif Klik Mesin per Lembar / Unit (Rp):</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-white fw-bold text-indigo-700">Rp</span>
+                                                <input type="number" name="click_charge" class="form-control form-control-sm fw-bold font-monospace" placeholder="1000" min="0" value="0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="text-[11px] text-slate-500 mb-0 mt-3">
+                                                <i class="fa-solid fa-info-circle text-indigo-500 me-1"></i> Biaya klik mesin sewa per lembar (cth: Fuji Xerox/Konica). Otomatis ditambahkan ke HPP saat POS checkout.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Wholesale Pricing Tiers -->
-                        <div class="col-12 mt-3">
+                        <div class="col-12 mt-2">
                             <div class="card border border-indigo-200 bg-indigo-50/40 p-3 rounded-3">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <div>
@@ -434,6 +470,34 @@
                                         <input type="number" name="retail_price" value="{{ $mat->retail_price }}" class="form-control form-control-sm fw-bold text-emerald-800 font-monospace" required min="0">
                                     </div>
                                     <span class="text-[10px] text-emerald-700 mt-1 d-block">Harga normal eceran kasir</span>
+                                </div>
+                            </div>
+
+                            <!-- Click Charge Mesin (Opsional) -->
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 bg-slate-50 border border-slate-200">
+                                    <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+                                        <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="toggleClickChargeEdit{{ $mat->id }}" name="has_click_charge" value="1" {{ $mat->has_click_charge ? 'checked' : '' }} onchange="document.getElementById('clickChargeEditInputWrapper{{ $mat->id }}').style.display = this.checked ? 'block' : 'none'">
+                                        <label class="form-check-label fw-bold text-slate-800 text-xs text-uppercase cursor-pointer mb-0" for="toggleClickChargeEdit{{ $mat->id }}">
+                                            <i class="fa-solid fa-print text-indigo-600 me-1"></i> Biaya Klik Mesin Digital (Click Charge) [Opsional]
+                                        </label>
+                                    </div>
+                                    <div id="clickChargeEditInputWrapper{{ $mat->id }}" style="display: {{ $mat->has_click_charge ? 'block' : 'none' }};" class="mt-2 pt-2 border-top border-slate-200">
+                                        <div class="row g-2 align-items-center">
+                                            <div class="col-md-6">
+                                                <label class="form-label text-slate-600 text-xs fw-semibold mb-1">Tarif Klik Mesin per Lembar / Unit (Rp):</label>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-white fw-bold text-indigo-700">Rp</span>
+                                                    <input type="number" name="click_charge" value="{{ $mat->click_charge ?? 0 }}" class="form-control form-control-sm fw-bold font-monospace" placeholder="1000" min="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="text-[11px] text-slate-500 mb-0 mt-3">
+                                                    <i class="fa-solid fa-info-circle text-indigo-500 me-1"></i> Total HPP Item = Modal Bahan (Rp {{ number_format($mat->purchase_price, 0, ',', '.') }}) + Klik (Rp {{ number_format($mat->click_charge ?? 0, 0, ',', '.') }}) = <strong>Rp {{ number_format($mat->total_hpp, 0, ',', '.') }}</strong>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
