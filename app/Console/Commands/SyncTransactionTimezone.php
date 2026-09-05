@@ -53,11 +53,18 @@ class SyncTransactionTimezone extends Command
         } else {
             $targetDate = $dateOpt === 'today' ? Carbon::today()->toDateString() : $dateOpt;
             $query->whereDate('created_at', $targetDate)
-                  ->where('created_at', '<', $cutoff)
-                  ->whereRaw("HOUR(created_at) <= {$maxHour}");
+                  ->where('created_at', '<', $cutoff);
         }
 
-        $transactions = $query->get();
+        $allTransactions = $query->get();
+
+        // Filter via PHP Collection to guarantee 100% compatibility across SQLite, MySQL, PostgreSQL
+        $transactions = $allOpt 
+            ? $allTransactions 
+            : $allTransactions->filter(function($trx) use ($maxHour) {
+                return (int) $trx->created_at->format('G') <= $maxHour;
+            });
+
         $total = $transactions->count();
 
         if ($total === 0) {
@@ -81,25 +88,28 @@ class SyncTransactionTimezone extends Command
                 $newUpdatedAt = $oldUpdatedAt ? $oldUpdatedAt->copy()->addHours($hours) : $newCreatedAt;
 
                 if (!$dryRun) {
+                    $createdStr = $newCreatedAt->format('Y-m-d H:i:s');
+                    $updatedStr = $newUpdatedAt->format('Y-m-d H:i:s');
+
                     DB::table('transactions')
                         ->where('id', $trx->id)
                         ->update([
-                            'created_at' => $newCreatedAt,
-                            'updated_at' => $newUpdatedAt,
+                            'created_at' => $createdStr,
+                            'updated_at' => $updatedStr,
                         ]);
 
                     DB::table('transaction_details')
                         ->where('transaction_id', $trx->id)
                         ->update([
-                            'created_at' => $newCreatedAt,
-                            'updated_at' => $newUpdatedAt,
+                            'created_at' => $createdStr,
+                            'updated_at' => $updatedStr,
                         ]);
 
                     DB::table('cash_transactions')
                         ->where('transaction_id', $trx->id)
                         ->update([
-                            'created_at' => $newCreatedAt,
-                            'updated_at' => $newUpdatedAt,
+                            'created_at' => $createdStr,
+                            'updated_at' => $updatedStr,
                             'tanggal' => $newCreatedAt->toDateString(),
                         ]);
                 }
