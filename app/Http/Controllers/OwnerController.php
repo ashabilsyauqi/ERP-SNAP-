@@ -38,8 +38,8 @@ class OwnerController extends Controller
         $query = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
         $materialQuery = Material::query();
         $purchaseQuery = Purchase::query();
-        $opexQuery = CashTransaction::keluar()->whereHas('account', function($q) {
-            $q->where('tipe', 'beban')->where('kode_akun', '!=', '6-1000');
+        $opexQuery = CashTransaction::keluar()->whereDoesntHave('account', function($q) {
+            $q->where('kode_akun', '6-1000'); // Exclude manual HPP 6-1000 from cash out OPEX
         });
 
         if ($branchId && $branchId !== 'all') {
@@ -64,10 +64,16 @@ class OwnerController extends Controller
             $opexQuery->whereMonth('tanggal', $month)->whereYear('tanggal', $year);
         } // 'all' has no constraints
 
-        $totalSales = (clone $query)->sum('total_price');
-        $totalHpp = (clone $query)->sum('total_hpp');
+        // Synchronized Financial Calculations:
+        // 1. Omzet: Daily / Period POS Revenue
+        $totalSales = (float) (clone $query)->sum('total_price');
+        // 2. HPP: Material Cost + Click Charge per product item
+        $totalHpp = (float) (clone $query)->sum('total_hpp');
+        // 3. Gross Profit: Omzet - HPP
         $grossProfit = $totalSales - $totalHpp;
-        $totalOpex = (clone $opexQuery)->sum('jumlah');
+        // 4. OPEX: Cash Outflows (Kas Keluar)
+        $totalOpex = (float) (clone $opexQuery)->sum('jumlah');
+        // 5. Net Profit: Gross Profit - OPEX
         $netProfit = $grossProfit - $totalOpex;
 
         $omsetBase = (float) $totalSales;
@@ -79,7 +85,7 @@ class OwnerController extends Controller
         $totalTransactionsCount = (clone $query)->count();
         $totalMaterialsCount = (clone $materialQuery)->count();
         $lowStockCount = (clone $materialQuery)->where('stock_qty', '<=', 5)->count();
-        $pendingPOCount = (clone $purchaseQuery)->whereIn('status', ['waiting_approval', 'pending_verification'])->count();
+        $pendingPOCount = (clone $purchaseQuery)->whereIn('status', ['waiting_approval', 'pending_verification', 'waiting_owner_approval'])->count();
 
         // Payment Breakdown (including split payments)
         $directCash = (clone $query)->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
@@ -108,7 +114,7 @@ class OwnerController extends Controller
             } elseif ($timeframe === 'year' || $timeframe === '1Y') {
                 $bQuery->whereYear('created_at', $year);
             }
-            $sales = $bQuery->sum('total_price');
+            $sales = (float) $bQuery->sum('total_price');
             return [
                 'name' => $branch->nama_cabang,
                 'sales' => $sales,
@@ -159,6 +165,24 @@ class OwnerController extends Controller
                 $chartVolume[] = $volVal;
                 $chartNet[] = $salesVal;
             }
+        } elseif ($timeframe === 'month' || $timeframe === '1M') {
+            $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+            for ($d = 1; $d <= $daysInMonth; $d++) {
+                $targetDate = Carbon::createFromDate($year, $month, $d);
+                $chartLabels[] = sprintf('%02d %s', $d, $targetDate->translatedFormat('M'));
+
+                $dTrx = Transaction::whereDate('created_at', $targetDate)
+                    ->whereNotIn('order_status', ['draft', 'cancelled']);
+                if ($branchId && $branchId !== 'all') {
+                    $dTrx->where('branch_id', $branchId);
+                }
+
+                $salesVal = (float) $dTrx->sum('total_price');
+                $volVal = (int) $dTrx->count();
+                $chartSales[] = $salesVal;
+                $chartVolume[] = $volVal;
+                $chartNet[] = $salesVal;
+            }
         } elseif ($timeframe === 'year' || $timeframe === '1Y') {
             for ($m = 1; $m <= 12; $m++) {
                 $chartLabels[] = Carbon::create($year, $m, 1)->translatedFormat('M');
@@ -177,7 +201,7 @@ class OwnerController extends Controller
                 $chartNet[] = $salesVal;
             }
         } else {
-            // Default: Month (30/31 days or past 6 months overview)
+            // Default / 'all': 6 months overview
             for ($i = 5; $i >= 0; $i--) {
                 $date = Carbon::now()->subMonths($i);
                 $chartLabels[] = $date->translatedFormat('F Y');
@@ -196,8 +220,8 @@ class OwnerController extends Controller
 
                 $mSales = (float) $mSalesQuery->sum('total_price');
                 $mHpp = (float) $mSalesQuery->sum('total_hpp');
-                $mOpex = (float) $mOpexQuery->whereHas('account', function($q) {
-                    $q->where('tipe', 'beban')->where('kode_akun', '!=', '6-1000');
+                $mOpex = (float) $mOpexQuery->whereDoesntHave('account', function($q) {
+                    $q->where('kode_akun', '6-1000');
                 })->sum('jumlah');
 
                 $chartSales[] = $mSales;

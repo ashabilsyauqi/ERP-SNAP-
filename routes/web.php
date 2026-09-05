@@ -120,6 +120,16 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/sales', [\App\Http\Controllers\Report\SalesReportController::class, 'index'])->name('sales');
             Route::get('/expenses', [\App\Http\Controllers\Report\ExpenseReportController::class, 'index'])->name('expenses');
             Route::get('/profit-loss', [\App\Http\Controllers\Report\ProfitLossController::class, 'index'])->name('profit-loss');
+            Route::get('/profit-loss/export-pdf', [\App\Http\Controllers\Report\ProfitLossController::class, 'exportPdf'])->name('profit-loss.export-pdf');
+            Route::post('/profit-loss/archive', [\App\Http\Controllers\Report\ProfitLossController::class, 'storeArchive'])->name('profit-loss.archive.store');
+            Route::get('/profit-loss/archive/{id}/download', [\App\Http\Controllers\Report\ProfitLossController::class, 'downloadArchive'])->name('profit-loss.archive.download');
+            Route::delete('/profit-loss/archive/{id}', [\App\Http\Controllers\Report\ProfitLossController::class, 'destroyArchive'])->name('profit-loss.archive.destroy');
+
+            Route::get('/product-sales', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'index'])->name('product-sales');
+            Route::get('/product-sales/export-pdf', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'exportPdf'])->name('product-sales.export-pdf');
+            Route::post('/product-sales/archive', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'storeArchive'])->name('product-sales.archive.store');
+            Route::get('/product-sales/archive/{id}/download', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'downloadArchive'])->name('product-sales.archive.download');
+            Route::delete('/product-sales/archive/{id}', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'destroyArchive'])->name('product-sales.archive.destroy');
         });
     });
 

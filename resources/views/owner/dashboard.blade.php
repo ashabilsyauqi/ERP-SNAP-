@@ -84,80 +84,129 @@
         $calcNetPct = $netPct ?? ($omsetBase > 0 ? round((($netProfit ?? 0) / $omsetBase) * 100, 1) : 0);
     @endphp
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
         <!-- Card 1: Revenue -->
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #1e40af !important;">
+        <a href="{{ route('sales.index') }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #1e40af !important;" title="Klik untuk membuka Laporan & Riwayat Penjualan POS">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">Total Omset</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate group-hover:text-blue-700">Total Omset</p>
                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 flex-shrink-0">100%</span>
                 </div>
-                <h4 class="text-base font-extrabold text-slate-900 font-mono truncate mb-0">Rp {{ number_format($totalSales, 0, ',', '.') }}</h4>
-                <small class="text-slate-400 text-[10px] block truncate mt-0.5">{{ $totalTransactionsCount }} Transaksi tercatat</small>
+                <h4 class="text-base font-extrabold text-slate-900 font-mono truncate mb-0 group-hover:text-blue-900">Rp {{ number_format($totalSales, 0, ',', '.') }}</h4>
+                <div class="flex items-center justify-between mt-1">
+                    <small class="text-slate-400 text-[10px] truncate">{{ $totalTransactionsCount }} Transaksi tercatat</small>
+                    <span class="text-[9px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">Buka &rarr;</span>
+                </div>
             </div>
-            <div class="p-2.5 bg-blue-50 text-blue-700 rounded-xl flex-shrink-0">
+            <div class="p-2.5 bg-blue-50 text-blue-700 rounded-xl flex-shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                 <i class="fa-solid fa-coins text-lg"></i>
             </div>
-        </div>
+        </a>
 
         <!-- Card 2: HPP -->
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #f59e0b !important;">
+        <a href="{{ route('reports.profit-loss') }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #f59e0b !important;" title="Klik untuk rincian HPP Bahan & Click Charge di Laporan Laba Rugi">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">HPP (COGS)</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate group-hover:text-amber-700">HPP (COGS)</p>
                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 flex-shrink-0">{{ $calcHppPct }}%</span>
                 </div>
-                <h4 class="text-base font-extrabold text-slate-900 font-mono truncate mb-0">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h4>
-                <small class="text-slate-400 text-[10px] block truncate mt-0.5">Biaya modal bahan cetak</small>
+                <h4 class="text-base font-extrabold text-slate-900 font-mono truncate mb-0 group-hover:text-amber-900">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h4>
+                <div class="flex items-center justify-between mt-1">
+                    <small class="text-slate-400 text-[10px] truncate">Biaya bahan & click charge</small>
+                    <span class="text-[9px] font-bold text-amber-600 opacity-0 group-hover:opacity-100 transition-opacity">Rincian &rarr;</span>
+                </div>
             </div>
-            <div class="p-2.5 bg-amber-50 text-amber-700 rounded-xl flex-shrink-0">
+            <div class="p-2.5 bg-amber-50 text-amber-700 rounded-xl flex-shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
                 <i class="fa-solid fa-boxes-packing text-lg"></i>
             </div>
-        </div>
+        </a>
 
         <!-- Card 3: Gross Profit -->
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #059669 !important;">
+        <a href="{{ route('reports.profit-loss') }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #059669 !important;" title="Klik untuk melihat Laporan Laba Kotor & Laba Rugi">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">Gross Profit</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate group-hover:text-emerald-700">Gross Profit</p>
                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 flex-shrink-0">{{ $calcGrossPct }}%</span>
                 </div>
-                <h4 class="text-base font-extrabold text-emerald-700 font-mono truncate mb-0">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h4>
-                <small class="text-slate-400 text-[10px] block truncate mt-0.5">Omset &minus; HPP</small>
+                <h4 class="text-base font-extrabold text-emerald-700 font-mono truncate mb-0 group-hover:text-emerald-800">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h4>
+                <div class="flex items-center justify-between mt-1">
+                    <small class="text-slate-400 text-[10px] truncate">Omset &minus; Total HPP</small>
+                    <span class="text-[9px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">Buka &rarr;</span>
+                </div>
             </div>
-            <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl flex-shrink-0">
+            <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                 <i class="fa-solid fa-chart-line text-lg"></i>
             </div>
-        </div>
+        </a>
 
         <!-- Card 4: OPEX -->
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #e11d48 !important;">
+        <a href="{{ route('kas-keluar.index') }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #e11d48 !important;" title="Klik untuk melihat Daftar & Bukti Kas Keluar (Beban Operasional)">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">OPEX (Beban)</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate group-hover:text-rose-700">OPEX (Beban)</p>
                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 flex-shrink-0">{{ $calcOpexPct }}%</span>
                 </div>
-                <h4 class="text-base font-extrabold text-rose-700 font-mono truncate mb-0">Rp {{ number_format($totalOpex, 0, ',', '.') }}</h4>
-                <small class="text-slate-400 text-[10px] block truncate mt-0.5">Kas keluar operasional</small>
+                <h4 class="text-base font-extrabold text-rose-700 font-mono truncate mb-0 group-hover:text-rose-800">Rp {{ number_format($totalOpex, 0, ',', '.') }}</h4>
+                <div class="flex items-center justify-between mt-1">
+                    <small class="text-slate-400 text-[10px] truncate">Pengeluaran kas keluar</small>
+                    <span class="text-[9px] font-bold text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity">Kas Keluar &rarr;</span>
+                </div>
             </div>
-            <div class="p-2.5 bg-rose-50 text-rose-700 rounded-xl flex-shrink-0">
+            <div class="p-2.5 bg-rose-50 text-rose-700 rounded-xl flex-shrink-0 group-hover:bg-rose-600 group-hover:text-white transition-colors">
                 <i class="fa-solid fa-receipt text-lg"></i>
             </div>
-        </div>
+        </a>
 
         <!-- Card 5: Net Profit -->
-        <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #6366f1 !important;">
+        <a href="{{ route('reports.profit-loss') }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #6366f1 !important;" title="Klik untuk membuka Laporan Laba Rugi Komprehensif & Unduh PDF">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
-                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate">Net Profit</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate group-hover:text-indigo-700">Net Profit</p>
                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold {{ $netProfit >= 0 ? 'bg-indigo-50 text-indigo-800' : 'bg-rose-50 text-rose-800' }} flex-shrink-0">{{ $calcNetPct }}%</span>
                 </div>
-                <h4 class="text-base font-extrabold font-mono truncate mb-0 {{ $netProfit >= 0 ? 'text-indigo-900' : 'text-rose-700' }}">Rp {{ number_format($netProfit, 0, ',', '.') }}</h4>
-                <small class="text-slate-400 text-[10px] block truncate mt-0.5">Laba bersih final</small>
+                <h4 class="text-base font-extrabold font-mono truncate mb-0 {{ $netProfit >= 0 ? 'text-indigo-900 group-hover:text-indigo-950' : 'text-rose-700 group-hover:text-rose-800' }}">Rp {{ number_format($netProfit, 0, ',', '.') }}</h4>
+                <div class="flex items-center justify-between mt-1">
+                    <small class="text-slate-400 text-[10px] truncate">Gross &minus; OPEX</small>
+                    <span class="text-[9px] font-bold text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity">PDF & Arsip &rarr;</span>
+                </div>
             </div>
-            <div class="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl flex-shrink-0">
+            <div class="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl flex-shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                 <i class="fa-solid fa-wallet text-lg"></i>
             </div>
+        </a>
+    </div>
+
+    <!-- Quick Operational Reference Links Bar -->
+    <div class="bg-slate-50 rounded-xl p-2 border border-slate-200 mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap text-xs">
+            <span class="text-slate-500 font-bold uppercase text-[10px] tracking-wider me-1">
+                <i class="fa-solid fa-link text-blue-600 me-1"></i> Tautan Modul:
+            </span>
+            <a href="{{ route('sales.index') }}" class="badge bg-white text-slate-700 border hover:border-blue-400 hover:text-blue-700 py-1.5 px-2.5 font-bold text-decoration-none transition">
+                <i class="fa-solid fa-cart-shopping text-blue-600 me-1"></i> Penjualan POS ({{ $totalTransactionsCount }})
+            </a>
+            <a href="{{ route('stock.index') }}" class="badge bg-white text-slate-700 border hover:border-amber-400 hover:text-amber-800 py-1.5 px-2.5 font-bold text-decoration-none transition">
+                <i class="fa-solid fa-boxes-stacked text-amber-600 me-1"></i> Stok ({{ $totalMaterialsCount }} Bahan @if($lowStockCount > 0)<span class="text-rose-600 ms-0.5">• {{ $lowStockCount }} Menipis</span>@endif)
+            </a>
+            <a href="{{ route('purchasing.plans.index') }}" class="badge bg-white text-slate-700 border hover:border-purple-400 hover:text-purple-800 py-1.5 px-2.5 font-bold text-decoration-none transition">
+                <i class="fa-solid fa-clipboard-check text-purple-600 me-1"></i> Pengadaan PO ({{ $pendingPOCount }} ACC)
+            </a>
+            <a href="{{ route('daily-closing.index') }}" class="badge bg-white text-slate-700 border hover:border-emerald-400 hover:text-emerald-800 py-1.5 px-2.5 font-bold text-decoration-none transition">
+                <i class="fa-solid fa-file-invoice-dollar text-emerald-600 me-1"></i> Tutup Kas Harian
+            </a>
+            <a href="{{ route('dashboard') }}" class="badge bg-white text-slate-700 border hover:border-blue-400 hover:text-blue-800 py-1.5 px-2.5 font-bold text-decoration-none transition">
+                <i class="fa-solid fa-building-columns text-blue-600 me-1"></i> Jurnal Kas & Saldo
+            </a>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ route('reports.product-sales') }}" class="btn btn-sm btn-outline-primary rounded-lg py-1 px-2.5 text-xs font-bold text-decoration-none d-inline-flex align-items-center gap-1.5 bg-white shadow-xs" title="Laporan Produk Terjual, Pemakaian Bahan & Arsip Bulanan">
+                <i class="fa-solid fa-boxes-stacked text-blue-600"></i>
+                <span>Produk & Bahan &rarr;</span>
+            </a>
+            <a href="{{ route('reports.profit-loss') }}" class="btn btn-sm btn-primary rounded-lg py-1 px-3 text-xs font-bold text-decoration-none d-inline-flex align-items-center gap-1.5 shadow-xs">
+                <i class="fa-solid fa-file-pdf"></i>
+                <span>Laba Rugi & Arsip PDF &rarr;</span>
+            </a>
         </div>
     </div>
 </div>
@@ -212,18 +261,18 @@
             <div id="payment-donut-chart" class="w-100 flex-grow-1 d-flex align-items-center justify-content-center" style="min-height: 240px;"></div>
 
             <div class="grid grid-cols-3 gap-2 text-center text-xs pt-3 border-top mt-2">
-                <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-200">
-                    <span class="text-[9px] font-bold text-emerald-800 uppercase block">Cash</span>
+                <a href="{{ route('sales.index', ['payment_method' => 'Cash']) }}" class="p-2 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 hover:shadow-xs transition text-decoration-none group d-block" title="Klik untuk memfilter transaksi Cash (Tunai)">
+                    <span class="text-[9px] font-bold text-emerald-800 uppercase block group-hover:underline">Cash <i class="fa-solid fa-arrow-up-right-from-square text-[8px] ms-0.5"></i></span>
                     <span class="font-mono font-bold text-emerald-950 text-[11px] block mt-0.5">Rp {{ number_format($cashSales, 0, ',', '.') }}</span>
-                </div>
-                <div class="p-2 rounded-xl bg-blue-50 border border-blue-200">
-                    <span class="text-[9px] font-bold text-blue-800 uppercase block">QRIS</span>
+                </a>
+                <a href="{{ route('sales.index', ['payment_method' => 'QRIS']) }}" class="p-2 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:shadow-xs transition text-decoration-none group d-block" title="Klik untuk memfilter transaksi QRIS">
+                    <span class="text-[9px] font-bold text-blue-800 uppercase block group-hover:underline">QRIS <i class="fa-solid fa-arrow-up-right-from-square text-[8px] ms-0.5"></i></span>
                     <span class="font-mono font-bold text-blue-950 text-[11px] block mt-0.5">Rp {{ number_format($qrisSales, 0, ',', '.') }}</span>
-                </div>
-                <div class="p-2 rounded-xl bg-amber-50 border border-amber-200">
-                    <span class="text-[9px] font-bold text-amber-800 uppercase block">Transfer</span>
+                </a>
+                <a href="{{ route('sales.index', ['payment_method' => 'Transfer']) }}" class="p-2 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 hover:shadow-xs transition text-decoration-none group d-block" title="Klik untuk memfilter transaksi Transfer Bank">
+                    <span class="text-[9px] font-bold text-amber-800 uppercase block group-hover:underline">Transfer <i class="fa-solid fa-arrow-up-right-from-square text-[8px] ms-0.5"></i></span>
                     <span class="font-mono font-bold text-amber-950 text-[11px] block mt-0.5">Rp {{ number_format($transferSales, 0, ',', '.') }}</span>
-                </div>
+                </a>
             </div>
         </div>
     </div>

@@ -45,34 +45,34 @@
 
     <!-- Top Stat Widgets -->
     <div class="d-flex align-items-center gap-2 mb-3 overflow-x-auto pb-1">
-        <div class="o_stat_button bg-white shadow-sm">
+        <a href="{{ route('reports.sales') }}" class="o_stat_button bg-white shadow-sm text-decoration-none hover:shadow hover:border-blue-300 transition" title="Klik untuk melihat Laporan Penjualan">
             <i class="fa-solid fa-cart-shopping text-blue-600 fs-5"></i>
             <div>
                 <div class="o_stat_value text-blue-800">Rp {{ number_format($totalPenjualan, 0, ',', '.') }}</div>
-                <div class="o_stat_text">Penjualan Bulan Ini</div>
+                <div class="o_stat_text">Penjualan Bulan Ini &rarr;</div>
             </div>
-        </div>
-        <div class="o_stat_button bg-white shadow-sm">
+        </a>
+        <a href="{{ route('kas-masuk.index') }}" class="o_stat_button bg-white shadow-sm text-decoration-none hover:shadow hover:border-emerald-300 transition" title="Klik untuk melihat Daftar Kas Masuk">
             <i class="fa-solid fa-circle-arrow-down text-emerald-600 fs-5"></i>
             <div>
                 <div class="o_stat_value text-emerald-700">Rp {{ number_format($totalKasMasuk, 0, ',', '.') }}</div>
-                <div class="o_stat_text">Total Kas Masuk</div>
+                <div class="o_stat_text">Total Kas Masuk &rarr;</div>
             </div>
-        </div>
-        <div class="o_stat_button bg-white shadow-sm">
+        </a>
+        <a href="{{ route('kas-keluar.index') }}" class="o_stat_button bg-white shadow-sm text-decoration-none hover:shadow hover:border-rose-300 transition" title="Klik untuk melihat Daftar Kas Keluar">
             <i class="fa-solid fa-circle-arrow-up text-rose-500 fs-5"></i>
             <div>
                 <div class="o_stat_value text-rose-600">Rp {{ number_format($totalKasKeluar, 0, ',', '.') }}</div>
-                <div class="o_stat_text">Total Kas Keluar</div>
+                <div class="o_stat_text">Total Kas Keluar &rarr;</div>
             </div>
-        </div>
-        <div class="o_stat_button bg-white shadow-sm">
+        </a>
+        <a href="{{ route('reports.cash-balance') }}" class="o_stat_button bg-white shadow-sm text-decoration-none hover:shadow hover:border-blue-300 transition" title="Klik untuk melihat Laporan Saldo Kas & Bank">
             <i class="fa-solid fa-vault text-blue-600 fs-5"></i>
             <div>
                 <div class="o_stat_value text-blue-900">Rp {{ number_format($saldoKas, 0, ',', '.') }}</div>
-                <div class="o_stat_text">Saldo Kas Aktif</div>
+                <div class="o_stat_text">Saldo Kas Aktif &rarr;</div>
             </div>
-        </div>
+        </a>
     </div>
 
     <!-- Journal Overview Cards -->
