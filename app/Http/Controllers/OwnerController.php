@@ -132,25 +132,31 @@ class OwnerController extends Controller
         $chartNet = [];
 
         if ($timeframe === 'today' || $timeframe === '1D') {
+            // Aggregate all transactions for today in 1 query
+            $todayTransactions = (clone $query)->get(['total_price', 'created_at']);
+
+            $hourlyData = [];
+            // Initialize standard business hours (08:00 - 22:00)
             for ($h = 8; $h <= 22; $h++) {
-                $timeSlot = sprintf('%02d:00', $h);
-                $chartLabels[] = $timeSlot;
+                $hourlyData[$h] = ['sales' => 0.0, 'volume' => 0];
+            }
 
-                $startTime = Carbon::today()->setTime($h, 0, 0);
-                $endTime = Carbon::today()->setTime($h, 59, 59);
-
-                $hTrx = Transaction::whereBetween('created_at', [$startTime, $endTime])
-                    ->whereNotIn('order_status', ['draft', 'cancelled']);
-
-                if ($branchId && $branchId !== 'all') {
-                    $hTrx->where('branch_id', $branchId);
+            foreach ($todayTransactions as $trx) {
+                $h = (int) $trx->created_at->format('G');
+                if (!isset($hourlyData[$h])) {
+                    $hourlyData[$h] = ['sales' => 0.0, 'volume' => 0];
                 }
+                $hourlyData[$h]['sales'] += (float) $trx->total_price;
+                $hourlyData[$h]['volume'] += 1;
+            }
 
-                $salesVal = (float) $hTrx->sum('total_price');
-                $volVal = (int) $hTrx->count();
-                $chartSales[] = $salesVal;
-                $chartVolume[] = $volVal;
-                $chartNet[] = $salesVal;
+            ksort($hourlyData);
+
+            foreach ($hourlyData as $hour => $data) {
+                $chartLabels[] = sprintf('%02d:00', $hour);
+                $chartSales[] = $data['sales'];
+                $chartVolume[] = $data['volume'];
+                $chartNet[] = $data['sales'];
             }
         } elseif ($timeframe === '7days' || $timeframe === '7D') {
             for ($d = 6; $d >= 0; $d--) {
