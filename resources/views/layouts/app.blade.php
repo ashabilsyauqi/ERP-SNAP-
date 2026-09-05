@@ -772,6 +772,12 @@
                 </div>
                 @endif
 
+                <!-- Live Real-Time Clock (WIB / Bekasi-Jakarta) -->
+                <div class="d-none d-md-flex align-items-center gap-1.5 px-2.5 py-1 bg-white/10 hover:bg-white/15 rounded-lg text-white text-xs font-mono select-none transition me-1" title="Waktu Nyata Sistem (WIB - Asia/Jakarta)">
+                    <i class="fa-regular fa-clock text-amber-300 text-[11px] animate-pulse"></i>
+                    <span id="system-live-clock" class="font-bold tracking-wide">--:--:-- WIB</span>
+                </div>
+
                 <!-- Bladewind Bell Notifications -->
                 <div class="text-white relative mx-1">
                     <x-bladewind::bell has_unread="true" />
@@ -1902,6 +1908,23 @@
             `);
             printWindow.document.close();
         };
+
+        // Real-Time System Clock (WIB - Asia/Jakarta)
+        function updateSystemLiveClock() {
+            const el = document.getElementById('system-live-clock');
+            if (!el) return;
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('id-ID', {
+                timeZone: 'Asia/Jakarta',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(/\./g, ':');
+            el.textContent = `${timeStr} WIB`;
+        }
+        updateSystemLiveClock();
+        setInterval(updateSystemLiveClock, 1000);
     </script>
 </body>
 </html>
