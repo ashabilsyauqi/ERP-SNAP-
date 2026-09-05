@@ -28,6 +28,8 @@ class ProfitLossController extends Controller
     {
         $user = Auth::user();
         $periodType = $request->input('period_type', 'monthly'); // daily, monthly, yearly, custom
+        $month = (int) $request->input('month', Carbon::now()->month);
+        $year = (int) $request->input('year', Carbon::now()->year);
         
         $cashQuery = CashTransaction::with('account');
         $salesQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
@@ -186,7 +188,7 @@ class ProfitLossController extends Controller
             'labaKotor',
             'bebanOperasional', 'totalBebanOperasional',
             'labaBersih',
-            'periodType', 'periodLabel', 'startDate', 'endDate',
+            'periodType', 'periodLabel', 'startDate', 'endDate', 'month', 'year',
             'branches', 'branchId', 'branchName'
         );
     }

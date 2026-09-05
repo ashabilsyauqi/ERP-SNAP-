@@ -19,6 +19,8 @@
     @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin())
     <div class="bg-white border border-slate-200 rounded-2xl mb-3 p-2.5 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2">
         <form method="GET" action="{{ route('dashboard') }}" id="finance-branch-form" class="d-flex align-items-center gap-2 mb-0">
+            <input type="hidden" name="month" value="{{ $month ?? date('n') }}">
+            <input type="hidden" name="year" value="{{ $year ?? date('Y') }}">
             <label class="fw-bold text-slate-700 text-xs d-flex align-items-center mb-0">
                 <i class="fa-solid fa-building text-blue-600 me-1.5"></i> Cabang:
             </label>
@@ -43,13 +45,21 @@
     </div>
     @endif
 
+    <!-- Siklus Bulanan Kalender (Januari - Desember) Navigation -->
+    @include('partials.monthly-lifecycle-bar', [
+        'selectedMonth' => $month ?? date('n'),
+        'selectedYear' => $year ?? date('Y'),
+        'route' => 'dashboard',
+        'extraParams' => ['branch_id' => $branchId ?? 'all']
+    ])
+
     <!-- Top Stat Widgets -->
     <div class="d-flex align-items-center gap-2 mb-3 overflow-x-auto pb-1">
         <a href="{{ route('reports.sales') }}" class="o_stat_button bg-white shadow-sm text-decoration-none hover:shadow hover:border-blue-300 transition" title="Klik untuk melihat Laporan Penjualan">
             <i class="fa-solid fa-cart-shopping text-blue-600 fs-5"></i>
             <div>
                 <div class="o_stat_value text-blue-800">Rp {{ number_format($totalPenjualan, 0, ',', '.') }}</div>
-                <div class="o_stat_text">Penjualan Bulan Ini &rarr;</div>
+                <div class="o_stat_text">Penjualan {{ \Carbon\Carbon::createFromDate($year ?? date('Y'), $month ?? date('n'), 1)->translatedFormat('F Y') }} &rarr;</div>
             </div>
         </a>
         <a href="{{ route('kas-masuk.index') }}" class="o_stat_button bg-white shadow-sm text-decoration-none hover:shadow hover:border-emerald-300 transition" title="Klik untuk melihat Daftar Kas Masuk">

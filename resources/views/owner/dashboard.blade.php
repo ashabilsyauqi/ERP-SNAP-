@@ -41,6 +41,8 @@
             <!-- Trading Timeframe Switcher Tabs (1D, 7D, 1M, 1Y, ALL) -->
             <div class="d-flex align-items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                 <input type="hidden" name="timeframe" id="timeframe-input" value="{{ $timeframe ?? 'month' }}">
+                <input type="hidden" name="month" id="month-input" value="{{ $month ?? date('n') }}">
+                <input type="hidden" name="year" id="year-input" value="{{ $year ?? date('Y') }}">
                 
                 <button type="button" onclick="setTimeframe('today')" class="btn btn-sm text-xs px-2.5 py-1 rounded-lg font-bold transition {{ ($timeframe ?? '') === 'today' || ($timeframe ?? '') === '1D' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
                     1D (Hari Ini)
@@ -52,7 +54,7 @@
                     1M (Bulan Ini)
                 </button>
                 <button type="button" onclick="setTimeframe('year')" class="btn btn-sm text-xs px-2.5 py-1 rounded-lg font-bold transition {{ ($timeframe ?? '') === 'year' || ($timeframe ?? '') === '1Y' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
-                    1Y (Tahun Ini)
+                    1Y (Siklus 12 Bulan)
                 </button>
                 <button type="button" onclick="setTimeframe('all')" class="btn btn-sm text-xs px-2.5 py-1 rounded-lg font-bold transition {{ ($timeframe ?? '') === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900' }}">
                     All
@@ -73,6 +75,16 @@
         </div>
     </form>
 </div>
+
+<!-- Siklus Bulanan Kalender (Januari - Desember) Navigation -->
+@include('partials.monthly-lifecycle-bar', [
+    'selectedMonth' => $month ?? date('n'),
+    'selectedYear' => $year ?? date('Y'),
+    'timeframe' => $timeframe ?? 'month',
+    'showAllYear' => true,
+    'route' => 'owner.dashboard',
+    'extraParams' => ['branch_id' => $branchId ?? 'all']
+])
 
 <!-- Financial KPI Grid (5 Columns) with Percentages -->
 <div class="o_form_sheet">
@@ -223,7 +235,20 @@
                     </div>
                     <div>
                         <h6 class="mb-0 font-extrabold text-slate-900 text-sm">Grafik Performa Penjualan (Live Chart)</h6>
-                        <span class="text-[10px] text-slate-400 font-semibold">Tampilan Omset & Volume Transaksi</span>
+                        <span class="text-[10px] text-blue-700 font-bold">
+                            <i class="fa-solid fa-calendar-day me-1"></i>
+                            @if(($timeframe ?? '') === 'today' || ($timeframe ?? '') === '1D')
+                                Hari Ini ({{ \Carbon\Carbon::today()->translatedFormat('d F Y') }})
+                            @elseif(($timeframe ?? '') === '7days' || ($timeframe ?? '') === '7D')
+                                7 Hari Terakhir
+                            @elseif(($timeframe ?? '') === 'year' || ($timeframe ?? '') === '1Y')
+                                Siklus Tahunan (Januari s/d Desember {{ $year ?? date('Y') }})
+                            @elseif(($timeframe ?? 'month') === 'month' || ($timeframe ?? '') === '1M')
+                                Bulan {{ \Carbon\Carbon::createFromDate($year ?? date('Y'), $month ?? date('n'), 1)->translatedFormat('F Y') }} (1 s/d {{ \Carbon\Carbon::createFromDate($year ?? date('Y'), $month ?? date('n'), 1)->endOfMonth()->format('d') }})
+                            @else
+                                Rentang Keseluruhan
+                            @endif
+                        </span>
                     </div>
                 </div>
 

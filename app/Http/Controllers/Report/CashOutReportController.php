@@ -43,6 +43,9 @@ class CashOutReportController extends Controller
         // Date filter handling
         $isAllTime = $request->boolean('all_time') || $request->input('period') === 'all';
         $isExplicitFilterAction = $request->has('filter');
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+        $timeframe = $request->input('timeframe', 'month');
 
         $startDate = null;
         $endDate = null;
@@ -61,14 +64,18 @@ class CashOutReportController extends Controller
         } elseif ($request->filled('end_date')) {
             $endDate = $request->input('end_date');
             $query->where('tanggal', '<=', $endDate);
+        } elseif ($timeframe === 'year' || $timeframe === '1Y') {
+            $startDate = \Carbon\Carbon::createFromDate($year, 1, 1)->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromDate($year, 12, 31)->endOfMonth()->toDateString();
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
         } elseif ($isExplicitFilterAction) {
             // User intentionally cleared dates and clicked filter -> show all
             $startDate = null;
             $endDate = null;
         } else {
-            // Default initial load: current month to keep page snappy and clean
-            $startDate = now()->startOfMonth()->toDateString();
-            $endDate = now()->toDateString();
+            // Default: calendar month (startOfMonth to endOfMonth)
+            $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
             $query->whereBetween('tanggal', [$startDate, $endDate]);
         }
 
@@ -100,7 +107,10 @@ class CashOutReportController extends Controller
             'startDate', 
             'endDate', 
             'branchId',
-            'isAllTime'
+            'isAllTime',
+            'month',
+            'year',
+            'timeframe'
         ));
     }
 }

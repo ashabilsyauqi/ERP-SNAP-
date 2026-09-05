@@ -480,7 +480,17 @@ class PosController extends Controller
             $transaction->remaining_amount = $remainingAmount;
             $transaction->payment_status = $paymentStatus;
             $transaction->order_status = $orderStatus;
+            // Record official transaction date at checkout time (e.g. Draft created 4th, settled 6th -> recorded on 6th)
+            $transaction->created_at = now();
+            $transaction->updated_at = now();
             $transaction->save();
+
+            // Also update details created_at to checkout time
+            foreach ($transaction->transactionDetails as $detail) {
+                $detail->created_at = now();
+                $detail->updated_at = now();
+                $detail->save();
+            }
 
             // Record cash inflow
             if ($paidAmount > 0) {

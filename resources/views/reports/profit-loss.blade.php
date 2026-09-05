@@ -56,6 +56,15 @@
 
     <!-- Filter Toolbar -->
     <div class="o_form_sheet mb-4 p-3 bg-white print:hidden">
+        <!-- Siklus Bulanan Kalender (Januari - Desember) Navigation -->
+        @include('partials.monthly-lifecycle-bar', [
+            'selectedMonth' => $month ?? request('month', date('n')),
+            'selectedYear' => $year ?? request('year', date('Y')),
+            'showAllYear' => true,
+            'route' => 'reports.profit-loss',
+            'extraParams' => ['period_type' => 'monthly', 'branch_id' => $branchId ?? 'all']
+        ])
+
         <form method="GET" action="{{ route('reports.profit-loss') }}" class="row g-2 align-items-end" id="filter-form">
             <div class="col-12 col-sm-6 col-md-3">
                 <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">

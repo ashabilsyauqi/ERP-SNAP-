@@ -38,8 +38,26 @@ class ExpenseReportController extends Controller
             $query->where('branch_id', $branchId);
         }
 
+        $month = (int) $request->input('month', \Carbon\Carbon::now()->month);
+        $year = (int) $request->input('year', \Carbon\Carbon::now()->year);
+        $timeframe = $request->input('timeframe', 'month');
+
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+            $startDate = $request->start_date;
+            $endDate = $request->end_date;
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
+        } elseif ($timeframe === 'year' || $timeframe === '1Y') {
+            $startDate = \Carbon\Carbon::createFromDate($year, 1, 1)->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromDate($year, 12, 31)->endOfMonth()->toDateString();
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
+        } elseif ($timeframe === 'all') {
+            $startDate = null;
+            $endDate = null;
+        } else {
+            // Default: current calendar month (startOfMonth s/d endOfMonth)
+            $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
         }
 
         $allExpenses = $query->get();
@@ -82,6 +100,6 @@ class ExpenseReportController extends Controller
 
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        return view('reports.expenses', compact('expenses', 'chartData', 'totalExpenses', 'branches', 'branchId'));
+        return view('reports.expenses', compact('expenses', 'chartData', 'totalExpenses', 'branches', 'branchId', 'startDate', 'endDate', 'month', 'year', 'timeframe'));
     }
 }

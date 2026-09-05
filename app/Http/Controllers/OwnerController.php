@@ -57,11 +57,15 @@ class OwnerController extends Controller
             $query->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay());
             $opexQuery->where('tanggal', '>=', Carbon::now()->subDays(6)->startOfDay());
         } elseif ($timeframe === 'year' || $timeframe === '1Y') {
-            $query->whereYear('created_at', $year);
-            $opexQuery->whereYear('tanggal', $year);
+            $startDate = Carbon::createFromDate($year, 1, 1)->startOfMonth();
+            $endDate = Carbon::createFromDate($year, 12, 31)->endOfMonth();
+            $query->whereBetween('created_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
+            $opexQuery->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()]);
         } elseif ($timeframe === 'month' || $timeframe === '1M') {
-            $query->whereMonth('created_at', $month)->whereYear('created_at', $year);
-            $opexQuery->whereMonth('tanggal', $month)->whereYear('tanggal', $year);
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+            $query->whereBetween('created_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
+            $opexQuery->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()]);
         } // 'all' has no constraints
 
         // Synchronized Financial Calculations:

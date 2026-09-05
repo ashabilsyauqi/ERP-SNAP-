@@ -49,8 +49,11 @@ class SalesController extends Controller
             $query->whereNotIn('order_status', ['draft', 'cancelled']);
         }
 
-        // Period filter (today, yesterday, 7days, this_month, all, or custom date range)
+        // Period filter (today, yesterday, 7days, this_month, monthly, all, or custom date range)
         $period = $request->input('period', 'today');
+        $selectedMonth = (int) $request->input('month', now()->month);
+        $selectedYear = (int) $request->input('year', now()->year);
+
         if ($request->filled('date_from') && $request->filled('date_to')) {
             $query->whereDate('created_at', '>=', $request->date_from)
                   ->whereDate('created_at', '<=', $request->date_to);
@@ -61,9 +64,10 @@ class SalesController extends Controller
             $query->whereDate('created_at', now()->subDay()->toDateString());
         } elseif ($period === '7days') {
             $query->where('created_at', '>=', now()->subDays(6)->startOfDay());
-        } elseif ($period === 'this_month') {
-            $query->whereMonth('created_at', now()->month)
-                  ->whereYear('created_at', now()->year);
+        } elseif ($period === 'this_month' || $period === 'monthly') {
+            $startOfCalendarMonth = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->startOfMonth();
+            $endOfCalendarMonth = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->endOfMonth();
+            $query->whereBetween('created_at', [$startOfCalendarMonth->copy()->startOfDay(), $endOfCalendarMonth->copy()->endOfDay()]);
         }
 
         // Payment Method Filter
@@ -91,9 +95,10 @@ class SalesController extends Controller
             $summaryBaseQuery->whereDate('created_at', now()->subDay()->toDateString());
         } elseif ($period === '7days') {
             $summaryBaseQuery->where('created_at', '>=', now()->subDays(6)->startOfDay());
-        } elseif ($period === 'this_month') {
-            $summaryBaseQuery->whereMonth('created_at', now()->month)
-                             ->whereYear('created_at', now()->year);
+        } elseif ($period === 'this_month' || $period === 'monthly') {
+            $startOfCalendarMonth = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->startOfMonth();
+            $endOfCalendarMonth = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->endOfMonth();
+            $summaryBaseQuery->whereBetween('created_at', [$startOfCalendarMonth->copy()->startOfDay(), $endOfCalendarMonth->copy()->endOfDay()]);
         }
 
         if ($request->filled('payment_method') && $request->payment_method !== 'all') {
@@ -142,7 +147,7 @@ class SalesController extends Controller
             'pending_drafts' => $pendingDraftCount,
         ];
 
-        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period', 'statusFilter', 'pendingDraftCount', 'branchId'));
+        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period', 'statusFilter', 'pendingDraftCount', 'branchId', 'selectedMonth', 'selectedYear'));
     }
 
     /**
@@ -338,6 +343,7 @@ class SalesController extends Controller
             DB::beginTransaction();
 
             $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
+            $wasDraft = ($transaction->order_status === 'draft');
             $transaction->customer_name = $request->customer_name;
             $transaction->customer_phone = $request->customer_phone;
             $transaction->payment_method = $request->payment_method;
@@ -389,6 +395,14 @@ class SalesController extends Controller
             $transaction->paid_amount = (float) $request->paid_amount;
             $transaction->remaining_amount = max(0, $totalPrice - $transaction->paid_amount);
             $transaction->payment_status = $request->payment_status;
+
+            if ($wasDraft && $request->order_status !== 'draft') {
+                $transaction->created_at = now();
+                foreach ($transaction->transactionDetails as $detail) {
+                    $detail->created_at = now();
+                    $detail->save();
+                }
+            }
 
             $transaction->save();
 

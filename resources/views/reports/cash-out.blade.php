@@ -32,8 +32,20 @@
 
     <!-- Filter Toolbar -->
     <div class="o_form_sheet mb-3 p-3 bg-white print:hidden">
+        <!-- Siklus Bulanan Kalender (Januari - Desember) Navigation -->
+        @include('partials.monthly-lifecycle-bar', [
+            'selectedMonth' => $month ?? date('n'),
+            'selectedYear' => $year ?? date('Y'),
+            'timeframe' => $timeframe ?? 'month',
+            'showAllYear' => true,
+            'route' => 'reports.cash-out',
+            'extraParams' => ['branch_id' => $branchId ?? 'all']
+        ])
+
         <form id="filter-form" method="GET" action="{{ route('reports.cash-out') }}" class="space-y-2">
             <input type="hidden" name="filter" value="1">
+            <input type="hidden" name="month" value="{{ $month ?? date('n') }}">
+            <input type="hidden" name="year" value="{{ $year ?? date('Y') }}">
             
             <div class="row g-2 align-items-end">
                 <div class="col-12 col-md-2">

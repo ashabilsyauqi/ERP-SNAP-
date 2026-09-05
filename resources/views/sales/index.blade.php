@@ -155,8 +155,8 @@
                class="btn btn-sm {{ $period === '7days' ? 'btn-primary font-bold' : 'btn-light border text-slate-700' }} py-1 px-2.5 text-xs rounded-pill">
                 7 Hari Terakhir
             </a>
-            <a href="{{ route('sales.index', array_merge(request()->query(), ['period' => 'this_month', 'date_from' => null, 'date_to' => null])) }}" 
-               class="btn btn-sm {{ $period === 'this_month' ? 'btn-primary font-bold' : 'btn-light border text-slate-700' }} py-1 px-2.5 text-xs rounded-pill">
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['period' => 'monthly', 'month' => date('n'), 'year' => date('Y'), 'date_from' => null, 'date_to' => null])) }}" 
+               class="btn btn-sm {{ ($period === 'this_month' || $period === 'monthly') ? 'btn-primary font-bold' : 'btn-light border text-slate-700' }} py-1 px-2.5 text-xs rounded-pill">
                 Bulan Ini
             </a>
             <a href="{{ route('sales.index', array_merge(request()->query(), ['period' => 'all', 'date_from' => null, 'date_to' => null])) }}" 
@@ -168,6 +168,8 @@
         <!-- Filter Dropdowns (Payment Method, Branch) -->
         <form method="GET" action="{{ route('sales.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
             <input type="hidden" name="period" value="{{ $period }}">
+            <input type="hidden" name="month" value="{{ $selectedMonth ?? date('n') }}">
+            <input type="hidden" name="year" value="{{ $selectedYear ?? date('Y') }}">
             <input type="hidden" name="status" value="{{ $statusFilter ?? 'sales' }}">
 
             <!-- Filter Metode Pembayaran -->
@@ -188,6 +190,20 @@
             @endif
         </form>
     </div>
+
+    <!-- Siklus Bulanan Kalender (Januari - Desember) Navigation -->
+    @include('partials.monthly-lifecycle-bar', [
+        'selectedMonth' => $selectedMonth ?? date('n'),
+        'selectedYear' => $selectedYear ?? date('Y'),
+        'period' => 'monthly',
+        'route' => 'sales.index',
+        'extraParams' => [
+            'period' => 'monthly',
+            'status' => $statusFilter ?? 'sales',
+            'payment_method' => request('payment_method'),
+            'branch_id' => $branchId ?? 'all'
+        ]
+    ])
 
     <!-- Main Sheet -->
     <div class="o_form_sheet p-0 overflow-hidden bg-white">

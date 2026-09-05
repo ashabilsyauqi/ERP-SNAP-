@@ -36,17 +36,33 @@ class CashInReportController extends Controller
             $query->where('branch_id', $branchId);
         }
 
-        $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $endDate = $request->input('end_date', now()->toDateString());
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+        $timeframe = $request->input('timeframe', 'month');
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+            $startDate = $request->start_date;
+            $endDate = $request->end_date;
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
         } elseif ($request->filled('start_date')) {
-            $query->where('tanggal', '>=', $request->start_date);
+            $startDate = $request->start_date;
+            $endDate = null;
+            $query->where('tanggal', '>=', $startDate);
         } elseif ($request->filled('end_date')) {
-            $query->where('tanggal', '<=', $request->end_date);
+            $startDate = null;
+            $endDate = $request->end_date;
+            $query->where('tanggal', '<=', $endDate);
+        } elseif ($timeframe === 'year' || $timeframe === '1Y') {
+            $startDate = \Carbon\Carbon::createFromDate($year, 1, 1)->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromDate($year, 12, 31)->endOfMonth()->toDateString();
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
+        } elseif ($timeframe === 'all') {
+            $startDate = null;
+            $endDate = null;
         } else {
-            // Default load current month to prevent memory overload with 3 years of data
+            // Default calendar month (startOfMonth to endOfMonth)
+            $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
             $query->whereBetween('tanggal', [$startDate, $endDate]);
         }
 
@@ -60,6 +76,6 @@ class CashInReportController extends Controller
         $accounts = Account::whereIn('tipe', ['pendapatan', 'aset'])->active()->orderBy('nama_akun')->get();
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        return view('reports.cash-in', compact('cashTransactions', 'accounts', 'branches', 'totalMasuk', 'startDate', 'endDate', 'branchId'));
+        return view('reports.cash-in', compact('cashTransactions', 'accounts', 'branches', 'totalMasuk', 'startDate', 'endDate', 'branchId', 'month', 'year', 'timeframe'));
     }
 }

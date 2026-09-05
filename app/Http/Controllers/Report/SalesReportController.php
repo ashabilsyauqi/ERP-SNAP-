@@ -34,44 +34,57 @@ class SalesReportController extends Controller
 
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        $timeframe = $request->input('timeframe', '6m'); // Default 6 bulan
+        $timeframe = $request->input('timeframe', '6m');
         $now = Carbon::now();
+        $month = (int) $request->input('month', $now->month);
+        $year = (int) $request->input('year', $now->year);
         $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date', $now->toDateString());
+        $endDate = $request->input('end_date');
 
         // Apply timeframe presets if custom date range isn't manually specified
         if (!$request->filled('start_date')) {
             switch ($timeframe) {
                 case '1w':
                     $startDate = $now->copy()->subDays(7)->toDateString();
+                    $endDate = $now->toDateString();
                     $period = 'daily';
                     break;
                 case '1m':
-                    $startDate = $now->copy()->subMonth()->toDateString();
-                    $period = 'daily';
+                case 'month':
+                    $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth()->toDateString();
+                    $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+                    $period = $request->input('period', 'daily');
                     break;
                 case '3m':
-                    $startDate = $now->copy()->subMonths(3)->toDateString();
+                    $startDate = Carbon::createFromDate($year, $month, 1)->subMonths(2)->startOfMonth()->toDateString();
+                    $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
                     $period = 'daily';
                     break;
-                case '6m':
-                default:
-                    $startDate = $now->copy()->subMonths(6)->toDateString();
-                    $period = $request->input('period', 'monthly');
-                    break;
                 case '1y':
-                    $startDate = $now->copy()->subYear()->toDateString();
+                case 'year':
+                    $startDate = Carbon::createFromDate($year, 1, 1)->startOfMonth()->toDateString();
+                    $endDate = Carbon::createFromDate($year, 12, 31)->endOfMonth()->toDateString();
                     $period = $request->input('period', 'monthly');
                     break;
                 case '3y':
-                    $startDate = $now->copy()->subYears(3)->toDateString();
+                    $startDate = Carbon::createFromDate($year - 2, 1, 1)->startOfMonth()->toDateString();
+                    $endDate = Carbon::createFromDate($year, 12, 31)->endOfMonth()->toDateString();
                     $period = $request->input('period', 'monthly');
                     break;
                 case '5y':
-                    $startDate = $now->copy()->subYears(5)->toDateString();
+                    $startDate = Carbon::createFromDate($year - 4, 1, 1)->startOfMonth()->toDateString();
+                    $endDate = Carbon::createFromDate($year, 12, 31)->endOfMonth()->toDateString();
                     $period = $request->input('period', 'yearly');
                     break;
+                case '6m':
+                default:
+                    $startDate = Carbon::createFromDate($year, $month, 1)->subMonths(5)->startOfMonth()->toDateString();
+                    $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+                    $period = $request->input('period', 'monthly');
+                    break;
             }
+        } else {
+            $endDate = $endDate ?: $now->toDateString();
         }
 
         $query = Transaction::with('branch')->whereNotIn('order_status', ['draft', 'cancelled']);
@@ -287,7 +300,7 @@ class SalesReportController extends Controller
             'datasets' => $chartDatasets
         ];
 
-        return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches', 'branchBreakdown', 'isAllBranches', 'timeframe', 'startDate', 'endDate', 'selectedBranchId'));
+        return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches', 'branchBreakdown', 'isAllBranches', 'timeframe', 'startDate', 'endDate', 'selectedBranchId', 'month', 'year'));
     }
 }
 

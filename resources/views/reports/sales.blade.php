@@ -37,8 +37,20 @@
             @endforeach
         </div>
 
+        <!-- Siklus Bulanan Kalender (Januari - Desember) Navigation -->
+        @include('partials.monthly-lifecycle-bar', [
+            'selectedMonth' => $month ?? date('n'),
+            'selectedYear' => $year ?? date('Y'),
+            'timeframe' => $activeTf,
+            'showAllYear' => true,
+            'route' => 'reports.sales',
+            'extraParams' => ['branch_id' => $selectedBranchId ?? 'all', 'period' => $period]
+        ])
+
         <form method="GET" action="{{ route('reports.sales') }}" class="row g-2 align-items-end">
             <input type="hidden" name="timeframe" value="{{ $activeTf }}">
+            <input type="hidden" name="month" value="{{ $month ?? date('n') }}">
+            <input type="hidden" name="year" value="{{ $year ?? date('Y') }}">
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Kelompokkan</label>
                 <select name="period" class="form-select form-select-sm">

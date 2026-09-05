@@ -32,8 +32,27 @@ class CashBalanceController extends Controller
             $query->where('branch_id', $branchId);
         }
 
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+        $timeframe = $request->input('timeframe', 'month');
+
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+            $startDate = $request->start_date;
+            $endDate = $request->end_date;
+        } elseif ($timeframe === 'year' || $timeframe === '1Y') {
+            $startDate = \Carbon\Carbon::createFromDate($year, 1, 1)->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromDate($year, 12, 31)->endOfMonth()->toDateString();
+        } elseif ($timeframe === 'all') {
+            $startDate = null;
+            $endDate = null;
+        } else {
+            // Calendar month
+            $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfMonth()->toDateString();
+            $endDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+        }
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('tanggal', [$startDate, $endDate]);
         }
 
         $totalMasuk = (clone $query)->where('tipe', 'masuk')->sum('jumlah');
@@ -42,13 +61,13 @@ class CashBalanceController extends Controller
 
         // Fetch Accounts with their filtered CashTransactions
         $accountQuery = Account::active()->orderBy('kode_akun', 'asc');
-        $accounts = $accountQuery->get()->map(function ($acc) use ($request, $user, $branchId) {
+        $accounts = $accountQuery->get()->map(function ($acc) use ($request, $user, $branchId, $startDate, $endDate) {
             $tQuery = CashTransaction::where('account_id', $acc->id);
             if ($branchId && $branchId !== 'all') {
                 $tQuery->where('branch_id', $branchId);
             }
-            if ($request->filled('start_date') && $request->filled('end_date')) {
-                $tQuery->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+            if ($startDate && $endDate) {
+                $tQuery->whereBetween('tanggal', [$startDate, $endDate]);
             }
 
             $acc->inflow = (clone $tQuery)->where('tipe', 'masuk')->sum('jumlah');
@@ -67,8 +86,8 @@ class CashBalanceController extends Controller
             }
 
             $bQuery = CashTransaction::where('branch_id', $branch->id);
-            if ($request->filled('start_date') && $request->filled('end_date')) {
-                $bQuery->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+            if ($startDate && $endDate) {
+                $bQuery->whereBetween('tanggal', [$startDate, $endDate]);
             }
 
             $bMasuk = (clone $bQuery)->where('tipe', 'masuk')->sum('jumlah');
@@ -82,6 +101,6 @@ class CashBalanceController extends Controller
             ];
         }
 
-        return view('reports.cash-balance', compact('totalMasuk', 'totalKeluar', 'saldo', 'accounts', 'perBranch', 'branches', 'branchId'));
+        return view('reports.cash-balance', compact('totalMasuk', 'totalKeluar', 'saldo', 'accounts', 'perBranch', 'branches', 'branchId', 'startDate', 'endDate', 'month', 'year', 'timeframe'));
     }
 }

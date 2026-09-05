@@ -13,9 +13,10 @@ class FinanceDashboardController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $now = Carbon::now();
-        $startOfMonth = $now->copy()->startOfMonth();
-        $endOfMonth = $now->copy()->endOfMonth();
+        $month = (int) $request->input('month', Carbon::now()->month);
+        $year = (int) $request->input('year', Carbon::now()->year);
+        $startOfMonth = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endOfMonth = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
@@ -88,7 +89,9 @@ class FinanceDashboardController extends Controller
             'totalPenjualan', 
             'recentTransactions',
             'branches',
-            'branchId'
+            'branchId',
+            'month',
+            'year'
         ));
     }
 }

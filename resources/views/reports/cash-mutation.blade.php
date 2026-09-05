@@ -14,14 +14,26 @@
 <div id="main-view-wrapper" data-view-wrapper>
     <!-- Filter Toolbar -->
     <div class="o_form_sheet mb-3 p-3 bg-white print:hidden">
+        <!-- Siklus Bulanan Kalender (Januari - Desember) Navigation -->
+        @include('partials.monthly-lifecycle-bar', [
+            'selectedMonth' => $month ?? date('n'),
+            'selectedYear' => $year ?? date('Y'),
+            'timeframe' => $timeframe ?? 'month',
+            'showAllYear' => true,
+            'route' => 'reports.cash-mutation',
+            'extraParams' => ['branch_id' => $branchId ?? 'all', 'tipe' => request('tipe'), 'account_id' => request('account_id')]
+        ])
+
         <form method="GET" action="{{ route('reports.cash-mutation') }}" class="row g-2 align-items-end">
+            <input type="hidden" name="month" value="{{ $month ?? date('n') }}">
+            <input type="hidden" name="year" value="{{ $year ?? date('Y') }}">
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Dari Tanggal</label>
-                <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm">
+                <input type="date" name="start_date" value="{{ $startDate ?? request('start_date') }}" class="form-control form-control-sm">
             </div>
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Sampai Tanggal</label>
-                <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
+                <input type="date" name="end_date" value="{{ $endDate ?? request('end_date') }}" class="form-control form-control-sm">
             </div>
             
             @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin())
