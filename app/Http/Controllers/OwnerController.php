@@ -136,21 +136,18 @@ class OwnerController extends Controller
             $todayTransactions = (clone $query)->get(['total_price', 'created_at']);
 
             $hourlyData = [];
-            // Initialize standard business hours (08:00 - 22:00)
-            for ($h = 8; $h <= 22; $h++) {
+            // Full 24-Hour Range (00:00 - 23:00) to support all 24 hours seamlessly
+            for ($h = 0; $h <= 23; $h++) {
                 $hourlyData[$h] = ['sales' => 0.0, 'volume' => 0];
             }
 
             foreach ($todayTransactions as $trx) {
                 $h = (int) $trx->created_at->format('G');
-                if (!isset($hourlyData[$h])) {
-                    $hourlyData[$h] = ['sales' => 0.0, 'volume' => 0];
+                if (isset($hourlyData[$h])) {
+                    $hourlyData[$h]['sales'] += (float) $trx->total_price;
+                    $hourlyData[$h]['volume'] += 1;
                 }
-                $hourlyData[$h]['sales'] += (float) $trx->total_price;
-                $hourlyData[$h]['volume'] += 1;
             }
-
-            ksort($hourlyData);
 
             foreach ($hourlyData as $hour => $data) {
                 $chartLabels[] = sprintf('%02d:00', $hour);
