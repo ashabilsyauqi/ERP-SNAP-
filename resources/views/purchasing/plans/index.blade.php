@@ -22,6 +22,11 @@
     selectedPlan: null,
     rejectPlanId: null,
     payPlan: null,
+    payStep: 'step_1',
+    payAmount: 0,
+    payTotalCost: 0,
+    payPaidAmount: 0,
+    payRemainingAmount: 0,
     openPlanDetail(plan) {
         this.selectedPlan = plan;
         this.detailOpen = true;
@@ -32,7 +37,40 @@
     },
     openPayModal(plan) {
         this.payPlan = plan;
+        this.payTotalCost = Number(plan.total_estimated_cost || 0);
+        this.payPaidAmount = Number(plan.paid_amount || 0);
+        this.payRemainingAmount = Math.max(0, this.payTotalCost - this.payPaidAmount);
+
+        const paymentsCount = (plan.payments || []).length;
+        if (this.payPaidAmount <= 0) {
+            this.payStep = 'step_1';
+            this.payAmount = Math.round(this.payRemainingAmount * 0.5);
+        } else if (paymentsCount === 1) {
+            this.payStep = 'step_2';
+            this.payAmount = this.payRemainingAmount;
+        } else {
+            this.payStep = 'pelunasan';
+            this.payAmount = this.payRemainingAmount;
+        }
         this.payOpen = true;
+    },
+    setPayStep(step) {
+        this.payStep = step;
+        if (step === 'pelunasan') {
+            this.payAmount = this.payRemainingAmount;
+        } else if (this.payAmount > this.payRemainingAmount || this.payAmount <= 0) {
+            this.payAmount = Math.round(this.payRemainingAmount * 0.5);
+        }
+    },
+    setPercent(pct) {
+        this.payAmount = Math.round(this.payTotalCost * (pct / 100));
+        if (this.payAmount > this.payRemainingAmount) {
+            this.payAmount = this.payRemainingAmount;
+        }
+    },
+    setFullRemaining() {
+        this.payStep = 'pelunasan';
+        this.payAmount = this.payRemainingAmount;
     }
 }" id="main-view-wrapper" data-view-wrapper>
 
@@ -166,6 +204,18 @@
                                             <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-bold">
                                                 <i class="fa-solid fa-check-double me-1"></i> LUNAS
                                             </span>
+                                        @elseif($plan->payment_status === 'partial')
+                                            <div class="d-inline-flex flex-col text-start p-1 bg-amber-50 rounded border border-amber-300">
+                                                <span class="text-[10px] font-bold text-amber-900">
+                                                    <i class="fa-solid fa-clock-rotate-left me-0.5 text-amber-600"></i> DP/Sebagian:
+                                                </span>
+                                                <span class="font-mono font-bold text-[10px] text-emerald-800">
+                                                    Rp {{ number_format($plan->paid_amount, 0, ',', '.') }}
+                                                </span>
+                                                <span class="text-[9px] text-rose-700 font-semibold font-mono">
+                                                    Sisa: Rp {{ number_format($plan->remaining_amount ?? ($plan->total_estimated_cost - $plan->paid_amount), 0, ',', '.') }}
+                                                </span>
+                                            </div>
                                         @else
                                             <span class="badge bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold">
                                                 <i class="fa-solid fa-file-invoice-dollar me-1"></i> Tagihan Belum Dibayar
@@ -221,10 +271,13 @@
                                                     <i class="fa-solid fa-xmark text-xs"></i>
                                                 </button>
                                             @elseif($plan->isApproved() && $plan->payment_status !== 'paid')
-                                                <!-- Tombol Bayar Tagihan untuk Owner (Langsung Membuka Pop-Up Bayar) -->
-                                                <button type="button" class="btn btn-sm btn-primary py-0 px-2 fw-bold" title="Bayar Tagihan Supplier (Transfer)"
+                                                <!-- Tombol Bayar Tagihan untuk Owner (Dukungan DP / Termin / Pelunasan) -->
+                                                <button type="button" 
+                                                        class="btn btn-sm {{ $plan->payment_status === 'partial' ? 'btn-warning text-slate-900 border-amber-400' : 'btn-primary' }} py-0 px-2 fw-bold" 
+                                                        title="{{ $plan->payment_status === 'partial' ? 'Bayar Termin Lanjutan (Sisa: Rp ' . number_format($plan->remaining_amount ?? ($plan->total_estimated_cost - $plan->paid_amount), 0, ',', '.') . ')' : 'Bayar Tagihan Supplier (Transfer)' }}"
                                                         @click="openPayModal({{ json_encode($plan) }})">
-                                                    <i class="fa-solid fa-credit-card text-xs me-1"></i> Bayar
+                                                    <i class="fa-solid fa-credit-card text-xs me-1"></i> 
+                                                    {{ $plan->payment_status === 'partial' ? 'Bayar Termin' : 'Bayar' }}
                                                 </button>
                                             @endif
                                         @endif
@@ -299,6 +352,7 @@
                 </div>
 
                 <!-- TAGIHAN PEMBAYARAN SUPPLIER (VENDOR BILLS) - Muncul jika sudah di-ACC Owner -->
+                <!-- TAGIHAN PEMBAYARAN SUPPLIER (VENDOR BILLS) - Muncul jika sudah di-ACC Owner -->
                 <template x-if="selectedPlan.status === 'approved_by_owner' || selectedPlan.status === 'completed'">
                     <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
                         <div class="d-flex justify-content-between align-items-center border-bottom border-indigo-200 pb-2">
@@ -313,21 +367,64 @@
                                 <span x-show="selectedPlan.payment_status === 'paid'" class="badge bg-emerald-600 text-white px-2.5 py-1 font-bold">
                                     <i class="fa-solid fa-check-double me-1"></i> TAGIHAN LUNAS
                                 </span>
-                                <span x-show="selectedPlan.payment_status !== 'paid'" class="badge bg-amber-500 text-white px-2.5 py-1 font-bold animate-pulse">
+                                <span x-show="selectedPlan.payment_status === 'partial'" class="badge bg-amber-500 text-white px-2.5 py-1 font-bold animate-pulse">
+                                    <i class="fa-solid fa-hourglass-half me-1"></i> DIBAYAR SEBAGIAN (DP)
+                                </span>
+                                <span x-show="selectedPlan.payment_status !== 'paid' && selectedPlan.payment_status !== 'partial'" class="badge bg-rose-500 text-white px-2.5 py-1 font-bold animate-pulse">
                                     <i class="fa-solid fa-clock me-1"></i> BELUM DITRANSFER
                                 </span>
                             </div>
                         </div>
 
-                        <!-- Payment Status Banner / Detail if Paid -->
-                        <div x-show="selectedPlan.payment_status === 'paid'" class="p-2.5 bg-emerald-100 text-emerald-900 rounded-lg text-xs">
-                            <div class="font-bold flex items-center gap-1.5">
-                                <i class="fa-solid fa-circle-check text-emerald-700"></i> Pembayaran Tagihan Telah Selesai Dicatat
+                        <!-- Payment Summary Card (Total, Terbayar, Sisa) -->
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="p-2 bg-white rounded border border-slate-200">
+                                <div class="text-[10px] text-slate-500 uppercase font-semibold">Total Tagihan</div>
+                                <div class="font-mono font-bold text-slate-800 text-xs" x-text="'Rp ' + Number(selectedPlan.total_estimated_cost || 0).toLocaleString('id-ID')"></div>
                             </div>
-                            <div class="text-[11px] text-emerald-800 mt-1">
-                                Dibayar pada: <strong x-text="selectedPlan.paid_at"></strong> &bull; 
-                                Metode: <strong x-text="selectedPlan.payment_method || 'Transfer Bank'"></strong>
-                                <span x-show="selectedPlan.payment_reference"> &bull; Ref: <strong x-text="selectedPlan.payment_reference"></strong></span>
+                            <div class="p-2 bg-emerald-50 rounded border border-emerald-200">
+                                <div class="text-[10px] text-emerald-700 uppercase font-semibold">Sudah Terbayar</div>
+                                <div class="font-mono font-bold text-emerald-800 text-xs" x-text="'Rp ' + Number(selectedPlan.paid_amount || 0).toLocaleString('id-ID')"></div>
+                            </div>
+                            <div class="p-2 bg-amber-50 rounded border border-amber-200">
+                                <div class="text-[10px] text-amber-700 uppercase font-semibold">Sisa Tagihan</div>
+                                <div class="font-mono font-bold text-amber-900 text-xs" x-text="'Rp ' + Number(selectedPlan.remaining_amount !== null ? selectedPlan.remaining_amount : Math.max(0, (selectedPlan.total_estimated_cost || 0) - (selectedPlan.paid_amount || 0))).toLocaleString('id-ID')"></div>
+                            </div>
+                        </div>
+
+                        <!-- Installment Payment History Table (If any payments exist) -->
+                        <div x-show="selectedPlan.payments && selectedPlan.payments.length > 0" class="p-2.5 bg-white rounded-lg border border-slate-200 text-xs space-y-2">
+                            <div class="font-bold text-slate-800 d-flex justify-content-between align-items-center">
+                                <span><i class="fa-solid fa-receipt text-teal-600 me-1"></i> Riwayat Pembayaran Termin:</span>
+                                <span class="badge bg-teal-100 text-teal-800 text-[10px]" x-text="selectedPlan.payments ? selectedPlan.payments.length + 'x Pembayaran' : ''"></span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered text-[11px] mb-0">
+                                    <thead class="bg-slate-100 text-slate-600">
+                                        <tr>
+                                            <th>Tahap Pembayaran</th>
+                                            <th>Tanggal</th>
+                                            <th>Sumber Kas/Bank</th>
+                                            <th>No. Ref</th>
+                                            <th class="text-end">Nominal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(pay, pIdx) in (selectedPlan.payments || [])" :key="pIdx">
+                                            <tr>
+                                                <td>
+                                                    <span class="badge bg-teal-50 text-teal-700 border border-teal-200 font-semibold" x-text="pay.payment_step_label || (pay.payment_step === 'step_1' ? 'Pembayaran 1 (DP)' : (pay.payment_step === 'step_2' ? 'Pembayaran ke-2' : 'Pelunasan'))"></span>
+                                                </td>
+                                                <td class="font-mono text-slate-600" x-text="(pay.paid_at || '').substring(0, 10)"></td>
+                                                <td>
+                                                    <span class="text-slate-800" x-text="pay.account ? (pay.account.kode_akun + ' - ' + pay.account.nama_akun) : (pay.payment_method || '-')"></span>
+                                                </td>
+                                                <td class="font-mono text-slate-500" x-text="pay.payment_reference || '-'"></td>
+                                                <td class="text-end font-mono font-bold text-emerald-700" x-text="'Rp ' + Number(pay.amount || 0).toLocaleString('id-ID')"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
@@ -496,36 +593,146 @@
 
     <!-- Modal Pembayaran Tagihan Supplier (Transfer Kas/Bank) -->
     <div x-show="payOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
-        <div class="bg-white rounded-xl shadow-2xl border w-full max-w-lg overflow-hidden" @click.away="payOpen = false" x-if="payPlan">
-            <form :action="'/purchasing/plans/' + (payPlan ? payPlan.id : '') + '/pay'" method="POST">
+        <div class="bg-white rounded-xl shadow-2xl border w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden" @click.away="payOpen = false" x-if="payPlan">
+            <form :action="'/purchasing/plans/' + (payPlan ? payPlan.id : '') + '/pay'" method="POST" class="flex flex-col h-full mb-0">
                 @csrf
-                <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center">
+                <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-shrink-0">
                     <div class="d-flex align-items-center gap-2">
                         <i class="fa-solid fa-credit-card text-emerald-400 fs-5"></i>
                         <div>
                             <h6 class="fw-bold mb-0 text-white font-mono" x-text="'BAYAR TAGIHAN: ' + (payPlan ? payPlan.plan_number : '')"></h6>
-                            <span class="text-[11px] text-slate-300">Pencatatan Pembayaran Transfer Kas / Bank</span>
+                            <span class="text-[11px] text-slate-300">Pencatatan Pembayaran Bertahap (DP / Termin / Pelunasan)</span>
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white text-xs" @click="payOpen = false"></button>
                 </div>
                 
-                <div class="p-4 space-y-3 text-xs">
-                    <!-- Total Bill Amount Card -->
-                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-                        <div class="text-[11px] text-emerald-800 uppercase font-semibold">Total Tagihan Yang Harus Ditransfer:</div>
-                        <div class="font-mono fw-bold text-emerald-900 fs-4" x-text="'Rp ' + Number(payPlan ? payPlan.total_estimated_cost : 0).toLocaleString('id-ID')"></div>
+                <div class="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
+                    <!-- Summary 3 Cards: Total, Paid, Remaining -->
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="text-[10px] text-slate-500 uppercase font-semibold">Total Tagihan</div>
+                            <div class="font-mono font-bold text-slate-900 text-xs mt-0.5" x-text="'Rp ' + Number(payTotalCost).toLocaleString('id-ID')"></div>
+                        </div>
+                        <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
+                            <div class="text-[10px] text-emerald-700 uppercase font-semibold">Sudah Terbayar</div>
+                            <div class="font-mono font-bold text-emerald-800 text-xs mt-0.5" x-text="'Rp ' + Number(payPaidAmount).toLocaleString('id-ID')"></div>
+                        </div>
+                        <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-300 ring-1 ring-amber-300">
+                            <div class="text-[10px] text-amber-800 uppercase font-semibold">Sisa Tagihan</div>
+                            <div class="font-mono font-bold text-amber-950 text-xs mt-0.5" x-text="'Rp ' + Number(payRemainingAmount).toLocaleString('id-ID')"></div>
+                        </div>
+                    </div>
+
+                    <!-- 3 Payment Stage Option Selector (Pembayaran 1, Pembayaran ke 2, Pelunasan) -->
+                    <div>
+                        <label class="form-label font-bold text-slate-800 text-xs uppercase mb-1.5 d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-list-ol text-indigo-600 me-1"></i> Pilih Tahap Pembayaran <span class="text-rose-500">*</span></span>
+                            <span class="text-[11px] font-normal text-slate-500">Klik salah satu pilihan</span>
+                        </label>
+                        <input type="hidden" name="payment_step" :value="payStep">
+                        <div class="grid grid-cols-3 gap-2">
+                            <!-- Option 1: Pembayaran 1 (DP) -->
+                            <button type="button" 
+                                    @click="setPayStep('step_1')"
+                                    :class="payStep === 'step_1' ? 'border-indigo-600 bg-indigo-50/90 ring-2 ring-indigo-500 text-indigo-950 font-bold shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+                                    class="p-2.5 rounded-xl border text-left transition relative flex flex-col justify-between cursor-pointer">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="badge text-[10px]" :class="payStep === 'step_1' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'">Tahap 1</span>
+                                        <i class="fa-solid fa-circle-check text-indigo-600" x-show="payStep === 'step_1'"></i>
+                                    </div>
+                                    <div class="font-bold text-xs">1. Pembayaran 1</div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5">DP / Uang Muka</div>
+                                </div>
+                            </button>
+
+                            <!-- Option 2: Pembayaran ke-2 (Termin 2) -->
+                            <button type="button" 
+                                    @click="setPayStep('step_2')"
+                                    :class="payStep === 'step_2' ? 'border-indigo-600 bg-indigo-50/90 ring-2 ring-indigo-500 text-indigo-950 font-bold shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+                                    class="p-2.5 rounded-xl border text-left transition relative flex flex-col justify-between cursor-pointer">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="badge text-[10px]" :class="payStep === 'step_2' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'">Tahap 2</span>
+                                        <i class="fa-solid fa-circle-check text-indigo-600" x-show="payStep === 'step_2'"></i>
+                                    </div>
+                                    <div class="font-bold text-xs">2. Pembayaran ke-2</div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5">Termin / Angsuran</div>
+                                </div>
+                            </button>
+
+                            <!-- Option 3: Pelunasan -->
+                            <button type="button" 
+                                    @click="setPayStep('pelunasan')"
+                                    :class="payStep === 'pelunasan' ? 'border-emerald-600 bg-emerald-50/90 ring-2 ring-emerald-500 text-emerald-950 font-bold shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'"
+                                    class="p-2.5 rounded-xl border text-left transition relative flex flex-col justify-between cursor-pointer">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="badge text-[10px]" :class="payStep === 'pelunasan' ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'">Tahap 3</span>
+                                        <i class="fa-solid fa-circle-check text-emerald-600" x-show="payStep === 'pelunasan'"></i>
+                                    </div>
+                                    <div class="font-bold text-xs">3. Pelunasan</div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5">Lunas Penuh (100%)</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Nominal Input with Quick Percentage Buttons -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label font-bold text-slate-800 text-xs uppercase mb-0">
+                                Nominal Pembayaran Sekarang <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="d-flex gap-1">
+                                <button type="button" @click="setPercent(30)" class="btn btn-xs btn-white border py-0 px-2 text-[10px] rounded hover:bg-slate-100">30% DP</button>
+                                <button type="button" @click="setPercent(50)" class="btn btn-xs btn-white border py-0 px-2 text-[10px] rounded hover:bg-slate-100">50% DP</button>
+                                <button type="button" @click="setFullRemaining()" class="btn btn-xs py-0 px-2 text-[10px] rounded font-semibold text-emerald-700 border border-emerald-300 bg-emerald-100 hover:bg-emerald-200">Sisa Penuh</button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text font-bold bg-white text-slate-700 border-slate-300">Rp</span>
+                            <input type="number" 
+                                   name="amount" 
+                                   x-model.number="payAmount" 
+                                   min="1" 
+                                   :max="payRemainingAmount" 
+                                   class="form-control font-mono font-bold text-base text-slate-900 border-slate-300" 
+                                   placeholder="0" 
+                                   required>
+                        </div>
+                        <div class="d-flex justify-content-between text-[11px] pt-1 text-slate-600">
+                            <span>Sisa tagihan setelah ini: <strong :class="(payRemainingAmount - payAmount) <= 0 ? 'text-emerald-700' : 'text-amber-700'" x-text="'Rp ' + Math.max(0, payRemainingAmount - (payAmount || 0)).toLocaleString('id-ID')"></strong></span>
+                            <span x-show="(payRemainingAmount - payAmount) <= 0" class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold">Akan Lunas (100%)</span>
+                        </div>
+                    </div>
+
+                    <!-- Previous Payments History (If Any) -->
+                    <div x-show="payPlan && payPlan.payments && payPlan.payments.length > 0" class="p-2.5 bg-white rounded-lg border border-slate-200 text-xs space-y-1.5">
+                        <div class="font-bold text-slate-700 text-[11px]"><i class="fa-solid fa-clock-rotate-left me-1 text-teal-600"></i> Riwayat Pembayaran Sebelumnya:</div>
+                        <div class="space-y-1 max-h-24 overflow-y-auto">
+                            <template x-for="p in (payPlan ? payPlan.payments : [])" :key="p.id">
+                                <div class="d-flex justify-content-between align-items-center bg-slate-50 p-1.5 rounded border text-[11px]">
+                                    <div>
+                                        <span class="badge bg-teal-50 text-teal-700 border border-teal-200 me-1 font-semibold" x-text="p.payment_step_label || p.payment_step"></span>
+                                        <span class="text-slate-500" x-text="(p.paid_at || '').substring(0, 10)"></span>
+                                    </div>
+                                    <div class="font-mono font-bold text-emerald-700" x-text="'Rp ' + Number(p.amount).toLocaleString('id-ID')"></div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
 
                     <!-- Rekening Supplier Destination -->
                     <div class="p-2.5 bg-slate-50 rounded-lg border text-xs space-y-1.5" x-show="payPlan && payPlan.supplier_bills">
-                        <div class="font-bold text-slate-800">Tujuan Transfer Supplier:</div>
+                        <div class="font-bold text-slate-800"><i class="fa-solid fa-building-columns text-indigo-600 me-1"></i> Rekening Tujuan Transfer Supplier:</div>
                         <template x-for="bill in (payPlan ? payPlan.supplier_bills : [])" :key="bill.supplier_name">
                             <div class="d-flex justify-content-between align-items-center border-bottom pb-1">
                                 <div>
                                     <strong x-text="bill.supplier_name"></strong>: 
-                                    <span class="font-mono text-indigo-700" x-text="(bill.bank_name || 'Bank') + ' - ' + (bill.bank_account_number || 'Belum diatur')"></span>
-                                    <span class="text-slate-400" x-show="bill.bank_account_name" x-text="'(a/n ' + bill.bank_account_name + ')'"></span>
+                                    <span class="font-mono text-indigo-700 font-semibold" x-text="(bill.bank_name || 'Bank') + ' - ' + (bill.bank_account_number || 'Belum diatur')"></span>
+                                    <span class="text-slate-500 text-[11px]" x-show="bill.bank_account_name" x-text="'(a/n ' + bill.bank_account_name + ')'"></span>
                                 </div>
                                 <div class="font-mono fw-bold text-slate-800" x-text="'Rp ' + Number(bill.total_amount).toLocaleString('id-ID')"></div>
                             </div>
@@ -560,21 +767,22 @@
                         </div>
                         <div>
                             <label class="form-label font-semibold text-slate-700 text-xs uppercase">No. Referensi / Slip Transfer</label>
-                            <input type="text" name="payment_reference" class="form-control form-control-sm font-mono" placeholder="e.g. TRF-20260825-01">
+                            <input type="text" name="payment_reference" class="form-control form-control-sm font-mono" placeholder="e.g. TRF-20260910-01">
                         </div>
                     </div>
 
                     <!-- Payment Notes -->
                     <div>
                         <label class="form-label font-semibold text-slate-700 text-xs uppercase">Catatan Pembayaran</label>
-                        <input type="text" name="payment_notes" class="form-control form-control-sm" placeholder="e.g. Lunas ditransfer via m-Banking">
+                        <input type="text" name="payment_notes" class="form-control form-control-sm" placeholder="e.g. DP 50% via transfer m-Banking">
                     </div>
                 </div>
 
-                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2">
+                <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2 flex-shrink-0">
                     <button type="button" class="btn-odoo-secondary" @click="payOpen = false">Batal</button>
                     <button type="submit" class="btn btn-sm btn-success font-bold px-3">
-                        <i class="fa-solid fa-check me-1"></i> Konfirmasi Pembayaran Lunas
+                        <i class="fa-solid fa-check me-1"></i>
+                        <span x-text="payStep === 'step_1' ? 'Konfirmasi Pembayaran 1 (DP)' : (payStep === 'step_2' ? 'Konfirmasi Pembayaran ke-2' : 'Konfirmasi Pelunasan')"></span>
                     </button>
                 </div>
             </form>
@@ -643,6 +851,46 @@
             warehouseVerifierSigHtml = vSig 
                 ? `<img src="${vSig}" style="max-height: 50px; max-width: 120px; margin: 0 auto 4px auto; display: block;">` 
                 : `<div style="border: 1.5px dashed #059669; padding: 4px; color: #047857; font-size: 10px; font-weight: bold; border-radius: 4px; margin-bottom: 4px; background: #ecfdf5;">✓ FISIK DITERIMA GUDANG<br><small style="font-weight:normal;">${vDate}</small></div>`;
+        }
+
+        let paymentsHtml = '';
+        if (plan.payments && plan.payments.length > 0) {
+            paymentsHtml = `
+                <div style="margin-top: 14px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
+                    <div style="font-weight: bold; font-size: 11px; margin-bottom: 6px; color: #1e3a8a;">RIWAYAT PEMBAYARAN TERMIN / DP:</div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 10.5px;">
+                        <thead>
+                            <tr style="background: #e2e8f0;">
+                                <th style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left;">Tahap</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: center;">Tanggal</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left;">Metode / Rekening</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left;">No. Ref</th>
+                                <th style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right;">Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${plan.payments.map(p => `
+                                <tr>
+                                    <td style="border: 1px solid #cbd5e1; padding: 4px 6px; font-weight: bold;">${p.payment_step_label || p.payment_step}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: center;">${(p.paid_at || '').substring(0, 10)}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 4px 6px;">${p.account ? (p.account.kode_akun + ' - ' + p.account.nama_akun) : (p.payment_method || '-')}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 4px 6px; font-family: monospace;">${p.payment_reference || '-'}</td>
+                                    <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right; font-family: monospace; font-weight: bold;">Rp ${Number(p.amount || 0).toLocaleString('id-ID')}</td>
+                                </tr>
+                            `).join('')}
+                            <tr style="background: #f1f5f9; font-weight: bold;">
+                                <td colspan="4" style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right;">Total Terbayar:</td>
+                                <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right; font-family: monospace; color: #059669;">Rp ${Number(plan.paid_amount || 0).toLocaleString('id-ID')}</td>
+                            </tr>
+                            ${Number(plan.remaining_amount || 0) > 0 ? `
+                            <tr style="background: #fffbeb; font-weight: bold;">
+                                <td colspan="4" style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right; color: #b45309;">Sisa Tagihan:</td>
+                                <td style="border: 1px solid #cbd5e1; padding: 4px 6px; text-align: right; font-family: monospace; color: #b45309;">Rp ${Number(plan.remaining_amount || 0).toLocaleString('id-ID')}</td>
+                            </tr>` : ''}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
 
         printWindow.document.write(`
@@ -726,6 +974,8 @@
                         <td style="font-weight: bold; font-family: monospace; font-size: 14px; color: #1e3a8a; width: 150px;">Rp ${Number(plan.total_estimated_cost || 0).toLocaleString('id-ID')}</td>
                     </tr>
                 </table>
+
+                ${paymentsHtml}
 
                 <!-- 3 Signatures: Creator / Manager, ACC Owner, and Penerima Gudang -->
                 <div class="signatures">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\PurchasePlan;
 use App\Models\PurchasePlanItem;
+use App\Models\PurchasePlanPayment;
 use App\Models\Purchase;
 use App\Models\Material;
 use App\Models\Supplier;
@@ -19,7 +20,7 @@ class PurchasePlanController extends Controller
     {
         $user = Auth::user();
 
-        $query = PurchasePlan::with(['branch', 'user', 'approvedBy', 'rejectedBy', 'items.material', 'items.supplier', 'purchases.verifiedBy'])
+        $query = PurchasePlan::with(['branch', 'user', 'approvedBy', 'rejectedBy', 'items.material', 'items.supplier', 'purchases.verifiedBy', 'payments.account', 'payments.cashTransaction', 'payments.user'])
             ->orderBy('created_at', 'desc');
 
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
@@ -481,16 +482,80 @@ class PurchasePlanController extends Controller
             return redirect()->back()->with('error', 'Tagihan hanya dapat dibayar jika Purchase Plan telah disetujui (ACC) oleh Owner.');
         }
 
+        $currentRemaining = $plan->remaining_amount !== null 
+            ? (float) $plan->remaining_amount 
+            : max(0, (float) $plan->total_estimated_cost - (float) $plan->paid_amount);
+
+        if ($currentRemaining <= 0 && $plan->payment_status === 'paid') {
+            return redirect()->back()->with('error', "Tagihan Purchase Plan #{$plan->plan_number} sudah berstatus LUNAS.");
+        }
+
         $request->validate([
-            'account_id' => 'nullable|exists:accounts,id',
+            'payment_step' => 'nullable|string|in:step_1,step_2,pelunasan',
+            'amount' => 'required|numeric|min:1',
+            'account_id' => 'required|exists:accounts,id',
             'payment_method' => 'required|string|max:100',
             'payment_reference' => 'nullable|string|max:255',
             'payment_notes' => 'nullable|string|max:500',
         ]);
 
-        DB::transaction(function () use ($request, $plan, $user) {
+        $amount = round((float) $request->amount, 2);
+
+        if ($amount > ($currentRemaining + 1)) {
+            return redirect()->back()->with('error', "Nominal pembayaran (Rp " . number_format($amount, 0, ',', '.') . ") melebihi sisa tagihan (Maksimal Rp " . number_format($currentRemaining, 0, ',', '.') . ").");
+        }
+
+        $step = $request->input('payment_step', 'step_1');
+        if ($amount >= ($currentRemaining - 1)) {
+            $step = 'pelunasan';
+        }
+
+        $stepLabels = [
+            'step_1' => 'Pembayaran 1 (DP / Uang Muka)',
+            'step_2' => 'Pembayaran ke-2 (Termin 2)',
+            'pelunasan' => 'Pelunasan (Tahap Akhir)',
+        ];
+        $stepLabel = $stepLabels[$step] ?? 'Pembayaran Tagihan Supplier';
+
+        DB::transaction(function () use ($request, $plan, $user, $amount, $step, $stepLabel) {
+            // 1. Catat Kas Keluar
+            $cashTx = \App\Models\CashTransaction::create([
+                'branch_id' => $plan->branch_id,
+                'account_id' => $request->account_id,
+                'user_id' => $user->id,
+                'tipe' => 'keluar',
+                'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('keluar'),
+                'tanggal' => now()->toDateString(),
+                'jumlah' => $amount,
+                'keterangan' => "{$stepLabel} untuk Purchase Plan #{$plan->plan_number} (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
+            ]);
+
+            // 2. Catat Riwayat Pembayaran Termin (PurchasePlanPayment)
+            PurchasePlanPayment::create([
+                'purchase_plan_id' => $plan->id,
+                'branch_id' => $plan->branch_id,
+                'user_id' => $user->id,
+                'account_id' => $request->account_id,
+                'cash_transaction_id' => $cashTx->id,
+                'payment_step' => $step,
+                'payment_step_label' => $stepLabel,
+                'amount' => $amount,
+                'payment_method' => $request->payment_method,
+                'payment_reference' => $request->payment_reference,
+                'payment_notes' => $request->payment_notes,
+                'paid_at' => now(),
+            ]);
+
+            // 3. Hitung ulang total terbayar dan sisa tagihan
+            $newPaidTotal = (float) $plan->payments()->sum('amount');
+            $newRemaining = max(0, (float) $plan->total_estimated_cost - $newPaidTotal);
+            $isFullyPaid = ($newRemaining <= 0);
+
+            // 4. Update status dan saldo Purchase Plan
             $plan->update([
-                'payment_status' => 'paid',
+                'paid_amount' => $newPaidTotal,
+                'remaining_amount' => $newRemaining,
+                'payment_status' => $isFullyPaid ? 'paid' : 'partial',
                 'paid_at' => now(),
                 'paid_by' => $user->id,
                 'payment_method' => $request->payment_method,
@@ -499,32 +564,24 @@ class PurchasePlanController extends Controller
                 'payment_notes' => $request->payment_notes,
             ]);
 
-            // Update linked purchases
+            // 5. Update linked purchases
             $plan->purchases()->update([
-                'payment_status' => 'paid',
+                'payment_status' => $isFullyPaid ? 'paid' : 'partial',
                 'paid_at' => now(),
                 'paid_by' => $user->id,
                 'payment_method' => $request->payment_method,
                 'account_id' => $request->account_id,
                 'payment_reference' => $request->payment_reference,
             ]);
-
-            // If an asset account is selected (Cash / Bank), record a cash transaction (Kas Keluar)
-            if ($request->filled('account_id')) {
-                \App\Models\CashTransaction::create([
-                    'branch_id' => $plan->branch_id,
-                    'account_id' => $request->account_id,
-                    'user_id' => $user->id,
-                    'tipe' => 'keluar',
-                    'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('keluar'),
-                    'tanggal' => now()->toDateString(),
-                    'jumlah' => $plan->total_estimated_cost,
-                    'keterangan' => "Pembayaran Tagihan Supplier untuk Purchase Plan #{$plan->plan_number} (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
-                ]);
-            }
         });
 
-        return redirect()->back()->with('success', "Tagihan Purchase Plan #{$plan->plan_number} BERHASIL DIBAYAR! Status tagihan supplier kini telah LUNAS.");
+        $plan->refresh();
+
+        if ($plan->payment_status === 'paid') {
+            return redirect()->back()->with('success', "Tagihan Purchase Plan #{$plan->plan_number} BERHASIL DILUNASI! Status tagihan kini LUNAS (Total dibayar: Rp " . number_format($plan->paid_amount, 0, ',', '.') . ").");
+        }
+
+        return redirect()->back()->with('success', "{$stepLabel} senilai Rp " . number_format($amount, 0, ',', '.') . " untuk Purchase Plan #{$plan->plan_number} BERHASIL DICATAT! Sisa tagihan: Rp " . number_format($plan->remaining_amount, 0, ',', '.') . ".");
     }
 
     public function reject(Request $request, PurchasePlan $plan)

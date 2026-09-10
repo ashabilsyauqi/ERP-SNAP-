@@ -16,6 +16,8 @@ class PurchasePlan extends Model
         'title',
         'target_date',
         'total_estimated_cost',
+        'paid_amount',
+        'remaining_amount',
         'status',
         'payment_status',
         'paid_at',
@@ -41,6 +43,8 @@ class PurchasePlan extends Model
             'rejected_at' => 'datetime',
             'paid_at' => 'datetime',
             'total_estimated_cost' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
+            'remaining_amount' => 'decimal:2',
         ];
     }
 
@@ -93,6 +97,11 @@ class PurchasePlan extends Model
         return $this->hasMany(Purchase::class, 'purchase_plan_id');
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PurchasePlanPayment::class, 'purchase_plan_id')->orderBy('paid_at', 'asc');
+    }
+
     public function isWaitingApproval(): bool
     {
         return $this->status === 'waiting_owner_approval';
@@ -116,6 +125,16 @@ class PurchasePlan extends Model
     public function isPaid(): bool
     {
         return $this->payment_status === 'paid';
+    }
+
+    public function isPartiallyPaid(): bool
+    {
+        return $this->payment_status === 'partial';
+    }
+
+    public function isUnpaid(): bool
+    {
+        return $this->payment_status === 'unpaid' || empty($this->payment_status);
     }
 
     public function getSupplierBillsAttribute(): array
