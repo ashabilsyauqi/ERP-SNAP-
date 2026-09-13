@@ -223,14 +223,22 @@ class ProfitLossController extends Controller
         $safeBranch = Str::slug($data['branchName'], '_');
         $filename = "Laporan_Laba_Rugi_{$safePeriod}_{$safeBranch}.pdf";
 
-        $pdf = Pdf::loadView('reports.pdf.profit-loss', $data)
-            ->setPaper('a4', 'portrait')
-            ->setOption([
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'sans-serif'
-            ]);
+        try {
+            if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                return redirect()->back()->with('error', 'Package DomPDF belum terpasang di server. Silakan jalankan `composer install` di terminal hosting.');
+            }
 
-        return $pdf->download($filename);
+            $pdf = Pdf::loadView('reports.pdf.profit-loss', $data)
+                ->setPaper('a4', 'portrait')
+                ->setOption([
+                    'isRemoteEnabled' => true,
+                    'defaultFont' => 'sans-serif'
+                ]);
+
+            return $pdf->download($filename);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Gagal membuat PDF: ' . $e->getMessage() . '. Pastikan composer install sudah dijalankan di server.');
+        }
     }
 
     /**
@@ -251,37 +259,45 @@ class ProfitLossController extends Controller
             mkdir($fullPath, 0755, true);
         }
 
-        $pdf = Pdf::loadView('reports.pdf.profit-loss', $data)
-            ->setPaper('a4', 'portrait')
-            ->setOption([
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'sans-serif'
+        try {
+            if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                return redirect()->back()->with('error', 'Package DomPDF belum terpasang di server. Silakan jalankan `composer install` di terminal hosting.');
+            }
+
+            $pdf = Pdf::loadView('reports.pdf.profit-loss', $data)
+                ->setPaper('a4', 'portrait')
+                ->setOption([
+                    'isRemoteEnabled' => true,
+                    'defaultFont' => 'sans-serif'
+                ]);
+
+            // Save PDF file to storage
+            $savedPath = "{$relativeDir}/{$filename}";
+            Storage::disk('public')->put($savedPath, $pdf->output());
+
+            // Create archive database entry
+            ProfitLossArchive::create([
+                'branch_id' => ($data['branchId'] && $data['branchId'] !== 'all') ? $data['branchId'] : null,
+                'user_id' => Auth::id(),
+                'period_type' => $data['periodType'],
+                'period_label' => $data['periodLabel'],
+                'start_date' => $data['startDate'],
+                'end_date' => $data['endDate'],
+                'total_omzet' => $data['totalPendapatan'],
+                'total_hpp' => $data['totalHpp'],
+                'gross_profit' => $data['labaKotor'],
+                'total_opex' => $data['totalBebanOperasional'],
+                'net_profit' => $data['labaBersih'],
+                'pdf_filename' => $filename,
+                'pdf_path' => $savedPath,
+                'notes' => $request->input('notes', 'Arsip Laporan Laba Rugi Otomatis'),
             ]);
 
-        // Save PDF file to storage
-        $savedPath = "{$relativeDir}/{$filename}";
-        Storage::disk('public')->put($savedPath, $pdf->output());
-
-        // Create archive database entry
-        ProfitLossArchive::create([
-            'branch_id' => ($data['branchId'] && $data['branchId'] !== 'all') ? $data['branchId'] : null,
-            'user_id' => Auth::id(),
-            'period_type' => $data['periodType'],
-            'period_label' => $data['periodLabel'],
-            'start_date' => $data['startDate'],
-            'end_date' => $data['endDate'],
-            'total_omzet' => $data['totalPendapatan'],
-            'total_hpp' => $data['totalHpp'],
-            'gross_profit' => $data['labaKotor'],
-            'total_opex' => $data['totalBebanOperasional'],
-            'net_profit' => $data['labaBersih'],
-            'pdf_filename' => $filename,
-            'pdf_path' => $savedPath,
-            'notes' => $request->input('notes', 'Arsip Laporan Laba Rugi Otomatis'),
-        ]);
-
-        return redirect()->route('reports.profit-loss', $request->all())
-            ->with('success', "Laporan Laba Rugi periode {$data['periodLabel']} berhasil dirangkum dalam PDF dan disimpan ke arsip!");
+            return redirect()->route('reports.profit-loss', $request->all())
+                ->with('success', "Laporan Laba Rugi periode {$data['periodLabel']} berhasil dirangkum dalam PDF dan disimpan ke arsip!");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Gagal membuat arsip PDF: ' . $e->getMessage() . '. Pastikan composer install sudah dijalankan di server.');
+        }
     }
 
     /**

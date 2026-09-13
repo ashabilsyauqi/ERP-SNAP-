@@ -244,14 +244,22 @@ class ProductSalesReportController extends Controller
         $safeBranch = Str::slug($data['branchName'], '_');
         $filename = "Laporan_Produk_Bahan_{$safePeriod}_{$safeBranch}.pdf";
 
-        $pdf = Pdf::loadView('reports.pdf.product-sales-monthly', $data)
-            ->setPaper('a4', 'portrait')
-            ->setOption([
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'sans-serif'
-            ]);
+        try {
+            if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                return redirect()->back()->with('error', 'Package DomPDF belum terpasang di server. Silakan jalankan `composer install` di terminal hosting.');
+            }
 
-        return $pdf->stream($filename);
+            $pdf = Pdf::loadView('reports.pdf.product-sales-monthly', $data)
+                ->setPaper('a4', 'portrait')
+                ->setOption([
+                    'isRemoteEnabled' => true,
+                    'defaultFont' => 'sans-serif'
+                ]);
+
+            return $pdf->stream($filename);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Gagal memproses PDF: ' . $e->getMessage() . '. Pastikan composer install sudah dijalankan di server.');
+        }
     }
 
     /**
@@ -282,37 +290,45 @@ class ProductSalesReportController extends Controller
             mkdir($fullPath, 0755, true);
         }
 
-        $pdf = Pdf::loadView('reports.pdf.product-sales-monthly', $data)
-            ->setPaper('a4', 'portrait')
-            ->setOption([
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'sans-serif'
+        try {
+            if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                return redirect()->back()->with('error', 'Package DomPDF belum terpasang di server. Silakan jalankan `composer install` di terminal server.');
+            }
+
+            $pdf = Pdf::loadView('reports.pdf.product-sales-monthly', $data)
+                ->setPaper('a4', 'portrait')
+                ->setOption([
+                    'isRemoteEnabled' => true,
+                    'defaultFont' => 'sans-serif'
+                ]);
+
+            // Save PDF file to public storage
+            $savedPath = "{$relativeDir}/{$filename}";
+            Storage::disk('public')->put($savedPath, $pdf->output());
+
+            // Create archive record
+            ProductSalesArchive::create([
+                'branch_id' => ($data['branchId'] && $data['branchId'] !== 'all') ? $data['branchId'] : null,
+                'user_id' => Auth::id(),
+                'month' => $month,
+                'year' => $year,
+                'period_label' => $data['periodLabel'],
+                'start_date' => $data['startDate'],
+                'end_date' => $data['endDate'],
+                'total_items_sold' => $data['totalItemsSold'],
+                'total_omzet' => $data['totalOmzet'],
+                'total_material_cost' => $data['totalMaterialCost'],
+                'gross_profit' => $data['grossProfit'],
+                'pdf_filename' => $filename,
+                'pdf_path' => $savedPath,
+                'notes' => $request->input('notes', 'Arsip Laporan Bulanan Penjualan Produk & Pemakaian Bahan Baku'),
             ]);
 
-        // Save PDF file to public storage
-        $savedPath = "{$relativeDir}/{$filename}";
-        Storage::disk('public')->put($savedPath, $pdf->output());
-
-        // Create archive record
-        ProductSalesArchive::create([
-            'branch_id' => ($data['branchId'] && $data['branchId'] !== 'all') ? $data['branchId'] : null,
-            'user_id' => Auth::id(),
-            'month' => $month,
-            'year' => $year,
-            'period_label' => $data['periodLabel'],
-            'start_date' => $data['startDate'],
-            'end_date' => $data['endDate'],
-            'total_items_sold' => $data['totalItemsSold'],
-            'total_omzet' => $data['totalOmzet'],
-            'total_material_cost' => $data['totalMaterialCost'],
-            'gross_profit' => $data['grossProfit'],
-            'pdf_filename' => $filename,
-            'pdf_path' => $savedPath,
-            'notes' => $request->input('notes', 'Arsip Laporan Bulanan Penjualan Produk & Pemakaian Bahan Baku'),
-        ]);
-
-        return redirect()->route('reports.product-sales', $request->all())
-            ->with('success', "Laporan Bulanan periode {$data['periodLabel']} berhasil dirangkum dalam bentuk PDF dan disimpan ke arsip!");
+            return redirect()->route('reports.product-sales', $request->all())
+                ->with('success', "Laporan Bulanan periode {$data['periodLabel']} berhasil dirangkum dalam bentuk PDF dan disimpan ke arsip!");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Gagal membuat arsip PDF: ' . $e->getMessage() . '. Pastikan composer install sudah dijalankan di server.');
+        }
     }
 
     /**
