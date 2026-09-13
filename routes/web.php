@@ -50,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/purchasing', [PurchasingController::class, 'store'])->name('purchasing.store');
         Route::post('/purchasing/{purchase}/approve', [PurchasingController::class, 'approve'])->name('purchasing.approve');
         Route::post('/purchasing/{purchase}/pay', [PurchasingController::class, 'pay'])->name('purchasing.pay');
+        Route::delete('/purchasing/{purchase}', [PurchasingController::class, 'destroy'])->name('purchasing.destroy');
         
         // Purchase Plans (Bundle RFQ & Owner Approval)
         Route::get('/purchasing/plans', [\App\Http\Controllers\PurchasePlanController::class, 'index'])->name('purchasing.plans.index');
