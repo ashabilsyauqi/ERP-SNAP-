@@ -65,6 +65,13 @@ class PurchasePlanController extends Controller
 
         // Calculate KPI Metrics
         $totalPlannedCost = $plans->whereIn('status', ['waiting_owner_approval', 'approved_by_owner', 'completed'])->sum('total_estimated_cost');
+        $totalPaidAmount = $plans->whereIn('status', ['approved_by_owner', 'completed'])->sum('paid_amount');
+        $totalRemainingAmount = $plans->whereIn('status', ['approved_by_owner', 'completed'])->sum(function($p) {
+            if ($p->payment_status === 'paid') {
+                return 0;
+            }
+            return $p->remaining_amount !== null ? (float)$p->remaining_amount : max(0, (float)$p->total_estimated_cost - (float)$p->paid_amount);
+        });
         $waitingApprovalCount = $plans->where('status', 'waiting_owner_approval')->count();
         $approvedCount = $plans->whereIn('status', ['approved_by_owner', 'completed'])->count();
         $rejectedCount = $plans->where('status', 'rejected_by_owner')->count();
@@ -76,6 +83,8 @@ class PurchasePlanController extends Controller
         return view('purchasing.plans.index', compact(
             'plans',
             'totalPlannedCost',
+            'totalPaidAmount',
+            'totalRemainingAmount',
             'waitingApprovalCount',
             'approvedCount',
             'rejectedCount',

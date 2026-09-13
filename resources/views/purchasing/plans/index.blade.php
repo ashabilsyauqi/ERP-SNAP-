@@ -76,43 +76,61 @@
 
     <!-- Top KPI Stat Cards -->
     <div class="d-flex align-items-center gap-2 mb-3 overflow-x-auto pb-1">
-        <div class="o_stat_button bg-white shadow-sm">
-            <i class="fa-solid fa-wallet text-teal-600 fs-5"></i>
+        <!-- 1. Total Anggaran -->
+        <div class="o_stat_button bg-white shadow-sm border border-slate-200">
+            <i class="fa-solid fa-wallet text-indigo-600 fs-5"></i>
             <div>
-                <div class="o_stat_value text-teal-700">Rp {{ number_format($totalPlannedCost, 0, ',', '.') }}</div>
+                <div class="o_stat_value text-indigo-900">Rp {{ number_format($totalPlannedCost, 0, ',', '.') }}</div>
                 <div class="o_stat_text">Total Anggaran Pengadaan</div>
             </div>
         </div>
-        <div class="o_stat_button bg-white shadow-sm">
+
+        <!-- 2. Sudah Terbayar (Kas Keluar) -->
+        <div class="o_stat_button bg-white shadow-sm border border-emerald-200">
+            <i class="fa-solid fa-money-bill-transfer text-emerald-600 fs-5"></i>
+            <div>
+                <div class="o_stat_value text-emerald-700">Rp {{ number_format($totalPaidAmount, 0, ',', '.') }}</div>
+                <div class="o_stat_text">Sudah Terbayar (Kas Keluar)</div>
+            </div>
+        </div>
+
+        <!-- 3. Sisa Tagihan (Utang Vendor) -->
+        <div class="o_stat_button bg-white shadow-sm border border-amber-200">
+            <i class="fa-solid fa-file-invoice-dollar text-amber-600 fs-5"></i>
+            <div>
+                <div class="o_stat_value text-amber-800">Rp {{ number_format($totalRemainingAmount, 0, ',', '.') }}</div>
+                <div class="o_stat_text">Sisa Tagihan Belum Dibayar</div>
+            </div>
+        </div>
+
+        <!-- 4. Menunggu ACC Owner -->
+        <div class="o_stat_button bg-white shadow-sm border border-slate-200">
             <i class="fa-solid fa-clock-rotate-left text-amber-500 fs-5"></i>
             <div>
                 <div class="o_stat_value text-amber-600">{{ number_format($waitingApprovalCount) }}</div>
                 <div class="o_stat_text">Menunggu ACC Owner</div>
             </div>
         </div>
-        <div class="o_stat_button bg-white shadow-sm">
-            <i class="fa-solid fa-circle-check text-emerald-600 fs-5"></i>
+
+        <!-- 5. Disetujui / PO Terbit -->
+        <div class="o_stat_button bg-white shadow-sm border border-slate-200">
+            <i class="fa-solid fa-circle-check text-teal-600 fs-5"></i>
             <div>
-                <div class="o_stat_value text-emerald-600">{{ number_format($approvedCount) }}</div>
+                <div class="o_stat_value text-teal-600">{{ number_format($approvedCount) }}</div>
                 <div class="o_stat_text">Disetujui / PO Terbit</div>
             </div>
         </div>
-        <div class="o_stat_button bg-white shadow-sm">
-            <i class="fa-solid fa-file-invoice-dollar text-indigo-600 fs-5"></i>
-            <div>
-                <div class="o_stat_value text-indigo-700">
-                    {{ number_format($plans->whereIn('status', ['approved_by_owner', 'completed'])->where('payment_status', '!=', 'paid')->count()) }}
+
+        <!-- 6. Ditolak Owner (jika ada) -->
+        @if($rejectedCount > 0)
+            <div class="o_stat_button bg-white shadow-sm border border-rose-200">
+                <i class="fa-solid fa-ban text-rose-500 fs-5"></i>
+                <div>
+                    <div class="o_stat_value text-rose-600">{{ number_format($rejectedCount) }}</div>
+                    <div class="o_stat_text">Ditolak Owner</div>
                 </div>
-                <div class="o_stat_text">Tagihan Belum Dibayar</div>
             </div>
-        </div>
-        <div class="o_stat_button bg-white shadow-sm">
-            <i class="fa-solid fa-ban text-rose-500 fs-5"></i>
-            <div>
-                <div class="o_stat_value text-rose-600">{{ number_format($rejectedCount) }}</div>
-                <div class="o_stat_text">Ditolak Owner</div>
-            </div>
-        </div>
+        @endif
     </div>
 
     <!-- Main Sheet -->
