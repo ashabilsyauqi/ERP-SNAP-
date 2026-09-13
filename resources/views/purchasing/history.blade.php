@@ -191,13 +191,13 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <div class="d-flex items-center justify-center gap-1">
+                                    <div class="d-inline-flex align-items-center justify-content-center gap-1">
                                         <!-- Manager Approval Button -->
                                         @if(($purchase->status === 'waiting_approval') && (auth()->user()->isOwner() || auth()->user()->isManager()))
-                                            <form action="{{ route('purchasing.approve', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Setujui Purchase Order #{{ $purchase->po_number }}? Tanda tangan digital Anda akan terstempel pada nota PO.');">
+                                            <form action="{{ route('purchasing.approve', $purchase->id) }}" method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Setujui Purchase Order #{{ $purchase->po_number }}? Tanda tangan digital Anda akan terstempel pada nota PO.');">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Setujui (ACC) PO">
-                                                    <i class="fa-solid fa-signature me-1"></i> ACC
+                                                <button type="submit" class="btn btn-sm btn-success rounded-md px-2 d-inline-flex align-items-center justify-content-center gap-1 text-xs fw-semibold shadow-xs" style="height: 28px;" title="Setujui (ACC) PO">
+                                                    <i class="fa-solid fa-check text-xs"></i> ACC
                                                 </button>
                                             </form>
                                         @endif
@@ -206,9 +206,11 @@
                                         @if((auth()->user()->isOwner() || auth()->user()->isSuperAdmin() || auth()->user()->isManager()) && !$purchase->isPaid())
                                             <button type="button" 
                                                     @click="openPayModal({{ json_encode($purchase) }})" 
-                                                    class="btn btn-sm btn-outline-primary py-0 px-2 font-semibold text-xs" 
+                                                    class="btn btn-sm {{ $purchase->isPartiallyPaid() ? 'btn-warning text-slate-900 border border-amber-400' : 'btn-primary' }} rounded-md px-2 d-inline-flex align-items-center justify-content-center gap-1 text-xs fw-bold shadow-xs" 
+                                                    style="height: 28px;"
                                                     title="Bayar Tagihan Vendor (DP / Termin / Pelunasan)">
-                                                <i class="fa-solid fa-wallet me-1"></i> {{ $purchase->isPartiallyPaid() ? 'Termin' : 'Bayar DP' }}
+                                                <i class="fa-solid fa-credit-card text-xs"></i> 
+                                                <span>{{ $purchase->isPartiallyPaid() ? 'Termin' : 'Bayar DP' }}</span>
                                             </button>
                                         @endif
 
@@ -232,15 +234,15 @@
                                             '{{ number_format($purchase->paid_amount, 0, ',', '.') }}',
                                             '{{ number_format($purchase->remaining_amount ?? $purchase->total_cost, 0, ',', '.') }}',
                                             '{{ $purchase->payment_status }}'
-                                        )" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Cetak Dokumen PO">
+                                        )" class="btn btn-sm btn-outline-secondary border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-md p-0 d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 28px; height: 28px;" title="Cetak Dokumen PO">
                                             <i class="fa-solid fa-print text-xs"></i>
                                         </button>
 
                                         @if(auth()->user()->isSuperAdmin() || auth()->user()->isOwner())
-                                            <form action="{{ route('purchasing.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus data Purchase Order #{{ $purchase->po_number }} ini dari sistem?');">
+                                            <form action="{{ route('purchasing.destroy', $purchase->id) }}" method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Hapus data Purchase Order #{{ $purchase->po_number }} ini dari sistem?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Hapus PO (Super Admin)">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger border-rose-300 text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-md p-0 d-inline-flex align-items-center justify-content-center shadow-xs" style="width: 28px; height: 28px;" title="Hapus PO (Super Admin)">
                                                     <i class="fa-solid fa-trash-can text-xs"></i>
                                                 </button>
                                             </form>

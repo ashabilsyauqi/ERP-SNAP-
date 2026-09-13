@@ -226,33 +226,34 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-sm btn-light border py-0 px-2 text-indigo-700" title="Buka Rincian Bundle & Tagihan"
+                                    <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                                        <!-- Detail Button -->
+                                        <button type="button" class="btn btn-sm btn-outline-secondary border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-indigo-600 rounded-md p-0 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Buka Rincian Bundle & Tagihan"
                                                 @click="openPlanDetail({{ json_encode($plan) }})">
                                             <i class="fa-solid fa-eye text-xs"></i>
                                         </button>
 
                                         @if($plan->status === 'draft' || $plan->status === 'rejected_by_owner' || auth()->user()->isSuperAdmin())
                                             <!-- Edit / Lanjutkan Draft Button -->
-                                            <a href="{{ route('purchasing.plans.edit', $plan->id) }}" class="btn btn-sm btn-outline-primary py-0 px-2" title="Edit Plan">
-                                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                            <a href="{{ route('purchasing.plans.edit', $plan->id) }}" class="btn btn-sm btn-outline-secondary border-slate-300 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 rounded-md p-0 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Edit Plan">
+                                                <i class="fa-solid fa-pen text-xs"></i>
                                             </a>
 
                                             @if($plan->status === 'draft' || $plan->status === 'rejected_by_owner')
                                                 <!-- Ajukan ke Owner (ACC) Button -->
-                                                <form action="{{ route('purchasing.plans.submit-rfq', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Ajukan Purchase Plan #{{ $plan->plan_number }} ke Owner untuk persetujuan Owner?');">
+                                                <form action="{{ route('purchasing.plans.submit-rfq', $plan->id) }}" method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Ajukan Purchase Plan #{{ $plan->plan_number }} ke Owner untuk persetujuan Owner?');">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Ajukan ke Owner (ACC)">
+                                                    <button type="submit" class="btn btn-sm btn-outline-success border-emerald-300 text-emerald-600 hover:bg-emerald-50 rounded-md p-0 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Ajukan ke Owner (ACC)">
                                                         <i class="fa-solid fa-paper-plane text-xs"></i>
                                                     </button>
                                                 </form>
                                             @endif
 
                                             <!-- Hapus Plan Button -->
-                                            <form action="{{ route('purchasing.plans.destroy', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus Purchase Plan #{{ $plan->plan_number }}?');">
+                                            <form action="{{ route('purchasing.plans.destroy', $plan->id) }}" method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Hapus Purchase Plan #{{ $plan->plan_number }}?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" title="Hapus Plan (Super Admin)">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger border-rose-300 text-rose-500 hover:bg-rose-50 hover:text-rose-700 rounded-md p-0 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Hapus Plan (Super Admin)">
                                                     <i class="fa-solid fa-trash-can text-xs"></i>
                                                 </button>
                                             </form>
@@ -260,24 +261,25 @@
 
                                         @if(auth()->user()->isOwner())
                                             @if($plan->status === 'waiting_owner_approval')
-                                                <form action="{{ route('purchasing.plans.approve', $plan->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Setujui Purchase Plan #{{ $plan->plan_number }}? Seluruh item bundle akan diterbitkan menjadi PO dan tagihan siap dibayar.');">
+                                                <form action="{{ route('purchasing.plans.approve', $plan->id) }}" method="POST" class="d-inline m-0 p-0" onsubmit="return confirm('Setujui Purchase Plan #{{ $plan->plan_number }}? Seluruh item bundle akan diterbitkan menjadi PO dan tagihan siap dibayar.');">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-outline-success py-0 px-2" title="Setujui (ACC) Rencana Pengadaan">
-                                                        <i class="fa-solid fa-check text-xs"></i>
+                                                    <button type="submit" class="btn btn-sm btn-success rounded-md px-2 d-inline-flex align-items-center justify-content-center gap-1 text-xs fw-semibold shadow-xs" style="height: 28px;" title="Setujui (ACC) Rencana Pengadaan">
+                                                        <i class="fa-solid fa-check text-xs"></i> ACC
                                                     </button>
                                                 </form>
-                                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="Tolak Rencana Pengadaan"
+                                                <button type="button" class="btn btn-sm btn-outline-danger border-rose-300 text-rose-600 hover:bg-rose-50 rounded-md p-0 d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;" title="Tolak Rencana Pengadaan"
                                                         @click="openRejectModal({{ $plan->id }})">
                                                     <i class="fa-solid fa-xmark text-xs"></i>
                                                 </button>
                                             @elseif($plan->isApproved() && $plan->payment_status !== 'paid')
                                                 <!-- Tombol Bayar Tagihan untuk Owner (Dukungan DP / Termin / Pelunasan) -->
                                                 <button type="button" 
-                                                        class="btn btn-sm {{ $plan->payment_status === 'partial' ? 'btn-warning text-slate-900 border-amber-400' : 'btn-primary' }} py-0 px-2 fw-bold" 
+                                                        class="btn btn-sm {{ $plan->payment_status === 'partial' ? 'btn-warning text-slate-900 border border-amber-400' : 'btn-primary' }} rounded-md px-2 d-inline-flex align-items-center justify-content-center gap-1 text-xs fw-bold shadow-xs" 
+                                                        style="height: 28px;"
                                                         title="{{ $plan->payment_status === 'partial' ? 'Bayar Termin Lanjutan (Sisa: Rp ' . number_format($plan->remaining_amount ?? ($plan->total_estimated_cost - $plan->paid_amount), 0, ',', '.') . ')' : 'Bayar Tagihan Supplier (Transfer)' }}"
                                                         @click="openPayModal({{ json_encode($plan) }})">
-                                                    <i class="fa-solid fa-credit-card text-xs me-1"></i> 
-                                                    {{ $plan->payment_status === 'partial' ? 'Bayar Termin' : 'Bayar' }}
+                                                    <i class="fa-solid fa-credit-card text-xs"></i> 
+                                                    <span>{{ $plan->payment_status === 'partial' ? 'Termin' : 'Bayar' }}</span>
                                                 </button>
                                             @endif
                                         @endif
