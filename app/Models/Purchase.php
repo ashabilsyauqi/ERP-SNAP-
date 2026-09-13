@@ -16,6 +16,8 @@ class Purchase extends Model
         'material_id',
         'qty_bought',
         'total_cost',
+        'paid_amount',
+        'remaining_amount',
         'supplier_id',
         'purchase_plan_id',
         'status',
@@ -25,6 +27,7 @@ class Purchase extends Model
         'payment_method',
         'account_id',
         'payment_reference',
+        'payment_notes',
         'approved_by',
         'approved_at',
         'approval_notes',
@@ -65,6 +68,11 @@ class Purchase extends Model
         return $this->belongsTo(PurchasePlan::class, 'purchase_plan_id');
     }
 
+    public function payments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PurchasePlanPayment::class, 'purchase_id')->orderBy('paid_at', 'asc');
+    }
+
     public function paidBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'paid_by');
@@ -78,10 +86,28 @@ class Purchase extends Model
     protected function casts(): array
     {
         return [
+            'total_cost' => 'decimal:2',
+            'paid_amount' => 'decimal:2',
+            'remaining_amount' => 'decimal:2',
             'verified_at' => 'datetime',
             'approved_at' => 'datetime',
             'paid_at' => 'datetime',
         ];
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->payment_status === 'paid' || ($this->remaining_amount !== null && (float) $this->remaining_amount <= 0 && (float) $this->paid_amount > 0);
+    }
+
+    public function isPartiallyPaid(): bool
+    {
+        return $this->payment_status === 'partial' || ((float) $this->paid_amount > 0 && (float) $this->remaining_amount > 0);
+    }
+
+    public function isUnpaid(): bool
+    {
+        return !$this->isPaid() && !$this->isPartiallyPaid();
     }
 
     public function verifiedBy(): BelongsTo

@@ -686,8 +686,8 @@
                                 Nominal Pembayaran Sekarang <span class="text-rose-500">*</span>
                             </label>
                             <div class="d-flex gap-1">
-                                <button type="button" @click="setPercent(30)" class="btn btn-xs btn-white border py-0 px-2 text-[10px] rounded hover:bg-slate-100">30% DP</button>
-                                <button type="button" @click="setPercent(50)" class="btn btn-xs btn-white border py-0 px-2 text-[10px] rounded hover:bg-slate-100">50% DP</button>
+                                <button type="button" @click="setPercent(20)" class="btn btn-xs btn-white border py-0 px-2 text-[10px] rounded hover:bg-slate-100 font-semibold">20% DP</button>
+                                <button type="button" @click="setPercent(50)" class="btn btn-xs btn-white border py-0 px-2 text-[10px] rounded hover:bg-slate-100 font-semibold">50% DP</button>
                                 <button type="button" @click="setFullRemaining()" class="btn btn-xs py-0 px-2 text-[10px] rounded font-semibold text-emerald-700 border border-emerald-300 bg-emerald-100 hover:bg-emerald-200">Sisa Penuh</button>
                             </div>
                         </div>

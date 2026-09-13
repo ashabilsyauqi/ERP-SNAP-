@@ -9,6 +9,7 @@ class PurchasePlanPayment extends Model
 {
     protected $fillable = [
         'purchase_plan_id',
+        'purchase_id',
         'branch_id',
         'user_id',
         'account_id',
@@ -33,6 +34,11 @@ class PurchasePlanPayment extends Model
     public function purchasePlan(): BelongsTo
     {
         return $this->belongsTo(PurchasePlan::class, 'purchase_plan_id');
+    }
+
+    public function purchase(): BelongsTo
+    {
+        return $this->belongsTo(Purchase::class, 'purchase_id');
     }
 
     public function branch(): BelongsTo

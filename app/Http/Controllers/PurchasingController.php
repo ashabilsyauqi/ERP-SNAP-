@@ -7,6 +7,10 @@ use App\Models\Material;
 use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\Branch;
+use App\Models\Account;
+use App\Models\CashTransaction;
+use App\Models\PurchasePlanPayment;
+use App\Models\PurchasePlan;
 use Illuminate\Support\Facades\DB;
 
 class PurchasingController extends Controller
@@ -16,7 +20,7 @@ class PurchasingController extends Controller
         $user = auth()->user();
         
         $materialQuery = Material::with(['wholesalePrices', 'supplier'])->orderBy('material_name', 'asc');
-        $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy', 'approvedBy'])->orderBy('created_at', 'desc');
+        $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy', 'approvedBy', 'payments.account', 'payments.cashTransaction', 'payments.user'])->orderBy('created_at', 'desc');
 
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
@@ -72,12 +76,14 @@ class PurchasingController extends Controller
 
         $suppliers = Supplier::orderBy('name', 'asc')->get();
         $branches = Branch::orderBy('nama_cabang')->get();
+        $paymentAccounts = Account::where('tipe', 'aset')->where('is_active', true)->orderBy('kode_akun')->get();
 
         return view('purchasing.index', compact(
             'materials',
             'purchases',
             'suppliers',
             'branches',
+            'paymentAccounts',
             'totalSpend',
             'waitingApprovalCount',
             'pendingCount',
@@ -109,7 +115,7 @@ class PurchasingController extends Controller
     {
         $user = auth()->user();
         
-        $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy', 'approvedBy'])->orderBy('created_at', 'desc');
+        $purchaseQuery = Purchase::with(['material', 'supplier', 'user', 'branch', 'verifiedBy', 'approvedBy', 'payments.account', 'payments.cashTransaction', 'payments.user'])->orderBy('created_at', 'desc');
 
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
@@ -163,11 +169,13 @@ class PurchasingController extends Controller
 
         $suppliers = Supplier::orderBy('name', 'asc')->get();
         $branches = Branch::orderBy('nama_cabang')->get();
+        $paymentAccounts = Account::where('tipe', 'aset')->where('is_active', true)->orderBy('kode_akun')->get();
 
         return view('purchasing.history', compact(
             'purchases',
             'suppliers',
             'branches',
+            'paymentAccounts',
             'totalSpend',
             'waitingApprovalCount',
             'pendingCount',
@@ -310,5 +318,121 @@ class PurchasingController extends Controller
         $purchase->delete();
 
         return redirect()->back()->with('success', "Purchase Order #{$poNumber} berhasil dihapus dari sistem.");
+    }
+
+    /**
+     * Record Stage/Installment Payment for Single Purchase Order (DP / Termin 2 / Pelunasan)
+     */
+    public function pay(Request $request, Purchase $purchase)
+    {
+        $user = auth()->user();
+
+        if (!$user->isOwner() && !$user->isSuperAdmin() && !$user->isManager()) {
+            abort(403, 'Hanya Owner, Super Admin, atau Manajer yang berhak mencatat pembayaran tagihan vendor.');
+        }
+
+        $currentRemaining = $purchase->remaining_amount !== null 
+            ? (float) $purchase->remaining_amount 
+            : max(0, (float) $purchase->total_cost - (float) $purchase->paid_amount);
+
+        if ($currentRemaining <= 0 && $purchase->payment_status === 'paid') {
+            return redirect()->back()->with('error', "Tagihan PO #{$purchase->po_number} sudah berstatus LUNAS.");
+        }
+
+        $request->validate([
+            'payment_step' => 'nullable|string|in:step_1,step_2,pelunasan',
+            'amount' => 'required|numeric|min:1',
+            'account_id' => 'required|exists:accounts,id',
+            'payment_method' => 'required|string|max:100',
+            'payment_reference' => 'nullable|string|max:255',
+            'payment_notes' => 'nullable|string|max:500',
+        ]);
+
+        $amount = round((float) $request->amount, 2);
+
+        if ($amount > ($currentRemaining + 1)) {
+            return redirect()->back()->with('error', "Nominal pembayaran (Rp " . number_format($amount, 0, ',', '.') . ") melebihi sisa tagihan (Maksimal Rp " . number_format($currentRemaining, 0, ',', '.') . ").");
+        }
+
+        $step = $request->input('payment_step', 'step_1');
+        if ($amount >= ($currentRemaining - 1)) {
+            $step = 'pelunasan';
+        }
+
+        $stepLabels = [
+            'step_1' => 'Pembayaran 1 (DP / Uang Muka)',
+            'step_2' => 'Pembayaran ke-2 (Termin 2)',
+            'pelunasan' => 'Pelunasan (Tahap Akhir)',
+        ];
+        $stepLabel = $stepLabels[$step] ?? 'Pembayaran Tagihan Supplier';
+
+        DB::transaction(function () use ($request, $purchase, $user, $amount, $step, $stepLabel) {
+            // 1. Catat Kas Keluar (CashTransaction)
+            $cashTx = CashTransaction::create([
+                'branch_id' => $purchase->branch_id,
+                'account_id' => $request->account_id,
+                'user_id' => $user->id,
+                'tipe' => 'keluar',
+                'nomor_referensi' => CashTransaction::generateNomorReferensi('keluar'),
+                'tanggal' => now()->toDateString(),
+                'jumlah' => $amount,
+                'keterangan' => "{$stepLabel} untuk PO #{$purchase->po_number} - " . ($purchase->material->material_name ?? 'Bahan') . " (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
+            ]);
+
+            // 2. Catat Riwayat Pembayaran (PurchasePlanPayment linked to purchase_id)
+            PurchasePlanPayment::create([
+                'purchase_plan_id' => $purchase->purchase_plan_id,
+                'purchase_id' => $purchase->id,
+                'branch_id' => $purchase->branch_id,
+                'user_id' => $user->id,
+                'account_id' => $request->account_id,
+                'cash_transaction_id' => $cashTx->id,
+                'payment_step' => $step,
+                'payment_step_label' => $stepLabel,
+                'amount' => $amount,
+                'payment_method' => $request->payment_method,
+                'payment_reference' => $request->payment_reference,
+                'payment_notes' => $request->payment_notes,
+                'paid_at' => now(),
+            ]);
+
+            // 3. Hitung ulang total terbayar dan sisa tagihan untuk PO ini
+            $newPaidTotal = (float) $purchase->payments()->sum('amount');
+            $newRemaining = max(0, (float) $purchase->total_cost - $newPaidTotal);
+            $isFullyPaid = ($newRemaining <= 0);
+
+            // 4. Update status dan saldo Purchase Order
+            $purchase->update([
+                'paid_amount' => $newPaidTotal,
+                'remaining_amount' => $newRemaining,
+                'payment_status' => $isFullyPaid ? 'paid' : 'partial',
+                'paid_at' => now(),
+                'paid_by' => $user->id,
+                'payment_method' => $request->payment_method,
+                'account_id' => $request->account_id,
+                'payment_reference' => $request->payment_reference,
+                'payment_notes' => $request->payment_notes,
+            ]);
+
+            // 5. Jika PO ini terhubung ke PurchasePlan, sinkronkan juga PurchasePlan induknya
+            if ($purchase->purchase_plan_id && $purchase->purchasePlan) {
+                $plan = $purchase->purchasePlan;
+                $planPaidTotal = (float) $plan->payments()->sum('amount');
+                $planRemaining = max(0, (float) $plan->total_estimated_cost - $planPaidTotal);
+                $plan->update([
+                    'paid_amount' => $planPaidTotal,
+                    'remaining_amount' => $planRemaining,
+                    'payment_status' => ($planRemaining <= 0) ? 'paid' : 'partial',
+                ]);
+            }
+        });
+
+        $purchase->refresh();
+
+        if ($purchase->payment_status === 'paid') {
+            return redirect()->back()->with('success', "Tagihan Purchase Order #{$purchase->po_number} BERHASIL DILUNASI! Status tagihan kini LUNAS (Total dibayar: Rp " . number_format($purchase->paid_amount, 0, ',', '.') . ").");
+        }
+
+        return redirect()->back()->with('success', "{$stepLabel} senilai Rp " . number_format($amount, 0, ',', '.') . " untuk PO #{$purchase->po_number} BERHASIL DICATAT! Sisa tagihan: Rp " . number_format($purchase->remaining_amount, 0, ',', '.') . ".");
     }
 }
