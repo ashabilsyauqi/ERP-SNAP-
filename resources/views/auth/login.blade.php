@@ -71,11 +71,24 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="password" class="form-label fw-bold text-slate-700 text-uppercase mb-1" style="font-size: 11px; letter-spacing: 0.5px; color: #475569;">Kata Sandi (Password)</label>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="password" class="form-label fw-bold text-slate-700 text-uppercase mb-0" style="font-size: 11px; letter-spacing: 0.5px; color: #475569;">Kata Sandi (Password)</label>
+                        <span id="caps-lock-warning" class="text-danger fw-semibold d-none" style="font-size: 10px;">
+                            <i class="fa-solid fa-triangle-exclamation me-0.5"></i> CAPS LOCK AKTIF
+                        </span>
+                    </div>
                     <div class="input-group">
                         <span class="input-group-text bg-light text-muted border-end-0"><i class="fa-solid fa-lock text-xs"></i></span>
                         <input type="password" id="password" name="password" required
-                            placeholder="••••••••" class="form-control form-control-sm border-start-0 ps-1" style="font-size: 13px; padding: 9px 12px; background-color: #f8fafc;">
+                            placeholder="Masukkan kata sandi" class="form-control form-control-sm border-start-0 border-end-0 ps-1" style="font-size: 13px; padding: 9px 12px; background-color: #f8fafc;">
+                        <button type="button" class="input-group-text bg-light border-start-0 text-muted" id="togglePasswordBtn" onclick="togglePasswordVisibility()" title="Lihat / Sembunyikan Password" style="cursor: pointer;">
+                            <i class="fa-regular fa-eye text-xs" id="togglePasswordIcon"></i>
+                        </button>
+                    </div>
+                    <div class="mt-1 d-flex align-items-center justify-content-between">
+                        <span class="text-muted" style="font-size: 11px;">
+                            <i class="fa-solid fa-circle-info text-primary me-1"></i> Klik ikon mata untuk melihat karakter
+                        </span>
                     </div>
                 </div>
 
@@ -98,5 +111,41 @@
             Powered by <strong class="text-white">Snaprint Enterprise Engine</strong> &bull; &copy; {{ date('Y') }}
         </div>
     </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePasswordIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+                toggleIcon.classList.add('text-primary');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.remove('text-primary');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const passwordInput = document.getElementById('password');
+            const capsLockWarning = document.getElementById('caps-lock-warning');
+
+            if (passwordInput && capsLockWarning) {
+                ['keydown', 'keyup'].forEach(function(evtType) {
+                    passwordInput.addEventListener(evtType, function(event) {
+                        if (event.getModifierState && event.getModifierState('CapsLock')) {
+                            capsLockWarning.classList.remove('d-none');
+                        } else {
+                            capsLockWarning.classList.add('d-none');
+                        }
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
