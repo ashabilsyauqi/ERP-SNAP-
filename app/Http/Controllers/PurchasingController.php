@@ -368,7 +368,21 @@ class PurchasingController extends Controller
 
         try {
             DB::transaction(function () use ($request, $purchase, $user, $amount, $step, $stepLabel) {
-                $targetBranchId = $purchase->branch_id ?: ($user->branch_id ?: (\App\Models\Branch::first()?->id ?: 1));
+                // Lock record to prevent concurrent duplicate payments
+                $lockedPurchase = Purchase::lockForUpdate()->find($purchase->id);
+                $remaining = $lockedPurchase->remaining_amount !== null 
+                    ? (float) $lockedPurchase->remaining_amount 
+                    : max(0, (float) $lockedPurchase->total_cost - (float) $lockedPurchase->paid_amount);
+
+                if ($remaining <= 0 && $lockedPurchase->payment_status === 'paid') {
+                    throw new \Exception("Tagihan PO #{$lockedPurchase->po_number} sudah berstatus LUNAS.");
+                }
+
+                if ($amount > ($remaining + 1)) {
+                    throw new \Exception("Nominal pembayaran (Rp " . number_format($amount, 0, ',', '.') . ") melebihi sisa tagihan (Maksimal Rp " . number_format($remaining, 0, ',', '.') . ").");
+                }
+
+                $targetBranchId = $lockedPurchase->branch_id ?: ($user->branch_id ?: (\App\Models\Branch::first()?->id ?: 1));
 
                 // 1. Catat Kas Keluar (CashTransaction)
                 $cashTx = CashTransaction::create([
@@ -379,13 +393,13 @@ class PurchasingController extends Controller
                     'nomor_referensi' => CashTransaction::generateNomorReferensi('keluar'),
                     'tanggal' => now()->toDateString(),
                     'jumlah' => (int) round($amount),
-                    'keterangan' => "{$stepLabel} untuk PO #{$purchase->po_number} - " . ($purchase->material->material_name ?? 'Bahan') . " (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
+                    'keterangan' => "{$stepLabel} untuk PO #{$lockedPurchase->po_number} - " . ($lockedPurchase->material->material_name ?? 'Bahan') . " (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
                 ]);
 
                 // 2. Catat Riwayat Pembayaran (PurchasePlanPayment linked to purchase_id)
                 PurchasePlanPayment::create([
-                    'purchase_plan_id' => $purchase->purchase_plan_id ?: null,
-                    'purchase_id' => $purchase->id,
+                    'purchase_plan_id' => $lockedPurchase->purchase_plan_id ?: null,
+                    'purchase_id' => $lockedPurchase->id,
                     'branch_id' => $targetBranchId,
                     'user_id' => $user->id,
                     'account_id' => $request->account_id,
@@ -400,12 +414,12 @@ class PurchasingController extends Controller
                 ]);
 
                 // 3. Hitung ulang total terbayar dan sisa tagihan untuk PO ini
-                $newPaidTotal = (float) $purchase->payments()->sum('amount');
-                $newRemaining = max(0, (float) $purchase->total_cost - $newPaidTotal);
+                $newPaidTotal = (float) $lockedPurchase->payments()->sum('amount');
+                $newRemaining = max(0, (float) $lockedPurchase->total_cost - $newPaidTotal);
                 $isFullyPaid = ($newRemaining <= 0);
 
                 // 4. Update status dan saldo Purchase Order
-                $purchase->update([
+                $lockedPurchase->update([
                     'paid_amount' => $newPaidTotal,
                     'remaining_amount' => $newRemaining,
                     'payment_status' => $isFullyPaid ? 'paid' : 'partial',
@@ -418,8 +432,8 @@ class PurchasingController extends Controller
                 ]);
 
                 // 5. Jika PO ini terhubung ke PurchasePlan, sinkronkan juga PurchasePlan induknya
-                if ($purchase->purchase_plan_id && $purchase->purchasePlan) {
-                    $plan = $purchase->purchasePlan;
+                if ($lockedPurchase->purchase_plan_id && $lockedPurchase->purchasePlan) {
+                    $plan = $lockedPurchase->purchasePlan;
                     $planPaidTotal = (float) $plan->payments()->sum('amount');
                     $planRemaining = max(0, (float) $plan->total_estimated_cost - $planPaidTotal);
                     $plan->update([

@@ -19,6 +19,7 @@
     detailOpen: false,
     rejectOpen: false,
     payOpen: false,
+    isSubmitting: false,
     selectedPlan: null,
     rejectPlanId: null,
     payPlan: null,
@@ -613,8 +614,11 @@
 
     <!-- Modal Pembayaran Tagihan Supplier (Transfer Kas/Bank) -->
     <div x-show="payOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
-        <div class="bg-white rounded-xl shadow-2xl border w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden" @click.away="payOpen = false" x-if="payPlan">
-            <form :action="'{{ url('/purchasing/plans') }}/' + (payPlan ? payPlan.id : '') + '/pay'" method="POST" class="flex flex-col h-full mb-0">
+        <div class="bg-white rounded-xl shadow-2xl border w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden" @click.away="!isSubmitting && (payOpen = false)" x-if="payPlan">
+            <form :action="'{{ url('/purchasing/plans') }}/' + (payPlan ? payPlan.id : '') + '/pay'" 
+                  method="POST" 
+                  @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true;"
+                  class="flex flex-col h-full mb-0">
                 @csrf
                 <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-shrink-0">
                     <div class="d-flex align-items-center gap-2">
@@ -624,7 +628,7 @@
                             <span class="text-[11px] text-slate-300">Pencatatan Pembayaran Bertahap (DP / Termin / Pelunasan)</span>
                         </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white text-xs" @click="payOpen = false"></button>
+                    <button type="button" class="btn-close btn-close-white text-xs" :disabled="isSubmitting" @click="payOpen = false"></button>
                 </div>
                 
                 <div class="p-4 space-y-3.5 text-xs overflow-y-auto flex-1">
@@ -799,10 +803,11 @@
                 </div>
 
                 <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2 flex-shrink-0">
-                    <button type="button" class="btn-odoo-secondary" @click="payOpen = false">Batal</button>
-                    <button type="submit" class="btn btn-sm btn-success font-bold px-3">
-                        <i class="fa-solid fa-check me-1"></i>
-                        <span x-text="payStep === 'step_1' ? 'Konfirmasi Pembayaran 1 (DP)' : (payStep === 'step_2' ? 'Konfirmasi Pembayaran ke-2' : 'Konfirmasi Pelunasan')"></span>
+                    <button type="button" class="btn-odoo-secondary" :disabled="isSubmitting" @click="payOpen = false">Batal</button>
+                    <button type="submit" class="btn btn-sm btn-success font-bold px-3 d-inline-flex align-items-center gap-1.5" :disabled="isSubmitting">
+                        <i class="fa-solid fa-spinner fa-spin" x-show="isSubmitting"></i>
+                        <i class="fa-solid fa-check" x-show="!isSubmitting"></i>
+                        <span x-text="isSubmitting ? 'Memproses Pembayaran...' : (payStep === 'step_1' ? 'Konfirmasi Pembayaran 1 (DP)' : (payStep === 'step_2' ? 'Konfirmasi Pembayaran ke-2' : 'Konfirmasi Pelunasan'))"></span>
                     </button>
                 </div>
             </form>

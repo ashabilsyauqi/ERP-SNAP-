@@ -12,6 +12,7 @@
 
 @section('content')
 <div x-data="{ 
+    isSubmitting: false,
     payOpen: false,
     payPurchase: null,
     payStep: 'step_1',
@@ -326,7 +327,7 @@
     <!-- Modal Pembayaran Tagihan PO Satuan (Transfer Kas/Bank) -->
     <div x-show="payOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
         <div class="bg-white rounded-xl shadow-2xl border w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden" @click.away="payOpen = false" x-if="payPurchase">
-            <form :action="'{{ url('/purchasing') }}/' + (payPurchase ? payPurchase.id : '') + '/pay'" method="POST" class="flex flex-col h-full mb-0">
+            <form :action="'{{ url('/purchasing') }}/' + (payPurchase ? payPurchase.id : '') + '/pay'" method="POST" class="flex flex-col h-full mb-0" @submit="if(isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true;">
                 @csrf
                 <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-shrink-0">
                     <div class="d-flex align-items-center gap-2">
@@ -496,10 +497,11 @@
                 </div>
 
                 <div class="bg-slate-50 border-top px-4 py-2.5 d-flex justify-content-end gap-2 flex-shrink-0">
-                    <button type="button" class="btn-odoo-secondary" @click="payOpen = false">Batal</button>
-                    <button type="submit" class="btn btn-sm btn-success font-bold px-3">
-                        <i class="fa-solid fa-check me-1"></i>
-                        <span x-text="payStep === 'step_1' ? 'Konfirmasi Pembayaran 1 (DP)' : (payStep === 'step_2' ? 'Konfirmasi Pembayaran ke-2' : 'Konfirmasi Pelunasan')"></span>
+                    <button type="button" class="btn-odoo-secondary" @click="payOpen = false" :disabled="isSubmitting">Batal</button>
+                    <button type="submit" class="btn btn-sm btn-success font-bold px-3" :disabled="isSubmitting">
+                        <i class="fa-solid fa-spinner fa-spin me-1" x-show="isSubmitting"></i>
+                        <i class="fa-solid fa-check me-1" x-show="!isSubmitting"></i>
+                        <span x-text="isSubmitting ? 'Memproses...' : (payStep === 'step_1' ? 'Konfirmasi Pembayaran 1 (DP)' : (payStep === 'step_2' ? 'Konfirmasi Pembayaran ke-2' : 'Konfirmasi Pelunasan'))"></span>
                     </button>
                 </div>
             </form>
