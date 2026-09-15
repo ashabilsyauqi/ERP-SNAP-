@@ -483,8 +483,8 @@ class PurchasePlanController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->isOwner() && !$user->isSuperAdmin()) {
-            abort(403, 'Hanya Owner atau Super Admin yang berhak mencatat/melakukan pembayaran tagihan supplier.');
+        if (!$user->isOwner() && !$user->isSuperAdmin() && !$user->isManager()) {
+            abort(403, 'Hanya Owner, Super Admin, atau Manajer yang berhak mencatat/melakukan pembayaran tagihan supplier.');
         }
 
         if (!$user->isSuperAdmin() && $plan->status !== 'approved_by_owner' && $plan->status !== 'completed') {
@@ -526,71 +526,77 @@ class PurchasePlanController extends Controller
         ];
         $stepLabel = $stepLabels[$step] ?? 'Pembayaran Tagihan Supplier';
 
-        DB::transaction(function () use ($request, $plan, $user, $amount, $step, $stepLabel) {
-            // 1. Catat Kas Keluar
-            $cashTx = \App\Models\CashTransaction::create([
-                'branch_id' => $plan->branch_id,
-                'account_id' => $request->account_id,
-                'user_id' => $user->id,
-                'tipe' => 'keluar',
-                'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('keluar'),
-                'tanggal' => now()->toDateString(),
-                'jumlah' => $amount,
-                'keterangan' => "{$stepLabel} untuk Purchase Plan #{$plan->plan_number} (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
-            ]);
+        try {
+            DB::transaction(function () use ($request, $plan, $user, $amount, $step, $stepLabel) {
+                $targetBranchId = $plan->branch_id ?: ($user->branch_id ?: (\App\Models\Branch::first()?->id ?: 1));
 
-            // 2. Catat Riwayat Pembayaran Termin (PurchasePlanPayment)
-            PurchasePlanPayment::create([
-                'purchase_plan_id' => $plan->id,
-                'branch_id' => $plan->branch_id,
-                'user_id' => $user->id,
-                'account_id' => $request->account_id,
-                'cash_transaction_id' => $cashTx->id,
-                'payment_step' => $step,
-                'payment_step_label' => $stepLabel,
-                'amount' => $amount,
-                'payment_method' => $request->payment_method,
-                'payment_reference' => $request->payment_reference,
-                'payment_notes' => $request->payment_notes,
-                'paid_at' => now(),
-            ]);
+                // 1. Catat Kas Keluar
+                $cashTx = \App\Models\CashTransaction::create([
+                    'branch_id' => $targetBranchId,
+                    'account_id' => $request->account_id,
+                    'user_id' => $user->id,
+                    'tipe' => 'keluar',
+                    'nomor_referensi' => \App\Models\CashTransaction::generateNomorReferensi('keluar'),
+                    'tanggal' => now()->toDateString(),
+                    'jumlah' => (int) round($amount),
+                    'keterangan' => "{$stepLabel} untuk Purchase Plan #{$plan->plan_number} (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
+                ]);
 
-            // 3. Hitung ulang total terbayar dan sisa tagihan
-            $newPaidTotal = (float) $plan->payments()->sum('amount');
-            $newRemaining = max(0, (float) $plan->total_estimated_cost - $newPaidTotal);
-            $isFullyPaid = ($newRemaining <= 0);
+                // 2. Catat Riwayat Pembayaran Termin (PurchasePlanPayment)
+                PurchasePlanPayment::create([
+                    'purchase_plan_id' => $plan->id,
+                    'branch_id' => $targetBranchId,
+                    'user_id' => $user->id,
+                    'account_id' => $request->account_id,
+                    'cash_transaction_id' => $cashTx->id,
+                    'payment_step' => $step,
+                    'payment_step_label' => $stepLabel,
+                    'amount' => $amount,
+                    'payment_method' => $request->payment_method,
+                    'payment_reference' => $request->payment_reference,
+                    'payment_notes' => $request->payment_notes,
+                    'paid_at' => now(),
+                ]);
 
-            // 4. Update status dan saldo Purchase Plan
-            $plan->update([
-                'paid_amount' => $newPaidTotal,
-                'remaining_amount' => $newRemaining,
-                'payment_status' => $isFullyPaid ? 'paid' : 'partial',
-                'paid_at' => now(),
-                'paid_by' => $user->id,
-                'payment_method' => $request->payment_method,
-                'account_id' => $request->account_id,
-                'payment_reference' => $request->payment_reference,
-                'payment_notes' => $request->payment_notes,
-            ]);
+                // 3. Hitung ulang total terbayar dan sisa tagihan
+                $newPaidTotal = (float) $plan->payments()->sum('amount');
+                $newRemaining = max(0, (float) $plan->total_estimated_cost - $newPaidTotal);
+                $isFullyPaid = ($newRemaining <= 0);
 
-            // 5. Update linked purchases
-            $plan->purchases()->update([
-                'payment_status' => $isFullyPaid ? 'paid' : 'partial',
-                'paid_at' => now(),
-                'paid_by' => $user->id,
-                'payment_method' => $request->payment_method,
-                'account_id' => $request->account_id,
-                'payment_reference' => $request->payment_reference,
-            ]);
-        });
+                // 4. Update status dan saldo Purchase Plan
+                $plan->update([
+                    'paid_amount' => $newPaidTotal,
+                    'remaining_amount' => $newRemaining,
+                    'payment_status' => $isFullyPaid ? 'paid' : 'partial',
+                    'paid_at' => now(),
+                    'paid_by' => $user->id,
+                    'payment_method' => $request->payment_method,
+                    'account_id' => $request->account_id,
+                    'payment_reference' => $request->payment_reference,
+                    'payment_notes' => $request->payment_notes,
+                ]);
 
-        $plan->refresh();
+                // 5. Update linked purchases
+                $plan->purchases()->update([
+                    'payment_status' => $isFullyPaid ? 'paid' : 'partial',
+                    'paid_at' => now(),
+                    'paid_by' => $user->id,
+                    'payment_method' => $request->payment_method,
+                    'account_id' => $request->account_id,
+                    'payment_reference' => $request->payment_reference,
+                ]);
+            });
 
-        if ($plan->payment_status === 'paid') {
-            return redirect()->back()->with('success', "Tagihan Purchase Plan #{$plan->plan_number} BERHASIL DILUNASI! Status tagihan kini LUNAS (Total dibayar: Rp " . number_format($plan->paid_amount, 0, ',', '.') . ").");
+            $plan->refresh();
+
+            if ($plan->payment_status === 'paid') {
+                return redirect()->back()->with('success', "Tagihan Purchase Plan #{$plan->plan_number} BERHASIL DILUNASI! Status tagihan kini LUNAS (Total dibayar: Rp " . number_format($plan->paid_amount, 0, ',', '.') . ").");
+            }
+
+            return redirect()->back()->with('success', "{$stepLabel} senilai Rp " . number_format($amount, 0, ',', '.') . " untuk Purchase Plan #{$plan->plan_number} BERHASIL DICATAT! Sisa tagihan: Rp " . number_format($plan->remaining_amount, 0, ',', '.') . ".");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', "Gagal memproses pembayaran: " . $e->getMessage());
         }
-
-        return redirect()->back()->with('success', "{$stepLabel} senilai Rp " . number_format($amount, 0, ',', '.') . " untuk Purchase Plan #{$plan->plan_number} BERHASIL DICATAT! Sisa tagihan: Rp " . number_format($plan->remaining_amount, 0, ',', '.') . ".");
     }
 
     public function reject(Request $request, PurchasePlan $plan)

@@ -614,7 +614,7 @@
     <!-- Modal Pembayaran Tagihan Supplier (Transfer Kas/Bank) -->
     <div x-show="payOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4" style="display: none; position: fixed; inset: 0; z-index: 999999 !important;" x-cloak>
         <div class="bg-white rounded-xl shadow-2xl border w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden" @click.away="payOpen = false" x-if="payPlan">
-            <form :action="'/purchasing/plans/' + (payPlan ? payPlan.id : '') + '/pay'" method="POST" class="flex flex-col h-full mb-0">
+            <form :action="'{{ url('/purchasing/plans') }}/' + (payPlan ? payPlan.id : '') + '/pay'" method="POST" class="flex flex-col h-full mb-0">
                 @csrf
                 <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-shrink-0">
                     <div class="d-flex align-items-center gap-2">

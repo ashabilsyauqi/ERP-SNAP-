@@ -366,73 +366,79 @@ class PurchasingController extends Controller
         ];
         $stepLabel = $stepLabels[$step] ?? 'Pembayaran Tagihan Supplier';
 
-        DB::transaction(function () use ($request, $purchase, $user, $amount, $step, $stepLabel) {
-            // 1. Catat Kas Keluar (CashTransaction)
-            $cashTx = CashTransaction::create([
-                'branch_id' => $purchase->branch_id,
-                'account_id' => $request->account_id,
-                'user_id' => $user->id,
-                'tipe' => 'keluar',
-                'nomor_referensi' => CashTransaction::generateNomorReferensi('keluar'),
-                'tanggal' => now()->toDateString(),
-                'jumlah' => $amount,
-                'keterangan' => "{$stepLabel} untuk PO #{$purchase->po_number} - " . ($purchase->material->material_name ?? 'Bahan') . " (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
-            ]);
+        try {
+            DB::transaction(function () use ($request, $purchase, $user, $amount, $step, $stepLabel) {
+                $targetBranchId = $purchase->branch_id ?: ($user->branch_id ?: (\App\Models\Branch::first()?->id ?: 1));
 
-            // 2. Catat Riwayat Pembayaran (PurchasePlanPayment linked to purchase_id)
-            PurchasePlanPayment::create([
-                'purchase_plan_id' => $purchase->purchase_plan_id,
-                'purchase_id' => $purchase->id,
-                'branch_id' => $purchase->branch_id,
-                'user_id' => $user->id,
-                'account_id' => $request->account_id,
-                'cash_transaction_id' => $cashTx->id,
-                'payment_step' => $step,
-                'payment_step_label' => $stepLabel,
-                'amount' => $amount,
-                'payment_method' => $request->payment_method,
-                'payment_reference' => $request->payment_reference,
-                'payment_notes' => $request->payment_notes,
-                'paid_at' => now(),
-            ]);
-
-            // 3. Hitung ulang total terbayar dan sisa tagihan untuk PO ini
-            $newPaidTotal = (float) $purchase->payments()->sum('amount');
-            $newRemaining = max(0, (float) $purchase->total_cost - $newPaidTotal);
-            $isFullyPaid = ($newRemaining <= 0);
-
-            // 4. Update status dan saldo Purchase Order
-            $purchase->update([
-                'paid_amount' => $newPaidTotal,
-                'remaining_amount' => $newRemaining,
-                'payment_status' => $isFullyPaid ? 'paid' : 'partial',
-                'paid_at' => now(),
-                'paid_by' => $user->id,
-                'payment_method' => $request->payment_method,
-                'account_id' => $request->account_id,
-                'payment_reference' => $request->payment_reference,
-                'payment_notes' => $request->payment_notes,
-            ]);
-
-            // 5. Jika PO ini terhubung ke PurchasePlan, sinkronkan juga PurchasePlan induknya
-            if ($purchase->purchase_plan_id && $purchase->purchasePlan) {
-                $plan = $purchase->purchasePlan;
-                $planPaidTotal = (float) $plan->payments()->sum('amount');
-                $planRemaining = max(0, (float) $plan->total_estimated_cost - $planPaidTotal);
-                $plan->update([
-                    'paid_amount' => $planPaidTotal,
-                    'remaining_amount' => $planRemaining,
-                    'payment_status' => ($planRemaining <= 0) ? 'paid' : 'partial',
+                // 1. Catat Kas Keluar (CashTransaction)
+                $cashTx = CashTransaction::create([
+                    'branch_id' => $targetBranchId,
+                    'account_id' => $request->account_id,
+                    'user_id' => $user->id,
+                    'tipe' => 'keluar',
+                    'nomor_referensi' => CashTransaction::generateNomorReferensi('keluar'),
+                    'tanggal' => now()->toDateString(),
+                    'jumlah' => (int) round($amount),
+                    'keterangan' => "{$stepLabel} untuk PO #{$purchase->po_number} - " . ($purchase->material->material_name ?? 'Bahan') . " (" . ($request->payment_method) . ($request->payment_reference ? " - Ref: {$request->payment_reference}" : '') . ")",
                 ]);
+
+                // 2. Catat Riwayat Pembayaran (PurchasePlanPayment linked to purchase_id)
+                PurchasePlanPayment::create([
+                    'purchase_plan_id' => $purchase->purchase_plan_id ?: null,
+                    'purchase_id' => $purchase->id,
+                    'branch_id' => $targetBranchId,
+                    'user_id' => $user->id,
+                    'account_id' => $request->account_id,
+                    'cash_transaction_id' => $cashTx->id,
+                    'payment_step' => $step,
+                    'payment_step_label' => $stepLabel,
+                    'amount' => $amount,
+                    'payment_method' => $request->payment_method,
+                    'payment_reference' => $request->payment_reference,
+                    'payment_notes' => $request->payment_notes,
+                    'paid_at' => now(),
+                ]);
+
+                // 3. Hitung ulang total terbayar dan sisa tagihan untuk PO ini
+                $newPaidTotal = (float) $purchase->payments()->sum('amount');
+                $newRemaining = max(0, (float) $purchase->total_cost - $newPaidTotal);
+                $isFullyPaid = ($newRemaining <= 0);
+
+                // 4. Update status dan saldo Purchase Order
+                $purchase->update([
+                    'paid_amount' => $newPaidTotal,
+                    'remaining_amount' => $newRemaining,
+                    'payment_status' => $isFullyPaid ? 'paid' : 'partial',
+                    'paid_at' => now(),
+                    'paid_by' => $user->id,
+                    'payment_method' => $request->payment_method,
+                    'account_id' => $request->account_id,
+                    'payment_reference' => $request->payment_reference,
+                    'payment_notes' => $request->payment_notes,
+                ]);
+
+                // 5. Jika PO ini terhubung ke PurchasePlan, sinkronkan juga PurchasePlan induknya
+                if ($purchase->purchase_plan_id && $purchase->purchasePlan) {
+                    $plan = $purchase->purchasePlan;
+                    $planPaidTotal = (float) $plan->payments()->sum('amount');
+                    $planRemaining = max(0, (float) $plan->total_estimated_cost - $planPaidTotal);
+                    $plan->update([
+                        'paid_amount' => $planPaidTotal,
+                        'remaining_amount' => $planRemaining,
+                        'payment_status' => ($planRemaining <= 0) ? 'paid' : 'partial',
+                    ]);
+                }
+            });
+
+            $purchase->refresh();
+
+            if ($purchase->payment_status === 'paid') {
+                return redirect()->back()->with('success', "Tagihan Purchase Order #{$purchase->po_number} BERHASIL DILUNASI! Status tagihan kini LUNAS (Total dibayar: Rp " . number_format($purchase->paid_amount, 0, ',', '.') . ").");
             }
-        });
 
-        $purchase->refresh();
-
-        if ($purchase->payment_status === 'paid') {
-            return redirect()->back()->with('success', "Tagihan Purchase Order #{$purchase->po_number} BERHASIL DILUNASI! Status tagihan kini LUNAS (Total dibayar: Rp " . number_format($purchase->paid_amount, 0, ',', '.') . ").");
+            return redirect()->back()->with('success', "{$stepLabel} senilai Rp " . number_format($amount, 0, ',', '.') . " untuk Purchase Order #{$purchase->po_number} BERHASIL DICATAT! Sisa tagihan: Rp " . number_format($purchase->remaining_amount, 0, ',', '.') . ".");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', "Gagal memproses pembayaran: " . $e->getMessage());
         }
-
-        return redirect()->back()->with('success', "{$stepLabel} senilai Rp " . number_format($amount, 0, ',', '.') . " untuk PO #{$purchase->po_number} BERHASIL DICATAT! Sisa tagihan: Rp " . number_format($purchase->remaining_amount, 0, ',', '.') . ".");
     }
 }
