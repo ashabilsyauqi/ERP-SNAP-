@@ -251,8 +251,15 @@ class ImportSeptemberSalesCommand extends Command
         $transaction->total_hpp = $totalHpp;
         $transaction->save();
 
-        // Create CashTransaction Inflow
-        $nomorRef = 'KM-' . str_replace('-', '', $dateStr) . '-001';
+        // Create CashTransaction Inflow with guaranteed unique reference number
+        $prefix = 'KM-' . str_replace('-', '', $dateStr) . '-';
+        $num = 1;
+        $nomorRef = $prefix . str_pad($num, 3, '0', STR_PAD_LEFT);
+        while (CashTransaction::where('nomor_referensi', $nomorRef)->exists()) {
+            $num++;
+            $nomorRef = $prefix . str_pad($num, 3, '0', STR_PAD_LEFT);
+        }
+
         $cashTrx = new CashTransaction([
             'branch_id' => $branch->id,
             'account_id' => $salesAccount->id,
@@ -269,6 +276,6 @@ class ImportSeptemberSalesCommand extends Command
         $cashTrx->updated_at = $timestamp;
         $cashTrx->save();
 
-        $this->info("✓ Berhasil: {$invoiceNumber} | Total Item: " . count($items) . " | Total Omzet: Rp " . number_format($totalNominal, 0, ',', '.'));
+        $this->info("✓ Berhasil: {$invoiceNumber} ({$nomorRef}) | Total Item: " . count($items) . " | Total Omzet: Rp " . number_format($totalNominal, 0, ',', '.'));
     }
 }
