@@ -22,7 +22,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'order_status',
     'due_date',
     'production_notes',
-    'branch_id'
+    'branch_id',
+    'original_price',
+    'discount_amount',
+    'negotiation_notes'
 ])]
 class Transaction extends Model
 {

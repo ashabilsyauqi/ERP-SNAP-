@@ -279,6 +279,18 @@
             </div>
         </div>
         
+        <!-- Mode Edit Draft Alert Banner -->
+        <div id="editing-draft-indicator" class="hidden px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white flex items-center justify-between text-xs font-bold shadow-sm flex-shrink-0 border-b border-amber-600">
+            <div class="flex items-center gap-2 min-w-0">
+                <span class="w-2 h-2 rounded-full bg-white animate-ping flex-shrink-0"></span>
+                <i class="fa-solid fa-pen-to-square flex-shrink-0"></i>
+                <span class="truncate">Edit Draft: <strong id="editing-draft-inv" class="underline font-mono">INV-...</strong></span>
+            </div>
+            <button type="button" onclick="cancelEditingDraft()" class="bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded text-[11px] font-bold transition flex items-center gap-1 flex-shrink-0" title="Batalkan Edit & Kembali ke Pesanan Baru">
+                <i class="fa-solid fa-xmark"></i> Batal
+            </button>
+        </div>
+
         <!-- Cart Items List (Independent Scroll) -->
         <div class="p-3 flex-grow overflow-y-auto bg-slate-50/50 min-h-0 space-y-2" id="cart-container-desktop">
             <!-- Injected by JS -->
@@ -499,7 +511,7 @@
                             <li>
                                 <button type="button" class="dropdown-item py-2 px-3 rounded-xl flex items-center gap-2.5 font-bold text-amber-800 hover:bg-amber-50 hover:text-amber-900" onclick="processCheckout(true)">
                                     <i class="fa-solid fa-file-pen text-amber-600 text-sm"></i>
-                                    <span>Simpan Sebagai Draft Pesanan</span>
+                                    <span id="btn-dropdown-draft-text">Simpan Sebagai Draft Pesanan</span>
                                 </button>
                             </li>
                         </ul>
@@ -508,19 +520,19 @@
                     <!-- Tombol Cepat: Simpan Sebagai Draft (Tanpa Bayar) -->
                     <button onclick="processCheckout(true)" type="button" class="h-11 px-3 bg-amber-50 hover:bg-amber-100 active:bg-amber-200 text-amber-900 border border-amber-300 font-bold rounded-xl flex items-center justify-center gap-1.5 text-xs shadow-sm transition cursor-pointer flex-shrink-0" title="Simpan sebagai draft pesanan tanpa bayar">
                         <i class="fa-solid fa-file-pen text-amber-600 text-sm"></i>
-                        <span>Draft</span>
+                        <span id="btn-quick-draft-text">Draft</span>
                     </button>
                 @endif
 
                 @if(auth()->user()->isOperator() && !auth()->user()->isSuperAdmin())
                     <button onclick="processCheckout(true)" id="checkout-btn-desktop" class="flex-1 h-11 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-sm">
                         <i class="fa-solid fa-file-signature text-base"></i>
-                        <span>Simpan Draft Pesanan (Ke Kasir)</span>
+                        <span id="btn-operator-draft-text">Simpan Draft Pesanan (Ke Kasir)</span>
                     </button>
                 @else
                     <button onclick="processCheckout(false)" id="checkout-btn-desktop" class="flex-1 h-11 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition duration-150 flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 border-0 text-sm">
                         <i class="fa-solid fa-circle-check text-base"></i>
-                        <span x-text="(isDp && isEligibleForDp) ? 'Proses Bayar DP' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
+                        <span id="btn-checkout-desktop-text" x-text="(isDp && isEligibleForDp) ? 'Proses Bayar DP' : 'Proses Bayar (Checkout)'">Proses Bayar (Checkout)</span>
                     </button>
                 @endif
             </div>
@@ -1701,6 +1713,9 @@
             cart = [];
             renderCart();
         }
+        if (window.activeEditingDraft) {
+            cancelEditingDraft(true);
+        }
         const sc = document.getElementById('checkout-success-desktop');
         if (sc) sc.classList.add('hidden');
     }
@@ -2305,6 +2320,7 @@
             .then(data => {
                 if (loading) loading.classList.add('hidden');
                 const drafts = data.drafts || [];
+                window.currentLoadedDrafts = drafts;
                 updateDraftBadge(drafts.length);
 
                 if (countSummary) {
@@ -2362,6 +2378,9 @@
                                     <span class="font-mono font-extrabold text-blue-900 text-sm">Rp ${Number(d.total_price).toLocaleString('id-ID')}</span>
                                 </div>
                                 <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                                    <button type="button" onclick="editDraftOrder(${d.id})" class="btn btn-sm btn-outline-warning text-xs py-1.5 px-2.5 font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-300 rounded-lg flex items-center gap-1 shadow-2xs" title="Muat ke Keranjang untuk Diedit (Ubah Item, Ukuran, Qty, atau Pelanggan)">
+                                        <i class="fa-solid fa-pen-to-square text-amber-600"></i> Edit
+                                    </button>
                                     <a href="/invoices/${d.invoice_number}" target="_blank" class="btn btn-sm btn-outline-secondary text-xs py-1.5 px-2.5 font-semibold" title="Buka Faktur Draft">
                                         <i class="fa-solid fa-file-invoice text-slate-600"></i> Faktur
                                     </a>
@@ -2459,6 +2478,191 @@
             } else {
                 badge.classList.add('hidden', 'd-none');
                 badge.style.display = 'none';
+            }
+        }
+    }
+
+    // ==========================================
+    // DRAFT ORDER EDIT CONTROLLER (Kasir & Drafter)
+    // ==========================================
+    window.activeEditingDraft = null;
+
+    function editDraftOrder(draftId) {
+        const draft = (window.currentLoadedDrafts || []).find(d => Number(d.id) === Number(draftId));
+        if (!draft) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Draft Tidak Ditemukan',
+                text: 'Data draft pesanan tidak ditemukan di antrean aktif. Silakan klik tombol Refresh.'
+            });
+            return;
+        }
+
+        if (cart.length > 0 && (!window.activeEditingDraft || Number(window.activeEditingDraft.id) !== Number(draftId))) {
+            Swal.fire({
+                title: `<span style="font-size: 16px; font-weight: 800; color: #b45309;">Gantikan Isi Keranjang?</span>`,
+                html: `<p style="font-size: 12px; color: #475569;">Keranjang kasir saat ini berisi <strong>${cart.length} item</strong>.<br>Apakah Anda ingin mengosongkan keranjang dan memuat <strong>Draft #${draft.invoice_number}</strong> untuk diedit?</p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d97706',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fa-solid fa-pen-to-square me-1"></i> Ya, Muat & Edit',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    performLoadDraft(draft);
+                }
+            });
+            return;
+        }
+
+        performLoadDraft(draft);
+    }
+
+    function performLoadDraft(draft) {
+        // 1. Close Draft Modal
+        const modalEl = document.getElementById('modalDraftOrders');
+        if (modalEl) {
+            try {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                }
+            } catch(e) {}
+            modalEl.classList.remove('show');
+            modalEl.style.display = 'none';
+            modalEl.setAttribute('aria-hidden', 'true');
+            modalEl.removeAttribute('aria-modal');
+            const bd = document.getElementById('custom-modal-backdrop');
+            if (bd) bd.remove();
+            document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+        }
+
+        // 2. Set active editing draft reference
+        window.activeEditingDraft = {
+            id: draft.id,
+            invoice_number: draft.invoice_number
+        };
+
+        // 3. Populate Customer & Notes into Alpine.js
+        const posContainer = document.getElementById('pos-main-container');
+        const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+        if (alpineData) {
+            alpineData.customerId = draft.customer_id || null;
+            alpineData.customerName = draft.customer_name || '';
+            alpineData.customerPhone = draft.customer_phone || '';
+            alpineData.customerEmail = (draft.customer && draft.customer.email) ? draft.customer.email : '';
+            alpineData.dueDate = draft.due_date ? draft.due_date.substring(0, 10) : '';
+            alpineData.productionNotes = draft.production_notes || '';
+            if (window.innerWidth < 1024) {
+                alpineData.activeTab = 'cart';
+            }
+        }
+
+        // 4. Populate Negotiation & Discount
+        window.negotiationDiscount = parseFloat(draft.discount_amount) || 0;
+        window.negotiationNotes = draft.negotiation_notes || '';
+        if (typeof updateNegotiationUI === 'function') {
+            updateNegotiationUI();
+        }
+
+        // 5. Populate Cart Items from transaction_details
+        cart = [];
+        (draft.transaction_details || []).forEach(it => {
+            const mat = it.material || {};
+            const isCustomBanner = (parseFloat(it.area_m2) > 0) || (parseFloat(it.fixed_length_m) > 0) || (parseFloat(it.custom_width_cm) > 0) || !!it.dimension_text;
+
+            let widthM = parseFloat(it.fixed_length_m) || (mat.fixed_size ? parseFloat(mat.fixed_size) : 1.0);
+            let lengthM = it.custom_width_cm ? (parseFloat(it.custom_width_cm) / 100) : 1.0;
+            let areaM2 = it.area_m2 ? parseFloat(it.area_m2) : Math.round(widthM * lengthM * 1000) / 1000;
+
+            const cartItem = {
+                id: cartCounter++,
+                material_id: it.material_id,
+                material_name_or_type: mat.material_name || (it.dimension_text ? 'Custom Banner' : 'Item'),
+                requested_size: widthM,
+                width_m: widthM,
+                length_m: lengthM,
+                fixed_length_m: widthM,
+                custom_width_cm: it.custom_width_cm ? parseFloat(it.custom_width_cm) : Math.round(lengthM * 100),
+                area_m2: areaM2,
+                billable_area_m2: areaM2,
+                is_custom_banner: isCustomBanner,
+                dimension_text: it.dimension_text || null,
+                custom_unit_price: it.selling_price ? parseFloat(it.selling_price) : null,
+                qty: parseInt(it.qty_ordered, 10) || 1,
+                retail_price: mat.retail_price ? parseFloat(mat.retail_price) : parseFloat(it.selling_price),
+                wholesale_prices: mat.wholesale_prices || []
+            };
+            cart.push(cartItem);
+        });
+
+        // 6. Render cart and update UI
+        renderCart();
+
+        // 7. Show Edit Mode Banner & update button texts
+        const ind = document.getElementById('editing-draft-indicator');
+        const invLabel = document.getElementById('editing-draft-inv');
+        if (ind) ind.classList.remove('hidden');
+        if (invLabel) invLabel.innerText = draft.invoice_number;
+
+        updateEditButtonLabels(true, draft.invoice_number);
+
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: `Draft #${draft.invoice_number} dimuat untuk diedit`,
+            showConfirmButton: false,
+            timer: 2500
+        });
+    }
+
+    function cancelEditingDraft(silent = false) {
+        const wasEditing = window.activeEditingDraft;
+        window.activeEditingDraft = null;
+
+        const ind = document.getElementById('editing-draft-indicator');
+        if (ind) ind.classList.add('hidden');
+        updateEditButtonLabels(false);
+
+        if (!silent && wasEditing) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: 'Mode edit draft dibatalkan',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    }
+
+    function updateEditButtonLabels(isEditMode, invoiceNumber = '') {
+        const btnQuick = document.getElementById('btn-quick-draft-text');
+        const btnOperator = document.getElementById('btn-operator-draft-text');
+        const btnDropdown = document.getElementById('btn-dropdown-draft-text');
+        const btnCheckout = document.getElementById('btn-checkout-desktop-text');
+
+        if (isEditMode) {
+            if (btnQuick) btnQuick.innerText = 'Update Draft';
+            if (btnOperator) btnOperator.innerText = 'Update Draft Pesanan';
+            if (btnDropdown) btnDropdown.innerText = 'Update Draft Pesanan';
+            if (btnCheckout) {
+                const posContainer = document.getElementById('pos-main-container');
+                const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+                if (!alpineData || !alpineData.isDp) {
+                    btnCheckout.innerText = 'Bayar Draft Ini';
+                }
+            }
+        } else {
+            if (btnQuick) btnQuick.innerText = 'Draft';
+            if (btnOperator) btnOperator.innerText = 'Simpan Draft Pesanan (Ke Kasir)';
+            if (btnDropdown) btnDropdown.innerText = 'Simpan Sebagai Draft Pesanan';
+            if (btnCheckout) {
+                const posContainer = document.getElementById('pos-main-container');
+                const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+                btnCheckout.innerText = (alpineData && alpineData.isDp && alpineData.isEligibleForDp) ? 'Proses Bayar DP' : 'Proses Bayar (Checkout)';
             }
         }
     }
@@ -3939,6 +4143,7 @@
                 discount_amount: window.negotiationDiscount || 0,
                 negotiation_notes: window.negotiationNotes || null,
                 is_draft: isDraft,
+                draft_id: (window.activeEditingDraft ? window.activeEditingDraft.id : null),
                 customer_id: customerId,
                 customer_name: customerName,
                 customer_phone: customerPhone,
@@ -3961,6 +4166,11 @@
             }
 
             if (data.status === 'success' || data.success === true) {
+                const wasEditingDraft = !!window.activeEditingDraft;
+                if (window.activeEditingDraft) {
+                    cancelEditingDraft(true);
+                }
+
                 // Clear cart & negotiation state
                 cart = [];
                 resetNegotiation();
@@ -3986,9 +4196,11 @@
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: `Draft #${data.invoice_number} berhasil disimpan`,
+                        title: wasEditingDraft 
+                            ? `Draft #${data.invoice_number} berhasil diperbarui`
+                            : `Draft #${data.invoice_number} berhasil disimpan`,
                         showConfirmButton: false,
-                        timer: 1200
+                        timer: 1500
                     });
                     return;
                 }

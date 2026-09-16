@@ -99,6 +99,7 @@ class PosController extends Controller
             'due_date' => 'nullable|date',
             'production_notes' => 'nullable|string',
             'is_draft' => 'nullable|boolean',
+            'draft_id' => 'nullable|integer|exists:transactions,id',
         ]);
 
         try {
@@ -152,24 +153,48 @@ class PosController extends Controller
                 $checkoutBranchId = \App\Models\Branch::first()->id ?? 1;
             }
 
-            // Create Base Transaction
-            $transaction = Transaction::create([
-                'branch_id' => $checkoutBranchId,
-                'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5)),
-                'user_id' => auth()->id(),
-                'customer_id' => $customerId,
-                'customer_name' => $customerName ?: 'Pelanggan Umum',
-                'customer_phone' => $customerPhone ?: null,
-                'total_price' => 0,
-                'total_hpp' => 0,
-                'payment_method' => $isDraft ? 'Draft (Belum Bayar)' : $request->payment_method,
-                'payment_status' => $isDraft ? 'UNPAID' : 'PAID',
-                'paid_amount' => 0,
-                'remaining_amount' => 0,
-                'order_status' => $isDraft ? 'draft' : 'completed',
-                'due_date' => $request->due_date,
-                'production_notes' => $request->production_notes,
-            ]);
+            $draftId = $request->input('draft_id');
+            if ($draftId) {
+                $transaction = Transaction::where('id', $draftId)->first();
+                if (!$transaction) {
+                    throw new \Exception("Draft pesanan dengan ID #{$draftId} tidak ditemukan.");
+                }
+                if ($transaction->order_status !== 'draft') {
+                    throw new \Exception("Pesanan #{$transaction->invoice_number} sudah bukan berstatus draft dan tidak dapat diedit melalui antrean draft.");
+                }
+
+                $transaction->branch_id = $checkoutBranchId;
+                $transaction->customer_id = $customerId;
+                $transaction->customer_name = $customerName ?: 'Pelanggan Umum';
+                $transaction->customer_phone = $customerPhone ?: null;
+                $transaction->payment_method = $isDraft ? 'Draft (Belum Bayar)' : $request->payment_method;
+                $transaction->payment_status = $isDraft ? 'UNPAID' : 'PAID';
+                $transaction->order_status = $isDraft ? 'draft' : 'completed';
+                $transaction->due_date = $request->due_date;
+                $transaction->production_notes = $request->production_notes;
+
+                // Remove existing details so we can cleanly replace with edited items
+                $transaction->transactionDetails()->delete();
+            } else {
+                // Create Base Transaction
+                $transaction = Transaction::create([
+                    'branch_id' => $checkoutBranchId,
+                    'invoice_number' => 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(5)),
+                    'user_id' => auth()->id(),
+                    'customer_id' => $customerId,
+                    'customer_name' => $customerName ?: 'Pelanggan Umum',
+                    'customer_phone' => $customerPhone ?: null,
+                    'total_price' => 0,
+                    'total_hpp' => 0,
+                    'payment_method' => $isDraft ? 'Draft (Belum Bayar)' : $request->payment_method,
+                    'payment_status' => $isDraft ? 'UNPAID' : 'PAID',
+                    'paid_amount' => 0,
+                    'remaining_amount' => 0,
+                    'order_status' => $isDraft ? 'draft' : 'completed',
+                    'due_date' => $request->due_date,
+                    'production_notes' => $request->production_notes,
+                ]);
+            }
 
             $savedItems = [];
 
@@ -334,7 +359,9 @@ class PosController extends Controller
             DB::commit();
 
             $message = $isDraft 
-                ? "Draft pesanan (#{$transaction->invoice_number}) berhasil disimpan! Silakan serahkan nomor invoice ini ke Kasir untuk pembayaran."
+                ? ($draftId 
+                    ? "Draft pesanan (#{$transaction->invoice_number}) berhasil diperbarui!" 
+                    : "Draft pesanan (#{$transaction->invoice_number}) berhasil disimpan! Silakan serahkan nomor invoice ini ke Kasir untuk pembayaran.")
                 : (($paymentStatus === 'PARTIAL') 
                     ? "Pesanan DP tercatat! Uang muka Rp " . number_format($paidAmount, 0, ',', '.') . " diterima, sisa piutang Rp " . number_format($remainingAmount, 0, ',', '.') 
                     : "Transaksi lunas berhasil diproses. Invoice: " . $transaction->invoice_number);
@@ -384,7 +411,7 @@ class PosController extends Controller
     public function getDrafts(Request $request)
     {
         $user = auth()->user();
-        $query = Transaction::with(['user', 'customer', 'branch', 'transactionDetails.material'])
+        $query = Transaction::with(['user', 'customer', 'branch', 'transactionDetails.material.wholesalePrices'])
             ->where('order_status', 'draft')
             ->where('payment_status', 'UNPAID');
 
