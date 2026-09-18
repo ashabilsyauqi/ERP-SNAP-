@@ -17,9 +17,15 @@ class OwnerController extends Controller
     public function dashboard(Request $request)
     {
         $user = auth()->user();
-        $timeframe = $request->input('timeframe', $request->input('period', 'month')); // 'today', '7days', 'month', 'year', 'all'
+        $timeframe = $request->input('timeframe', $request->input('period', 'month')); // 'today', '7days', 'month', 'year', 'all', 'custom'
         $month = (int) $request->input('month', Carbon::now()->month);
         $year = (int) $request->input('year', Carbon::now()->year);
+        $startDateInput = $request->input('start_date');
+        $endDateInput = $request->input('end_date');
+
+        if ($startDateInput && $endDateInput) {
+            $timeframe = 'custom';
+        }
 
         // Branch Selection (supports request parameter & session persistence)
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
@@ -50,7 +56,12 @@ class OwnerController extends Controller
         }
 
         // Apply Timeframe Constraints
-        if ($timeframe === 'today' || $timeframe === '1D') {
+        if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
+            $sDate = Carbon::parse($startDateInput)->startOfDay();
+            $eDate = Carbon::parse($endDateInput)->endOfDay();
+            $query->whereBetween('created_at', [$sDate, $eDate]);
+            $opexQuery->whereBetween('tanggal', [$sDate->toDateString(), $eDate->toDateString()]);
+        } elseif ($timeframe === 'today' || $timeframe === '1D') {
             $query->whereDate('created_at', Carbon::today());
             $opexQuery->whereDate('tanggal', Carbon::today());
         } elseif ($timeframe === '7days' || $timeframe === '7D') {
@@ -107,9 +118,11 @@ class OwnerController extends Controller
         $transferSales = (float) $directTransfer + (float) $splitTransfer;
 
         // Branch Sales Comparison
-        $branchSalesData = Branch::all()->map(function ($branch) use ($timeframe, $month, $year) {
+        $branchSalesData = Branch::all()->map(function ($branch) use ($timeframe, $month, $year, $startDateInput, $endDateInput) {
             $bQuery = Transaction::where('branch_id', $branch->id)->whereNotIn('order_status', ['draft', 'cancelled']);
-            if ($timeframe === 'today' || $timeframe === '1D') {
+            if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
+                $bQuery->whereBetween('created_at', [Carbon::parse($startDateInput)->startOfDay(), Carbon::parse($endDateInput)->endOfDay()]);
+            } elseif ($timeframe === 'today' || $timeframe === '1D') {
                 $bQuery->whereDate('created_at', Carbon::today());
             } elseif ($timeframe === '7days' || $timeframe === '7D') {
                 $bQuery->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay());
@@ -131,7 +144,42 @@ class OwnerController extends Controller
         $chartVolume = [];
         $chartNet = [];
 
-        if ($timeframe === 'today' || $timeframe === '1D') {
+        if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
+            $s = Carbon::parse($startDateInput)->startOfDay();
+            $e = Carbon::parse($endDateInput)->endOfDay();
+            $diffDays = $s->diffInDays($e);
+
+            if ($diffDays <= 45) {
+                for ($cur = $s->copy(); $cur->lte($e); $cur->addDay()) {
+                    $chartLabels[] = $cur->translatedFormat('d M');
+                    $dTrx = Transaction::whereDate('created_at', $cur)
+                        ->whereNotIn('order_status', ['draft', 'cancelled']);
+                    if ($branchId && $branchId !== 'all') {
+                        $dTrx->where('branch_id', $branchId);
+                    }
+                    $salesVal = (float) $dTrx->sum('total_price');
+                    $volVal = (int) $dTrx->count();
+                    $chartSales[] = $salesVal;
+                    $chartVolume[] = $volVal;
+                    $chartNet[] = $salesVal;
+                }
+            } else {
+                for ($cur = $s->copy()->startOfMonth(); $cur->lte($e); $cur->addMonth()) {
+                    $chartLabels[] = $cur->translatedFormat('M Y');
+                    $mSalesQuery = Transaction::whereYear('created_at', $cur->year)
+                        ->whereMonth('created_at', $cur->month)
+                        ->whereNotIn('order_status', ['draft', 'cancelled']);
+                    if ($branchId && $branchId !== 'all') {
+                        $mSalesQuery->where('branch_id', $branchId);
+                    }
+                    $salesVal = (float) $mSalesQuery->sum('total_price');
+                    $volVal = (int) $mSalesQuery->count();
+                    $chartSales[] = $salesVal;
+                    $chartVolume[] = $volVal;
+                    $chartNet[] = $salesVal;
+                }
+            }
+        } elseif ($timeframe === 'today' || $timeframe === '1D') {
             // Aggregate all transactions for today in 1 query
             $todayTransactions = (clone $query)->get(['total_price', 'created_at']);
 
@@ -243,6 +291,8 @@ class OwnerController extends Controller
 
         $recentTransactions = (clone $query)->with(['user', 'branch', 'transactionDetails.material'])->orderBy('created_at', 'desc')->take(10)->get();
         $branches = Branch::all();
+        $startDate = $startDateInput;
+        $endDate = $endDateInput;
 
         return view('owner.dashboard', compact(
             'totalSales',
@@ -274,7 +324,9 @@ class OwnerController extends Controller
             'branchId',
             'timeframe',
             'month',
-            'year'
+            'year',
+            'startDate',
+            'endDate'
         ));
     }
 }

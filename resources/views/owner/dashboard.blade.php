@@ -60,9 +60,34 @@
                     All
                 </button>
             </div>
+
+            <!-- Date Range Picker (Dari Tanggal s/d Sampai Tanggal) -->
+            <div class="d-flex align-items-center gap-1.5 bg-slate-50 border {{ ($timeframe ?? '') === 'custom' ? 'border-blue-500 ring-2 ring-blue-100 bg-blue-50/50' : 'border-slate-200' }} p-1 rounded-xl">
+                <div class="d-flex align-items-center gap-1 px-1">
+                    <i class="fa-regular fa-calendar text-blue-600 text-xs"></i>
+                    <span class="text-[11px] font-bold text-slate-700 uppercase">Rentang:</span>
+                </div>
+                <input type="date" name="start_date" id="filter-start-date" value="{{ $startDate ?? '' }}" class="form-control form-control-sm py-0.5 px-2 text-xs border-slate-300 rounded-lg font-mono font-semibold" style="width: 130px;" title="Dari Tanggal">
+                <span class="text-slate-400 text-xs font-bold">-</span>
+                <input type="date" name="end_date" id="filter-end-date" value="{{ $endDate ?? '' }}" class="form-control form-control-sm py-0.5 px-2 text-xs border-slate-300 rounded-lg font-mono font-semibold" style="width: 130px;" title="Sampai Tanggal">
+                <button type="button" onclick="applyCustomDateRange()" class="btn btn-sm btn-primary text-xs px-2.5 py-1 rounded-lg font-bold shadow-2xs d-flex align-items-center gap-1">
+                    <i class="fa-solid fa-filter text-[10px]"></i>
+                    <span>Terapkan</span>
+                </button>
+                @if(($timeframe ?? '') === 'custom')
+                <button type="button" onclick="setTimeframe('month')" class="btn btn-sm btn-light border text-slate-500 hover:text-rose-600 text-xs px-2 py-1 rounded-lg" title="Kembali ke Bulan Ini">
+                    <i class="fa-solid fa-xmark me-0.5"></i> Reset
+                </button>
+                @endif
+            </div>
         </div>
 
         <div class="d-flex align-items-center gap-2">
+            @if(($timeframe ?? '') === 'custom')
+                <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg px-2.5 py-1.5 font-bold text-xs">
+                    <i class="fa-solid fa-calendar-check me-1"></i> Periode Kustom: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}
+                </span>
+            @endif
             @if(($branchId ?? 'all') === 'all')
                 <span class="badge bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-2.5 py-1.5 font-bold text-xs">
                     <i class="fa-solid fa-globe me-1"></i> Konsolidasi Seluruh Cabang
@@ -237,7 +262,9 @@
                         <h6 class="mb-0 font-extrabold text-slate-900 text-sm">Grafik Performa Penjualan (Live Chart)</h6>
                         <span class="text-[10px] text-blue-700 font-bold">
                             <i class="fa-solid fa-calendar-day me-1"></i>
-                            @if(($timeframe ?? '') === 'today' || ($timeframe ?? '') === '1D')
+                            @if(($timeframe ?? '') === 'custom' && !empty($startDate) && !empty($endDate))
+                                Periode: {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y') }} s/d {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y') }}
+                            @elseif(($timeframe ?? '') === 'today' || ($timeframe ?? '') === '1D')
                                 Hari Ini ({{ \Carbon\Carbon::today()->translatedFormat('d F Y') }})
                             @elseif(($timeframe ?? '') === '7days' || ($timeframe ?? '') === '7D')
                                 7 Hari Terakhir
@@ -400,8 +427,29 @@
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
+    function applyCustomDateRange() {
+        const startDate = document.getElementById('filter-start-date').value;
+        const endDate = document.getElementById('filter-end-date').value;
+        if (!startDate || !endDate) {
+            alert('Silakan pilih kedua tanggal (Dari dan Sampai Tanggal) terlebih dahulu.');
+            return;
+        }
+        if (startDate > endDate) {
+            alert('Tanggal awal tidak boleh lebih besar dari tanggal akhir.');
+            return;
+        }
+        document.getElementById('timeframe-input').value = 'custom';
+        document.getElementById('dashboard-filter-form').submit();
+    }
+
     function setTimeframe(tf) {
         document.getElementById('timeframe-input').value = tf;
+        if (tf !== 'custom') {
+            const startInput = document.getElementById('filter-start-date');
+            const endInput = document.getElementById('filter-end-date');
+            if (startInput) startInput.value = '';
+            if (endInput) endInput.value = '';
+        }
         document.getElementById('dashboard-filter-form').submit();
     }
 

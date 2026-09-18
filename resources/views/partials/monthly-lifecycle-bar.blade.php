@@ -33,8 +33,13 @@
                 <span>Siklus Bulanan (Jan - Des)</span>
             </span>
             <span class="text-[11px] text-slate-500 font-medium d-none d-md-inline">
-                Periode Terpilih: <strong class="text-slate-800 font-semibold">{{ $months[$activeMonth]['full'] ?? 'Bulan' }} {{ $activeYear }}</strong> 
-                (1 {{ $months[$activeMonth]['short'] ?? '' }} - {{ \Carbon\Carbon::createFromDate($activeYear, $activeMonth, 1)->endOfMonth()->format('d') }} {{ $months[$activeMonth]['short'] ?? '' }})
+                Periode Terpilih: 
+                @if(($activeTf === 'custom' || request('timeframe') === 'custom') && request('start_date') && request('end_date'))
+                    <strong class="text-blue-800 font-semibold">{{ \Carbon\Carbon::parse(request('start_date'))->format('d M Y') }} s/d {{ \Carbon\Carbon::parse(request('end_date'))->format('d M Y') }}</strong> (Kustom Date Picker)
+                @else
+                    <strong class="text-slate-800 font-semibold">{{ $months[$activeMonth]['full'] ?? 'Bulan' }} {{ $activeYear }}</strong> 
+                    (1 {{ $months[$activeMonth]['short'] ?? '' }} - {{ \Carbon\Carbon::createFromDate($activeYear, $activeMonth, 1)->endOfMonth()->format('d') }} {{ $months[$activeMonth]['short'] ?? '' }})
+                @endif
             </span>
         </div>
 
