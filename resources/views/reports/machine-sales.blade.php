@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Rekap Penjualan Mesin & Bagi Hasil')
-@section('page-title', 'Laporan Rekapitulasi Penjualan Mesin & Bagi Hasil Partner')
+@section('title', 'Rekap Penjualan Mesin')
+@section('page-title', 'Laporan Rekapitulasi Penjualan Mesin')
 
 @section('action-buttons')
 <div class="d-flex align-items-center gap-2">
@@ -10,14 +10,14 @@
         <span>Export Excel</span>
     </a>
     <button type="button" onclick="window.print()" class="btn-odoo-secondary text-xs">
-        <i class="fa-solid fa-print me-1.5"></i> Cetak Settlement / PDF
+        <i class="fa-solid fa-print me-1.5"></i> Cetak Laporan / PDF
     </button>
 </div>
 @endsection
 
 @section('content')
 
-<!-- Top Filter Bar (Branch, Machine Tag, Sharing %, Timeframe & Date Picker) -->
+<!-- Top Filter Bar (Branch, Machine Tag, Timeframe & Date Picker) -->
 <div class="bg-white border border-slate-200 rounded-2xl mb-4 p-3 shadow-sm print:hidden">
     <form method="GET" action="{{ route('reports.machine-sales') }}" id="machine-filter-form" class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-0">
         
@@ -52,15 +52,6 @@
                         </option>
                     @endforeach
                 </select>
-            </div>
-
-            <!-- Sharing % Input -->
-            <div class="d-flex align-items-center gap-1.5 bg-amber-50/60 border border-amber-200 p-1 rounded-xl">
-                <span class="text-[11px] font-bold text-amber-900 px-1"><i class="fa-solid fa-percent text-amber-600 me-1"></i>Bagi Hasil:</span>
-                <div class="input-group input-group-sm" style="width: 85px;">
-                    <input type="number" step="1" min="0" max="100" name="sharing_pct" value="{{ $sharingPct ?? 30 }}" class="form-control form-control-sm font-bold text-center border-amber-300 rounded-start-lg" onchange="document.getElementById('machine-filter-form').submit()">
-                    <span class="input-group-text bg-amber-100 text-amber-800 font-bold text-xs">%</span>
-                </div>
             </div>
 
             <!-- Timeframe Hidden Inputs -->
@@ -107,8 +98,7 @@
     'route' => 'reports.machine-sales',
     'extraParams' => [
         'branch_id' => $branchId ?? 'all',
-        'machine_tag' => $selectedTag ?? 'Mesin Pak Gunawan',
-        'sharing_pct' => $sharingPct ?? 30
+        'machine_tag' => $selectedTag ?? 'Mesin Pak Gunawan'
     ]
 ])
 </div>
@@ -118,8 +108,8 @@
     <div class="d-flex justify-content-between align-items-start border-bottom pb-3">
         <div>
             <h3 class="fw-bold text-slate-900 mb-1">Snaprint Digital Printing</h3>
-            <h5 class="fw-bold text-purple-900 mb-0">LAPORAN REKAP PENJUALAN & BAGI HASIL MESIN</h5>
-            <div class="text-xs text-slate-600 mt-1">Partner / Mesin: <strong>{{ $selectedTag }}</strong> &bull; Cabang: <strong>{{ $branchName }}</strong></div>
+            <h5 class="fw-bold text-purple-900 mb-0">LAPORAN REKAPITULASI PENJUALAN MESIN</h5>
+            <div class="text-xs text-slate-600 mt-1">Identifikasi Mesin: <strong>{{ $selectedTag }}</strong> &bull; Cabang: <strong>{{ $branchName }}</strong></div>
         </div>
         <div class="text-end">
             <div class="text-xs text-slate-500">Periode Laporan:</div>
@@ -158,27 +148,27 @@
     <!-- Card 3: Modal Bahan (HPP) -->
     <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #f59e0b !important;">
         <div>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Modal Bahan (HPP)</p>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Modal Bahan (HPP)</p>
             <h4 class="text-base font-extrabold text-amber-950 font-mono mb-0">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h4>
-            <small class="text-emerald-600 font-semibold text-[10px]">Laba Kotor: Rp {{ number_format($grossProfit, 0, ',', '.') }}</small>
+            <small class="text-slate-400 text-[10px]">Biaya bahan & produksi</small>
         </div>
         <div class="p-2.5 bg-amber-50 text-amber-700 rounded-xl">
             <i class="fa-solid fa-boxes-stacked text-lg"></i>
         </div>
     </div>
 
-    <!-- Card 4: Hak Bagi Hasil Partner -->
+    <!-- Card 4: Laba Kotor Mesin -->
     <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #10b981 !important;">
         <div>
             <div class="d-flex align-items-center gap-1.5 mb-1">
-                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded">{{ $sharingPct }}% Bagi Hasil</span>
-                <span class="text-[10px] text-emerald-800 uppercase font-bold tracking-wider">Hak Partner</span>
+                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded">Margin {{ $marginPercentage }}%</span>
+                <span class="text-[10px] text-emerald-800 uppercase font-bold tracking-wider">Laba Kotor Mesin</span>
             </div>
-            <h4 class="text-base font-extrabold text-emerald-950 font-mono mb-0">Rp {{ number_format($partnerShareAmount, 0, ',', '.') }}</h4>
-            <small class="text-slate-500 font-medium text-[10px]">Berdasarkan {{ $sharingPct }}% Total Omzet</small>
+            <h4 class="text-base font-extrabold text-emerald-950 font-mono mb-0">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h4>
+            <small class="text-slate-500 font-medium text-[10px]">Omzet dikurangi HPP Bahan</small>
         </div>
         <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl">
-            <i class="fa-solid fa-handshake text-lg"></i>
+            <i class="fa-solid fa-chart-line text-lg"></i>
         </div>
     </div>
 </div>
@@ -204,14 +194,12 @@
                     <th class="text-end">Harga Satuan</th>
                     <th class="text-center">Qty Terjual</th>
                     <th class="text-end">Total Omzet</th>
-                    <th class="text-end text-purple-700 pe-3">Hak Bagi Hasil ({{ $sharingPct }}%)</th>
+                    <th class="text-end">Total HPP</th>
+                    <th class="text-end text-emerald-700 pe-3">Laba Kotor</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($productsMap as $idx => $p)
-                    @php
-                        $pShare = round($p['total_omzet'] * ($sharingPct / 100));
-                    @endphp
                     <tr>
                         <td class="ps-3 text-center font-mono text-slate-400 text-xs">{{ $loop->iteration }}</td>
                         <td>
@@ -228,12 +216,13 @@
                         </td>
                         <td class="text-end font-mono text-xs">Rp {{ number_format($p['unit_price'], 0, ',', '.') }}</td>
                         <td class="text-center font-mono font-bold text-xs">{{ number_format($p['qty_sold']) }}</td>
-                        <td class="text-end font-mono font-bold text-slate-900 text-xs">Rp {{ number_format($p['total_omzet'], 0, ',', '.') }}</td>
-                        <td class="text-end font-mono font-bold text-emerald-700 text-xs pe-3">Rp {{ number_format($pShare, 0, ',', '.') }}</td>
+                        <td class="text-end font-mono font-bold text-purple-950 text-xs">Rp {{ number_format($p['total_omzet'], 0, ',', '.') }}</td>
+                        <td class="text-end font-mono text-slate-600 text-xs">Rp {{ number_format($p['total_hpp'], 0, ',', '.') }}</td>
+                        <td class="text-end font-mono font-bold text-emerald-700 text-xs pe-3">Rp {{ number_format($p['gross_profit'], 0, ',', '.') }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
+                        <td colspan="9" class="text-center py-5 text-muted">
                             <div class="p-3">
                                 <i class="fa-solid fa-gear text-slate-300 fs-1 mb-2"></i>
                                 <p class="mb-0 text-xs">Belum ada data penjualan untuk produk mesin <strong>{{ $selectedTag }}</strong> pada periode {{ $periodLabel }}.</p>
@@ -248,7 +237,8 @@
                     <td colspan="5" class="ps-3 text-end uppercase text-slate-600">TOTAL KESELURUHAN:</td>
                     <td class="text-center font-mono text-blue-900">{{ number_format($totalItemsSold) }}</td>
                     <td class="text-end font-mono text-purple-900">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
-                    <td class="text-end font-mono text-emerald-800 pe-3">Rp {{ number_format($partnerShareAmount, 0, ',', '.') }}</td>
+                    <td class="text-end font-mono text-slate-700">Rp {{ number_format($totalHpp, 0, ',', '.') }}</td>
+                    <td class="text-end font-mono text-emerald-800 pe-3">Rp {{ number_format($grossProfit, 0, ',', '.') }}</td>
                 </tr>
             </tfoot>
             @endif
@@ -275,7 +265,8 @@
                     <th>Pelanggan</th>
                     <th>Produk Mesin</th>
                     <th class="text-center">Qty</th>
-                    <th class="text-end">Subtotal Item</th>
+                    <th class="text-end">Harga Satuan</th>
+                    <th class="text-end">Subtotal Omzet</th>
                     <th>Cabang</th>
                     <th class="pe-3">Kasir</th>
                 </tr>
@@ -298,7 +289,8 @@
                             <div class="fw-bold text-slate-800">{{ $d->material->material_name ?? ($d->dimension_text ?: '-') }}</div>
                         </td>
                         <td class="text-center font-mono font-bold">{{ $d->qty_ordered }}</td>
-                        <td class="text-end font-mono font-bold text-slate-900">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
+                        <td class="text-end font-mono text-slate-600">Rp {{ number_format($d->selling_price, 0, ',', '.') }}</td>
+                        <td class="text-end font-mono font-bold text-purple-950">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
                         <td>
                             <span class="badge bg-slate-100 text-slate-700 border text-[10px]">{{ $d->transaction->branch->nama_cabang ?? 'Pusat' }}</span>
                         </td>
@@ -306,7 +298,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center py-4 text-slate-400">Belum ada transaksi terkait.</td>
+                        <td colspan="10" class="text-center py-4 text-slate-400">Belum ada transaksi terkait.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -318,14 +310,14 @@
 <div class="d-none print:block mt-5 pt-4 border-top">
     <div class="d-flex justify-content-between text-center px-4">
         <div>
-            <div class="text-xs text-slate-500 mb-5">Pihak Pengelola (Snaprint ERP)</div>
+            <div class="text-xs text-slate-500 mb-5">Dibuat Oleh (Kasir / Finance)</div>
             <div class="fw-bold text-slate-900 mt-5">( __________________________ )</div>
-            <div class="text-[10px] text-slate-400 mt-1">Management Snaprint</div>
+            <div class="text-[10px] text-slate-400 mt-1">Staff Snaprint</div>
         </div>
         <div>
-            <div class="text-xs text-slate-500 mb-5">Pihak Pemilik Mesin / Partner</div>
+            <div class="text-xs text-slate-500 mb-5">Diketahui & Diverifikasi Manajemen</div>
             <div class="fw-bold text-slate-900 mt-5">( {{ $selectedTag }} )</div>
-            <div class="text-[10px] text-slate-400 mt-1">Partner Kerjasama Mesin</div>
+            <div class="text-[10px] text-slate-400 mt-1">Penanggung Jawab Mesin</div>
         </div>
     </div>
 </div>

@@ -43,9 +43,6 @@ class MachineSalesReportController extends Controller
 
         $selectedTag = $request->input('machine_tag', 'Mesin Pak Gunawan');
 
-        // Profit sharing percentage (Default: 30%)
-        $sharingPct = (float) $request->input('sharing_pct', 30);
-
         // Date & Period Filter
         $timeframe = $request->input('timeframe', 'month');
         $month = (int) $request->input('month', Carbon::now()->month);
@@ -158,8 +155,7 @@ class MachineSalesReportController extends Controller
         uasort($productsMap, fn($a, $b) => $b['total_omzet'] <=> $a['total_omzet']);
 
         $grossProfit = $totalOmzet - $totalHpp;
-        $partnerShareAmount = round($totalOmzet * ($sharingPct / 100));
-        $partnerShareProfitAmount = round($grossProfit * ($sharingPct / 100));
+        $marginPercentage = ($totalOmzet > 0) ? round(($grossProfit / $totalOmzet) * 100, 1) : 0;
         $uniqueInvoicesCount = $transactionDetails->pluck('transaction_id')->unique()->count();
 
         return [
@@ -169,12 +165,10 @@ class MachineSalesReportController extends Controller
             'totalOmzet' => $totalOmzet,
             'totalHpp' => $totalHpp,
             'grossProfit' => $grossProfit,
-            'partnerShareAmount' => $partnerShareAmount,
-            'partnerShareProfitAmount' => $partnerShareProfitAmount,
+            'marginPercentage' => $marginPercentage,
             'uniqueInvoicesCount' => $uniqueInvoicesCount,
             'allMachineTags' => $allMachineTags,
             'selectedTag' => $selectedTag,
-            'sharingPct' => $sharingPct,
             'branches' => $branches,
             'branchId' => $branchId,
             'branchName' => $branchName,
