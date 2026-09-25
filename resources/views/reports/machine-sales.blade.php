@@ -47,7 +47,7 @@
                 <select name="machine_tag" onchange="document.getElementById('machine-filter-form').submit()" class="form-select form-select-sm fw-bold border-purple-300 bg-purple-50/50 text-purple-900 rounded-xl text-xs" style="min-width: 180px;">
                     <option value="all" {{ ($selectedTag ?? '') === 'all' ? 'selected' : '' }}>Semua Mesin Berlabel</option>
                     @foreach($allMachineTags as $tag)
-                        <option value="{{ $tag }}" {{ ($selectedTag ?? 'Mesin Pak Gunawan') === $tag ? 'selected' : '' }}>
+                        <option value="{{ $tag }}" {{ ($selectedTag ?? 'Mesin KM') === $tag ? 'selected' : '' }}>
                             {{ $tag }}
                         </option>
                     @endforeach
@@ -60,9 +60,9 @@
             <input type="hidden" name="year" id="year-input" value="{{ $year ?? date('Y') }}">
 
             <!-- Date Range Picker -->
-            <div class="d-flex align-items-center gap-1.5 bg-slate-50 border {{ ($timeframe ?? '') === 'custom' ? 'border-blue-500 ring-2 ring-blue-100 bg-blue-50/50' : 'border-slate-200' }} p-1 rounded-xl">
+            <div class="d-flex align-items-center gap-1.5 bg-slate-50 border {{ ($timeframe ?? '') === 'custom' ? 'border-purple-500 ring-2 ring-purple-100 bg-purple-50/50' : 'border-slate-200' }} p-1 rounded-xl">
                 <div class="d-flex align-items-center gap-1 px-1">
-                    <i class="fa-regular fa-calendar text-blue-600 text-xs"></i>
+                    <i class="fa-regular fa-calendar text-purple-600 text-xs"></i>
                     <span class="text-[11px] font-bold text-slate-700 uppercase">Rentang:</span>
                 </div>
                 <input type="date" name="start_date" id="filter-start-date" value="{{ $startDateInput ?? '' }}" class="form-control form-control-sm py-0.5 px-2 text-xs border-slate-300 rounded-lg font-mono font-semibold" style="width: 130px;" title="Dari Tanggal">
@@ -88,19 +88,76 @@
     </form>
 </div>
 
-<!-- Siklus Bulanan Kalender Navigation -->
-<div class="print:hidden">
-@include('partials.monthly-lifecycle-bar', [
-    'selectedMonth' => $month ?? date('n'),
-    'selectedYear' => $year ?? date('Y'),
-    'timeframe' => $timeframe ?? 'month',
-    'showAllYear' => true,
-    'route' => 'reports.machine-sales',
-    'extraParams' => [
-        'branch_id' => $branchId ?? 'all',
-        'machine_tag' => $selectedTag ?? 'Mesin Pak Gunawan'
-    ]
-])
+<!-- Siklus Bulanan (Cut-Off Tgl 21) -->
+<div class="monthly-lifecycle-container bg-slate-50 border border-slate-200 rounded-2xl p-2.5 mb-3 shadow-2xs print:hidden">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <!-- Title & Info -->
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-purple-100 text-purple-800 border border-purple-200 font-bold text-xs px-2.5 py-1 rounded-xl d-inline-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-calendar-week text-purple-600"></i>
+                <span>Siklus Cut-off Tgl 21</span>
+            </span>
+            <span class="text-[11px] text-slate-500 font-medium d-none d-md-inline">
+                Periode Terpilih: <strong class="text-purple-900 font-semibold">{{ $periodLabel }}</strong>
+            </span>
+        </div>
+
+        <!-- Year Selector Dropdown -->
+        <div class="d-flex align-items-center gap-1.5">
+            <span class="text-[11px] font-bold text-slate-500 uppercase">Tahun:</span>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-white border border-slate-300 rounded-xl px-2.5 py-1 font-bold text-xs dropdown-toggle shadow-2xs text-slate-800" type="button" data-bs-toggle="dropdown">
+                    <i class="fa-regular fa-calendar me-1 text-purple-600"></i> {{ $year }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-md rounded-xl text-xs py-1 border-slate-200">
+                    @foreach(range(date('Y') + 1, date('Y') - 4) as $y)
+                        <li>
+                            <a class="dropdown-item py-1.5 px-3 {{ $year == $y ? 'active fw-bold bg-purple-600 text-white' : 'text-slate-700' }}" 
+                               href="{{ route('reports.machine-sales', ['year' => $y, 'month' => $month, 'branch_id' => $branchId, 'machine_tag' => $selectedTag]) }}">
+                                Tahun {{ $y }}
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 12 Month Pills (Januari - Desember) Cut-off 21st -->
+    <div class="d-flex align-items-center gap-1 mt-2.5 overflow-x-auto pb-1 flex-nowrap" style="scrollbar-width: thin;">
+        @php
+            $monthsList = [
+                1 => ['short' => 'Jan', 'full' => 'Januari'],
+                2 => ['short' => 'Feb', 'full' => 'Februari'],
+                3 => ['short' => 'Mar', 'full' => 'Maret'],
+                4 => ['short' => 'Apr', 'full' => 'April'],
+                5 => ['short' => 'Mei', 'full' => 'Mei'],
+                6 => ['short' => 'Jun', 'full' => 'Juni'],
+                7 => ['short' => 'Jul', 'full' => 'Juli'],
+                8 => ['short' => 'Agu', 'full' => 'Agustus'],
+                9 => ['short' => 'Sep', 'full' => 'September'],
+                10 => ['short' => 'Okt', 'full' => 'Oktober'],
+                11 => ['short' => 'Nov', 'full' => 'November'],
+                12 => ['short' => 'Des', 'full' => 'Desember'],
+            ];
+        @endphp
+        @foreach($monthsList as $mNum => $mMeta)
+            @php
+                $isSelected = ($month == $mNum && $timeframe === 'month');
+                $isCurrentRealMonth = (date('n') == $mNum && date('Y') == $year);
+                $prevMonthName = ($mNum == 1) ? 'Des' : $monthsList[$mNum - 1]['short'];
+                $prevYear = ($mNum == 1) ? ($year - 1) : $year;
+            @endphp
+            <a href="{{ route('reports.machine-sales', ['month' => $mNum, 'year' => $year, 'timeframe' => 'month', 'branch_id' => $branchId, 'machine_tag' => $selectedTag]) }}" 
+               class="btn btn-sm text-xs py-1 px-2.5 rounded-xl font-bold flex-shrink-0 transition text-decoration-none d-flex align-items-center gap-1 {{ $isSelected ? 'bg-purple-600 text-white shadow-xs border-0' : ($isCurrentRealMonth ? 'btn-white border-2 border-purple-400 text-purple-700 font-extrabold hover:bg-purple-50' : 'btn-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900') }}"
+               title="Periode {{ $mMeta['full'] }} (21 {{ $prevMonthName }} {{ $prevYear }} s/d 20 {{ $mMeta['short'] }} {{ $year }})">
+                <span>{{ $mMeta['short'] }}</span>
+                @if($isCurrentRealMonth && !$isSelected)
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500 inline-block" title="Bulan Berjalan"></span>
+                @endif
+            </a>
+        @endforeach
+    </div>
 </div>
 
 <!-- Printable Settlement Header (Visible on print) -->

@@ -12,21 +12,21 @@ class TagGunawanMaterialsCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'materials:tag-gunawan {--tag=Mesin Pak Gunawan : Nama label mesin partner}';
+    protected $signature = 'materials:tag-km {--tag=Mesin KM : Nama label mesin}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Beri label mesin partner (Pak Gunawan) pada produk-produk cetak yang dihasilkan mesin tersebut';
+    protected $description = 'Beri label mesin (Mesin KM) pada produk-produk cetak yang dihasilkan mesin tersebut';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $tag = $this->option('tag') ?: 'Mesin Pak Gunawan';
+        $tag = $this->option('tag') ?: 'Mesin KM';
 
         $this->info("Menandai produk-produk dengan label: [{$tag}]...");
 

@@ -41,9 +41,9 @@ class MachineSalesReportController extends Controller
             ->filter()
             ->values();
 
-        $selectedTag = $request->input('machine_tag', 'Mesin Pak Gunawan');
+        $selectedTag = $request->input('machine_tag', 'Mesin KM');
 
-        // Date & Period Filter
+        // Date & Period Filter (Cut-off date: 21st of each month)
         $timeframe = $request->input('timeframe', 'month');
         $month = (int) $request->input('month', Carbon::now()->month);
         $year = (int) $request->input('year', Carbon::now()->year);
@@ -71,15 +71,16 @@ class MachineSalesReportController extends Controller
             $endDate = Carbon::now()->endOfDay();
             $periodLabel = '7 Hari Terakhir (' . $startDate->translatedFormat('d M') . ' - ' . $endDate->translatedFormat('d M Y') . ')';
         } elseif ($timeframe === 'year' || $timeframe === '1Y') {
-            $startDate = Carbon::createFromDate($year, 1, 1)->startOfMonth();
-            $endDate = Carbon::createFromDate($year, 12, 31)->endOfMonth();
-            $periodLabel = 'Tahun ' . $year;
+            $startDate = Carbon::createFromDate($year - 1, 12, 21)->startOfDay();
+            $endDate = Carbon::createFromDate($year, 12, 20)->endOfDay();
+            $periodLabel = 'Tahun ' . $year . ' (21 Des ' . ($year - 1) . ' - 20 Des ' . $year . ')';
         } else {
-            // Default: month
+            // Default: Monthly cut-off on 21st (21st of previous month to 20th of current month)
             $timeframe = 'month';
-            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-            $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-            $periodLabel = Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y');
+            $startDate = Carbon::createFromDate($year, $month, 21)->subMonth()->startOfDay();
+            $endDate = Carbon::createFromDate($year, $month, 20)->endOfDay();
+            $monthName = Carbon::createFromDate($year, $month, 1)->translatedFormat('F Y');
+            $periodLabel = $startDate->translatedFormat('d M Y') . ' s/d ' . $endDate->translatedFormat('d M Y') . ' (' . $monthName . ')';
         }
 
         // Query TransactionDetails with matching material machine_tag
