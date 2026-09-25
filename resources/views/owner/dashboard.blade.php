@@ -236,6 +236,10 @@
             </a>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ route('reports.machine-sales') }}" class="btn btn-sm btn-outline-success rounded-lg py-1 px-2.5 text-xs font-bold text-decoration-none d-inline-flex align-items-center gap-1.5 bg-white shadow-xs" title="Rekap Penjualan Mesin & Bagi Hasil Mitra">
+                <i class="fa-solid fa-print text-emerald-600"></i>
+                <span>Mesin & Bagi Hasil &rarr;</span>
+            </a>
             <a href="{{ route('reports.product-sales') }}" class="btn btn-sm btn-outline-primary rounded-lg py-1 px-2.5 text-xs font-bold text-decoration-none d-inline-flex align-items-center gap-1.5 bg-white shadow-xs" title="Laporan Produk Terjual, Pemakaian Bahan & Arsip Bulanan">
                 <i class="fa-solid fa-boxes-stacked text-blue-600"></i>
                 <span>Produk & Bahan &rarr;</span>

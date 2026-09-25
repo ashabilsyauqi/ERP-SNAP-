@@ -132,6 +132,8 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/product-sales/archive', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'storeArchive'])->name('product-sales.archive.store');
             Route::get('/product-sales/archive/{id}/download', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'downloadArchive'])->name('product-sales.archive.download');
             Route::delete('/product-sales/archive/{id}', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'destroyArchive'])->name('product-sales.archive.destroy');
+
+            Route::get('/machine-sales', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'index'])->name('machine-sales');
         });
     });
 

@@ -450,6 +450,7 @@
                         ['title' => 'Laporan Tutup Hari (Daily Closing)', 'route' => 'daily-closing.index', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Laba & Rugi Konsolidasi', 'route' => 'reports.profit-loss', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Produk & Pemakaian Bahan', 'route' => 'reports.product-sales', 'role' => 'owner,manager'],
+                        ['title' => 'Rekap Mesin & Bagi Hasil', 'route' => 'reports.machine-sales', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Penjualan Semua Cabang', 'route' => 'reports.sales', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Beban Operasional', 'route' => 'reports.expenses', 'role' => 'owner,manager'],
                     ]
@@ -512,6 +513,7 @@
                         ['title' => 'Mutasi Buku Besar (General Ledger)', 'route' => 'reports.cash-mutation', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Laba & Rugi (Profit & Loss)', 'route' => 'reports.profit-loss', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Produk & Pemakaian Bahan', 'route' => 'reports.product-sales', 'role' => 'owner,manager'],
+                        ['title' => 'Rekap Mesin & Bagi Hasil', 'route' => 'reports.machine-sales', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Penerimaan Kas', 'route' => 'reports.cash-in', 'role' => 'owner,manager'],
                         ['title' => 'Laporan Pengeluaran Kas', 'route' => 'reports.cash-out', 'role' => 'owner,manager'],
                     ]
@@ -552,6 +554,7 @@
                     'items' => [
                         ['title' => 'Laporan Stok & Pergerakan Barang', 'route' => 'stock.index', 'role' => 'manager,owner'],
                         ['title' => 'Laporan Pemakaian Bahan & Penjualan', 'route' => 'reports.product-sales', 'role' => 'manager,owner'],
+                        ['title' => 'Rekap Mesin & Bagi Hasil', 'route' => 'reports.machine-sales', 'role' => 'manager,owner'],
                     ]
                 ]
             ];

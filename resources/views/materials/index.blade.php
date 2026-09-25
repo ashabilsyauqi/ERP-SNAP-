@@ -48,7 +48,14 @@
                                             <a href="#" data-bs-toggle="modal" data-bs-target="#modalEditMaterial{{ $mat->id }}" class="fw-bold text-slate-800 text-decoration-none hover:text-teal-700">
                                                 {{ $mat->material_name }}
                                             </a>
-                                            <div class="text-slate-400 text-[11px] font-mono">Ref: #MAT-{{ $mat->id }} &bull; {{ $mat->branch->nama_cabang ?? 'Pusat' }}</div>
+                                            <div class="d-flex align-items-center gap-1.5 flex-wrap mt-0.5">
+                                                <span class="text-slate-400 text-[11px] font-mono">Ref: #MAT-{{ $mat->id }} &bull; {{ $mat->branch->nama_cabang ?? 'Pusat' }}</span>
+                                                @if($mat->machine_tag)
+                                                    <span class="badge bg-purple-50 text-purple-700 border border-purple-200 text-[10px] font-semibold py-0.5 px-1.5 rounded">
+                                                        <i class="fa-solid fa-gear me-1"></i>{{ $mat->machine_tag }}
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -239,6 +246,20 @@
                             </datalist>
                         </div>
 
+                        <!-- Machine / Partner Tag -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                <i class="fa-solid fa-gear text-purple-600 me-1"></i> Mesin / Partner (Opsional)
+                            </label>
+                            <input type="text" name="machine_tag" list="machine-tag-list" class="form-control form-control-sm font-semibold" placeholder="Contoh: Mesin Pak Gunawan">
+                            <datalist id="machine-tag-list">
+                                <option value="Mesin Pak Gunawan"></option>
+                                <option value="Mesin Indoor"></option>
+                                <option value="Mesin Outdoor"></option>
+                                <option value="Mesin Sendiri"></option>
+                            </datalist>
+                        </div>
+
                         <!-- Branch -->
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
@@ -417,6 +438,13 @@
                                     <i class="fa-solid fa-layer-group text-primary me-1"></i> Kategori Produk
                                 </label>
                                 <input type="text" name="category" value="{{ $mat->category }}" list="mat-category-list" class="form-control form-control-sm font-semibold">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
+                                    <i class="fa-solid fa-gear text-purple-600 me-1"></i> Mesin / Partner (Opsional)
+                                </label>
+                                <input type="text" name="machine_tag" value="{{ $mat->machine_tag }}" list="machine-tag-list" class="form-control form-control-sm font-semibold" placeholder="Contoh: Mesin Pak Gunawan">
                             </div>
 
                             <div class="col-md-6">

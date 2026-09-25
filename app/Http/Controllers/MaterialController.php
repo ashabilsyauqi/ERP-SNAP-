@@ -56,6 +56,7 @@ class MaterialController extends Controller
         $request->validate([
             'material_name' => 'required|string|max:255',
             'category'      => 'nullable|string|max:100',
+            'machine_tag'   => 'nullable|string|max:100',
             'supplier_id'   => 'nullable|exists:suppliers,id',
             'fixed_size'    => 'nullable|numeric|min:0',
             'purchase_price'=> 'required|numeric|min:0',
@@ -76,6 +77,7 @@ class MaterialController extends Controller
         $material = Material::create([
             'branch_id'     => $branchId,
             'category'      => $request->category ?: 'Lainnya',
+            'machine_tag'   => $request->machine_tag ?: null,
             'supplier_id'   => $request->supplier_id,
             'material_name' => $request->material_name,
             'fixed_size'    => $request->fixed_size,
@@ -110,6 +112,7 @@ class MaterialController extends Controller
                 $createdMat = Material::create([
                     'branch_id'     => $otherBranch->id,
                     'category'      => $material->category,
+                    'machine_tag'   => $material->machine_tag,
                     'supplier_id'   => $material->supplier_id,
                     'material_name' => $material->material_name,
                     'unit'          => $material->unit ?: 'Pcs',
@@ -139,6 +142,7 @@ class MaterialController extends Controller
         $request->validate([
             'material_name' => 'required|string|max:255',
             'category'      => 'nullable|string|max:100',
+            'machine_tag'   => 'nullable|string|max:100',
             'supplier_id'   => 'nullable|exists:suppliers,id',
             'fixed_size'    => 'nullable|numeric|min:0',
             'purchase_price'=> 'required|numeric|min:0',
@@ -153,6 +157,7 @@ class MaterialController extends Controller
 
         $material->update([
             'category'      => $request->category ?: $material->category,
+            'machine_tag'   => $request->machine_tag !== null ? ($request->machine_tag ?: null) : $material->machine_tag,
             'supplier_id'   => $request->supplier_id,
             'material_name' => $request->material_name,
             'fixed_size'    => $request->fixed_size,
