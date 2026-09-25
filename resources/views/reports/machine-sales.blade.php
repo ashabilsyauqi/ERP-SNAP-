@@ -176,14 +176,14 @@
     </div>
 </div>
 
-<!-- Financial Summary Cards -->
+<!-- Financial Summary Cards (Pure Sales Performance) -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-    <!-- Card 1: Total Omzet Mesin -->
+    <!-- Card 1: Total Omzet Penjualan -->
     <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #7c3aed !important;">
         <div>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Omzet Mesin</p>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Penjualan Mesin</p>
             <h4 class="text-base font-extrabold text-purple-950 font-mono mb-0">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</h4>
-            <small class="text-slate-400 text-[10px]">{{ $uniqueInvoicesCount }} Invoice transaksi</small>
+            <small class="text-slate-400 text-[10px]">Akumulasi bruto omzet</small>
         </div>
         <div class="p-2.5 bg-purple-50 text-purple-700 rounded-xl">
             <i class="fa-solid fa-coins text-lg"></i>
@@ -202,27 +202,24 @@
         </div>
     </div>
 
-    <!-- Card 3: Modal Bahan (HPP) -->
-    <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #f59e0b !important;">
+    <!-- Card 3: Total Transaksi / Nota -->
+    <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #0284c7 !important;">
         <div>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Modal Bahan (HPP)</p>
-            <h4 class="text-base font-extrabold text-amber-950 font-mono mb-0">Rp {{ number_format($totalHpp, 0, ',', '.') }}</h4>
-            <small class="text-slate-400 text-[10px]">Biaya bahan & produksi</small>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Nota / Struk</p>
+            <h4 class="text-base font-extrabold text-sky-950 font-mono mb-0">{{ number_format($uniqueInvoicesCount) }} <span class="text-xs font-sans text-slate-500">Invoice</span></h4>
+            <small class="text-slate-400 text-[10px]">Transaksi POS kasir</small>
         </div>
-        <div class="p-2.5 bg-amber-50 text-amber-700 rounded-xl">
-            <i class="fa-solid fa-boxes-stacked text-lg"></i>
+        <div class="p-2.5 bg-sky-50 text-sky-700 rounded-xl">
+            <i class="fa-solid fa-receipt text-lg"></i>
         </div>
     </div>
 
-    <!-- Card 4: Laba Kotor Mesin -->
+    <!-- Card 4: Rata-rata per Nota (AOV) -->
     <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #10b981 !important;">
         <div>
-            <div class="d-flex align-items-center gap-1.5 mb-1">
-                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded">Margin {{ $marginPercentage }}%</span>
-                <span class="text-[10px] text-emerald-800 uppercase font-bold tracking-wider">Laba Kotor Mesin</span>
-            </div>
-            <h4 class="text-base font-extrabold text-emerald-950 font-mono mb-0">Rp {{ number_format($grossProfit, 0, ',', '.') }}</h4>
-            <small class="text-slate-500 font-medium text-[10px]">Omzet dikurangi HPP Bahan</small>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Rata-rata Nilai Nota</p>
+            <h4 class="text-base font-extrabold text-emerald-950 font-mono mb-0">Rp {{ number_format($avgTransactionValue, 0, ',', '.') }}</h4>
+            <small class="text-slate-500 font-medium text-[10px]">Rata-rata omzet per transaksi</small>
         </div>
         <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl">
             <i class="fa-solid fa-chart-line text-lg"></i>
@@ -250,9 +247,7 @@
                     <th>Label Mesin</th>
                     <th class="text-end">Harga Satuan</th>
                     <th class="text-center">Qty Terjual</th>
-                    <th class="text-end">Total Omzet</th>
-                    <th class="text-end">Total HPP</th>
-                    <th class="text-end text-emerald-700 pe-3">Laba Kotor</th>
+                    <th class="text-end pe-3">Total Penjualan (Omzet)</th>
                 </tr>
             </thead>
             <tbody>
@@ -273,13 +268,11 @@
                         </td>
                         <td class="text-end font-mono text-xs">Rp {{ number_format($p['unit_price'], 0, ',', '.') }}</td>
                         <td class="text-center font-mono font-bold text-xs">{{ number_format($p['qty_sold']) }}</td>
-                        <td class="text-end font-mono font-bold text-purple-950 text-xs">Rp {{ number_format($p['total_omzet'], 0, ',', '.') }}</td>
-                        <td class="text-end font-mono text-slate-600 text-xs">Rp {{ number_format($p['total_hpp'], 0, ',', '.') }}</td>
-                        <td class="text-end font-mono font-bold text-emerald-700 text-xs pe-3">Rp {{ number_format($p['gross_profit'], 0, ',', '.') }}</td>
+                        <td class="text-end font-mono font-bold text-purple-950 text-xs pe-3">Rp {{ number_format($p['total_omzet'], 0, ',', '.') }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center py-5 text-muted">
+                        <td colspan="7" class="text-center py-5 text-muted">
                             <div class="p-3">
                                 <i class="fa-solid fa-gear text-slate-300 fs-1 mb-2"></i>
                                 <p class="mb-0 text-xs">Belum ada data penjualan untuk produk mesin <strong>{{ $selectedTag }}</strong> pada periode {{ $periodLabel }}.</p>
@@ -291,11 +284,9 @@
             @if(count($productsMap) > 0)
             <tfoot class="bg-slate-50 font-bold border-top border-2 text-xs">
                 <tr>
-                    <td colspan="5" class="ps-3 text-end uppercase text-slate-600">TOTAL KESELURUHAN:</td>
+                    <td colspan="5" class="ps-3 text-end uppercase text-slate-600">TOTAL KESELURUHAN PENJUALAN:</td>
                     <td class="text-center font-mono text-blue-900">{{ number_format($totalItemsSold) }}</td>
-                    <td class="text-end font-mono text-purple-900">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
-                    <td class="text-end font-mono text-slate-700">Rp {{ number_format($totalHpp, 0, ',', '.') }}</td>
-                    <td class="text-end font-mono text-emerald-800 pe-3">Rp {{ number_format($grossProfit, 0, ',', '.') }}</td>
+                    <td class="text-end font-mono text-purple-900 pe-3">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
                 </tr>
             </tfoot>
             @endif
@@ -323,7 +314,7 @@
                     <th>Produk Mesin</th>
                     <th class="text-center">Qty</th>
                     <th class="text-end">Harga Satuan</th>
-                    <th class="text-end">Subtotal Omzet</th>
+                    <th class="text-end">Subtotal Penjualan</th>
                     <th>Cabang</th>
                     <th class="pe-3">Kasir</th>
                 </tr>

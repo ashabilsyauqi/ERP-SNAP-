@@ -103,11 +103,10 @@ class MachineSalesReportController extends Controller
 
         $transactionDetails = $detailsQuery->orderBy('created_at', 'desc')->get();
 
-        // Aggregation per Product
+        // Aggregation per Product (Pure Sales)
         $productsMap = [];
         $totalItemsSold = 0;
         $totalOmzet = 0;
-        $totalHpp = 0;
 
         foreach ($transactionDetails as $detail) {
             $material = $detail->material;
@@ -124,13 +123,8 @@ class MachineSalesReportController extends Controller
                 $revenue = (float) $detail->selling_price;
             }
 
-            $purchasePrice = (float) $material->purchase_price;
-            $clickCharge = (float) ($detail->click_charge ?? $material->click_charge ?? 0);
-            $itemCost = ($purchasePrice + $clickCharge) * $qty;
-
             $totalItemsSold += $qty;
             $totalOmzet += $revenue;
-            $totalHpp += $itemCost;
 
             if (!isset($productsMap[$materialId])) {
                 $productsMap[$materialId] = [
@@ -141,33 +135,26 @@ class MachineSalesReportController extends Controller
                     'unit_price' => $material->retail_price,
                     'qty_sold' => 0,
                     'total_omzet' => 0,
-                    'total_hpp' => 0,
-                    'gross_profit' => 0,
                 ];
             }
 
             $productsMap[$materialId]['qty_sold'] += $qty;
             $productsMap[$materialId]['total_omzet'] += $revenue;
-            $productsMap[$materialId]['total_hpp'] += $itemCost;
-            $productsMap[$materialId]['gross_profit'] += ($revenue - $itemCost);
         }
 
         // Sort products by omzet descending
         uasort($productsMap, fn($a, $b) => $b['total_omzet'] <=> $a['total_omzet']);
 
-        $grossProfit = $totalOmzet - $totalHpp;
-        $marginPercentage = ($totalOmzet > 0) ? round(($grossProfit / $totalOmzet) * 100, 1) : 0;
         $uniqueInvoicesCount = $transactionDetails->pluck('transaction_id')->unique()->count();
+        $avgTransactionValue = ($uniqueInvoicesCount > 0) ? round($totalOmzet / $uniqueInvoicesCount) : 0;
 
         return [
             'productsMap' => $productsMap,
             'transactionDetails' => $transactionDetails,
             'totalItemsSold' => $totalItemsSold,
             'totalOmzet' => $totalOmzet,
-            'totalHpp' => $totalHpp,
-            'grossProfit' => $grossProfit,
-            'marginPercentage' => $marginPercentage,
             'uniqueInvoicesCount' => $uniqueInvoicesCount,
+            'avgTransactionValue' => $avgTransactionValue,
             'allMachineTags' => $allMachineTags,
             'selectedTag' => $selectedTag,
             'branches' => $branches,

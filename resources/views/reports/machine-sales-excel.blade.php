@@ -6,8 +6,6 @@
         body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1e293b; }
         .title-main { font-size: 16pt; font-weight: bold; color: #1e1b4b; }
         .title-sub { font-size: 12pt; font-weight: bold; color: #4338ca; }
-        .meta-label { font-weight: bold; color: #475569; }
-        .meta-value { color: #0f172a; }
         
         table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
         th, td { border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 10pt; }
@@ -16,9 +14,7 @@
         .th-product { background-color: #312e81; color: #ffffff; }
         .th-tx { background-color: #0f172a; color: #ffffff; }
         
-        .kpi-table th { background-color: #f1f5f9; color: #334155; font-size: 9pt; text-align: left; }
-        .kpi-table td { font-size: 11pt; font-weight: bold; color: #0f172a; }
-        .kpi-highlight { background-color: #ecfdf5; color: #065f46; font-size: 12pt; font-weight: bold; }
+        .kpi-highlight { background-color: #f3e8ff; color: #581c87; font-size: 12pt; font-weight: bold; }
         
         .text-center { text-align: center; }
         .text-right { text-align: right; }
@@ -36,23 +32,23 @@
     <!-- Header Section -->
     <table>
         <tr>
-            <td colspan="8" class="title-main" style="border: none;">SNAPRINT DIGITAL PRINTING</td>
+            <td colspan="7" class="title-main" style="border: none;">SNAPRINT DIGITAL PRINTING</td>
         </tr>
         <tr>
-            <td colspan="8" class="title-sub" style="border: none;">LAPORAN REKAPITULASI KINERJA PENJUALAN MESIN</td>
+            <td colspan="7" class="title-sub" style="border: none;">LAPORAN REKAPITULASI PENJUALAN MESIN</td>
         </tr>
         <tr>
-            <td colspan="8" style="border: none; height: 10px;"></td>
+            <td colspan="7" style="border: none; height: 10px;"></td>
         </tr>
         <tr>
             <td style="border: none; font-weight: bold; width: 140px;">Label Mesin:</td>
-            <td colspan="3" style="border: none;"><strong>{{ $selectedTag === 'all' ? 'Semua Mesin Berlabel' : $selectedTag }}</strong></td>
+            <td colspan="2" style="border: none;"><strong>{{ $selectedTag === 'all' ? 'Semua Mesin Berlabel' : $selectedTag }}</strong></td>
             <td style="border: none; font-weight: bold; width: 120px;">Periode:</td>
             <td colspan="3" style="border: none;"><strong>{{ $periodLabel }}</strong></td>
         </tr>
         <tr>
             <td style="border: none; font-weight: bold;">Cabang:</td>
-            <td colspan="3" style="border: none;"><strong>{{ $branchName }}</strong></td>
+            <td colspan="2" style="border: none;"><strong>{{ $branchName }}</strong></td>
             <td style="border: none; font-weight: bold;">Tanggal Unduh:</td>
             <td colspan="3" style="border: none;">{{ now()->translatedFormat('d F Y H:i') }}</td>
         </tr>
@@ -64,21 +60,21 @@
     <table>
         <thead>
             <tr>
-                <th colspan="4" style="background-color: #1e293b; color: #ffffff; text-align: left;">RINGKASAN TOTAL KINERJA FINANSIAL MESIN</th>
+                <th colspan="4" style="background-color: #1e293b; color: #ffffff; text-align: left;">RINGKASAN TOTAL PENJUALAN MESIN</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td style="background-color: #f8fafc; font-weight: bold; width: 25%;">Total Omzet Mesin</td>
-                <td class="currency" style="font-weight: bold; width: 25%;">{{ $totalOmzet }}</td>
+                <td style="background-color: #f8fafc; font-weight: bold; width: 25%;">Total Penjualan (Omzet)</td>
+                <td class="currency kpi-highlight" style="width: 25%;">{{ $totalOmzet }}</td>
                 <td style="background-color: #f8fafc; font-weight: bold; width: 25%;">Total Volume Cetak</td>
                 <td class="num" style="font-weight: bold; width: 25%;">{{ $totalItemsSold }} Lembar/Pcs</td>
             </tr>
             <tr>
-                <td style="background-color: #f8fafc; font-weight: bold;">Total Modal Bahan (HPP)</td>
-                <td class="currency" style="font-weight: bold;">{{ $totalHpp }}</td>
-                <td style="background-color: #ecfdf5; font-weight: bold; color: #065f46;">Total Laba Kotor Mesin</td>
-                <td class="currency kpi-highlight">{{ $grossProfit }}</td>
+                <td style="background-color: #f8fafc; font-weight: bold;">Total Transaksi / Nota</td>
+                <td class="num" style="font-weight: bold;">{{ $uniqueInvoicesCount }} Invoice</td>
+                <td style="background-color: #f8fafc; font-weight: bold;">Rata-rata per Transaksi</td>
+                <td class="currency" style="font-weight: bold;">{{ $avgTransactionValue }}</td>
             </tr>
         </tbody>
     </table>
@@ -89,18 +85,16 @@
     <table>
         <thead>
             <tr>
-                <th colspan="8" class="th-product" style="text-align: left; font-size: 11pt;">TABEL 1: REKAPITULASI PENJUALAN PER PRODUK</th>
+                <th colspan="7" class="th-product" style="text-align: left; font-size: 11pt;">TABEL 1: REKAPITULASI PENJUALAN PER PRODUK</th>
             </tr>
             <tr>
                 <th style="width: 40px;">No</th>
-                <th style="width: 260px;">Nama Produk / Bahan</th>
+                <th style="width: 280px;">Nama Produk / Bahan</th>
                 <th style="width: 140px;">Kategori</th>
                 <th style="width: 150px;">Label Mesin</th>
                 <th style="width: 120px;">Harga Satuan</th>
-                <th style="width: 90px;">Qty Terjual</th>
-                <th style="width: 140px;">Total Omzet</th>
-                <th style="width: 130px;">Total HPP Bahan</th>
-                <th style="width: 140px;">Laba Kotor</th>
+                <th style="width: 100px;">Qty Terjual</th>
+                <th style="width: 160px;">Total Penjualan (Omzet)</th>
             </tr>
         </thead>
         <tbody>
@@ -112,23 +106,19 @@
                 <td class="text-center">{{ $prod['machine_tag'] ?: '-' }}</td>
                 <td class="currency">{{ $prod['unit_price'] }}</td>
                 <td class="num">{{ $prod['qty_sold'] }}</td>
-                <td class="currency fw-bold">{{ $prod['total_omzet'] }}</td>
-                <td class="currency">{{ $prod['total_hpp'] }}</td>
-                <td class="currency fw-bold" style="color: #065f46;">{{ $prod['gross_profit'] }}</td>
+                <td class="currency fw-bold" style="color: #4338ca;">{{ $prod['total_omzet'] }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="9" class="text-center" style="padding: 20px; color: #94a3b8;">Tidak ada data transaksi penjualan pada periode ini.</td>
+                <td colspan="7" class="text-center" style="padding: 20px; color: #94a3b8;">Tidak ada data transaksi penjualan pada periode ini.</td>
             </tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr class="bg-total">
-                <td colspan="5" class="text-center fw-bold" style="background-color: #f1f5f9;">TOTAL REKAP PRODUK</td>
+                <td colspan="5" class="text-center fw-bold" style="background-color: #f1f5f9;">TOTAL KESELURUHAN PENJUALAN</td>
                 <td class="num fw-bold" style="background-color: #f1f5f9;">{{ $totalItemsSold }}</td>
-                <td class="currency fw-bold" style="background-color: #f1f5f9;">{{ $totalOmzet }}</td>
-                <td class="currency fw-bold" style="background-color: #f1f5f9;">{{ $totalHpp }}</td>
-                <td class="currency fw-bold" style="background-color: #d1fae5; color: #065f46;">{{ $grossProfit }}</td>
+                <td class="currency fw-bold" style="background-color: #f3e8ff; color: #581c87;">{{ $totalOmzet }}</td>
             </tr>
         </tfoot>
     </table>
@@ -147,10 +137,10 @@
                 <th style="width: 130px;">Tanggal & Jam</th>
                 <th style="width: 140px;">Cabang</th>
                 <th style="width: 160px;">Nama Pelanggan</th>
-                <th style="width: 240px;">Produk Dicetak</th>
+                <th style="width: 250px;">Produk Dicetak</th>
                 <th style="width: 80px;">Qty</th>
                 <th style="width: 120px;">Harga Satuan</th>
-                <th style="width: 130px;">Subtotal Omzet</th>
+                <th style="width: 140px;">Subtotal Penjualan</th>
             </tr>
         </thead>
         <tbody>
@@ -185,10 +175,10 @@
         </tbody>
         <tfoot>
             <tr class="bg-total">
-                <td colspan="6" class="text-center fw-bold" style="background-color: #f1f5f9;">TOTAL RINCIAN TRANSAKSI</td>
+                <td colspan="6" class="text-center fw-bold" style="background-color: #f1f5f9;">TOTAL RINCIAN PENJUALAN</td>
                 <td class="num fw-bold" style="background-color: #f1f5f9;">{{ $totalItemsSold }}</td>
                 <td style="background-color: #f1f5f9;"></td>
-                <td class="currency fw-bold" style="background-color: #f1f5f9;">{{ $totalOmzet }}</td>
+                <td class="currency fw-bold" style="background-color: #f3e8ff; color: #581c87;">{{ $totalOmzet }}</td>
             </tr>
         </tfoot>
     </table>
@@ -204,7 +194,7 @@
                 <strong>Finance / Kasir</strong>
             </td>
             <td colspan="2" style="border: none;"></td>
-            <td colspan="3" class="text-center" style="border: none;">
+            <td colspan="2" class="text-center" style="border: none;">
                 Diketahui Oleh,<br/><br/><br/><br/>
                 ( <strong>{{ $selectedTag === 'all' ? 'Penanggung Jawab Mesin' : $selectedTag }}</strong> )<br/>
                 <strong>Penanggung Jawab Mesin</strong>
