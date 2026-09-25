@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Material;
+use App\Models\Branch;
 
 class TagGunawanMaterialsCommand extends Command
 {
@@ -19,7 +20,7 @@ class TagGunawanMaterialsCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Beri label mesin (Mesin KM) pada produk-produk cetak yang dihasilkan mesin tersebut';
+    protected $description = 'Beri label mesin (Mesin KM) khusus untuk produk di Cabang Grand Wisata (Pusat)';
 
     /**
      * Execute the console command.
@@ -28,7 +29,13 @@ class TagGunawanMaterialsCommand extends Command
     {
         $tag = $this->option('tag') ?: 'Mesin KM';
 
-        $this->info("Menandai produk-produk dengan label: [{$tag}]...");
+        $branch = Branch::where('nama_cabang', 'LIKE', '%Grand Wisata%')->first();
+        $branchId = $branch ? $branch->id : 1;
+
+        $this->info("Menandai produk-produk dengan label: [{$tag}] khusus di Cabang Grand Wisata (ID: {$branchId})...");
+
+        // Reset tags for other branches
+        Material::where('branch_id', '!=', $branchId)->where('machine_tag', $tag)->update(['machine_tag' => null]);
 
         $targetPatterns = [
             'Print Art paper',
@@ -45,16 +52,19 @@ class TagGunawanMaterialsCommand extends Command
         $updatedCount = 0;
 
         foreach ($targetPatterns as $pattern) {
-            $materials = Material::where('material_name', 'LIKE', '%' . $pattern . '%')->get();
+            $materials = Material::where('branch_id', $branchId)
+                ->where('material_name', 'LIKE', '%' . $pattern . '%')
+                ->get();
+
             foreach ($materials as $m) {
                 $m->machine_tag = $tag;
                 $m->save();
-                $this->line("✓ [ID {$m->id}] {$m->material_name} (Cabang ID: {$m->branch_id}) -> {$tag}");
+                $this->line("✓ [ID {$m->id}] {$m->material_name} (Cabang: {$branch->nama_cabang}) -> {$tag}");
                 $updatedCount++;
             }
         }
 
-        $this->info("\n[SELESAI] Total {$updatedCount} produk berhasil dilabeli dengan '{$tag}'!");
+        $this->info("\n[SELESAI] Total {$updatedCount} produk di Cabang Grand Wisata berhasil dilabeli dengan '{$tag}'!");
         return 0;
     }
 }
