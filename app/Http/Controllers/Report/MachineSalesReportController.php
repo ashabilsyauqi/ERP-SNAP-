@@ -13,7 +13,7 @@ use Carbon\Carbon;
 
 class MachineSalesReportController extends Controller
 {
-    public function index(Request $request)
+    private function getReportData(Request $request): array
     {
         $user = Auth::user();
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
@@ -122,7 +122,6 @@ class MachineSalesReportController extends Controller
             $areaM2 = (float) ($detail->area_m2 ?? 0);
             
             $revenue = ($areaM2 > 0) ? ($areaM2 * $sellingPrice) : ($qty * $sellingPrice);
-            // Fallback for custom banner unit price
             if ($revenue <= 0 && $detail->selling_price > 0) {
                 $revenue = (float) $detail->selling_price;
             }
@@ -163,28 +162,50 @@ class MachineSalesReportController extends Controller
         $partnerShareProfitAmount = round($grossProfit * ($sharingPct / 100));
         $uniqueInvoicesCount = $transactionDetails->pluck('transaction_id')->unique()->count();
 
-        return view('reports.machine-sales', compact(
-            'productsMap',
-            'transactionDetails',
-            'totalItemsSold',
-            'totalOmzet',
-            'totalHpp',
-            'grossProfit',
-            'partnerShareAmount',
-            'partnerShareProfitAmount',
-            'uniqueInvoicesCount',
-            'allMachineTags',
-            'selectedTag',
-            'sharingPct',
-            'branches',
-            'branchId',
-            'branchName',
-            'periodLabel',
-            'timeframe',
-            'month',
-            'year',
-            'startDateInput',
-            'endDateInput'
-        ));
+        return [
+            'productsMap' => $productsMap,
+            'transactionDetails' => $transactionDetails,
+            'totalItemsSold' => $totalItemsSold,
+            'totalOmzet' => $totalOmzet,
+            'totalHpp' => $totalHpp,
+            'grossProfit' => $grossProfit,
+            'partnerShareAmount' => $partnerShareAmount,
+            'partnerShareProfitAmount' => $partnerShareProfitAmount,
+            'uniqueInvoicesCount' => $uniqueInvoicesCount,
+            'allMachineTags' => $allMachineTags,
+            'selectedTag' => $selectedTag,
+            'sharingPct' => $sharingPct,
+            'branches' => $branches,
+            'branchId' => $branchId,
+            'branchName' => $branchName,
+            'periodLabel' => $periodLabel,
+            'timeframe' => $timeframe,
+            'month' => $month,
+            'year' => $year,
+            'startDateInput' => $startDateInput,
+            'endDateInput' => $endDateInput
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        $data = $this->getReportData($request);
+        return view('reports.machine-sales', $data);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $data = $this->getReportData($request);
+
+        $tagSanitized = preg_replace('/[^A-Za-z0-9_\-]/', '_', $data['selectedTag'] ?: 'Mesin');
+        $periodSanitized = preg_replace('/[^A-Za-z0-9_\-]/', '_', $data['periodLabel']);
+        $filename = "Rekap_Mesin_{$tagSanitized}_{$periodSanitized}.xls";
+
+        return response()->view('reports.machine-sales-excel', $data, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 }

@@ -134,6 +134,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/product-sales/archive/{id}', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'destroyArchive'])->name('product-sales.archive.destroy');
 
             Route::get('/machine-sales', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'index'])->name('machine-sales');
+            Route::get('/machine-sales/export-excel', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'exportExcel'])->name('machine-sales.export-excel');
         });
     });
 

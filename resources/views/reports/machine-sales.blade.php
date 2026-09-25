@@ -5,6 +5,10 @@
 
 @section('action-buttons')
 <div class="d-flex align-items-center gap-2">
+    <a href="{{ route('reports.machine-sales.export-excel', request()->all()) }}" class="btn-odoo-secondary text-xs text-decoration-none d-inline-flex align-items-center gap-1.5 bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 shadow-2xs" title="Unduh data laporan dalam format Excel (.xls)">
+        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+        <span>Export Excel</span>
+    </a>
     <button type="button" onclick="window.print()" class="btn-odoo-secondary text-xs">
         <i class="fa-solid fa-print me-1.5"></i> Cetak Settlement / PDF
     </button>
@@ -164,17 +168,17 @@
     </div>
 
     <!-- Card 4: Hak Bagi Hasil Partner -->
-    <div class="bg-gradient-to-tr from-emerald-600 to-teal-700 text-white rounded-2xl p-3.5 shadow-md flex items-center justify-between">
+    <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #10b981 !important;">
         <div>
             <div class="d-flex align-items-center gap-1.5 mb-1">
-                <span class="badge bg-white/20 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">{{ $sharingPct }}% Bagi Hasil</span>
-                <span class="text-[10px] text-emerald-100 uppercase font-bold tracking-wider">Hak Partner</span>
+                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-1.5 py-0.5 rounded">{{ $sharingPct }}% Bagi Hasil</span>
+                <span class="text-[10px] text-emerald-800 uppercase font-bold tracking-wider">Hak Partner</span>
             </div>
-            <h4 class="text-lg font-black text-white font-mono mb-0">Rp {{ number_format($partnerShareAmount, 0, ',', '.') }}</h4>
-            <small class="text-emerald-100 text-[10px]">Berdasarkan {{ $sharingPct }}% Total Omzet</small>
+            <h4 class="text-base font-extrabold text-emerald-950 font-mono mb-0">Rp {{ number_format($partnerShareAmount, 0, ',', '.') }}</h4>
+            <small class="text-slate-500 font-medium text-[10px]">Berdasarkan {{ $sharingPct }}% Total Omzet</small>
         </div>
-        <div class="p-2.5 bg-white/10 text-white rounded-xl">
-            <i class="fa-solid fa-handshake text-xl"></i>
+        <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl">
+            <i class="fa-solid fa-handshake text-lg"></i>
         </div>
     </div>
 </div>
