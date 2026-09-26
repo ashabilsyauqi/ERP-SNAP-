@@ -77,60 +77,65 @@
     </div>
 
     <!-- BANNER LOGIKA 25/75 & KEPEMILIKAN UANG -->
-    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-5 sm:p-6 shadow-xl border border-slate-800">
+    <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200">
         <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold mb-2">
-                    <i class="fa-solid fa-shield-halved"></i>
-                    <span>Aturan Split Resmi: 25% Komisi Order & 75% Pengerjaan Produksi</span>
+            <div class="flex-1">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold mb-2.5">
+                    <i class="fa-solid fa-shield-halved text-indigo-600"></i>
+                    <span>Aturan Split Resmi: 25% Komisi Order &amp; 75% Pengerjaan Produksi</span>
                 </div>
-                <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">Ringkasan Posisi Kas & Pembagian Hak</h2>
-                <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-                    Uang customer 100% dipegang oleh cabang penerima order. Dari total nominal pesanan, <strong class="text-amber-300">25%</strong> adalah hak cabang pengirim (komisi) dan <strong class="text-emerald-300">75%</strong> adalah hak cabang pelaksana produksi.
+                <h2 class="text-xl sm:text-2xl font-black tracking-tight text-slate-900">Ringkasan Posisi Kas &amp; Pembagian Hak</h2>
+                <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                    Uang customer 100% dipegang oleh cabang penerima order. Dari total nominal pesanan, <strong class="text-amber-700 font-bold">25%</strong> adalah hak cabang pengirim (komisi) dan <strong class="text-emerald-700 font-bold">75%</strong> adalah hak cabang pelaksana produksi.
                 </p>
 
                 <!-- Visual 25% / 75% Split Indicator Bar -->
-                <div class="mt-4 p-3 bg-white/5 border border-white/10 rounded-xl max-w-2xl">
+                <div class="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl max-w-2xl">
                     <div class="flex justify-between text-[11px] font-bold mb-1.5">
-                        <span class="text-amber-300 flex items-center gap-1">
-                            <i class="fa-solid fa-receipt"></i> 25% Komisi Cabang Asal (Input Order)
+                        <span class="text-amber-800 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                            <span>25% Komisi Cabang Asal (Input Order)</span>
                         </span>
-                        <span class="text-emerald-300 flex items-center gap-1">
-                            <i class="fa-solid fa-industry"></i> 75% Biaya Pengerjaan (Cabang Pelaksana)
+                        <span class="text-emerald-800 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span>
+                            <span>75% Biaya Pengerjaan (Cabang Pelaksana)</span>
                         </span>
                     </div>
-                    <div class="w-full bg-slate-800 rounded-full h-3 flex overflow-hidden p-0.5 border border-white/20">
-                        <div class="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-l-full" style="width: 25%" title="25% Komisi Order"></div>
-                        <div class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-r-full" style="width: 75%" title="75% Pelaksana Produksi"></div>
+                    <div class="w-full bg-slate-200 rounded-full h-3.5 flex overflow-hidden p-0.5 border border-slate-300">
+                        <div class="bg-amber-400 h-full rounded-l-full flex items-center justify-center text-[9px] font-bold text-amber-950" style="width: 25%" title="25% Komisi Order">25%</div>
+                        <div class="bg-emerald-600 h-full rounded-r-full flex items-center justify-center text-[9px] font-bold text-white" style="width: 75%" title="75% Pelaksana Produksi">75%</div>
                     </div>
                 </div>
             </div>
 
             <!-- Net Settlement Display Box -->
-            <div class="w-full lg:w-auto min-w-[340px] bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 flex flex-col gap-2">
-                <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Status Kliring Bersih (Netting):</span>
+            <div class="w-full lg:w-auto min-w-[340px] bg-slate-900 text-white rounded-2xl p-5 flex flex-col gap-2.5 shadow-lg border border-slate-800">
+                <span class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-scale-balanced text-amber-400"></i>
+                    <span>Status Kliring Bersih (Netting):</span>
+                </span>
                 
                 @if($settlement['is_balanced'])
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 bg-emerald-950/60 p-3 rounded-xl border border-emerald-500/30">
                         <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-400 flex items-center justify-center font-bold text-lg">
                             <i class="fa-solid fa-check"></i>
                         </div>
                         <div>
                             <span class="text-emerald-300 font-bold text-sm block">SALDO IMPAS / SEIMBANG</span>
-                            <span class="text-xs text-slate-300">Tidak ada kewajiban transfer antar kedua cabang (Rp 0).</span>
+                            <span class="text-xs text-slate-300">Tidak ada kewajiban transfer antar cabang (Rp 0).</span>
                         </div>
                     </div>
                 @else
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 bg-slate-800 p-3.5 rounded-xl border border-slate-700">
                         <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400 text-amber-400 flex items-center justify-center font-bold text-lg">
                             <i class="fa-solid fa-arrow-right-arrow-left"></i>
                         </div>
                         <div>
-                            <span class="text-amber-300 font-bold text-sm block">
+                            <span class="text-amber-300 font-bold text-xs sm:text-sm block">
                                 {{ $settlement['payer']->nama_cabang }} &rarr; {{ $settlement['receiver']->nama_cabang }}
                             </span>
-                            <span class="text-xs text-slate-200">
-                                Wajib transfer netto: <strong class="text-amber-400 font-mono text-sm">Rp {{ number_format($settlement['amount'], 0, ',', '.') }}</strong>
+                            <span class="text-xs text-slate-300 block mt-0.5">
+                                Wajib transfer netto: <strong class="text-amber-400 font-mono text-sm font-black">Rp {{ number_format($settlement['amount'], 0, ',', '.') }}</strong>
                             </span>
                         </div>
                     </div>
@@ -139,32 +144,46 @@
         </div>
 
         <!-- 2 Directions Visual Card Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-5 border-t border-white/10 text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-200 text-xs">
             <!-- Flow 1: Branch 1 -> Branch 2 -->
-            <div class="bg-white/5 rounded-xl p-3.5 border border-emerald-500/20 flex flex-col gap-1.5">
-                <div class="flex items-center justify-between">
-                    <span class="font-bold text-emerald-400 flex items-center gap-1.5 text-sm">
-                        <span>🟢 {{ $branch1->nama_cabang ?? 'Cabang 1' }} &rarr; {{ $branch2->nama_cabang ?? 'Cabang 2' }}</span>
-                    </span>
-                    <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] font-mono border border-emerald-500/30">Order di {{ $branch1->nama_cabang ?? 'Cabang 1' }}</span>
+            <div class="bg-emerald-50/70 rounded-xl p-4 border border-emerald-200 flex flex-col justify-between gap-2.5">
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="font-bold text-emerald-900 flex items-center gap-1.5 text-sm">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                            <span>{{ $branch1->nama_cabang ?? 'Cabang 1' }} &rarr; {{ $branch2->nama_cabang ?? 'Cabang 2' }}</span>
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10.5px] font-bold border border-emerald-300">
+                            Order di {{ $branch1->nama_cabang ?? 'Cabang 1' }}
+                        </span>
+                    </div>
+                    <p class="text-slate-600 text-xs mb-0">
+                        Uang 100% diterima kasir <strong>{{ $branch1->nama_cabang ?? 'Cabang 1' }}</strong>. Hak {{ $branch1->nama_cabang ?? 'Cabang 1' }} <strong>25%</strong> (komisi), Hak {{ $branch2->nama_cabang ?? 'Cabang 2' }} <strong>75%</strong> (produksi).
+                    </p>
                 </div>
-                <p class="text-slate-300 mb-0">Uang 100% di <strong>Kasir {{ $branch1->nama_cabang ?? 'Cabang 1' }}</strong>. Hak {{ $branch1->nama_cabang ?? 'Cabang 1' }} <strong>25%</strong>, Hak {{ $branch2->nama_cabang ?? 'Cabang 2' }} <strong>75%</strong>.</p>
-                <div class="mt-1 text-[11px] text-emerald-300 font-mono bg-black/20 p-2 rounded">
-                    Total Order: <strong>Rp {{ number_format($b1CashIn, 0, ',', '.') }}</strong> &rarr; {{ $branch1->nama_cabang ?? 'Cabang 1' }} wajib setor <strong>Rp {{ number_format($b1OwesB2, 0, ',', '.') }}</strong> ke {{ $branch2->nama_cabang ?? 'Cabang 2' }}.
+                <div class="text-xs text-emerald-950 font-mono bg-white p-2.5 rounded-lg border border-emerald-200 font-medium">
+                    Total Order: <strong class="text-slate-900">Rp {{ number_format($b1CashIn, 0, ',', '.') }}</strong> &rarr; {{ $branch1->nama_cabang ?? 'Cabang 1' }} wajib setor <strong class="text-rose-700">Rp {{ number_format($b1OwesB2, 0, ',', '.') }}</strong> ke {{ $branch2->nama_cabang ?? 'Cabang 2' }}.
                 </div>
             </div>
 
             <!-- Flow 2: Branch 2 -> Branch 1 -->
-            <div class="bg-white/5 rounded-xl p-3.5 border border-indigo-500/20 flex flex-col gap-1.5">
-                <div class="flex items-center justify-between">
-                    <span class="font-bold text-indigo-400 flex items-center gap-1.5 text-sm">
-                        <span>🟣 {{ $branch2->nama_cabang ?? 'Cabang 2' }} &rarr; {{ $branch1->nama_cabang ?? 'Cabang 1' }}</span>
-                    </span>
-                    <span class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 text-[10px] font-mono border border-indigo-500/30">Order di {{ $branch2->nama_cabang ?? 'Cabang 2' }}</span>
+            <div class="bg-indigo-50/70 rounded-xl p-4 border border-indigo-200 flex flex-col justify-between gap-2.5">
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="font-bold text-indigo-900 flex items-center gap-1.5 text-sm">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                            <span>{{ $branch2->nama_cabang ?? 'Cabang 2' }} &rarr; {{ $branch1->nama_cabang ?? 'Cabang 1' }}</span>
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 text-[10.5px] font-bold border border-indigo-300">
+                            Order di {{ $branch2->nama_cabang ?? 'Cabang 2' }}
+                        </span>
+                    </div>
+                    <p class="text-slate-600 text-xs mb-0">
+                        Uang 100% diterima kasir <strong>{{ $branch2->nama_cabang ?? 'Cabang 2' }}</strong>. Hak {{ $branch2->nama_cabang ?? 'Cabang 2' }} <strong>25%</strong> (komisi), Hak {{ $branch1->nama_cabang ?? 'Cabang 1' }} <strong>75%</strong> (produksi).
+                    </p>
                 </div>
-                <p class="text-slate-300 mb-0">Uang 100% di <strong>Kasir {{ $branch2->nama_cabang ?? 'Cabang 2' }}</strong>. Hak {{ $branch2->nama_cabang ?? 'Cabang 2' }} <strong>25%</strong>, Hak {{ $branch1->nama_cabang ?? 'Cabang 1' }} <strong>75%</strong>.</p>
-                <div class="mt-1 text-[11px] text-indigo-300 font-mono bg-black/20 p-2 rounded">
-                    Total Order: <strong>Rp {{ number_format($b2CashIn, 0, ',', '.') }}</strong> &rarr; {{ $branch2->nama_cabang ?? 'Cabang 2' }} wajib setor <strong>Rp {{ number_format($b2OwesB1, 0, ',', '.') }}</strong> ke {{ $branch1->nama_cabang ?? 'Cabang 1' }}.
+                <div class="text-xs text-indigo-950 font-mono bg-white p-2.5 rounded-lg border border-indigo-200 font-medium">
+                    Total Order: <strong class="text-slate-900">Rp {{ number_format($b2CashIn, 0, ',', '.') }}</strong> &rarr; {{ $branch2->nama_cabang ?? 'Cabang 2' }} wajib setor <strong class="text-rose-700">Rp {{ number_format($b2OwesB1, 0, ',', '.') }}</strong> ke {{ $branch1->nama_cabang ?? 'Cabang 1' }}.
                 </div>
             </div>
         </div>
