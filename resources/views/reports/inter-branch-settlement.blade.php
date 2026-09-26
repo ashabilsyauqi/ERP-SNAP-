@@ -21,23 +21,45 @@
     <!-- Filter Card -->
     <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
         <form method="GET" action="{{ route('reports.inter-branch-settlement') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-            <div>
-                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pihak Cabang 1</label>
-                <select name="branch_1" class="form-select form-select-sm text-xs font-semibold rounded-xl">
-                    @foreach($branches as $b)
-                        <option value="{{ $b->id }}" {{ $b->id == $branch1Id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
-                    @endforeach
-                </select>
-            </div>
+            @if($isOwnerOrSuper)
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pihak Cabang 1 (Asal)</label>
+                    <select name="branch_1" class="form-select form-select-sm text-xs font-semibold rounded-xl">
+                        @foreach($branches as $b)
+                            <option value="{{ $b->id }}" {{ $b->id == $branch1Id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div>
-                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pihak Cabang 2</label>
-                <select name="branch_2" class="form-select form-select-sm text-xs font-semibold rounded-xl">
-                    @foreach($branches as $b)
-                        <option value="{{ $b->id }}" {{ $b->id == $branch2Id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
-                    @endforeach
-                </select>
-            </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pihak Cabang 2 (Mitra)</label>
+                    <select name="branch_2" class="form-select form-select-sm text-xs font-semibold rounded-xl">
+                        @foreach($branches as $b)
+                            <option value="{{ $b->id }}" {{ $b->id == $branch2Id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @else
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Cabang Anda (Otomatis)</label>
+                    <div class="form-control form-control-sm text-xs font-bold bg-slate-100 text-slate-800 rounded-xl flex items-center gap-1.5 py-1.5 border-slate-200">
+                        <i class="fa-solid fa-store text-emerald-600"></i>
+                        <span>{{ $branch1->nama_cabang ?? 'Cabang Anda' }}</span>
+                    </div>
+                    <input type="hidden" name="branch_1" value="{{ $branch1Id }}">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Pilih Mitra Kliring (Cabang Lawan)</label>
+                    <select name="branch_2" class="form-select form-select-sm text-xs font-semibold rounded-xl border-indigo-300 focus:border-indigo-500">
+                        @foreach($branches as $b)
+                            @if($b->id != $branch1Id)
+                                <option value="{{ $b->id }}" {{ $b->id == $branch2Id ? 'selected' : '' }}>{{ $b->nama_cabang }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                </div>
+            @endif
 
             <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Bulan & Tahun</label>

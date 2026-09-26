@@ -14,28 +14,39 @@ class InterBranchSettlementController extends Controller
     public function getReportData(Request $request): array
     {
         $user = Auth::user();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
         $branches = Branch::all();
 
-        // Default branch pair (e.g., Zamrud & Grand Wisata)
-        $branch1Id = $request->input('branch_1');
-        $branch2Id = $request->input('branch_2');
-
-        if (!$branch1Id || !$branch2Id) {
-            $zamrud = $branches->first(function ($b) {
-                return str_contains(strtolower($b->nama_cabang), 'zamrud');
-            });
-            $grandwis = $branches->first(function ($b) {
-                return str_contains(strtolower($b->nama_cabang), 'grand');
-            });
-
-            $branch1Id = $branch1Id ?: ($zamrud ? $zamrud->id : ($branches[0]->id ?? 1));
-            $branch2Id = $branch2Id ?: ($grandwis ? $grandwis->id : ($branches[1]->id ?? 2));
-            
-            // If they happen to be the same, pick a different second branch
-            if ($branch1Id == $branch2Id && count($branches) > 1) {
+        if (!$isOwnerOrSuper && $user->branch_id) {
+            // Non-owner: locked to logged-in user's branch
+            $branch1Id = $user->branch_id;
+            $branch2Id = $request->input('branch_2');
+            if (!$branch2Id || $branch2Id == $branch1Id) {
                 $otherBranch = $branches->firstWhere('id', '!=', $branch1Id);
-                if ($otherBranch) {
-                    $branch2Id = $otherBranch->id;
+                $branch2Id = $otherBranch ? $otherBranch->id : $branch1Id;
+            }
+        } else {
+            // Owner / SuperAdmin: can select any branch pair
+            $branch1Id = $request->input('branch_1');
+            $branch2Id = $request->input('branch_2');
+
+            if (!$branch1Id || !$branch2Id) {
+                $zamrud = $branches->first(function ($b) {
+                    return str_contains(strtolower($b->nama_cabang), 'zamrud');
+                });
+                $grandwis = $branches->first(function ($b) {
+                    return str_contains(strtolower($b->nama_cabang), 'grand');
+                });
+
+                $branch1Id = $branch1Id ?: ($zamrud ? $zamrud->id : ($branches[0]->id ?? 1));
+                $branch2Id = $branch2Id ?: ($grandwis ? $grandwis->id : ($branches[1]->id ?? 2));
+                
+                // If they happen to be the same, pick a different second branch
+                if ($branch1Id == $branch2Id && count($branches) > 1) {
+                    $otherBranch = $branches->firstWhere('id', '!=', $branch1Id);
+                    if ($otherBranch) {
+                        $branch2Id = $otherBranch->id;
+                    }
                 }
             }
         }
@@ -150,6 +161,7 @@ class InterBranchSettlementController extends Controller
             'trxB2toB1' => $trxB2toB1,
             'pairTransactions' => $pairTransactions,
             'allCrossTransactions' => $allCrossTransactions,
+            'isOwnerOrSuper' => $isOwnerOrSuper,
         ];
     }
 
