@@ -478,6 +478,9 @@ class OutsourceOrderController extends Controller
                 throw new \Exception("Pesanan ini sudah selesai dan sudah pernah di-closing.");
             }
 
+            // Check if order previously had DP / remaining balance
+            $wasDp = ($order->paid_amount < $order->customer_price);
+
             // Handle settlement payment if customer had remaining balance
             $settlementAmount = (float) $request->input('settlement_paid_amount', $order->remaining_amount);
             $settlementMethod = $request->input('settlement_payment_method', $order->payment_method ?: 'Cash');
@@ -555,8 +558,11 @@ class OutsourceOrderController extends Controller
                 'success' => true,
                 'message' => "Pesanan #{$order->order_number} berhasil di-closing! Data penjualan resmi telah tercatat di Laporan Penjualan Harian (#{$invoiceNumber}).",
                 'order' => $order,
+                'was_dp' => $wasDp,
                 'invoice_number' => $invoiceNumber,
-                'receipt_url' => route('sales.receipt', $transaction->id),
+                'customer_receipt_url' => route('outsource-orders.receipt', $order->id),
+                'receipt_url' => route('outsource-orders.receipt', $order->id),
+                'pos_receipt_url' => route('sales.receipt', $transaction->id),
             ]);
 
         } catch (\Exception $e) {

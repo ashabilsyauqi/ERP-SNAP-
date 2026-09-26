@@ -689,50 +689,112 @@
                             <span id="ws_closing_status_badge" class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10.5px]">Siap Closing</span>
                         </div>
 
-                        <!-- Final Financial Summary (HIGH CONTRAST & CLEAR READABILITY) -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                            <div class="p-4 rounded-xl border border-blue-200 bg-blue-50 shadow-xs" style="background-color: #eff6ff !important; border-color: #bfdbfe !important;">
-                                <span class="text-[11px] uppercase font-extrabold text-blue-900 block" style="color: #1e3a8a !important;">Total Omset Penjualan</span>
-                                <strong id="ws_final_omset" class="text-2xl font-black font-mono block mt-1" style="color: #1d4ed8 !important;">Rp 0</strong>
+                        <!-- 1. RINCIAN KEUNTUNGAN & MARGIN (PROFIT STATEMENT TABLE) -->
+                        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+                            <div class="px-4 py-3 bg-slate-900 text-white flex justify-between items-center" style="background-color: #0f172a !important; color: #ffffff !important;">
+                                <span class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fa-solid fa-file-invoice-dollar text-amber-400"></i> Rincian Realisasi Keuntungan Toko (Profit Statement)
+                                </span>
+                                <span id="ws_closing_margin_pill" class="badge bg-emerald-500 text-white font-mono font-bold text-xs px-2.5 py-1 shadow-xs">Margin 0%</span>
                             </div>
-                            <div class="p-4 rounded-xl border border-rose-200 bg-rose-50 shadow-xs" style="background-color: #fff1f2 !important; border-color: #fecdd3 !important;">
-                                <span class="text-[11px] uppercase font-extrabold text-rose-900 block" style="color: #881337 !important;">Total Modal HPP</span>
-                                <strong id="ws_final_hpp" class="text-2xl font-black font-mono block mt-1" style="color: #be123c !important;">Rp 0</strong>
-                            </div>
-                            <div class="p-4 rounded-xl border border-emerald-300 bg-emerald-50 shadow-xs" style="background-color: #ecfdf5 !important; border-color: #a7f3d0 !important;">
-                                <span class="text-[11px] uppercase font-extrabold text-emerald-900 block" style="color: #064e3b !important;">Laba Bersih Realisasi</span>
-                                <strong id="ws_final_profit" class="text-2xl font-black font-mono block mt-1" style="color: #047857 !important;">Rp 0</strong>
+
+                            <div class="p-4 space-y-4 text-xs">
+                                <!-- 1. Omset Penjualan -->
+                                <div>
+                                    <div class="flex justify-between items-center font-bold text-slate-800 pb-1.5 border-b border-slate-200">
+                                        <span class="flex items-center gap-1.5 text-blue-800 uppercase tracking-wide">
+                                            <i class="fa-solid fa-arrow-trend-up text-blue-600"></i> 1. Pendapatan Penjualan Customer (Omset)
+                                        </span>
+                                        <span id="ws_table_tot_omset" class="font-mono text-blue-800 font-extrabold text-sm">Rp 0</span>
+                                    </div>
+                                    <div class="py-2.5 px-3.5 bg-blue-50/60 rounded-xl mt-1.5 flex justify-between items-center border border-blue-100">
+                                        <div>
+                                            <strong id="ws_table_job_title" class="text-slate-900 block text-xs">Item Cetak</strong>
+                                            <span id="ws_table_cust_calc_breakdown" class="text-slate-500 text-[11px] font-mono">1 pcs x @ Rp 0</span>
+                                        </div>
+                                        <strong id="ws_table_cust_subtotal" class="font-mono text-blue-900 font-bold text-sm">Rp 0</strong>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Modal HPP & Pengeluaran -->
+                                <div>
+                                    <div class="flex justify-between items-center font-bold text-slate-800 pb-1.5 border-b border-slate-200">
+                                        <span class="flex items-center gap-1.5 text-rose-800 uppercase tracking-wide">
+                                            <i class="fa-solid fa-arrow-trend-down text-rose-600"></i> 2. Pengeluaran Modal Kerja (HPP Vendor & Ekspedisi)
+                                        </span>
+                                        <span id="ws_table_tot_hpp" class="font-mono text-rose-800 font-extrabold text-sm">Rp 0</span>
+                                    </div>
+                                    <div class="space-y-1.5 mt-1.5">
+                                        <div class="py-2.5 px-3.5 bg-rose-50/60 rounded-xl flex justify-between items-center border border-rose-100">
+                                            <div>
+                                                <strong class="text-slate-900 block text-xs">Biaya Cetak Vendor (<span id="ws_table_vendor_name">-</span>)</strong>
+                                                <span id="ws_table_vendor_calc_breakdown" class="text-slate-500 text-[11px] font-mono">1 pcs x @ Rp 0</span>
+                                            </div>
+                                            <strong id="ws_table_vendor_cost" class="font-mono text-rose-700 font-bold text-sm">- Rp 0</strong>
+                                        </div>
+                                        <div class="py-2 px-3.5 bg-rose-50/60 rounded-xl flex justify-between items-center border border-rose-100">
+                                            <div>
+                                                <strong class="text-slate-900 block text-xs">Biaya Pengiriman / Ongkir</strong>
+                                                <span class="text-slate-500 text-[11px]">Pengiriman vendor ke cabang</span>
+                                            </div>
+                                            <strong id="ws_table_shipping_cost" class="font-mono text-rose-700 font-bold text-sm">- Rp 0</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. Realisasi Laba Bersih Real -->
+                                <div class="p-3.5 bg-emerald-50 rounded-xl border border-emerald-300 flex justify-between items-center" style="background-color: #ecfdf5 !important; border-color: #6ee7b7 !important;">
+                                    <div>
+                                        <span class="text-[10.5px] uppercase font-black text-emerald-900 tracking-wider block">Realisasi Keuntungan Bersih (Net Profit Toko):</span>
+                                        <span id="ws_table_profit_formula" class="text-xs text-slate-600 font-mono">Omset (Rp 0) - Total HPP (Rp 0)</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong id="ws_table_net_profit" class="font-mono font-black text-emerald-800 text-xl block" style="color: #047857 !important;">+ Rp 0</strong>
+                                        <span id="ws_table_margin_pct" class="text-[11px] font-bold text-emerald-700 font-mono">Margin: 0%</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Payment & Settlement Card (Pelunasan Customer) -->
-                        <div id="ws_closing_settlement_section" class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs space-y-3">
-                            <div class="flex justify-between items-center pb-2 border-b border-amber-200">
-                                <span class="font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
-                                    <i class="fa-solid fa-money-bill-transfer text-amber-600"></i> Status Pembayaran & Pelunasan Customer
+                        <!-- 2. STATUS PEMBAYARAN & PELUNASAN CUSTOMER -->
+                        <div id="ws_closing_settlement_section" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-3.5">
+                            <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                                <span class="font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
+                                    <i class="fa-solid fa-wallet text-blue-600"></i> Status Pembayaran & Pelunasan Customer
                                 </span>
                                 <span id="ws_closing_pay_badge" class="badge bg-amber-200 text-amber-900 border border-amber-300 font-bold">DP (Belum Lunas)</span>
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div class="p-2.5 bg-white rounded-xl border border-amber-200 text-center">
-                                    <span class="text-[10.5px] text-slate-500 uppercase block font-semibold">Total Tagihan</span>
-                                    <strong id="ws_closing_tot_tagihan" class="font-mono text-slate-800 text-sm block mt-0.5">Rp 0</strong>
+                            <!-- 3 Mini Boxes -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-center">
+                                <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                                    <span class="text-[10.5px] text-slate-500 uppercase block font-bold">Total Nilai Tagihan</span>
+                                    <strong id="ws_closing_tot_tagihan" class="font-mono text-slate-900 text-base block mt-0.5">Rp 0</strong>
                                 </div>
-                                <div class="p-2.5 bg-white rounded-xl border border-amber-200 text-center">
-                                    <span class="text-[10.5px] text-slate-500 uppercase block font-semibold">Telah Dibayar (DP)</span>
-                                    <strong id="ws_closing_dp_paid" class="font-mono text-emerald-700 text-sm block mt-0.5">Rp 0</strong>
+                                <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                                    <span class="text-[10.5px] text-slate-500 uppercase block font-bold">Telah Dibayar (DP Awal)</span>
+                                    <strong id="ws_closing_dp_paid" class="font-mono text-emerald-700 text-base block mt-0.5">Rp 0</strong>
                                 </div>
-                                <div class="p-2.5 bg-amber-100 rounded-xl border border-amber-300 text-center">
-                                    <span class="text-[10.5px] text-amber-900 uppercase block font-bold">Sisa Pelunasan</span>
-                                    <strong id="ws_closing_sisa_tagihan" class="font-mono text-amber-900 text-sm block mt-0.5">Rp 0</strong>
+                                <div id="ws_closing_sisa_box" class="p-3 bg-amber-50 rounded-xl border border-amber-300 shadow-2xs">
+                                    <span class="text-[10.5px] text-amber-900 uppercase block font-black">Sisa Wajib Dilunasi</span>
+                                    <strong id="ws_closing_sisa_tagihan" class="font-mono text-amber-900 text-base block mt-0.5">Rp 0</strong>
                                 </div>
                             </div>
 
-                            <div id="ws_closing_settlement_form" class="pt-2 border-t border-amber-200 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                            <!-- Notice jika Full Payment sejak awal -->
+                            <div id="ws_closing_full_paid_notice" class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-900 flex items-start gap-2.5">
+                                <i class="fa-solid fa-circle-check text-emerald-600 text-base mt-0.5"></i>
                                 <div>
-                                    <label class="text-xs font-semibold text-slate-700 mb-1 block">Metode Pembayaran Pelunasan</label>
-                                    <select id="ws_settlement_method" class="form-select form-select-sm text-xs font-semibold">
+                                    <strong class="block">Pembayaran Sudah Lunas Penuh (100%) Sejak Awal.</strong>
+                                    <span class="text-[11px] text-emerald-700">Customer telah memegang struk lunas dari awal pemesanan. Tidak perlu input pelunasan ataupun cetak ulang struk saat closing.</span>
+                                </div>
+                            </div>
+
+                            <!-- Form Input Pelunasan jika sebelumnya DP -->
+                            <div id="ws_closing_settlement_form" class="p-3.5 bg-amber-100/60 rounded-xl border border-amber-200 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <label class="text-xs font-bold text-amber-950 mb-1 block">Metode Pembayaran Pelunasan</label>
+                                    <select id="ws_settlement_method" class="form-select form-select-sm text-xs font-bold bg-white">
                                         <option value="Cash">💵 Tunai / Cash</option>
                                         <option value="Transfer Bank">🏦 Transfer Bank</option>
                                         <option value="QRIS">📱 QRIS</option>
@@ -740,35 +802,38 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="text-xs font-semibold text-slate-700 mb-1 block">Nominal Pelunasan Diterima Sekarang</label>
+                                    <label class="text-xs font-bold text-amber-950 mb-1 block">Nominal Pelunasan Diterima Saat Ambil Barang</label>
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white font-mono text-[11px]">Rp</span>
-                                        <input type="number" id="ws_settlement_paid_input" min="0" step="1000" class="form-control form-control-sm text-xs font-mono font-bold text-slate-900" placeholder="0">
+                                        <span class="input-group-text bg-white font-mono text-[11px] font-bold">Rp</span>
+                                        <input type="number" id="ws_settlement_paid_input" min="0" step="1000" class="form-control form-control-sm text-xs font-mono font-bold text-slate-900 bg-white" placeholder="0">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Closing Action / Completed Invoice Box -->
-                        <div id="ws_closing_action_box" class="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-center">
+                        <!-- 3. TOMBOL AKSI CLOSING & HASIL TRANSAKSI -->
+                        <div id="ws_closing_action_box" class="p-5 bg-white rounded-2xl border border-slate-200 space-y-3 text-center shadow-xs">
                             <div id="ws_closing_prompt_text">
-                                <h6 class="text-sm font-bold text-slate-800 mb-1">Pesanan Siap Ditutup & Diserahkan ke Customer</h6>
-                                <p class="text-xs text-slate-500 mb-0">Klik tombol di bawah untuk membukukan transaksi pelunasan ke <strong>Laporan Penjualan Harian & Kas POS</strong>.</p>
+                                <h6 class="text-sm font-bold text-slate-800 mb-1" id="ws_closing_prompt_title">Pesanan Siap Ditutup & Diserahkan ke Customer</h6>
+                                <p class="text-xs text-slate-500 mb-0" id="ws_closing_prompt_subtitle">Klik tombol di bawah untuk membukukan transaksi ke <strong>Laporan Penjualan Harian & Kas POS</strong>.</p>
                             </div>
                             
                             <div id="ws_closing_btn_slot" class="pt-1">
-                                <button type="button" onclick="submitWsCloseOrder()" class="btn btn-md btn-success rounded-xl font-bold px-5 shadow-sm">
-                                    <i class="fa-solid fa-cash-register me-1.5"></i> Closing & Lunasi Penjualan Sekarang
+                                <button type="button" id="ws_btn_do_close" onclick="submitWsCloseOrder()" class="btn btn-md btn-success rounded-xl font-bold px-5 shadow-sm">
+                                    <i class="fa-solid fa-cash-register me-1.5"></i> Closing & Lunasi Pembayaran
                                 </button>
                             </div>
 
-                            <div id="ws_completed_invoice_box" class="hidden pt-2">
-                                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs px-3 py-1.5 mb-2">
+                            <div id="ws_completed_invoice_box" class="hidden pt-2 space-y-2">
+                                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs px-3.5 py-1.5 font-bold">
                                     <i class="fa-solid fa-circle-check me-1"></i> Transaksi Penjualan Telah Selesai: <strong id="ws_completed_inv_number">-</strong>
                                 </span>
-                                <div>
-                                    <a href="#" id="ws_btn_open_pos_inv" target="_blank" class="btn btn-sm btn-outline-success font-bold rounded-xl px-4">
-                                        <i class="fa-solid fa-receipt me-1"></i> Buka Faktur Struk POS Resmi
+                                <div class="flex justify-center items-center gap-2 pt-1">
+                                    <a href="#" id="ws_btn_open_customer_receipt" target="_blank" class="btn btn-sm btn-outline-secondary font-bold rounded-xl px-3.5">
+                                        <i class="fa-solid fa-print me-1"></i> Cetak Ulang Struk Pelunasan
+                                    </a>
+                                    <a href="#" id="ws_btn_open_pos_inv" target="_blank" class="btn btn-sm btn-outline-success font-bold rounded-xl px-3.5">
+                                        <i class="fa-solid fa-receipt me-1"></i> Buka Faktur POS Resmi
                                     </a>
                                 </div>
                             </div>
@@ -1078,25 +1143,60 @@ function populateOdooWorksheet(order) {
     const elSisaTagihan = document.getElementById('ws_closing_sisa_tagihan');
     const elPayBadge = document.getElementById('ws_closing_pay_badge');
     const settlementForm = document.getElementById('ws_closing_settlement_form');
+    const fullPaidNotice = document.getElementById('ws_closing_full_paid_notice');
     const settlementPaidInput = document.getElementById('ws_settlement_paid_input');
+    const sisaBox = document.getElementById('ws_closing_sisa_box');
+
+    const promptTitle = document.getElementById('ws_closing_prompt_title');
+    const promptSubtitle = document.getElementById('ws_closing_prompt_subtitle');
+    const btnDoClose = document.getElementById('ws_btn_do_close');
 
     if (elTotTagihan) elTotTagihan.innerText = `Rp ${Number(totTagihan).toLocaleString('id-ID')}`;
     if (elDpPaid) elDpPaid.innerText = `Rp ${Number(dpPaid).toLocaleString('id-ID')}`;
     if (elSisaTagihan) elSisaTagihan.innerText = `Rp ${Number(remainingToPay).toLocaleString('id-ID')}`;
     if (settlementPaidInput) settlementPaidInput.value = remainingToPay;
 
-    if (order.status === 'completed' || remainingToPay <= 0) {
+    // Check if originally full payment or DP
+    const wasFullPaid = (remainingToPay <= 0 || order.payment_status === 'PAID');
+
+    if (order.status === 'completed') {
         if (elPayBadge) {
             elPayBadge.innerText = 'LUNAS (100%)';
             elPayBadge.className = 'badge bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold';
         }
         if (settlementForm) settlementForm.style.display = 'none';
+        if (fullPaidNotice) fullPaidNotice.style.display = 'none';
+        if (sisaBox) sisaBox.className = 'p-3 bg-emerald-50 rounded-xl border border-emerald-200 shadow-2xs';
+    } else if (wasFullPaid) {
+        if (elPayBadge) {
+            elPayBadge.innerText = 'Lunas 100% (Full Payment)';
+            elPayBadge.className = 'badge bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold';
+        }
+        if (settlementForm) settlementForm.style.display = 'none';
+        if (fullPaidNotice) fullPaidNotice.style.display = 'flex';
+        if (sisaBox) sisaBox.className = 'p-3 bg-emerald-50 rounded-xl border border-emerald-200 shadow-2xs';
+
+        if (promptTitle) promptTitle.innerText = 'Pesanan Siap Selesai & Diserahkan ke Customer';
+        if (promptSubtitle) promptSubtitle.innerHTML = 'Pembayaran sudah <strong>lunas sejak awal</strong>. Klik tombol di bawah untuk menutup pesanan dan membukukan ke POS.';
+        if (btnDoClose) {
+            btnDoClose.innerHTML = '<i class="fa-solid fa-circle-check me-1.5"></i> Closing & Selesaikan Pesanan';
+            btnDoClose.className = 'btn btn-md btn-primary rounded-xl font-bold px-5 shadow-sm';
+        }
     } else {
         if (elPayBadge) {
-            elPayBadge.innerText = `Belum Lunas (Sisa: Rp ${Number(remainingToPay).toLocaleString('id-ID')})`;
+            elPayBadge.innerText = `DP (Belum Lunas - Sisa: Rp ${Number(remainingToPay).toLocaleString('id-ID')})`;
             elPayBadge.className = 'badge bg-amber-200 text-amber-900 border border-amber-300 font-bold';
         }
         if (settlementForm) settlementForm.style.display = 'grid';
+        if (fullPaidNotice) fullPaidNotice.style.display = 'none';
+        if (sisaBox) sisaBox.className = 'p-3 bg-amber-50 rounded-xl border border-amber-300 shadow-2xs';
+
+        if (promptTitle) promptTitle.innerText = 'Pesanan Siap Dilunasi & Diserahkan ke Customer';
+        if (promptSubtitle) promptSubtitle.innerHTML = 'Input pelunasan di atas lalu klik tombol untuk membukukan transaksi & <strong>otomatis mencetak struk pelunasan</strong>.';
+        if (btnDoClose) {
+            btnDoClose.innerHTML = '<i class="fa-solid fa-receipt me-1.5"></i> Closing & Lunasi (Cetak Struk)';
+            btnDoClose.className = 'btn btn-md btn-success rounded-xl font-bold px-5 shadow-sm';
+        }
     }
 
     if (order.status === 'completed' && order.transaction) {
@@ -1105,6 +1205,9 @@ function populateOdooWorksheet(order) {
         if (compBox) compBox.style.display = 'block';
         document.getElementById('ws_completed_inv_number').innerText = order.transaction.invoice_number;
         document.getElementById('ws_btn_open_pos_inv').href = `/sales/${order.transaction_id}/receipt`;
+        const btnCustReceipt = document.getElementById('ws_btn_open_customer_receipt');
+        if (btnCustReceipt) btnCustReceipt.href = `/cetak-luar/${order.id}/receipt`;
+
         if (statusBadge) {
             statusBadge.innerText = 'Selesai (Closed)';
             statusBadge.className = 'badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10.5px]';
@@ -1380,10 +1483,38 @@ function calcOdooTotals() {
     // Stage 3 Displays
     document.getElementById('ws_qc_total_hpp').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
 
-    // Stage 4 Displays
-    document.getElementById('ws_final_omset').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
-    document.getElementById('ws_final_hpp').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
-    document.getElementById('ws_final_profit').innerText = `Rp ${Number(profit).toLocaleString('id-ID')}`;
+    // Stage 4 Displays & Profit Statement Table
+    if (document.getElementById('ws_final_omset')) {
+        document.getElementById('ws_final_omset').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
+        document.getElementById('ws_final_hpp').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
+        document.getElementById('ws_final_profit').innerText = `Rp ${Number(profit).toLocaleString('id-ID')}`;
+    }
+
+    if (document.getElementById('ws_table_tot_omset')) {
+        const jobTitle = document.getElementById('ws_job_title')?.value || 'Item Cetak';
+        const vendorName = document.getElementById('ws_vendor_name')?.value || 'Vendor Rekanan';
+
+        document.getElementById('ws_table_tot_omset').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
+        document.getElementById('ws_table_job_title').innerText = jobTitle;
+        document.getElementById('ws_table_cust_calc_breakdown').innerText = `${qty} ${unit} x @ Rp ${Number(custUnitPrice).toLocaleString('id-ID')}`;
+        document.getElementById('ws_table_cust_subtotal').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
+
+        document.getElementById('ws_table_tot_hpp').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
+        document.getElementById('ws_table_vendor_name').innerText = vendorName;
+        document.getElementById('ws_table_vendor_calc_breakdown').innerText = `${qty} ${unit} x @ Rp ${Number(vendUnitPrice).toLocaleString('id-ID')}`;
+        document.getElementById('ws_table_vendor_cost').innerText = `- Rp ${Number(vendorSubtotal).toLocaleString('id-ID')}`;
+        document.getElementById('ws_table_shipping_cost').innerText = `- Rp ${Number(shipping).toLocaleString('id-ID')}`;
+
+        document.getElementById('ws_table_profit_formula').innerText = `Omset (Rp ${Number(totalOmset).toLocaleString('id-ID')}) - Total HPP (Rp ${Number(totalHpp).toLocaleString('id-ID')})`;
+        document.getElementById('ws_table_net_profit').innerText = (profit >= 0 ? '+ ' : '') + `Rp ${Number(profit).toLocaleString('id-ID')}`;
+        document.getElementById('ws_table_margin_pct').innerText = `Margin: ${marginPct}%`;
+
+        const marginPill = document.getElementById('ws_closing_margin_pill');
+        if (marginPill) {
+            marginPill.innerText = `Margin ${marginPct}%`;
+            marginPill.className = (profit >= 0) ? 'badge bg-emerald-500 text-white font-mono font-bold text-xs px-2.5 py-1 shadow-xs' : 'badge bg-rose-600 text-white font-mono font-bold text-xs px-2.5 py-1 shadow-xs';
+        }
+    }
 }
 
 function handleWsPaymentTypeChange(type) {
@@ -1588,42 +1719,54 @@ function submitWsPassQc() {
 }
 
 function submitWsCloseOrder() {
-    const settlementPaid = parseFloat(document.getElementById('ws_settlement_paid_input')?.value) || 0;
-    const settlementMethod = document.getElementById('ws_settlement_method')?.value || 'Cash';
-
     const totTagihan = parseFloat(currentWsOrder.customer_price) || 0;
     const dpPaid = parseFloat(currentWsOrder.paid_amount) || 0;
     const sisa = Math.max(0, totTagihan - dpPaid);
+    const wasDp = (sisa > 0 || currentWsOrder.payment_status === 'PARTIAL');
 
-    let htmlPrompt = `
-        <div class="text-xs text-start bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-700 space-y-1.5">
-            <div class="flex justify-between pb-1 border-b">
-                <span>Total Tagihan:</span> <strong class="font-mono text-slate-900">Rp ${Number(totTagihan).toLocaleString('id-ID')}</strong>
-            </div>
-            <div class="flex justify-between pb-1 border-b">
-                <span>DP yang telah dibayar:</span> <strong class="font-mono text-emerald-700">Rp ${Number(dpPaid).toLocaleString('id-ID')}</strong>
-            </div>
-    `;
+    const settlementPaid = wasDp ? (parseFloat(document.getElementById('ws_settlement_paid_input')?.value) || sisa) : 0;
+    const settlementMethod = wasDp ? (document.getElementById('ws_settlement_method')?.value || 'Cash') : currentWsOrder.payment_method;
 
-    if (sisa > 0) {
-        htmlPrompt += `
-            <div class="flex justify-between text-amber-900 font-bold pb-1 border-b">
-                <span>Pelunasan Diterima:</span> <strong class="font-mono text-emerald-700">Rp ${Number(settlementPaid).toLocaleString('id-ID')} (${settlementMethod})</strong>
+    let htmlPrompt = '';
+    if (wasDp) {
+        htmlPrompt = `
+            <div class="text-xs text-start bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-700 space-y-1.5">
+                <div class="flex justify-between pb-1 border-b">
+                    <span>Total Tagihan:</span> <strong class="font-mono text-slate-900">Rp ${Number(totTagihan).toLocaleString('id-ID')}</strong>
+                </div>
+                <div class="flex justify-between pb-1 border-b">
+                    <span>DP yang telah dibayar:</span> <strong class="font-mono text-emerald-700">Rp ${Number(dpPaid).toLocaleString('id-ID')}</strong>
+                </div>
+                <div class="flex justify-between text-amber-900 font-bold pb-1 border-b">
+                    <span>Pelunasan Diterima:</span> <strong class="font-mono text-emerald-700">Rp ${Number(settlementPaid).toLocaleString('id-ID')} (${settlementMethod})</strong>
+                </div>
+                <div class="text-[11px] text-slate-500 pt-1">
+                    <i class="fa-solid fa-print text-blue-600 me-1"></i> Setelah closing, <strong>struk pelunasan customer akan otomatis dicetak</strong> sebagai bukti pengambilan barang.
+                </div>
+            </div>
+        `;
+    } else {
+        htmlPrompt = `
+            <div class="text-xs text-start bg-emerald-50 p-3.5 rounded-xl border border-emerald-200 text-emerald-900 space-y-1.5">
+                <div class="flex justify-between pb-1 border-b border-emerald-200">
+                    <span>Total Omset Penjualan:</span> <strong class="font-mono text-emerald-900">Rp ${Number(totTagihan).toLocaleString('id-ID')}</strong>
+                </div>
+                <div class="flex justify-between pb-1 border-b border-emerald-200">
+                    <span>Status Pembayaran:</span> <strong class="text-emerald-800 font-bold">Lunas (100%) sejak awal</strong>
+                </div>
+                <div class="text-[11px] text-emerald-700 pt-1">
+                    Pesanan full payment akan langsung dibukukan ke <strong>Laporan Penjualan Harian & Kas POS</strong> (tidak perlu cetak ulang struk customer).
+                </div>
             </div>
         `;
     }
 
-    htmlPrompt += `
-            <div class="text-[11px] text-slate-500 pt-1">Transaksi resmi akan otomatis dibukukan ke <strong>Laporan Penjualan Harian & Kas POS</strong>.</div>
-        </div>
-    `;
-
     Swal.fire({
-        title: 'Closing & Serahkan Pesanan?',
+        title: wasDp ? 'Closing & Lunasi Pembayaran?' : 'Closing & Selesaikan Pesanan?',
         html: htmlPrompt,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Ya, Closing & Lunasi',
+        confirmButtonText: wasDp ? 'Ya, Closing & Lunasi' : 'Ya, Closing Pesanan',
         cancelButtonText: 'Batal',
         confirmButtonColor: '#059669'
     }).then(r => {
@@ -1643,19 +1786,30 @@ function submitWsCloseOrder() {
             .then(r => r.json())
             .then(res => {
                 if (res.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Pesanan Selesai!',
-                        text: res.message,
-                        showCancelButton: true,
-                        confirmButtonText: 'Cetak Invoice POS',
-                        cancelButtonText: 'Tutup'
-                    }).then(action => {
-                        if (action.isConfirmed && res.receipt_url) {
-                            window.open(res.receipt_url, '_blank');
-                        }
-                        location.reload();
-                    });
+                    if (res.was_dp) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Pelunasan Berhasil & Pesanan Selesai!',
+                            text: 'Pelunasan telah dibukukan. Membuka struk tanda terima pelunasan customer...',
+                            confirmButtonText: 'Cetak Struk Pelunasan',
+                            confirmButtonColor: '#059669'
+                        }).then(() => {
+                            if (res.customer_receipt_url) {
+                                window.open(res.customer_receipt_url, '_blank');
+                            }
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Pesanan Selesai Ditutup!',
+                            text: res.message,
+                            confirmButtonText: 'Selesai',
+                            confirmButtonColor: '#0f172a'
+                        }).then(() => {
+                            location.reload();
+                        });
+                    }
                 } else {
                     Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
                 }
