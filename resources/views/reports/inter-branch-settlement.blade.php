@@ -88,6 +88,22 @@
                 <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
                     Uang customer 100% dipegang oleh cabang penerima order. Dari total nominal pesanan, <strong class="text-amber-300">25%</strong> adalah hak cabang pengirim (komisi) dan <strong class="text-emerald-300">75%</strong> adalah hak cabang pelaksana produksi.
                 </p>
+
+                <!-- Visual 25% / 75% Split Indicator Bar -->
+                <div class="mt-4 p-3 bg-white/5 border border-white/10 rounded-xl max-w-2xl">
+                    <div class="flex justify-between text-[11px] font-bold mb-1.5">
+                        <span class="text-amber-300 flex items-center gap-1">
+                            <i class="fa-solid fa-receipt"></i> 25% Komisi Cabang Asal (Input Order)
+                        </span>
+                        <span class="text-emerald-300 flex items-center gap-1">
+                            <i class="fa-solid fa-industry"></i> 75% Biaya Pengerjaan (Cabang Pelaksana)
+                        </span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-3 flex overflow-hidden p-0.5 border border-white/20">
+                        <div class="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-l-full" style="width: 25%" title="25% Komisi Order"></div>
+                        <div class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-r-full" style="width: 75%" title="75% Pelaksana Produksi"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Net Settlement Display Box -->

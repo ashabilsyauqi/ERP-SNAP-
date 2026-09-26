@@ -147,12 +147,15 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/product-sales/archive/{id}/download', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'downloadArchive'])->name('product-sales.archive.download');
             Route::delete('/product-sales/archive/{id}', [\App\Http\Controllers\Report\ProductSalesReportController::class, 'destroyArchive'])->name('product-sales.archive.destroy');
 
-            Route::get('/machine-sales', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'index'])->name('machine-sales');
-            Route::get('/machine-sales/export-excel', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'exportExcel'])->name('machine-sales.export-excel');
-
             Route::get('/inter-branch-settlement', [\App\Http\Controllers\Report\InterBranchSettlementController::class, 'index'])->name('inter-branch-settlement');
             Route::get('/inter-branch-settlement/export-excel', [\App\Http\Controllers\Report\InterBranchSettlementController::class, 'exportExcel'])->name('inter-branch-settlement.export-excel');
         });
+    });
+
+    // Owner-only Reports
+    Route::middleware(['role:owner'])->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/machine-sales', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'index'])->name('machine-sales');
+        Route::get('/machine-sales/export-excel', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'exportExcel'])->name('machine-sales.export-excel');
     });
 
     // ==========================================

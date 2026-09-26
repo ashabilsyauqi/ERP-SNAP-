@@ -16,13 +16,14 @@ class MachineSalesReportController extends Controller
     private function getReportData(Request $request): array
     {
         $user = Auth::user();
-        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+        if (!$user->isOwner() && !$user->isSuperAdmin()) {
+            abort(403, 'Laporan Rekapitulasi Penjualan Mesin hanya dapat diakses oleh akun Owner.');
+        }
+
+        $isOwnerOrSuper = true;
 
         // Branch Filter
-        if (!$isOwnerOrSuper) {
-            $branchId = $user->branch_id;
-        } else {
-            if ($request->has('branch_id')) {
+        if ($request->has('branch_id')) {
                 $branchId = $request->input('branch_id');
                 session(['selected_branch_id' => $branchId]);
             } else {
