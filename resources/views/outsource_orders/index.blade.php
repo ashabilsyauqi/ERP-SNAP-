@@ -14,10 +14,31 @@
 @endsection
 
 @section('content')
+<style>
+.odoo-stage-panel {
+    display: none !important;
+}
+.odoo-stage-panel.active {
+    display: block !important;
+}
+.odoo-stage-btn {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease-in-out;
+}
+.odoo-stage-btn.active {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+.odoo-stage-btn:hover:not(.active) {
+    background-color: #e2e8f0 !important;
+}
+</style>
 <div class="space-y-6 pb-12">
 
-    <!-- METRIC STAT CARDS -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <!-- METRIC STAT CARDS (4-STAGE PIPELINE) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         
         <!-- Total Pesanan -->
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
@@ -32,40 +53,31 @@
                 <i class="fa-solid fa-file-invoice text-amber-600"></i> 1. Draft Customer
             </span>
             <div class="text-2xl font-black text-amber-900 mt-2 font-mono">{{ $counts['draft_customer'] }}</div>
-            <span class="text-[10.5px] text-amber-700 mt-1">Menunggu input HPP</span>
+            <span class="text-[10.5px] text-amber-700 mt-1">Order customer baru</span>
         </div>
 
-        <!-- 2. Menunggu ACC Owner -->
+        <!-- 2. Pengajuan ke Direksi -->
         <div class="bg-white p-4 rounded-2xl border border-indigo-200 shadow-sm flex flex-col justify-between bg-indigo-50/20">
             <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-800 flex items-center gap-1">
-                <i class="fa-solid fa-user-clock text-indigo-600"></i> 2. Menunggu ACC
+                <i class="fa-solid fa-user-clock text-indigo-600"></i> 2. Pengajuan Direksi
             </span>
             <div class="text-2xl font-black text-indigo-900 mt-2 font-mono">{{ $counts['pending_approval'] }}</div>
-            <span class="text-[10.5px] text-indigo-700 mt-1">Antrean persetujuan</span>
+            <span class="text-[10.5px] text-indigo-700 mt-1">Antrean ACC HPP</span>
         </div>
 
-        <!-- 3. Sedang Dikerjakan -->
-        <div class="bg-white p-4 rounded-2xl border border-blue-200 shadow-sm flex flex-col justify-between bg-blue-50/20">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-blue-800 flex items-center gap-1">
-                <i class="fa-solid fa-gears text-blue-600"></i> 3. Di Vendor
-            </span>
-            <div class="text-2xl font-black text-blue-900 mt-2 font-mono">{{ $counts['in_production'] }}</div>
-            <span class="text-[10.5px] text-blue-700 mt-1">Proses cetak</span>
-        </div>
-
-        <!-- 4. Lolos QC / Sampai -->
+        <!-- 3. Proses QC & Pengerjaan -->
         <div class="bg-white p-4 rounded-2xl border border-purple-200 shadow-sm flex flex-col justify-between bg-purple-50/20">
             <span class="text-[10px] font-bold uppercase tracking-wider text-purple-800 flex items-center gap-1">
-                <i class="fa-solid fa-clipboard-check text-purple-600"></i> 4. Lolos QC
+                <i class="fa-solid fa-clipboard-check text-purple-600"></i> 3. Proses QC
             </span>
-            <div class="text-2xl font-black text-purple-900 mt-2 font-mono">{{ $counts['qc_passed'] }}</div>
-            <span class="text-[10.5px] text-purple-700 mt-1">Siap closing</span>
+            <div class="text-2xl font-black text-purple-900 mt-2 font-mono">{{ $counts['in_production'] + $counts['qc_passed'] }}</div>
+            <span class="text-[10.5px] text-purple-700 mt-1">Pengerjaan & QC</span>
         </div>
 
-        <!-- 5. Selesai (Closed) -->
+        <!-- 4. Close (Selesai) -->
         <div class="bg-white p-4 rounded-2xl border border-emerald-200 shadow-sm flex flex-col justify-between bg-emerald-50/20">
             <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1">
-                <i class="fa-solid fa-circle-check text-emerald-600"></i> 5. Selesai
+                <i class="fa-solid fa-circle-check text-emerald-600"></i> 4. Close (Selesai)
             </span>
             <div class="text-2xl font-black text-emerald-900 mt-2 font-mono">{{ $counts['completed'] }}</div>
             <span class="text-[10.5px] text-emerald-700 mt-1">Laba: <strong>Rp {{ number_format($counts['total_realized_profit'], 0, ',', '.') }}</strong></span>
@@ -89,19 +101,15 @@
                 </a>
                 <a href="{{ route('outsource-orders.index', array_merge(request()->query(), ['tab' => 'pending_approval'])) }}" 
                    class="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition border {{ $activeTab === 'pending_approval' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border-indigo-200' }}">
-                    <i class="fa-solid fa-user-clock me-1"></i> Menunggu ACC ({{ $counts['pending_approval'] }})
+                    <i class="fa-solid fa-user-clock me-1"></i> Pengajuan Direksi ({{ $counts['pending_approval'] }})
                 </a>
                 <a href="{{ route('outsource-orders.index', array_merge(request()->query(), ['tab' => 'in_production'])) }}" 
                    class="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition border {{ $activeTab === 'in_production' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-blue-50 text-blue-800 hover:bg-blue-100 border-blue-200' }}">
-                    <i class="fa-solid fa-gears me-1"></i> Sedang Dikerjakan ({{ $counts['in_production'] }})
-                </a>
-                <a href="{{ route('outsource-orders.index', array_merge(request()->query(), ['tab' => 'qc_passed'])) }}" 
-                   class="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition border {{ $activeTab === 'qc_passed' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-purple-50 text-purple-800 hover:bg-purple-100 border-purple-200' }}">
-                    <i class="fa-solid fa-clipboard-check me-1"></i> Lolos QC ({{ $counts['qc_passed'] }})
+                    <i class="fa-solid fa-gears me-1"></i> Proses QC ({{ $counts['in_production'] + $counts['qc_passed'] }})
                 </a>
                 <a href="{{ route('outsource-orders.index', array_merge(request()->query(), ['tab' => 'completed'])) }}" 
                    class="px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition border {{ $activeTab === 'completed' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border-emerald-200' }}">
-                    <i class="fa-solid fa-circle-check me-1"></i> Selesai ({{ $counts['completed'] }})
+                    <i class="fa-solid fa-circle-check me-1"></i> Close / Selesai ({{ $counts['completed'] }})
                 </a>
             </div>
 
@@ -279,57 +287,56 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL: LEMBAR KERJA ODOO-STYLE FORM SHEET & STATUSBAR                     -->
+<!-- MODAL: LEMBAR KERJA ODOO-STYLE FORM SHEET & DYNAMIC 4-STAGE PIPELINE      -->
 <!-- ========================================================================= -->
 <div class="modal fade" id="modalWorksheet" tabindex="-1" aria-labelledby="modalWorksheetLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 980px;">
         <div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden bg-slate-100">
             
-            <!-- 1. ODOO CONTROL PANEL / TOP STATUSBAR -->
+            <!-- 1. ODOO CONTROL PANEL / TOP STATUSBAR (4-STAGE PIPELINE) -->
             <div class="bg-white border-b border-slate-200 px-5 py-3 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 
                 <!-- Left Action Buttons (Odoo Header Action Bar) -->
                 <div class="flex items-center gap-2 flex-wrap">
-                    <button type="button" onclick="saveWorksheetChanges(false)" class="btn btn-sm btn-primary rounded-lg font-bold px-3 shadow-xs">
+                    <button type="button" onclick="saveWorksheetChanges(true)" class="btn btn-sm btn-primary rounded-lg font-bold px-3 shadow-xs">
                         <i class="fa-solid fa-floppy-disk me-1"></i> Simpan
                     </button>
 
-                    <div id="odoo_dynamic_action_buttons" class="flex items-center gap-1.5 flex-wrap">
-                        <!-- Filled by JS depending on stage -->
-                    </div>
-
                     <a href="#" id="odoo_btn_print_struk" target="_blank" class="btn btn-sm btn-outline-secondary rounded-lg font-semibold px-2.5">
-                        <i class="fa-solid fa-print me-1"></i> Struk Customer
+                        <i class="fa-solid fa-print me-1"></i> Print Struk Customer
                     </a>
+
+                    <div id="odoo_dynamic_action_buttons" class="flex items-center gap-1.5 flex-wrap">
+                        <!-- Filled by JS depending on active stage -->
+                    </div>
                 </div>
 
-                <!-- Right: ODOO STATUSBAR (Chevron Pipeline Arrow Bar) -->
+                <!-- Right: ODOO STATUSBAR (Chevron Pipeline: Draft -> Pengajuan Direksi -> Proses QC -> Close) -->
                 <div class="flex items-center justify-end w-full md:w-auto">
-                    <div class="flex items-stretch border border-slate-300 rounded-lg overflow-hidden text-xs bg-slate-50 font-medium">
+                    <div class="flex items-stretch border border-slate-300 rounded-lg overflow-hidden text-xs bg-slate-50 font-medium shadow-xs">
                         
-                        <button type="button" onclick="switchOdooStage('draft_customer')" id="stage_tab_draft_customer" 
-                                class="odoo-stage-btn px-3 py-1.5 transition border-r border-slate-300 flex items-center gap-1 font-bold bg-slate-800 text-white">
+                        <!-- Stage 1 Button -->
+                        <button type="button" onclick="switchOdooStage(1)" id="stage_tab_1" 
+                                class="odoo-stage-btn px-3.5 py-1.5 transition border-r border-slate-300 flex items-center gap-1 font-bold bg-slate-900 text-white">
                             <span>1. Draft Customer</span>
                         </button>
                         
-                        <button type="button" onclick="switchOdooStage('pending_approval')" id="stage_tab_pending_approval" 
-                                class="odoo-stage-btn px-3 py-1.5 transition border-r border-slate-300 flex items-center gap-1 text-slate-600 hover:bg-slate-200">
-                            <span>2. HPP & ACC</span>
+                        <!-- Stage 2 Button -->
+                        <button type="button" onclick="switchOdooStage(2)" id="stage_tab_2" 
+                                class="odoo-stage-btn px-3.5 py-1.5 transition border-r border-slate-300 flex items-center gap-1 text-slate-600 hover:bg-slate-200">
+                            <span>2. Pengajuan ke Direksi</span>
                         </button>
                         
-                        <button type="button" onclick="switchOdooStage('in_production')" id="stage_tab_in_production" 
-                                class="odoo-stage-btn px-3 py-1.5 transition border-r border-slate-300 flex items-center gap-1 text-slate-600 hover:bg-slate-200">
-                            <span>3. Di Vendor</span>
+                        <!-- Stage 3 Button -->
+                        <button type="button" onclick="switchOdooStage(3)" id="stage_tab_3" 
+                                class="odoo-stage-btn px-3.5 py-1.5 transition border-r border-slate-300 flex items-center gap-1 text-slate-600 hover:bg-slate-200">
+                            <span>3. Proses QC</span>
                         </button>
                         
-                        <button type="button" onclick="switchOdooStage('qc_passed')" id="stage_tab_qc_passed" 
-                                class="odoo-stage-btn px-3 py-1.5 transition border-r border-slate-300 flex items-center gap-1 text-slate-600 hover:bg-slate-200">
-                            <span>4. Lolos QC</span>
-                        </button>
-                        
-                        <button type="button" onclick="switchOdooStage('completed')" id="stage_tab_completed" 
-                                class="odoo-stage-btn px-3 py-1.5 transition flex items-center gap-1 text-slate-600 hover:bg-slate-200">
-                            <span>5. Selesai</span>
+                        <!-- Stage 4 Button -->
+                        <button type="button" onclick="switchOdooStage(4)" id="stage_tab_4" 
+                                class="odoo-stage-btn px-3.5 py-1.5 transition flex items-center gap-1 text-slate-600 hover:bg-slate-200">
+                            <span>4. Close (Selesai)</span>
                         </button>
                     </div>
 
@@ -337,15 +344,15 @@
                 </div>
             </div>
 
-            <!-- 2. ODOO FORM SHEET (CANVAS KERTAS DOKUMEN PUTIH) -->
+            <!-- 2. ODOO FORM SHEET CANVAS (DYNAMIC STAGE PANELS) -->
             <div class="p-4 md:p-6 overflow-y-auto max-h-[calc(85vh-90px)]">
                 <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
                     <input type="hidden" id="ws_order_id">
 
-                    <!-- Title & Reference Header -->
+                    <!-- Document Header Bar -->
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 border-b border-slate-200 gap-2">
                         <div>
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Cetak di Luar / Vendor Outsource</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Lembar Kerja / Cetak di Luar (Vendor Outsource)</span>
                             <div class="flex items-center gap-2.5 mt-0.5">
                                 <h2 class="text-2xl font-black text-slate-900 font-mono tracking-tight mb-0" id="ws_order_number_title">OUT-00000000-0000</h2>
                                 <span id="ws_order_status_badge" class="badge bg-amber-100 text-amber-800 border border-amber-200 text-xs px-2.5 py-1">1. Draft Customer</span>
@@ -358,226 +365,384 @@
                         </div>
                     </div>
 
-                    <!-- 2-Column Info Fields (Odoo Group Grid) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
-                        <!-- Left Group: Customer & Job -->
-                        <div class="space-y-3.5">
-                            <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 mb-2 text-primary">
-                                <i class="fa-solid fa-user me-1 text-blue-600"></i> Informasi Pelanggan & Pekerjaan
-                            </h6>
-
-                            <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">Pelanggan</label>
-                                <div class="col-span-2">
-                                    <input type="text" id="ws_customer_name" class="form-control form-control-sm text-xs font-semibold" placeholder="Nama pelanggan">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">No. WhatsApp</label>
-                                <div class="col-span-2">
-                                    <input type="text" id="ws_customer_phone" class="form-control form-control-sm text-xs font-mono" placeholder="08xxxxxxxx">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">Nama Pekerjaan</label>
-                                <div class="col-span-2">
-                                    <input type="text" id="ws_job_title" class="form-control form-control-sm text-xs font-bold text-slate-900" placeholder="Nama pesanan / produk">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2 items-start">
-                                <label class="text-xs font-semibold text-slate-600 pt-1">Spesifikasi</label>
-                                <div class="col-span-2">
-                                    <textarea id="ws_description" rows="2" class="form-control form-control-sm text-xs" placeholder="Ukuran, bahan, laminasi, finishing..."></textarea>
-                                </div>
-                            </div>
+                    <!-- ===================================================================== -->
+                    <!-- PANEL TAHAP 1: DRAFT CUSTOMER (PRODUK, HARGA JUAL & PELANGGAN)        -->
+                    <!-- ===================================================================== -->
+                    <div id="odoo_panel_1" class="odoo-stage-panel active space-y-5">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-invoice text-blue-600"></i> Tahap 1: Pesanan Pelanggan & Rincian Harga Satuan
+                            </span>
+                            <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10.5px]">Draft Order Kasir</span>
                         </div>
 
-                        <!-- Right Group: Vendor & Payment with LUNAS / DP Choice -->
-                        <div class="space-y-3.5">
-                            <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 mb-2 text-indigo-700">
-                                <i class="fa-solid fa-industry me-1 text-indigo-600"></i> Informasi Vendor & Pembayaran
-                            </h6>
-
-                            <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">Vendor Rekanan</label>
-                                <div class="col-span-2">
-                                    <input type="text" id="ws_vendor_name" class="form-control form-control-sm text-xs font-semibold" placeholder="Nama vendor percetakan">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">Kontak Vendor</label>
-                                <div class="col-span-2">
-                                    <input type="text" id="ws_vendor_phone" class="form-control form-control-sm text-xs font-mono" placeholder="08xxxxxxxx">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">Metode Bayar</label>
-                                <div class="col-span-2">
-                                    <select id="ws_payment_method" class="form-select form-select-sm text-xs font-bold">
-                                        <option value="Cash">💵 Tunai (Cash)</option>
-                                        <option value="Transfer">🏦 Transfer Bank</option>
-                                        <option value="QRIS">📱 QRIS</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- OPSI BAYAR (LUNAS / DP / TEMPO) -->
-                            <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">Opsi Bayar</label>
-                                <div class="col-span-2">
-                                    <select id="ws_payment_type" onchange="handleWsPaymentTypeChange(this.value)" class="form-select form-select-sm text-xs font-bold">
-                                        <option value="PAID">🟢 Lunas (100%)</option>
-                                        <option value="DP">🟡 Uang Muka (DP)</option>
-                                        <option value="UNPAID">🔴 Belum Bayar (Tempo / Piutang)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- NOMINAL DIBAYAR & SISA PIUTANG -->
-                            <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">Nominal Dibayar</label>
-                                <div class="col-span-2">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text text-[11px] bg-slate-50 font-mono">Rp</span>
-                                        <input type="number" id="ws_paid_amount" min="0" step="1000" oninput="handleWsPaidAmountInput()" class="form-control form-control-sm text-xs font-mono font-bold" placeholder="0">
-                                    </div>
-                                    <div class="flex justify-between items-center text-[10.5px] mt-1">
-                                        <span class="text-slate-500">Sisa Tagihan:</span>
-                                        <span id="ws_remaining_amount_display" class="font-mono font-bold text-emerald-700">Rp 0 (Lunas)</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- 3. ODOO ORDER LINES TABLE (RINCIAN HARGA SATUAN & MODAL) -->
-                    <div class="space-y-2 pt-2">
-                        <div class="flex items-center justify-between">
-                            <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-0">
-                                <i class="fa-solid fa-list-check me-1 text-slate-700"></i> Rincian Harga Satuan & HPP
-                            </h6>
-                            <span class="text-[11px] text-slate-400">Kalkulasi real-time per satuan</span>
-                        </div>
-
-                        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-                            <table class="table table-bordered table-sm align-middle mb-0 text-xs">
-                                <thead class="bg-slate-100 text-slate-700 uppercase tracking-wider text-[10px] font-bold">
-                                    <tr>
-                                        <th style="width: 32%;">Item / Pekerjaan</th>
-                                        <th style="width: 10%;" class="text-center">Qty</th>
-                                        <th style="width: 10%;" class="text-center">Satuan</th>
-                                        <th style="width: 24%;" class="text-end">Harga Jual Satuan (Rp)</th>
-                                        <th style="width: 24%;" class="text-end">Modal Satuan Vendor (Rp)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr class="bg-white">
-                                        <td>
-                                            <span id="ws_table_item_name" class="font-bold text-slate-900 block">-</span>
-                                            <span id="ws_table_item_desc" class="text-[10.5px] text-slate-500 block truncate max-w-xs">-</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <input type="number" id="ws_qty" min="1" value="1" oninput="calcOdooTotals()" class="form-control form-control-sm text-xs font-mono font-bold text-center py-1">
-                                        </td>
-                                        <td class="text-center">
-                                            <input type="text" id="ws_unit" value="pcs" oninput="calcOdooTotals()" class="form-control form-control-sm text-xs text-center py-1" placeholder="pcs">
-                                        </td>
-                                        <td>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text text-[11px] bg-slate-50 font-mono">Rp</span>
-                                                <input type="number" id="ws_customer_unit_price" min="0" step="500" oninput="calcOdooTotals()" class="form-control font-mono font-bold text-blue-700 text-xs text-end" placeholder="0">
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text text-[11px] bg-slate-50 font-mono">Rp</span>
-                                                <input type="number" id="ws_vendor_unit_price" min="0" step="500" oninput="calcOdooTotals()" class="form-control font-mono font-bold text-rose-700 text-xs text-end" placeholder="0">
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- 4. BOTTOM NOTES & SUMMARY SECTION (ODOO STYLE) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                        
-                        <!-- Left: Notes & Approval Log -->
-                        <div class="space-y-3">
-                            <div>
-                                <label class="text-xs font-bold text-slate-700 uppercase mb-1 block">Catatan Vendor / Pengerjaan</label>
-                                <textarea id="ws_vendor_notes" rows="2" class="form-control form-control-sm text-xs" placeholder="Instruksi tambahan vendor..."></textarea>
-                            </div>
-
-                            <!-- QC Notes -->
-                            <div>
-                                <label class="text-xs font-bold text-slate-700 uppercase mb-1 block">Catatan Quality Control (QC)</label>
-                                <textarea id="ws_qc_notes" rows="2" class="form-control form-control-sm text-xs" placeholder="Hasil QC barang saat sampai..."></textarea>
-                            </div>
-
-                            <!-- Rejection Reason if any -->
-                            <div id="ws_rejection_banner" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 space-y-1">
-                                <strong><i class="fa-solid fa-circle-xmark me-1"></i> Riwayat Penolakan Owner:</strong>
-                                <p id="ws_rejection_text" class="mb-0 text-[11.5px]">-</p>
-                            </div>
-                        </div>
-
-                        <!-- Right: Odoo Accounting Totals Calculation Box -->
-                        <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
-                            <!-- Subtotal Penjualan -->
-                            <div class="flex justify-between items-center text-slate-600">
-                                <span>Total Penjualan Customer:</span>
-                                <strong id="ws_sum_omset" class="font-mono text-slate-900 text-sm">Rp 0</strong>
-                            </div>
+                            <!-- Left: Customer Details -->
+                            <div class="space-y-3.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+                                <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 text-blue-800">
+                                    <i class="fa-solid fa-user me-1 text-blue-600"></i> Data Pelanggan
+                                </h6>
 
-                            <!-- Subtotal Modal Vendor -->
-                            <div class="flex justify-between items-center text-slate-600">
-                                <span>Subtotal Modal Vendor:</span>
-                                <span id="ws_sum_vendor_subtotal" class="font-mono text-rose-700 font-semibold">Rp 0</span>
-                            </div>
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Nama Pelanggan <span class="text-rose-500">*</span></label>
+                                    <div class="col-span-2">
+                                        <input type="text" id="ws_customer_name" class="form-control form-control-sm text-xs font-semibold" placeholder="Nama pelanggan">
+                                    </div>
+                                </div>
 
-                            <!-- Ongkos Kirim Input Row -->
-                            <div class="flex justify-between items-center text-slate-600 pt-1">
-                                <span class="flex items-center gap-1">
-                                    <span>Ongkos Kirim:</span>
-                                </span>
-                                <div class="w-36">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text text-[10px] bg-white font-mono">Rp</span>
-                                        <input type="number" id="ws_shipping_cost" min="0" step="1000" oninput="calcOdooTotals()" class="form-control form-control-sm text-xs font-mono text-end" placeholder="0">
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">No. WhatsApp</label>
+                                    <div class="col-span-2">
+                                        <input type="text" id="ws_customer_phone" class="form-control form-control-sm text-xs font-mono" placeholder="08xxxxxxxx">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Metode Bayar</label>
+                                    <div class="col-span-2">
+                                        <select id="ws_payment_method" class="form-select form-select-sm text-xs font-bold">
+                                            <option value="Cash">💵 Tunai (Cash)</option>
+                                            <option value="Transfer">🏦 Transfer Bank</option>
+                                            <option value="QRIS">📱 QRIS</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Opsi Bayar</label>
+                                    <div class="col-span-2">
+                                        <select id="ws_payment_type" onchange="handleWsPaymentTypeChange(this.value)" class="form-select form-select-sm text-xs font-bold">
+                                            <option value="PAID">🟢 Lunas (100%)</option>
+                                            <option value="DP">🟡 Uang Muka (DP)</option>
+                                            <option value="UNPAID">🔴 Belum Bayar (Tempo / Piutang)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Nominal Bayar</label>
+                                    <div class="col-span-2">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text text-[11px] bg-white font-mono">Rp</span>
+                                            <input type="number" id="ws_paid_amount" min="0" step="1000" oninput="handleWsPaidAmountInput()" class="form-control form-control-sm text-xs font-mono font-bold" placeholder="0">
+                                        </div>
+                                        <div class="flex justify-between items-center text-[10.5px] mt-1">
+                                            <span class="text-slate-500">Sisa Tagihan:</span>
+                                            <span id="ws_remaining_amount_display" class="font-mono font-bold text-emerald-700">Rp 0 (Lunas)</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Total HPP (Vendor + Shipping) -->
-                            <div class="flex justify-between items-center text-slate-700 pt-1 border-t border-slate-200 font-bold">
-                                <span>Total Modal HPP (Vendor + Ongkir):</span>
-                                <span id="ws_sum_total_hpp" class="font-mono text-rose-700 text-sm">Rp 0</span>
-                            </div>
+                            <!-- Right: Job Details & Specifications -->
+                            <div class="space-y-3.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+                                <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 text-blue-800">
+                                    <i class="fa-solid fa-cube me-1 text-blue-600"></i> Pekerjaan / Produk Cetak
+                                </h6>
 
-                            <!-- ESTIMASI LABA BERSIH & MARGIN % (HIGHLIGHTED IN EMERALD) -->
-                            <div class="flex justify-between items-center p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-900 font-bold mt-2">
-                                <div>
-                                    <span class="text-[10.5px] uppercase tracking-wider block text-emerald-800">Estimasi Laba Bersih</span>
-                                    <span id="ws_sum_margin_badge" class="badge bg-emerald-600 text-white font-mono text-[10px]">Margin 0%</span>
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Pekerjaan <span class="text-rose-500">*</span></label>
+                                    <div class="col-span-2">
+                                        <input type="text" id="ws_job_title" class="form-control form-control-sm text-xs font-bold text-slate-900" placeholder="Misal: Cetak Buku Agenda, Brosur A4">
+                                    </div>
                                 </div>
-                                <strong id="ws_sum_profit" class="text-lg font-black font-mono text-emerald-700">Rp 0</strong>
+
+                                <div class="grid grid-cols-3 gap-2 items-start">
+                                    <label class="text-xs font-semibold text-slate-600 pt-1">Spesifikasi</label>
+                                    <div class="col-span-2">
+                                        <textarea id="ws_description" rows="3" class="form-control form-control-sm text-xs" placeholder="Ukuran kertas, laminasi doff/glossy, warna cover..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Live Calculation Pill -->
+                                <div class="p-3 bg-blue-100/60 border border-blue-200 rounded-xl flex justify-between items-center text-xs">
+                                    <div>
+                                        <span class="text-[10px] text-blue-900 uppercase font-bold block">Total Nilai Tagihan Customer:</span>
+                                        <span id="ws_calc_preview_pill" class="font-mono text-slate-700 font-semibold">1 pcs x Rp 0</span>
+                                    </div>
+                                    <strong id="ws_total_omset_display" class="font-mono text-blue-800 text-base">Rp 0</strong>
+                                </div>
                             </div>
 
                         </div>
 
+                        <!-- Order Line Table for Step 1 -->
+                        <div class="space-y-2 pt-1">
+                            <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1">
+                                <i class="fa-solid fa-tag me-1 text-slate-700"></i> Penetapan Harga Jual Satuan
+                            </h6>
+                            <div class="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                                <table class="table table-bordered table-sm align-middle mb-0 text-xs">
+                                    <thead class="bg-slate-100 text-slate-700 uppercase tracking-wider text-[10px] font-bold">
+                                        <tr>
+                                            <th style="width: 40%;">Item / Pekerjaan</th>
+                                            <th style="width: 15%;" class="text-center">Jumlah / Qty</th>
+                                            <th style="width: 15%;" class="text-center">Satuan</th>
+                                            <th style="width: 30%;" class="text-end">Harga Jual Satuan (Rp)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="bg-white">
+                                            <td>
+                                                <strong id="ws_line_job_title" class="text-slate-900 block">-</strong>
+                                            </td>
+                                            <td class="text-center">
+                                                <input type="number" id="ws_qty" min="1" value="1" oninput="calcOdooTotals()" class="form-control form-control-sm text-xs font-mono font-bold text-center py-1">
+                                            </td>
+                                            <td class="text-center">
+                                                <input type="text" id="ws_unit" value="pcs" oninput="calcOdooTotals()" class="form-control form-control-sm text-xs text-center py-1" placeholder="pcs">
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text text-[11px] bg-slate-50 font-mono">Rp</span>
+                                                    <input type="number" id="ws_customer_unit_price" min="0" step="500" oninput="calcOdooTotals()" class="form-control font-mono font-bold text-blue-700 text-xs text-end" placeholder="0">
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===================================================================== -->
+                    <!-- PANEL TAHAP 2: PENGAJUAN KE DIREKSI (HPP VENDOR & PERSETUJUAN OWNER)  -->
+                    <!-- ===================================================================== -->
+                    <div id="odoo_panel_2" class="odoo-stage-panel space-y-5">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-hand-holding-dollar text-indigo-600"></i> Tahap 2: Input Modal Vendor (HPP) & Pengajuan ke Direksi
+                            </span>
+                            <span id="ws_direksi_badge" class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10.5px]">Menunggu ACC</span>
+                        </div>
+
+                        <!-- Vendor Details & Cost Inputs -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- Vendor Details Form -->
+                            <div class="space-y-3.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+                                <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 text-indigo-800">
+                                    <i class="fa-solid fa-industry me-1 text-indigo-600"></i> Data Vendor Rekanan
+                                </h6>
+
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Nama Vendor <span class="text-rose-500">*</span></label>
+                                    <div class="col-span-2">
+                                        <input type="text" id="ws_vendor_name" class="form-control form-control-sm text-xs font-semibold" placeholder="Misal: Percetakan Prima Offset">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Kontak Vendor</label>
+                                    <div class="col-span-2">
+                                        <input type="text" id="ws_vendor_phone" class="form-control form-control-sm text-xs font-mono" placeholder="08xxxxxxxx">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 items-start">
+                                    <label class="text-xs font-semibold text-slate-600 pt-1">Catatan Vendor</label>
+                                    <div class="col-span-2">
+                                        <textarea id="ws_vendor_notes" rows="3" class="form-control form-control-sm text-xs" placeholder="Spesifikasi ke vendor, deadline pengerjaan..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cost Breakdown & Unit Price -->
+                            <div class="space-y-3.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+                                <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 text-rose-800">
+                                    <i class="fa-solid fa-calculator me-1 text-rose-600"></i> Biaya Modal & Ongkos Kirim
+                                </h6>
+
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Modal Satuan <span class="text-rose-500">*</span></label>
+                                    <div class="col-span-2">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text text-[11px] bg-rose-50 text-rose-700 font-mono">Rp</span>
+                                            <input type="number" id="ws_vendor_unit_price" min="0" step="500" oninput="calcOdooTotals()" class="form-control form-control-sm text-xs font-mono font-bold text-rose-700 text-end" placeholder="0">
+                                            <span class="input-group-text text-xs text-slate-500 bg-white font-mono" id="ws_vendor_unit_label">/ pcs</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-3 gap-2 items-center">
+                                    <label class="text-xs font-semibold text-slate-600">Ongkos Kirim</label>
+                                    <div class="col-span-2">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text text-[11px] bg-white font-mono">Rp</span>
+                                            <input type="number" id="ws_shipping_cost" min="0" step="1000" oninput="calcOdooTotals()" class="form-control form-control-sm text-xs font-mono text-end" placeholder="0">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Subtotal Modal Vendor Pill -->
+                                <div class="p-3 bg-rose-100/60 border border-rose-200 rounded-xl flex justify-between items-center text-xs">
+                                    <div>
+                                        <span class="text-[10px] text-rose-900 uppercase font-bold block">Total HPP Modal (Vendor + Ongkir):</span>
+                                        <span id="ws_vendor_calc_preview_pill" class="font-mono text-slate-700 font-semibold">1 pcs x Rp 0</span>
+                                    </div>
+                                    <strong id="ws_sum_total_hpp" class="font-mono text-rose-800 text-base">Rp 0</strong>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Live Margin & Approval Card -->
+                        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md border border-slate-700 space-y-3">
+                            <div class="flex justify-between items-center pb-2 border-b border-white/10 text-xs">
+                                <span class="text-slate-300 font-semibold uppercase tracking-wider">Simulasi Margin & Keuntungan:</span>
+                                <span id="ws_sum_margin_badge" class="badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold px-2.5 py-1">Margin 0%</span>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3 text-center">
+                                <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                                    <span class="text-[10px] text-slate-400 block uppercase">Harga Jual Customer</span>
+                                    <span id="ws_sum_omset" class="font-mono font-bold text-blue-300 text-base block mt-1">Rp 0</span>
+                                </div>
+                                <div class="bg-white/5 p-3 rounded-xl border border-white/10">
+                                    <span class="text-[10px] text-slate-400 block uppercase">Total Modal (HPP)</span>
+                                    <span id="ws_sum_hpp_card" class="font-mono font-bold text-rose-300 text-base block mt-1">Rp 0</span>
+                                </div>
+                                <div class="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30">
+                                    <span class="text-[10px] text-emerald-300 block uppercase font-bold">Estimasi Laba Bersih</span>
+                                    <span id="ws_sum_profit" class="font-mono font-black text-emerald-400 text-lg block mt-1">Rp 0</span>
+                                </div>
+                            </div>
+
+                            <!-- Approval status info & logs -->
+                            <div id="ws_approval_log_box" class="pt-2 border-t border-white/10 text-xs text-slate-300 flex justify-between items-center">
+                                <span id="ws_approval_log_text"><i class="fa-solid fa-clock me-1 text-amber-400"></i> Menunggu persetujuan (ACC) dari Direksi/Owner.</span>
+                                <div id="ws_owner_action_btns" class="flex items-center gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===================================================================== -->
+                    <!-- PANEL TAHAP 3: PROSES QC (DI VENDOR & BARANG SAMPAI)                  -->
+                    <!-- ===================================================================== -->
+                    <div id="odoo_panel_3" class="odoo-stage-panel space-y-5">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-clipboard-check text-purple-600"></i> Tahap 3: Pengerjaan di Vendor & Quality Control (QC)
+                            </span>
+                            <span id="ws_qc_status_badge" class="badge bg-blue-100 text-blue-800 border border-blue-200 text-[10.5px]">Sedang Dikerjakan</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <!-- Vendor & Job Progress Summary -->
+                            <div class="space-y-3 bg-slate-50/70 p-4 rounded-xl border border-slate-200 text-xs">
+                                <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 text-purple-800">
+                                    <i class="fa-solid fa-truck-ramp-box me-1 text-purple-600"></i> Ringkasan Pengerjaan
+                                </h6>
+                                <div class="flex justify-between py-1 border-b">
+                                    <span class="text-slate-500">Vendor:</span>
+                                    <strong id="ws_qc_vendor_name" class="text-slate-900">-</strong>
+                                </div>
+                                <div class="flex justify-between py-1 border-b">
+                                    <span class="text-slate-500">Pekerjaan:</span>
+                                    <strong id="ws_qc_job_title" class="text-slate-900">-</strong>
+                                </div>
+                                <div class="flex justify-between py-1">
+                                    <span class="text-slate-500">Total Modal HPP:</span>
+                                    <strong id="ws_qc_total_hpp" class="text-rose-700 font-mono">-</strong>
+                                </div>
+                            </div>
+
+                            <!-- Quality Control Notes Form -->
+                            <div class="space-y-3 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+                                <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 text-purple-800">
+                                    <i class="fa-solid fa-magnifying-glass-check me-1 text-purple-600"></i> Pengecekan Kualitas Fisik (QC)
+                                </h6>
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-700 mb-1 block">Catatan Pemeriksaan Barang Sampai</label>
+                                    <textarea id="ws_qc_notes" rows="3" class="form-control form-control-sm text-xs" placeholder="Hasil cek fisik: cetakan tajam, foil presisi, jumlah lengkap..."></textarea>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div id="ws_qc_action_banner" class="p-4 bg-purple-50 border border-purple-200 rounded-xl flex justify-between items-center text-xs">
+                            <div class="text-purple-900">
+                                <strong>Status:</strong> <span id="ws_qc_banner_text">Barang sedang dalam proses cetak di vendor.</span>
+                            </div>
+                            <div id="ws_qc_action_slot">
+                                <button type="button" onclick="submitWsPassQc()" class="btn btn-sm btn-purple rounded-lg font-bold text-white bg-purple-700 hover:bg-purple-800 px-3.5 shadow-xs">
+                                    <i class="fa-solid fa-clipboard-check me-1"></i> Konfirmasi Barang Sampai & Lolos QC
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===================================================================== -->
+                    <!-- PANEL TAHAP 4: CLOSE (SELESAI & INTEGRASI PEMBUKUAN PENJUALAN POS)    -->
+                    <!-- ===================================================================== -->
+                    <div id="odoo_panel_4" class="odoo-stage-panel space-y-5">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> Tahap 4: Closing Pesanan & Pembukuan Kas Penjualan
+                            </span>
+                            <span id="ws_closing_status_badge" class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10.5px]">Siap Closing</span>
+                        </div>
+
+                        <!-- Final Financial Summary -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                            <div class="bg-blue-50/70 p-4 rounded-xl border border-blue-200">
+                                <span class="text-[10.5px] uppercase font-bold text-blue-900 block">Total Omset Penjualan</span>
+                                <strong id="ws_final_omset" class="text-xl font-black font-mono text-blue-800 block mt-1">Rp 0</strong>
+                            </div>
+                            <div class="bg-rose-50/70 p-4 rounded-xl border border-rose-200">
+                                <span class="text-[10.5px] uppercase font-bold text-rose-900 block">Total Modal HPP</span>
+                                <strong id="ws_final_hpp" class="text-xl font-black font-mono text-rose-800 block mt-1">Rp 0</strong>
+                            </div>
+                            <div class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-300">
+                                <span class="text-[10.5px] uppercase font-bold text-emerald-900 block">Laba Bersih Realisasi</span>
+                                <strong id="ws_final_profit" class="text-xl font-black font-mono text-emerald-700 block mt-1">Rp 0</strong>
+                            </div>
+                        </div>
+
+                        <!-- Closing Action / Completed Invoice Box -->
+                        <div id="ws_closing_action_box" class="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-center">
+                            <div id="ws_closing_prompt_text">
+                                <h6 class="text-sm font-bold text-slate-800 mb-1">Pesanan Siap Ditutup & Diserahkan ke Customer</h6>
+                                <p class="text-xs text-slate-500 mb-0">Klik tombol di bawah untuk membukukan transaksi ke <strong>Laporan Penjualan Harian & Kas POS</strong>.</p>
+                            </div>
+                            
+                            <div id="ws_closing_btn_slot" class="pt-1">
+                                <button type="button" onclick="submitWsCloseOrder()" class="btn btn-md btn-success rounded-xl font-bold px-5 shadow-sm">
+                                    <i class="fa-solid fa-cash-register me-1.5"></i> Closing & Bukukan Penjualan Sekarang
+                                </button>
+                            </div>
+
+                            <div id="ws_completed_invoice_box" class="hidden pt-2">
+                                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs px-3 py-1.5 mb-2">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Transaksi Penjualan Telah Selesai: <strong id="ws_completed_inv_number">-</strong>
+                                </span>
+                                <div>
+                                    <a href="#" id="ws_btn_open_pos_inv" target="_blank" class="btn btn-sm btn-outline-success font-bold rounded-xl px-4">
+                                        <i class="fa-solid fa-receipt me-1"></i> Buka Faktur Struk POS Resmi
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
+            </div>
+
+            <!-- 3. ODOO FOOTER (PREV / NEXT NAVIGATION) -->
+            <div class="px-6 py-3.5 bg-white border-t border-slate-200 flex justify-between items-center">
+                <button type="button" id="odoo_btn_prev" onclick="navigateOdooStage(-1)" class="btn btn-sm btn-outline-secondary rounded-lg font-bold px-3">
+                    <i class="fa-solid fa-arrow-left me-1"></i> Sebelumnya
+                </button>
+
+                <div class="text-xs text-slate-400 font-semibold" id="odoo_stage_indicator_text">
+                    Tahap 1 dari 4: Draft Customer
+                </div>
+
+                <button type="button" id="odoo_btn_next" onclick="navigateOdooStage(1)" class="btn btn-sm btn-primary rounded-lg font-bold px-4 shadow-xs">
+                    <span>Seterusnya</span> <i class="fa-solid fa-arrow-right ms-1"></i>
+                </button>
             </div>
 
         </div>
@@ -709,6 +874,7 @@
 </div>
 
 <script>
+let currentActiveStageIndex = 1; // 1: Draft, 2: Pengajuan Direksi, 3: Proses QC, 4: Close
 let currentWsOrder = null;
 const isOwnerOrSuper = {{ ($isOwnerOrSuper || auth()->user()->isManager()) ? 'true' : 'false' }};
 
@@ -722,6 +888,20 @@ function openOrderWorksheet(orderId) {
         if (res.success && res.order) {
             currentWsOrder = res.order;
             populateOdooWorksheet(currentWsOrder);
+
+            // Determine initial active stage
+            let initialStage = 1;
+            if (currentWsOrder.status === 'pending_approval' || currentWsOrder.status === 'rejected') {
+                initialStage = 2;
+            } else if (currentWsOrder.status === 'in_production' || currentWsOrder.status === 'qc_passed') {
+                initialStage = 3;
+            } else if (currentWsOrder.status === 'completed') {
+                initialStage = 4;
+            } else if (currentWsOrder.vendor_cost > 0) {
+                initialStage = 2;
+            }
+
+            switchOdooStage(initialStage);
 
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalWorksheet'));
             modal.show();
@@ -742,19 +922,16 @@ function populateOdooWorksheet(order) {
     document.getElementById('ws_order_branch').innerText = order.branch ? order.branch.nama_cabang : 'Pusat';
     document.getElementById('odoo_btn_print_struk').href = `/cetak-luar/${order.id}/receipt`;
 
-    // Customer & Job Info
+    // Stage 1 Fields (Customer & Job)
     document.getElementById('ws_customer_name').value = order.customer_name || '';
     document.getElementById('ws_customer_phone').value = order.customer_phone || '';
     document.getElementById('ws_job_title').value = order.job_title || '';
+    document.getElementById('ws_line_job_title').innerText = order.job_title || 'Item Cetak';
     document.getElementById('ws_description').value = order.description || '';
-
-    // Vendor & Payment
-    document.getElementById('ws_vendor_name').value = order.vendor_name || '';
-    document.getElementById('ws_vendor_phone').value = order.vendor_phone || '';
     document.getElementById('ws_payment_method').value = order.payment_method || 'Cash';
     document.getElementById('ws_paid_amount').value = order.paid_amount || 0;
 
-    // Payment Type
+    // Payment Type Option
     const custPrice = parseFloat(order.customer_price) || 0;
     const paidAmt = parseFloat(order.paid_amount) || 0;
     const paySelect = document.getElementById('ws_payment_type');
@@ -766,36 +943,241 @@ function populateOdooWorksheet(order) {
         paySelect.value = 'UNPAID';
     }
 
-    // Order Line Inputs
-    document.getElementById('ws_table_item_name').innerText = order.job_title || 'Item Cetak';
-    document.getElementById('ws_table_item_desc').innerText = order.description || 'Spesifikasi cetak';
     document.getElementById('ws_qty').value = order.qty || 1;
     document.getElementById('ws_unit').value = order.unit || 'pcs';
 
     const custUnitPrice = order.customer_unit_price > 0 ? order.customer_unit_price : (order.qty > 0 ? (order.customer_price / order.qty) : order.customer_price);
     document.getElementById('ws_customer_unit_price').value = custUnitPrice;
 
+    // Stage 2 Fields (Vendor & HPP)
+    document.getElementById('ws_vendor_name').value = order.vendor_name || '';
+    document.getElementById('ws_vendor_phone').value = order.vendor_phone || '';
     const vendUnitPrice = order.vendor_unit_price > 0 ? order.vendor_unit_price : (order.qty > 0 && order.vendor_cost > 0 ? (order.vendor_cost / order.qty) : '');
     document.getElementById('ws_vendor_unit_price').value = vendUnitPrice;
-
     document.getElementById('ws_shipping_cost').value = order.shipping_cost > 0 ? order.shipping_cost : '';
     document.getElementById('ws_vendor_notes').value = order.vendor_notes || '';
-    document.getElementById('ws_qc_notes').value = order.qc_notes || '';
 
-    // Rejection Banner
-    const rejBox = document.getElementById('ws_rejection_banner');
-    if (order.status === 'rejected' && order.rejection_reason) {
-        rejBox.classList.remove('hidden');
-        document.getElementById('ws_rejection_text').innerText = order.rejection_reason;
+    // Stage 3 Fields (QC)
+    document.getElementById('ws_qc_vendor_name').innerText = `${order.vendor_name || 'Vendor Luar'} ${order.vendor_phone ? '(' + order.vendor_phone + ')' : ''}`;
+    document.getElementById('ws_qc_job_title').innerText = `${order.job_title} (${order.qty} ${order.unit})`;
+    document.getElementById('ws_qc_notes').value = order.qc_notes || 'Hasil QC barang saat sampai...';
+
+    // Stage 4 Fields (Closing & Completed)
+    const promptText = document.getElementById('ws_closing_prompt_text');
+    const btnSlot = document.getElementById('ws_closing_btn_slot');
+    const compBox = document.getElementById('ws_completed_invoice_box');
+    const statusBadge = document.getElementById('ws_closing_status_badge');
+
+    if (order.status === 'completed' && order.transaction) {
+        if (promptText) promptText.style.display = 'none';
+        if (btnSlot) btnSlot.style.display = 'none';
+        if (compBox) compBox.style.display = 'block';
+        document.getElementById('ws_completed_inv_number').innerText = order.transaction.invoice_number;
+        document.getElementById('ws_btn_open_pos_inv').href = `/sales/${order.transaction_id}/receipt`;
+        if (statusBadge) {
+            statusBadge.innerText = 'Selesai (Closed)';
+            statusBadge.className = 'badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10.5px]';
+        }
     } else {
-        rejBox.classList.add('hidden');
+        if (promptText) promptText.style.display = 'block';
+        if (btnSlot) btnSlot.style.display = 'block';
+        if (compBox) compBox.style.display = 'none';
+        if (statusBadge) {
+            statusBadge.innerText = 'Siap Closing';
+            statusBadge.className = 'badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10.5px]';
+        }
     }
-
-    // Update Statusbar Highlight & Status Badge
-    updateOdooStatusbar(order.status);
 
     // Calculate Totals & Profit
     calcOdooTotals();
+}
+
+// --- DYNAMIC STAGE SWITCHING (DRAFT -> PENGAJUAN DIREKSI -> PROSES QC -> CLOSE) ---
+function switchOdooStage(stageIndex) {
+    currentActiveStageIndex = stageIndex;
+
+    // 1. Hide all panels, show the selected stage panel explicitly
+    for (let i = 1; i <= 4; i++) {
+        const panel = document.getElementById(`odoo_panel_${i}`);
+        const btn = document.getElementById(`stage_tab_${i}`);
+        if (panel) {
+            if (i === stageIndex) {
+                panel.style.setProperty('display', 'block', 'important');
+                panel.classList.add('active');
+                panel.classList.remove('d-none', 'hidden');
+            } else {
+                panel.style.setProperty('display', 'none', 'important');
+                panel.classList.remove('active');
+                panel.classList.add('d-none', 'hidden');
+            }
+        }
+        if (btn) {
+            if (i === stageIndex) {
+                btn.className = 'odoo-stage-btn active px-3.5 py-1.5 transition border-r border-slate-300 flex items-center gap-1 font-bold bg-slate-900 text-white shadow-xs';
+            } else {
+                btn.className = 'odoo-stage-btn px-3.5 py-1.5 transition border-r border-slate-300 flex items-center gap-1 text-slate-600 hover:bg-slate-200';
+            }
+        }
+    }
+
+    const lastBtn = document.getElementById('stage_tab_4');
+    if (lastBtn && currentActiveStageIndex !== 4) {
+        lastBtn.classList.remove('border-r');
+    }
+
+    // 2. Update stage indicator text
+    const stageTitles = {
+        1: 'Tahap 1 dari 4: Draft Customer (Data & Harga Jual)',
+        2: 'Tahap 2 dari 4: Pengajuan ke Direksi (HPP & Approval)',
+        3: 'Tahap 3 dari 4: Proses QC & Pengerjaan di Vendor',
+        4: 'Tahap 4 dari 4: Close (Selesai & Pembukuan Penjualan)'
+    };
+    const indicator = document.getElementById('odoo_stage_indicator_text');
+    if (indicator) {
+        indicator.innerText = stageTitles[stageIndex] || '';
+    }
+
+    // 3. Update Prev / Next button states
+    const prevBtn = document.getElementById('odoo_btn_prev');
+    const nextBtn = document.getElementById('odoo_btn_next');
+    if (prevBtn) prevBtn.style.visibility = (stageIndex === 1) ? 'hidden' : 'visible';
+    if (nextBtn) nextBtn.style.visibility = (stageIndex === 4) ? 'hidden' : 'visible';
+
+    // 4. Update Header Dynamic Actions based on current stage
+    renderHeaderStageActions(stageIndex);
+}
+
+function navigateOdooStage(direction) {
+    const target = currentActiveStageIndex + direction;
+    if (target >= 1 && target <= 4) {
+        switchOdooStage(target);
+    }
+}
+
+function renderHeaderStageActions(stageIndex) {
+    const slot = document.getElementById('odoo_dynamic_action_buttons');
+    slot.innerHTML = '';
+    if (!currentWsOrder) return;
+
+    if (stageIndex === 1) {
+        slot.innerHTML = `
+            <button type="button" onclick="navigateOdooStage(1)" class="btn btn-sm btn-warning rounded-lg font-bold text-slate-900 px-3 shadow-xs">
+                <span>Input HPP Vendor ➔</span>
+            </button>
+        `;
+    } else if (stageIndex === 2) {
+        const ownerSlot = document.getElementById('ws_owner_action_btns');
+        ownerSlot.innerHTML = '';
+
+        if (currentWsOrder.status === 'draft_customer' || currentWsOrder.status === 'rejected') {
+            slot.innerHTML = `
+                <button type="button" onclick="submitWsHppToOwner()" class="btn btn-sm btn-warning rounded-lg font-bold text-slate-900 px-3.5 shadow-xs">
+                    <i class="fa-solid fa-paper-plane me-1"></i> Ajukan ke Direksi
+                </button>
+            `;
+        } else if (currentWsOrder.status === 'pending_approval') {
+            if (isOwnerOrSuper) {
+                ownerSlot.innerHTML = `
+                    <button type="button" onclick="promptWsReject()" class="btn btn-xs btn-outline-danger rounded-lg font-bold px-2.5">
+                        <i class="fa-solid fa-xmark me-1"></i> Tolak
+                    </button>
+                    <button type="button" onclick="submitWsApprove()" class="btn btn-xs btn-success rounded-lg font-bold px-3 shadow-xs">
+                        <i class="fa-solid fa-check-double me-1"></i> ACC / Setujui
+                    </button>
+                `;
+                slot.innerHTML = `
+                    <button type="button" onclick="submitWsApprove()" class="btn btn-sm btn-success rounded-lg font-bold px-3.5 shadow-xs">
+                        <i class="fa-solid fa-check-double me-1"></i> ACC / Setujui Order
+                    </button>
+                `;
+            }
+        }
+    } else if (stageIndex === 3) {
+        if (currentWsOrder.status === 'in_production' || currentWsOrder.status === 'pending_approval') {
+            slot.innerHTML = `
+                <button type="button" onclick="submitWsPassQc()" class="btn btn-sm btn-purple rounded-lg font-bold text-white bg-purple-700 hover:bg-purple-800 px-3.5 shadow-xs">
+                    <i class="fa-solid fa-clipboard-check me-1"></i> Konfirmasi Lolos QC
+                </button>
+            `;
+        }
+    } else if (stageIndex === 4) {
+        if (currentWsOrder.status !== 'completed') {
+            slot.innerHTML = `
+                <button type="button" onclick="submitWsCloseOrder()" class="btn btn-sm btn-success rounded-lg font-bold px-3.5 shadow-xs">
+                    <i class="fa-solid fa-cash-register me-1"></i> Closing / Selesai
+                </button>
+            `;
+        }
+    }
+}
+
+// --- CALCULATION LOGIC ---
+function calcOdooTotals() {
+    const qty = parseInt(document.getElementById('ws_qty').value) || 1;
+    const unit = document.getElementById('ws_unit').value || 'pcs';
+
+    document.getElementById('ws_line_job_title').innerText = document.getElementById('ws_job_title').value || 'Item Cetak';
+    document.getElementById('ws_vendor_unit_label').innerText = `/ ${unit}`;
+
+    const custUnitPrice = parseFloat(document.getElementById('ws_customer_unit_price').value) || 0;
+    const totalOmset = qty * custUnitPrice;
+
+    const vendUnitPrice = parseFloat(document.getElementById('ws_vendor_unit_price').value) || 0;
+    const vendorSubtotal = qty * vendUnitPrice;
+    const shipping = parseFloat(document.getElementById('ws_shipping_cost').value) || 0;
+    const totalHpp = vendorSubtotal + shipping;
+
+    const profit = totalOmset - totalHpp;
+    const marginPct = totalOmset > 0 ? ((profit / totalOmset) * 100).toFixed(1) : '0';
+
+    // Auto-update paid amount if LUNAS
+    const payType = document.getElementById('ws_payment_type').value;
+    if (payType === 'PAID') {
+        document.getElementById('ws_paid_amount').value = totalOmset;
+    }
+
+    const paidAmt = parseFloat(document.getElementById('ws_paid_amount').value) || 0;
+    const remaining = Math.max(0, totalOmset - paidAmt);
+
+    const remDisplay = document.getElementById('ws_remaining_amount_display');
+    if (remaining === 0 && totalOmset > 0) {
+        remDisplay.innerText = 'Rp 0 (Lunas)';
+        remDisplay.className = 'font-mono font-bold text-emerald-700';
+    } else if (paidAmt > 0) {
+        remDisplay.innerText = `Rp ${Number(remaining).toLocaleString('id-ID')} (Sisa DP / Piutang)`;
+        remDisplay.className = 'font-mono font-bold text-amber-700';
+    } else {
+        remDisplay.innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')} (Belum Bayar)`;
+        remDisplay.className = 'font-mono font-bold text-rose-700';
+    }
+
+    // Stage 1 Displays
+    document.getElementById('ws_calc_preview_pill').innerText = `${qty} ${unit} x Rp ${Number(custUnitPrice).toLocaleString('id-ID')}`;
+    document.getElementById('ws_total_omset_display').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
+
+    // Stage 2 Displays
+    document.getElementById('ws_vendor_calc_preview_pill').innerText = `${qty} ${unit} x Rp ${Number(vendUnitPrice).toLocaleString('id-ID')}`;
+    document.getElementById('ws_sum_omset').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
+    document.getElementById('ws_sum_hpp_card').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
+    document.getElementById('ws_sum_total_hpp').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
+    document.getElementById('ws_sum_profit').innerText = `Rp ${Number(profit).toLocaleString('id-ID')}`;
+
+    const badge = document.getElementById('ws_sum_margin_badge');
+    if (profit < 0) {
+        badge.className = 'badge bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-mono font-bold px-2.5 py-1';
+        badge.innerText = `Rugi ${marginPct}%`;
+    } else {
+        badge.className = 'badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold px-2.5 py-1';
+        badge.innerText = `Margin ${marginPct}%`;
+    }
+
+    // Stage 3 Displays
+    document.getElementById('ws_qc_total_hpp').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
+
+    // Stage 4 Displays
+    document.getElementById('ws_final_omset').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
+    document.getElementById('ws_final_hpp').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
+    document.getElementById('ws_final_profit').innerText = `Rp ${Number(profit).toLocaleString('id-ID')}`;
 }
 
 function handleWsPaymentTypeChange(type) {
@@ -834,144 +1216,7 @@ function handleWsPaidAmountInput() {
     calcOdooTotals();
 }
 
-function updateOdooStatusbar(status) {
-    const stages = ['draft_customer', 'pending_approval', 'in_production', 'qc_passed', 'completed'];
-    const badge = document.getElementById('ws_order_status_badge');
-
-    const statusMap = {
-        'draft_customer': { label: '1. Draft Customer', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-        'pending_approval': { label: '2. Menunggu ACC Owner', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-        'in_production': { label: '3. Sedang Dikerjakan di Vendor', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-        'qc_passed': { label: '4. Lolos QC / Sampai', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-        'completed': { label: '5. Selesai (Closed)', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-        'rejected': { label: 'Ditolak Owner', color: 'bg-rose-100 text-rose-800 border-rose-200' },
-    };
-
-    const cur = statusMap[status] || { label: status, color: 'bg-slate-100 text-slate-800 border-slate-200' };
-    badge.className = `badge ${cur.color} border text-xs px-2.5 py-1`;
-    badge.innerText = cur.label;
-
-    // Highlight Statusbar Stage Buttons
-    stages.forEach(st => {
-        const btn = document.getElementById(`stage_tab_${st}`);
-        if (!btn) return;
-
-        if (st === status) {
-            btn.className = 'odoo-stage-btn px-3 py-1.5 transition border-r border-slate-300 flex items-center gap-1 font-bold bg-slate-900 text-white shadow-xs';
-        } else {
-            btn.className = 'odoo-stage-btn px-3 py-1.5 transition border-r border-slate-300 flex items-center gap-1 text-slate-600 hover:bg-slate-200';
-        }
-    });
-
-    // Render Dynamic Action Buttons in Header
-    renderOdooHeaderActions(status);
-}
-
-function switchOdooStage(targetStage) {
-    updateOdooStatusbar(targetStage);
-}
-
-function renderOdooHeaderActions(status) {
-    const slot = document.getElementById('odoo_dynamic_action_buttons');
-    slot.innerHTML = '';
-    if (!currentWsOrder) return;
-
-    if (status === 'draft_customer' || status === 'rejected') {
-        slot.innerHTML = `
-            <button type="button" onclick="submitWsHppToOwner()" class="btn btn-sm btn-warning rounded-lg font-bold text-slate-900 px-3 shadow-xs">
-                <i class="fa-solid fa-paper-plane me-1"></i> Ajukan ke Owner
-            </button>
-        `;
-    } else if (status === 'pending_approval') {
-        if (isOwnerOrSuper) {
-            slot.innerHTML = `
-                <button type="button" onclick="promptWsReject()" class="btn btn-sm btn-outline-danger rounded-lg font-bold px-2.5">
-                    <i class="fa-solid fa-xmark me-1"></i> Tolak
-                </button>
-                <button type="button" onclick="submitWsApprove()" class="btn btn-sm btn-success rounded-lg font-bold px-3.5 shadow-xs">
-                    <i class="fa-solid fa-check-double me-1"></i> ACC / Setujui
-                </button>
-            `;
-        } else {
-            slot.innerHTML = `<span class="text-xs text-indigo-700 italic font-semibold px-2">Menunggu ACC Owner</span>`;
-        }
-    } else if (status === 'in_production') {
-        slot.innerHTML = `
-            <button type="button" onclick="submitWsPassQc()" class="btn btn-sm btn-purple rounded-lg font-bold text-white bg-purple-700 hover:bg-purple-800 px-3 shadow-xs">
-                <i class="fa-solid fa-clipboard-check me-1"></i> Barang Sampai & Lolos QC
-            </button>
-        `;
-    } else if (status === 'qc_passed') {
-        slot.innerHTML = `
-            <button type="button" onclick="submitWsCloseOrder()" class="btn btn-sm btn-success rounded-lg font-bold px-3.5 shadow-xs">
-                <i class="fa-solid fa-cash-register me-1"></i> Closing / Selesai
-            </button>
-        `;
-    } else if (status === 'completed' && currentWsOrder.transaction_id) {
-        slot.innerHTML = `
-            <a href="/sales/${currentWsOrder.transaction_id}/receipt" target="_blank" class="btn btn-sm btn-outline-success rounded-lg font-bold px-3">
-                <i class="fa-solid fa-receipt me-1"></i> Buka Invoice POS
-            </a>
-        `;
-    }
-}
-
-// Live Totals & Margin Calculator
-function calcOdooTotals() {
-    const qty = parseInt(document.getElementById('ws_qty').value) || 1;
-    const unit = document.getElementById('ws_unit').value || 'pcs';
-
-    document.getElementById('ws_table_item_name').innerText = document.getElementById('ws_job_title').value || 'Item Cetak';
-    document.getElementById('ws_table_item_desc').innerText = document.getElementById('ws_description').value || `${qty} ${unit}`;
-
-    const custUnitPrice = parseFloat(document.getElementById('ws_customer_unit_price').value) || 0;
-    const totalOmset = qty * custUnitPrice;
-
-    const vendUnitPrice = parseFloat(document.getElementById('ws_vendor_unit_price').value) || 0;
-    const vendorSubtotal = qty * vendUnitPrice;
-    const shipping = parseFloat(document.getElementById('ws_shipping_cost').value) || 0;
-    const totalHpp = vendorSubtotal + shipping;
-
-    const profit = totalOmset - totalHpp;
-    const marginPct = totalOmset > 0 ? ((profit / totalOmset) * 100).toFixed(1) : '0';
-
-    // Auto-update paid amount if LUNAS
-    const payType = document.getElementById('ws_payment_type').value;
-    if (payType === 'PAID') {
-        document.getElementById('ws_paid_amount').value = totalOmset;
-    }
-
-    const paidAmt = parseFloat(document.getElementById('ws_paid_amount').value) || 0;
-    const remaining = Math.max(0, totalOmset - paidAmt);
-
-    const remDisplay = document.getElementById('ws_remaining_amount_display');
-    if (remaining === 0 && totalOmset > 0) {
-        remDisplay.innerText = 'Rp 0 (Lunas)';
-        remDisplay.className = 'font-mono font-bold text-emerald-700';
-    } else if (paidAmt > 0) {
-        remDisplay.innerText = `Rp ${Number(remaining).toLocaleString('id-ID')} (Sisa DP / Piutang)`;
-        remDisplay.className = 'font-mono font-bold text-amber-700';
-    } else {
-        remDisplay.innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')} (Belum Bayar)`;
-        remDisplay.className = 'font-mono font-bold text-rose-700';
-    }
-
-    document.getElementById('ws_sum_omset').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
-    document.getElementById('ws_sum_vendor_subtotal').innerText = `Rp ${Number(vendorSubtotal).toLocaleString('id-ID')}`;
-    document.getElementById('ws_sum_total_hpp').innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
-    document.getElementById('ws_sum_profit').innerText = `Rp ${Number(profit).toLocaleString('id-ID')}`;
-
-    const badge = document.getElementById('ws_sum_margin_badge');
-    if (profit < 0) {
-        badge.className = 'badge bg-rose-600 text-white font-mono text-[10px]';
-        badge.innerText = `Rugi ${marginPct}%`;
-    } else {
-        badge.className = 'badge bg-emerald-600 text-white font-mono text-[10px]';
-        badge.innerText = `Margin ${marginPct}%`;
-    }
-}
-
-// --- SAVE WORKSHEET CHANGES (UPDATE ANYTIME) ---
+// --- SAVE / UPDATE DATA ---
 function saveWorksheetChanges(showNotification = true) {
     if (!currentWsOrder) return;
 
@@ -1060,7 +1305,7 @@ function submitWsHppToOwner() {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                Swal.fire({ icon: 'success', title: 'Diajukan ke Owner!', text: res.message })
+                Swal.fire({ icon: 'success', title: 'Diajukan ke Direksi!', text: res.message })
                     .then(() => location.reload());
             } else {
                 Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
@@ -1077,7 +1322,7 @@ function submitWsApprove() {
     .then(r => r.json())
     .then(res => {
         if (res.success) {
-            Swal.fire({ icon: 'success', title: 'Order di-ACC!', text: res.message })
+            Swal.fire({ icon: 'success', title: 'Order Telah di-ACC!', text: res.message })
                 .then(() => location.reload());
         } else {
             Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
@@ -1090,7 +1335,7 @@ function promptWsReject() {
         title: 'Tolak Pengajuan Vendor?',
         input: 'text',
         inputLabel: 'Alasan Penolakan',
-        inputPlaceholder: 'Misal: Modal vendor terlalu tinggi, cari vendor lain...',
+        inputPlaceholder: 'Misal: Modal vendor terlalu tinggi...',
         showCancelButton: true,
         confirmButtonText: 'Konfirmasi Tolak',
         cancelButtonText: 'Batal',
