@@ -587,31 +587,35 @@
 
                         </div>
 
-                        <!-- Live Margin & Approval Card -->
-                        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md border border-slate-700 space-y-3">
-                            <div class="flex justify-between items-center pb-2 border-b border-white/10 text-xs">
-                                <span class="text-slate-300 font-semibold uppercase tracking-wider">Simulasi Margin & Keuntungan:</span>
-                                <span id="ws_sum_margin_badge" class="badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-mono font-bold px-2.5 py-1">Margin 0%</span>
+                        <!-- Live Margin & Approval Card (HIGH CONTRAST & CLEAR READABILITY) -->
+                        <div class="p-5 rounded-2xl shadow-sm border border-slate-700 space-y-3.5" style="background-color: #0f172a !important; color: #ffffff !important;">
+                            <div class="flex justify-between items-center pb-2.5 border-b border-slate-700 text-xs">
+                                <span class="font-black uppercase tracking-wider flex items-center gap-1.5" style="color: #f8fafc !important;">
+                                    <i class="fa-solid fa-chart-line text-amber-400"></i> SIMULASI MARGIN & KEUNTUNGAN
+                                </span>
+                                <span id="ws_sum_margin_badge" class="badge bg-emerald-500 text-white font-mono font-bold text-xs px-3 py-1 shadow-xs">Margin 0%</span>
                             </div>
 
-                            <div class="grid grid-cols-3 gap-3 text-center">
-                                <div class="bg-white/5 p-3 rounded-xl border border-white/10">
-                                    <span class="text-[10px] text-slate-400 block uppercase">Harga Jual Customer</span>
-                                    <span id="ws_sum_omset" class="font-mono font-bold text-blue-300 text-base block mt-1">Rp 0</span>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-center">
+                                <div class="p-3.5 rounded-xl border border-blue-500/50 shadow-xs" style="background-color: #1e293b !important;">
+                                    <span class="text-[11px] font-bold block uppercase tracking-wider" style="color: #93c5fd !important;">Harga Jual Customer</span>
+                                    <strong id="ws_sum_omset" class="font-mono font-black text-xl block mt-1" style="color: #60a5fa !important;">Rp 0</strong>
                                 </div>
-                                <div class="bg-white/5 p-3 rounded-xl border border-white/10">
-                                    <span class="text-[10px] text-slate-400 block uppercase">Total Modal (HPP)</span>
-                                    <span id="ws_sum_hpp_card" class="font-mono font-bold text-rose-300 text-base block mt-1">Rp 0</span>
+                                <div class="p-3.5 rounded-xl border border-rose-500/50 shadow-xs" style="background-color: #1e293b !important;">
+                                    <span class="text-[11px] font-bold block uppercase tracking-wider" style="color: #fca5a5 !important;">Total Modal (HPP + Ongkir)</span>
+                                    <strong id="ws_sum_hpp_card" class="font-mono font-black text-xl block mt-1" style="color: #f87171 !important;">Rp 0</strong>
                                 </div>
-                                <div class="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30">
-                                    <span class="text-[10px] text-emerald-300 block uppercase font-bold">Estimasi Laba Bersih</span>
-                                    <span id="ws_sum_profit" class="font-mono font-black text-emerald-400 text-lg block mt-1">Rp 0</span>
+                                <div class="p-3.5 rounded-xl border border-emerald-500/50 shadow-xs" style="background-color: #1e293b !important;">
+                                    <span class="text-[11px] font-bold block uppercase tracking-wider" style="color: #86efac !important;">Estimasi Laba Bersih</span>
+                                    <strong id="ws_sum_profit" class="font-mono font-black text-2xl block mt-1" style="color: #4ade80 !important;">Rp 0</strong>
                                 </div>
                             </div>
 
                             <!-- Approval status info & logs -->
-                            <div id="ws_approval_log_box" class="pt-2 border-t border-white/10 text-xs text-slate-300 flex justify-between items-center">
-                                <span id="ws_approval_log_text"><i class="fa-solid fa-clock me-1 text-amber-400"></i> Menunggu persetujuan (ACC) dari Direksi/Owner.</span>
+                            <div id="ws_approval_log_box" class="pt-2.5 border-t border-slate-700 text-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                                <span id="ws_approval_log_text" class="font-semibold" style="color: #e2e8f0 !important;">
+                                    <i class="fa-solid fa-clock me-1 text-amber-400"></i> Menunggu persetujuan (ACC) dari Direksi/Owner.
+                                </span>
                                 <div id="ws_owner_action_btns" class="flex items-center gap-2"></div>
                             </div>
                         </div>
@@ -685,19 +689,19 @@
                             <span id="ws_closing_status_badge" class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10.5px]">Siap Closing</span>
                         </div>
 
-                        <!-- Final Financial Summary -->
+                        <!-- Final Financial Summary (HIGH CONTRAST & CLEAR READABILITY) -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                            <div class="bg-blue-50/70 p-4 rounded-xl border border-blue-200">
-                                <span class="text-[10.5px] uppercase font-bold text-blue-900 block">Total Omset Penjualan</span>
-                                <strong id="ws_final_omset" class="text-xl font-black font-mono text-blue-800 block mt-1">Rp 0</strong>
+                            <div class="p-4 rounded-xl border border-blue-200 bg-blue-50 shadow-xs" style="background-color: #eff6ff !important; border-color: #bfdbfe !important;">
+                                <span class="text-[11px] uppercase font-extrabold text-blue-900 block" style="color: #1e3a8a !important;">Total Omset Penjualan</span>
+                                <strong id="ws_final_omset" class="text-2xl font-black font-mono block mt-1" style="color: #1d4ed8 !important;">Rp 0</strong>
                             </div>
-                            <div class="bg-rose-50/70 p-4 rounded-xl border border-rose-200">
-                                <span class="text-[10.5px] uppercase font-bold text-rose-900 block">Total Modal HPP</span>
-                                <strong id="ws_final_hpp" class="text-xl font-black font-mono text-rose-800 block mt-1">Rp 0</strong>
+                            <div class="p-4 rounded-xl border border-rose-200 bg-rose-50 shadow-xs" style="background-color: #fff1f2 !important; border-color: #fecdd3 !important;">
+                                <span class="text-[11px] uppercase font-extrabold text-rose-900 block" style="color: #881337 !important;">Total Modal HPP</span>
+                                <strong id="ws_final_hpp" class="text-2xl font-black font-mono block mt-1" style="color: #be123c !important;">Rp 0</strong>
                             </div>
-                            <div class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-300">
-                                <span class="text-[10.5px] uppercase font-bold text-emerald-900 block">Laba Bersih Realisasi</span>
-                                <strong id="ws_final_profit" class="text-xl font-black font-mono text-emerald-700 block mt-1">Rp 0</strong>
+                            <div class="p-4 rounded-xl border border-emerald-300 bg-emerald-50 shadow-xs" style="background-color: #ecfdf5 !important; border-color: #a7f3d0 !important;">
+                                <span class="text-[11px] uppercase font-extrabold text-emerald-900 block" style="color: #064e3b !important;">Laba Bersih Realisasi</span>
+                                <strong id="ws_final_profit" class="text-2xl font-black font-mono block mt-1" style="color: #047857 !important;">Rp 0</strong>
                             </div>
                         </div>
 
@@ -957,6 +961,58 @@ function populateOdooWorksheet(order) {
     document.getElementById('ws_shipping_cost').value = order.shipping_cost > 0 ? order.shipping_cost : '';
     document.getElementById('ws_vendor_notes').value = order.vendor_notes || '';
 
+    // Top Status Badge
+    const badgeTop = document.getElementById('ws_order_status_badge');
+    const statusMap = {
+        'draft_customer': { text: '1. Draft Customer', cls: 'badge bg-amber-100 text-amber-900 border border-amber-300 text-xs px-2.5 py-1 font-bold' },
+        'pending_approval': { text: '2. Menunggu ACC Direksi', cls: 'badge bg-indigo-100 text-indigo-900 border border-indigo-300 text-xs px-2.5 py-1 font-bold' },
+        'in_production': { text: '3. Sedang Dikerjakan (QC)', cls: 'badge bg-purple-100 text-purple-900 border border-purple-300 text-xs px-2.5 py-1 font-bold' },
+        'qc_passed': { text: '3. Lolos QC (Siap Close)', cls: 'badge bg-blue-100 text-blue-900 border border-blue-300 text-xs px-2.5 py-1 font-bold' },
+        'completed': { text: '4. Selesai (Closed)', cls: 'badge bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs px-2.5 py-1 font-bold' },
+        'rejected': { text: 'Ditolak Direksi', cls: 'badge bg-rose-100 text-rose-900 border border-rose-300 text-xs px-2.5 py-1 font-bold' }
+    };
+    if (badgeTop && statusMap[order.status]) {
+        badgeTop.innerText = statusMap[order.status].text;
+        badgeTop.className = statusMap[order.status].cls;
+    }
+
+    // Stage 2 Status Badge & Log Text
+    const direksiBadge = document.getElementById('ws_direksi_badge');
+    const approvalLogText = document.getElementById('ws_approval_log_text');
+    if (order.status === 'draft_customer') {
+        if (direksiBadge) {
+            direksiBadge.innerText = 'Draft (Belum Diajukan)';
+            direksiBadge.className = 'badge bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold';
+        }
+        if (approvalLogText) {
+            approvalLogText.innerHTML = '<i class="fa-solid fa-circle-info text-amber-400 me-1"></i> Data vendor belum diajukan. Silakan input modal vendor lalu klik <strong>"Ajukan ke Direksi"</strong>.';
+        }
+    } else if (order.status === 'pending_approval') {
+        if (direksiBadge) {
+            direksiBadge.innerText = '🔒 Menunggu ACC Direksi';
+            direksiBadge.className = 'badge bg-indigo-100 text-indigo-900 border border-indigo-300 text-xs font-bold';
+        }
+        if (approvalLogText) {
+            approvalLogText.innerHTML = '<i class="fa-solid fa-clock text-amber-400 me-1"></i> Pengajuan sedang <strong>di-hold menunggu persetujuan (ACC) Owner/Direksi</strong>.';
+        }
+    } else if (order.status === 'rejected') {
+        if (direksiBadge) {
+            direksiBadge.innerText = '❌ Ditolak Direksi';
+            direksiBadge.className = 'badge bg-rose-100 text-rose-900 border border-rose-300 text-xs font-bold';
+        }
+        if (approvalLogText) {
+            approvalLogText.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400 me-1"></i> Pengajuan ditolak: <em>"${order.rejection_reason || '-'}"</em>. Silakan perbaiki dan ajukan kembali.`;
+        }
+    } else {
+        if (direksiBadge) {
+            direksiBadge.innerText = '✅ Disetujui (ACC)';
+            direksiBadge.className = 'badge bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold';
+        }
+        if (approvalLogText) {
+            approvalLogText.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400 me-1"></i> HPP disetujui (ACC) oleh Direksi. Pengerjaan & QC dapat dijalankan.';
+        }
+    }
+
     // Stage 3 Fields (QC)
     document.getElementById('ws_qc_vendor_name').innerText = `${order.vendor_name || 'Vendor Luar'} ${order.vendor_phone ? '(' + order.vendor_phone + ')' : ''}`;
     document.getElementById('ws_qc_job_title').innerText = `${order.job_title} (${order.qty} ${order.unit})`;
@@ -992,8 +1048,61 @@ function populateOdooWorksheet(order) {
     calcOdooTotals();
 }
 
+// --- STAGE ACCESS GUARD (HOLD DATA UNTIL OWNER ACC) ---
+function canAccessStage(targetStage) {
+    if (!currentWsOrder) return true;
+    if (targetStage <= 2) return true; // Tahap 1 & 2 selalu dapat diakses untuk view/edit
+
+    const approvedStatuses = ['in_production', 'qc_passed', 'completed'];
+    if (!approvedStatuses.includes(currentWsOrder.status)) {
+        if (currentWsOrder.status === 'pending_approval') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Data Masih di-Hold (Menunggu ACC)',
+                html: '<div class="text-xs text-slate-700 mt-2 text-start bg-slate-50 p-3 rounded-xl border border-slate-200"><p class="mb-1.5 font-bold text-slate-900">🔒 Tahap Pengerjaan & QC Belum Dibuka</p><p class="mb-0">Pesanan ini sedang dalam antrean <strong>Persetujuan Direksi/Owner</strong>. Silakan tunggu Owner menyetujui (ACC) pengajuan HPP terlebih dahulu.</p></div>',
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#0f172a'
+            });
+        } else if (currentWsOrder.status === 'rejected') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Pengajuan Ditolak Direksi',
+                html: `<div class="text-xs text-slate-700 mt-2 text-start bg-rose-50 p-3 rounded-xl border border-rose-200"><p class="mb-1.5 font-bold text-rose-900">❌ Alasan Penolakan:</p><p class="mb-0 italic text-rose-800">"${currentWsOrder.rejection_reason || '-'}"</p></div><p class="text-xs text-slate-500 mt-2">Silakan perbaiki data vendor/modal di Tahap 2 lalu ajukan kembali.</p>`,
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#0f172a'
+            });
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Belum Diajukan ke Direksi',
+                html: '<p class="text-xs text-slate-600">Silakan lengkapi data HPP vendor pada <strong>Tahap 2</strong> dan klik tombol <strong>"Ajukan ke Direksi"</strong> terlebih dahulu.</p>',
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#0f172a'
+            });
+        }
+        return false;
+    }
+
+    if (targetStage === 4 && currentWsOrder.status === 'in_production') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Barang Belum Lolos QC',
+            html: '<p class="text-xs text-slate-600">Barang masih dalam proses pengerjaan di vendor.<br>Silakan lakukan pemeriksaan fisik dan klik <strong>"Konfirmasi Barang Sampai & Lolos QC"</strong> pada <strong>Tahap 3</strong> sebelum melakukan closing.</p>',
+            confirmButtonText: 'Tutup',
+            confirmButtonColor: '#0f172a'
+        });
+        return false;
+    }
+
+    return true;
+}
+
 // --- DYNAMIC STAGE SWITCHING (DRAFT -> PENGAJUAN DIREKSI -> PROSES QC -> CLOSE) ---
 function switchOdooStage(stageIndex) {
+    if (!canAccessStage(stageIndex)) {
+        return;
+    }
+
     currentActiveStageIndex = stageIndex;
 
     // 1. Hide all panels, show the selected stage panel explicitly
@@ -1041,7 +1150,29 @@ function switchOdooStage(stageIndex) {
     const prevBtn = document.getElementById('odoo_btn_prev');
     const nextBtn = document.getElementById('odoo_btn_next');
     if (prevBtn) prevBtn.style.visibility = (stageIndex === 1) ? 'hidden' : 'visible';
-    if (nextBtn) nextBtn.style.visibility = (stageIndex === 4) ? 'hidden' : 'visible';
+    if (nextBtn) {
+        if (stageIndex === 4) {
+            nextBtn.style.visibility = 'hidden';
+        } else {
+            nextBtn.style.visibility = 'visible';
+            if (stageIndex === 1) {
+                nextBtn.innerHTML = `<span>Input HPP Vendor</span> <i class="fa-solid fa-arrow-right ms-1"></i>`;
+                nextBtn.className = 'btn btn-sm btn-primary rounded-lg font-bold px-4 shadow-xs';
+            } else if (stageIndex === 2) {
+                const isApproved = ['in_production', 'qc_passed', 'completed'].includes(currentWsOrder.status);
+                if (isApproved) {
+                    nextBtn.innerHTML = `<span>Lanjut ke QC</span> <i class="fa-solid fa-arrow-right ms-1"></i>`;
+                    nextBtn.className = 'btn btn-sm btn-primary rounded-lg font-bold px-4 shadow-xs';
+                } else {
+                    nextBtn.innerHTML = `<i class="fa-solid fa-lock me-1 text-amber-300"></i> <span>Menunggu ACC</span> <i class="fa-solid fa-arrow-right ms-1 opacity-50"></i>`;
+                    nextBtn.className = 'btn btn-sm btn-secondary rounded-lg font-bold px-4 shadow-xs';
+                }
+            } else if (stageIndex === 3) {
+                nextBtn.innerHTML = `<span>Tahap Closing</span> <i class="fa-solid fa-arrow-right ms-1"></i>`;
+                nextBtn.className = 'btn btn-sm btn-primary rounded-lg font-bold px-4 shadow-xs';
+            }
+        }
+    }
 
     // 4. Update Header Dynamic Actions based on current stage
     renderHeaderStageActions(stageIndex);
@@ -1078,10 +1209,10 @@ function renderHeaderStageActions(stageIndex) {
         } else if (currentWsOrder.status === 'pending_approval') {
             if (isOwnerOrSuper) {
                 ownerSlot.innerHTML = `
-                    <button type="button" onclick="promptWsReject()" class="btn btn-xs btn-outline-danger rounded-lg font-bold px-2.5">
+                    <button type="button" onclick="promptWsReject()" class="btn btn-sm btn-outline-danger rounded-lg font-bold px-3">
                         <i class="fa-solid fa-xmark me-1"></i> Tolak
                     </button>
-                    <button type="button" onclick="submitWsApprove()" class="btn btn-xs btn-success rounded-lg font-bold px-3 shadow-xs">
+                    <button type="button" onclick="submitWsApprove()" class="btn btn-sm btn-success rounded-lg font-bold px-3.5 shadow-xs">
                         <i class="fa-solid fa-check-double me-1"></i> ACC / Setujui
                     </button>
                 `;
@@ -1093,7 +1224,7 @@ function renderHeaderStageActions(stageIndex) {
             }
         }
     } else if (stageIndex === 3) {
-        if (currentWsOrder.status === 'in_production' || currentWsOrder.status === 'pending_approval') {
+        if (currentWsOrder.status === 'in_production') {
             slot.innerHTML = `
                 <button type="button" onclick="submitWsPassQc()" class="btn btn-sm btn-purple rounded-lg font-bold text-white bg-purple-700 hover:bg-purple-800 px-3.5 shadow-xs">
                     <i class="fa-solid fa-clipboard-check me-1"></i> Konfirmasi Lolos QC
