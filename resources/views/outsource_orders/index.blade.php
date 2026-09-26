@@ -1616,6 +1616,19 @@ function saveWorksheetChanges(showNotification = true) {
     });
 }
 
+let worksheetDirty = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const wsModalEl = document.getElementById('modalWorksheet');
+    if (wsModalEl) {
+        wsModalEl.addEventListener('hidden.bs.modal', function () {
+            if (worksheetDirty) {
+                location.reload();
+            }
+        });
+    }
+});
+
 // Stage Actions
 function submitWsHppToOwner() {
     saveWorksheetChanges(false);
@@ -1641,12 +1654,24 @@ function submitWsHppToOwner() {
         })
         .then(r => r.json())
         .then(res => {
-            if (res.success) {
-                Swal.fire({ icon: 'success', title: 'Diajukan ke Direksi!', text: res.message })
-                    .then(() => location.reload());
+            if (res.success && res.order) {
+                worksheetDirty = true;
+                currentWsOrder = res.order;
+                populateOdooWorksheet(currentWsOrder);
+                switchOdooStage(2);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Diajukan ke Direksi!',
+                    text: 'Pengajuan HPP vendor berhasil dikirim. Menunggu persetujuan Owner.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } else {
                 Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
             }
+        })
+        .catch(err => {
+            Swal.fire({ icon: 'error', title: 'Error', text: err.message });
         });
     }, 300);
 }
@@ -1658,12 +1683,24 @@ function submitWsApprove() {
     })
     .then(r => r.json())
     .then(res => {
-        if (res.success) {
-            Swal.fire({ icon: 'success', title: 'Order Telah di-ACC!', text: res.message })
-                .then(() => location.reload());
+        if (res.success && res.order) {
+            worksheetDirty = true;
+            currentWsOrder = res.order;
+            populateOdooWorksheet(currentWsOrder);
+            switchOdooStage(3);
+            Swal.fire({
+                icon: 'success',
+                title: 'Order Telah di-ACC!',
+                text: 'HPP disetujui Direksi. Berlanjut ke tahap Produksi & QC.',
+                timer: 2000,
+                showConfirmButton: false
+            });
         } else {
             Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
         }
+    })
+    .catch(err => {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     });
 }
 
@@ -1689,12 +1726,24 @@ function promptWsReject() {
             })
             .then(r => r.json())
             .then(res => {
-                if (res.success) {
-                    Swal.fire({ icon: 'info', title: 'Pengajuan Ditolak', text: res.message })
-                        .then(() => location.reload());
+                if (res.success && res.order) {
+                    worksheetDirty = true;
+                    currentWsOrder = res.order;
+                    populateOdooWorksheet(currentWsOrder);
+                    switchOdooStage(2);
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Pengajuan Ditolak',
+                        text: res.message,
+                        timer: 2200,
+                        showConfirmButton: false
+                    });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
                 }
+            })
+            .catch(err => {
+                Swal.fire({ icon: 'error', title: 'Error', text: err.message });
             });
         }
     });
@@ -1709,12 +1758,24 @@ function submitWsPassQc() {
     })
     .then(r => r.json())
     .then(res => {
-        if (res.success) {
-            Swal.fire({ icon: 'success', title: 'Lolos QC!', text: res.message })
-                .then(() => location.reload());
+        if (res.success && res.order) {
+            worksheetDirty = true;
+            currentWsOrder = res.order;
+            populateOdooWorksheet(currentWsOrder);
+            switchOdooStage(4);
+            Swal.fire({
+                icon: 'success',
+                title: 'Lolos QC!',
+                text: 'Barang lolos QC dan siap masuk tahap Closing / Pelunasan.',
+                timer: 2000,
+                showConfirmButton: false
+            });
         } else {
             Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
         }
+    })
+    .catch(err => {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
     });
 }
 
@@ -1785,7 +1846,12 @@ function submitWsCloseOrder() {
             })
             .then(r => r.json())
             .then(res => {
-                if (res.success) {
+                if (res.success && res.order) {
+                    worksheetDirty = true;
+                    currentWsOrder = res.order;
+                    populateOdooWorksheet(currentWsOrder);
+                    switchOdooStage(4);
+
                     if (res.was_dp) {
                         Swal.fire({
                             icon: 'success',
@@ -1797,22 +1863,22 @@ function submitWsCloseOrder() {
                             if (res.customer_receipt_url) {
                                 window.open(res.customer_receipt_url, '_blank');
                             }
-                            location.reload();
                         });
                     } else {
                         Swal.fire({
                             icon: 'success',
                             title: 'Pesanan Selesai Ditutup!',
                             text: res.message,
-                            confirmButtonText: 'Selesai',
-                            confirmButtonColor: '#0f172a'
-                        }).then(() => {
-                            location.reload();
+                            timer: 2000,
+                            showConfirmButton: false
                         });
                     }
                 } else {
                     Swal.fire({ icon: 'error', title: 'Gagal', text: res.message });
                 }
+            })
+            .catch(err => {
+                Swal.fire({ icon: 'error', title: 'Error', text: err.message });
             });
         }
     });
