@@ -14,9 +14,11 @@ class OutsourceOrder extends Model
 
     protected $casts = [
         'qty' => 'integer',
+        'customer_unit_price' => 'decimal:2',
         'customer_price' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'remaining_amount' => 'decimal:2',
+        'vendor_unit_price' => 'decimal:2',
         'vendor_cost' => 'decimal:2',
         'shipping_cost' => 'decimal:2',
         'total_cost' => 'decimal:2',

@@ -4,9 +4,9 @@
 @section('page-title', 'Modul Cetak di Luar (Outsource Pipeline)')
 
 @section('action-buttons')
-<button type="button" onclick="openCreateOrderModal()" class="btn btn-primary btn-sm rounded-xl font-bold shadow-sm flex items-center gap-1.5">
-    <i class="fa-solid fa-plus"></i>
-    <span>Pesanan Baru (Customer)</span>
+<button type="button" onclick="openCreateOrderWizard()" class="btn btn-primary btn-sm rounded-xl font-bold shadow-sm flex items-center gap-1.5">
+    <i class="fa-solid fa-wand-magic-sparkles"></i>
+    <span>Buat Lembar Kerja Baru (Wizard)</span>
 </button>
 <a href="{{ route('pos.index') }}" class="btn btn-outline-secondary btn-sm rounded-xl font-bold shadow-sm">
     <i class="fa-solid fa-cash-register me-1"></i> Terminal POS
@@ -143,6 +143,8 @@
                     @forelse($orders as $order)
                         @php
                             $statusInfo = $order->status_label;
+                            $unitPrice = $order->customer_unit_price > 0 ? $order->customer_unit_price : ($order->qty > 0 ? ($order->customer_price / $order->qty) : $order->customer_price);
+                            $vendorUnitPrice = $order->vendor_unit_price > 0 ? $order->vendor_unit_price : ($order->qty > 0 ? ($order->vendor_cost / $order->qty) : $order->vendor_cost);
                         @endphp
                         <tr>
                             <!-- No Order & Date -->
@@ -164,7 +166,9 @@
                             <!-- Job Title & Specs -->
                             <td class="py-3 px-4">
                                 <strong class="text-slate-900 block">{{ $order->job_title }}</strong>
-                                <span class="text-[11px] text-slate-500 font-mono block">{{ $order->qty }} {{ $order->unit }}</span>
+                                <span class="text-[11px] text-slate-600 font-semibold font-mono block">
+                                    {{ $order->qty }} {{ $order->unit }}
+                                </span>
                                 @if($order->vendor_name)
                                     <span class="text-[10px] text-indigo-700 font-semibold block mt-0.5">
                                         <i class="fa-solid fa-industry me-0.5"></i> {{ $order->vendor_name }}
@@ -174,7 +178,12 @@
 
                             <!-- Customer Price & Payment -->
                             <td class="py-3 px-4 text-end font-mono">
-                                <strong class="text-slate-900 block text-xs">Rp {{ number_format($order->customer_price, 0, ',', '.') }}</strong>
+                                <span class="text-[10.5px] text-slate-500 block">
+                                    @ Rp {{ number_format($unitPrice, 0, ',', '.') }} / {{ $order->unit }}
+                                </span>
+                                <strong class="text-slate-900 block text-xs">
+                                    Total: Rp {{ number_format($order->customer_price, 0, ',', '.') }}
+                                </strong>
                                 <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9.5px] mt-0.5">
                                     {{ $order->payment_method }} ({{ $order->payment_status }})
                                 </span>
@@ -183,11 +192,17 @@
                             <!-- Vendor Cost & Shipping -->
                             <td class="py-3 px-4 text-end font-mono">
                                 @if($order->total_cost > 0)
-                                    <strong class="text-rose-700 block">Rp {{ number_format($order->total_cost, 0, ',', '.') }}</strong>
-                                    <span class="text-[9.5px] text-slate-400 block">
-                                        Modal: {{ number_format($order->vendor_cost, 0, ',', '.') }} 
-                                        @if($order->shipping_cost > 0) + Ongkir: {{ number_format($order->shipping_cost, 0, ',', '.') }} @endif
+                                    <span class="text-[10.5px] text-slate-500 block">
+                                        @ Rp {{ number_format($vendorUnitPrice, 0, ',', '.') }} / {{ $order->unit }}
                                     </span>
+                                    <strong class="text-rose-700 block">
+                                        Total: Rp {{ number_format($order->total_cost, 0, ',', '.') }}
+                                    </strong>
+                                    @if($order->shipping_cost > 0)
+                                        <span class="text-[9.5px] text-slate-400 block">
+                                            (Termasuk Ongkir Rp {{ number_format($order->shipping_cost, 0, ',', '.') }})
+                                        </span>
+                                    @endif
                                 @else
                                     <span class="text-slate-400 italic text-[11px]">Belum diinput</span>
                                 @endif
@@ -283,10 +298,7 @@
                         <tr>
                             <td colspan="8" class="text-center py-12 text-slate-400">
                                 <i class="fa-solid fa-folder-open text-3xl mb-2 block text-slate-300"></i>
-                                <span class="text-sm font-semibold block">Belum ada pesanan cetak di luar pada filter ini.</span>
-                                <button type="button" onclick="openCreateOrderModal()" class="btn btn-sm btn-primary rounded-xl font-bold mt-2">
-                                    <i class="fa-solid fa-plus me-1"></i> Buat Pesanan Customer Baru
-                                </button>
+                                Belum ada pesanan cetak di luar. Klik tombol <strong>"Buat Lembar Kerja Baru"</strong> di atas.
                             </td>
                         </tr>
                     @endforelse
@@ -296,113 +308,278 @@
     </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL 1: BUAT PESANAN CUSTOMER BARU (STAGE 1)           -->
-<!-- ======================================================== -->
-<div class="modal fade" id="modalCreateOrder" tabindex="-1" aria-labelledby="modalCreateOrderLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+<!-- ========================================================================= -->
+<!-- MODAL 1: LEMBAR KERJA MULTI-STEP WIZARD UI (STAGE 1: DRAFT CUSTOMER)      -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="modalCreateOrder" tabindex="-1" aria-labelledby="modalCreateOrderLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
         <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
-            <div class="px-4 py-3 bg-slate-900 text-white d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-400/30 flex items-center justify-center">
-                        <i class="fa-solid fa-file-signature text-sm"></i>
+            
+            <!-- Modal Header with Wizard Progress Bar -->
+            <div class="px-5 py-3.5 bg-slate-900 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+                            <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-sm font-bold mb-0 text-white">Lembar Kerja Cetak di Luar</h6>
+                            <span class="text-[11px] text-slate-400">Form Wizard Tahap 1: Input Pesanan & Pembayaran</span>
+                        </div>
                     </div>
-                    <div>
-                        <h6 class="text-sm font-bold mb-0 text-white" id="modalCreateOrderLabel">Pesanan Cetak di Luar Baru</h6>
-                        <span class="text-[11px] text-slate-400">Tahap 1: Input pesanan & terima pembayaran customer</span>
+                    <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Wizard Step Navigation Pills -->
+                <div class="grid grid-cols-3 gap-2 mt-3.5 pt-3 border-t border-slate-800 text-center text-xs">
+                    <div id="step-pill-1" class="wizard-step-pill active py-1.5 px-2 rounded-xl transition font-bold flex items-center justify-center gap-1.5 bg-blue-600 text-white">
+                        <span class="w-4 h-4 rounded-full bg-white text-blue-600 text-[10px] flex items-center justify-center font-mono">1</span>
+                        <span class="truncate">1. Produk & Satuan</span>
+                    </div>
+                    <div id="step-pill-2" class="wizard-step-pill py-1.5 px-2 rounded-xl transition font-semibold flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400">
+                        <span class="w-4 h-4 rounded-full bg-slate-700 text-slate-300 text-[10px] flex items-center justify-center font-mono">2</span>
+                        <span class="truncate">2. Pelanggan</span>
+                    </div>
+                    <div id="step-pill-3" class="wizard-step-pill py-1.5 px-2 rounded-xl transition font-semibold flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400">
+                        <span class="w-4 h-4 rounded-full bg-slate-700 text-slate-300 text-[10px] flex items-center justify-center font-mono">3</span>
+                        <span class="truncate">3. Bayar & Preview</span>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form id="formCreateOrder" onsubmit="submitCreateOrder(event)" class="p-4 space-y-3 bg-slate-50">
-                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Pekerjaan / Produk <span class="text-rose-500">*</span></label>
-                        <input type="text" name="job_title" id="create_job_title" required class="form-control text-xs font-semibold" placeholder="Misal: Cetak Offset Brosur A4 3 Rim, Nota NCR 10 Buku">
-                    </div>
+            <form id="formCreateOrder" onsubmit="submitCreateOrder(event)" class="bg-slate-50">
+                <input type="hidden" name="customer_price" id="create_customer_price" value="0">
 
-                    <div class="grid grid-cols-2 gap-2">
+                <div class="p-5">
+                    
+                    <!-- ============================================== -->
+                    <!-- STEP 1: PRODUK, QTY, & HARGA SATUAN            -->
+                    <!-- ============================================== -->
+                    <div id="wizard-step-1" class="wizard-step-content space-y-4">
+                        
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jumlah / Qty <span class="text-rose-500">*</span></label>
-                            <input type="number" name="qty" id="create_qty" value="1" min="1" required class="form-control text-xs font-mono font-bold text-center">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                Nama Pekerjaan / Produk <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="text" name="job_title" id="create_job_title" required 
+                                   class="form-control text-xs font-semibold py-2.5 rounded-xl" 
+                                   placeholder="Misal: Cetak Buku Agenda Kulit Foil, Banner Outdoor 3x1m, Box Makanan">
                         </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                    Jumlah / Qty <span class="text-rose-500">*</span>
+                                </label>
+                                <input type="number" name="qty" id="create_qty" value="1" min="1" required 
+                                       oninput="calcCustomerPriceLive()"
+                                       class="form-control text-xs font-mono font-bold text-center py-2 rounded-xl">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Satuan</label>
+                                <input type="text" name="unit" id="create_unit" value="pcs" 
+                                       oninput="calcCustomerPriceLive()"
+                                       class="form-control text-xs text-center py-2 rounded-xl" placeholder="pcs, rim, buku, box">
+                            </div>
+                        </div>
+
+                        <!-- HARGA SATUAN (RP / UNIT) -->
+                        <div class="bg-white p-3.5 rounded-2xl border border-blue-200 shadow-sm space-y-2">
+                            <label class="block text-xs font-bold text-blue-900 uppercase">
+                                <i class="fa-solid fa-tag text-blue-600 me-1"></i> Harga Jual Satuan (Rp) <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text font-bold text-sm bg-blue-50 text-blue-700 border-blue-200">Rp</span>
+                                <input type="number" name="customer_unit_price" id="create_unit_price" min="0" step="500" required 
+                                       oninput="calcCustomerPriceLive()" 
+                                       class="form-control font-mono font-black text-blue-700 text-base border-blue-200" placeholder="0">
+                                <span class="input-group-text text-xs text-slate-500 bg-slate-50 border-blue-200 font-mono" id="create_unit_label">/ pcs</span>
+                            </div>
+
+                            <!-- LIVE CALCULATION PREVIEW BOX -->
+                            <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-2.5 flex items-center justify-between text-xs">
+                                <div class="text-slate-600">
+                                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Kalkulasi:</span>
+                                    <span id="create_calc_preview_text" class="font-mono font-semibold text-slate-700">1 pcs x Rp 0</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="text-[10px] uppercase font-bold text-blue-600 block">Total Jual Customer</span>
+                                    <strong id="create_total_display" class="font-mono text-blue-800 text-sm">Rp 0</strong>
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Satuan</label>
-                            <input type="text" name="unit" id="create_unit" value="pcs" class="form-control text-xs text-center" placeholder="pcs, rim, buku">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Catatan & Spesifikasi Cetak</label>
+                            <textarea name="description" id="create_description" rows="2" 
+                                      class="form-control text-xs rounded-xl" 
+                                      placeholder="Ukuran kertas, laminasi doff/glossy, warna cover, nomor seri..."></textarea>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Total Harga Jual ke Customer (Rp) <span class="text-rose-500">*</span></label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text font-bold text-sm bg-emerald-50 text-emerald-700">Rp</span>
-                            <input type="number" name="customer_price" id="create_customer_price" min="0" step="1000" required class="form-control font-mono font-black text-emerald-700 text-base" placeholder="0">
+                    <!-- ============================================== -->
+                    <!-- STEP 2: DATA PELANGGAN (CUSTOMER)              -->
+                    <!-- ============================================== -->
+                    <div id="wizard-step-2" class="wizard-step-content hidden space-y-4">
+                        
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <div class="flex items-center justify-between pb-2 border-b">
+                                <span class="text-xs font-bold uppercase text-slate-700">Data Pelanggan</span>
+                                <span class="text-[10.5px] text-slate-400">Pilih atau ketik baru</span>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Cari dari Data Pelanggan Terdaftar</label>
+                                <select id="create_customer_select" onchange="fillExistingCustomer(this.value)" class="form-select form-select-sm text-xs rounded-xl">
+                                    <option value="">-- Ketik Pelanggan Baru / Pilih dari List --</option>
+                                    @foreach($customers as $c)
+                                        <option value="{{ $c->id }}" data-name="{{ $c->name }}" data-phone="{{ $c->phone }}">{{ $c->name }} ({{ $c->phone ?? 'No HP -' }})</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 pt-1">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                                        Nama Pelanggan <span class="text-rose-500">*</span>
+                                    </label>
+                                    <input type="text" name="customer_name" id="create_customer_name" required 
+                                           class="form-control text-xs py-2 rounded-xl" placeholder="Nama pelanggan">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">No. WhatsApp / HP</label>
+                                    <input type="text" name="customer_phone" id="create_customer_phone" 
+                                           class="form-control text-xs font-mono py-2 rounded-xl" placeholder="08xxxxxxxx">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ringkasan Singkat Pesanan yang sedang dibuat -->
+                        <div class="bg-slate-100 p-3 rounded-2xl border border-slate-200 text-xs flex justify-between items-center">
+                            <div>
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block">Pekerjaan:</span>
+                                <strong id="step2_job_summary" class="text-slate-800">-</strong>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-[10px] text-slate-500 uppercase font-bold block">Total Harga:</span>
+                                <strong id="step2_total_summary" class="text-blue-700 font-mono text-sm">Rp 0</strong>
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Catatan / Spesifikasi Cetak</label>
-                        <textarea name="description" id="create_description" rows="2" class="form-control text-xs" placeholder="Ukuran kertas, laminasi, warna, nomor seri, dll..."></textarea>
+                    <!-- ============================================== -->
+                    <!-- STEP 3: PEMBAYARAN & PREVIEW LEMBAR KERJA      -->
+                    <!-- ============================================== -->
+                    <div id="wizard-step-3" class="wizard-step-content hidden space-y-4">
+                        
+                        <!-- Pilihan Metode & Status Pembayaran -->
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <span class="text-xs font-bold uppercase text-slate-700 block pb-1 border-b">
+                                <i class="fa-solid fa-wallet text-emerald-600 me-1"></i> Pembayaran Customer
+                            </span>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Metode Bayar</label>
+                                    <select name="payment_method" id="create_payment_method" onchange="updateLiveSummaryCard()" class="form-select form-select-sm text-xs font-bold rounded-xl">
+                                        <option value="Cash">Tunai (Cash)</option>
+                                        <option value="Transfer">Transfer Bank</option>
+                                        <option value="QRIS">QRIS</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Status Bayar</label>
+                                    <select name="is_dp" id="create_is_dp" onchange="toggleDpAmount(this.value); updateLiveSummaryCard();" class="form-select form-select-sm text-xs font-bold rounded-xl">
+                                        <option value="0">Lunas (100%)</option>
+                                        <option value="1">Uang Muka (DP)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="dp_amount_container" class="hidden pt-1">
+                                <label class="block text-xs font-bold text-amber-800 uppercase mb-1">Nominal DP Dibayar (Rp)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text font-bold text-xs bg-amber-50 text-amber-700">Rp</span>
+                                    <input type="number" name="paid_amount" id="create_paid_amount" min="0" step="1000" 
+                                           oninput="updateLiveSummaryCard()" 
+                                           class="form-control font-mono font-bold text-amber-800 text-xs rounded-r-xl" placeholder="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LIVE PREVIEW LEMBAR KERJA / STRUK -->
+                        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 rounded-2xl shadow-lg border border-slate-700 text-xs space-y-2.5">
+                            <div class="flex items-center justify-between pb-2 border-b border-white/10">
+                                <span class="text-slate-300 font-bold uppercase text-[10.5px] flex items-center gap-1.5">
+                                    <i class="fa-solid fa-receipt text-blue-400"></i> Preview Lembar Kerja
+                                </span>
+                                <span id="prev_pay_badge" class="badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono text-[10px]">Lunas (100%)</span>
+                            </div>
+
+                            <div class="space-y-1">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Pekerjaan:</span>
+                                    <strong id="prev_job_title" class="text-white text-end">-</strong>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Pelanggan:</span>
+                                    <span id="prev_customer_name" class="text-slate-200 text-end">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-400">Rincian Satuan:</span>
+                                    <span id="prev_unit_detail" class="font-mono text-blue-300 text-end">1 pcs @ Rp 0</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-white/10 space-y-1">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-slate-300 font-bold uppercase">Total Tagihan:</span>
+                                    <strong id="prev_total_price" class="font-mono text-emerald-400 text-base">Rp 0</strong>
+                                </div>
+                                <div class="flex justify-between items-center text-slate-300">
+                                    <span>Dibayar:</span>
+                                    <span id="prev_paid_amount" class="font-mono font-bold">Rp 0</span>
+                                </div>
+                                <div id="prev_remaining_row" class="hidden flex justify-between items-center text-amber-300 font-bold">
+                                    <span>Sisa Piutang:</span>
+                                    <span id="prev_remaining_amount" class="font-mono">Rp 0</span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+
                 </div>
 
-                <!-- Customer & Payment Details -->
-                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Customer <span class="text-rose-500">*</span></label>
-                            <input type="text" name="customer_name" id="create_customer_name" required class="form-control text-xs" placeholder="Nama pelanggan">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">No. WhatsApp / HP</label>
-                            <input type="text" name="customer_phone" id="create_customer_phone" class="form-control text-xs font-mono" placeholder="08xxxxxxxx">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 pt-1 border-t">
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Metode Bayar</label>
-                            <select name="payment_method" id="create_payment_method" class="form-select form-select-sm text-xs font-bold">
-                                <option value="Cash">Tunai (Cash)</option>
-                                <option value="Transfer">Transfer Bank</option>
-                                <option value="QRIS">QRIS</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Status Bayar</label>
-                            <select name="is_dp" id="create_is_dp" onchange="toggleDpAmount(this.value)" class="form-select form-select-sm text-xs font-bold">
-                                <option value="0">Lunas (100%)</option>
-                                <option value="1">Uang Muka (DP)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="dp_amount_container" class="hidden">
-                        <label class="block text-xs font-bold text-amber-800 uppercase mb-1">Nominal DP Dibayar (Rp)</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text font-bold text-xs bg-amber-50 text-amber-700">Rp</span>
-                            <input type="number" name="paid_amount" id="create_paid_amount" min="0" step="1000" class="form-control font-mono font-bold text-amber-800 text-xs" placeholder="0">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center pt-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-xl font-bold" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" id="btnSubmitCreateOrder" class="btn btn-sm btn-primary rounded-xl font-bold shadow-sm px-4">
-                        <i class="fa-solid fa-check me-1"></i> Simpan & Cetak Struk
+                <!-- Modal Footer with Wizard Buttons -->
+                <div class="px-5 py-3.5 bg-white border-t border-slate-200 flex justify-between items-center">
+                    <button type="button" id="btnWizardPrev" onclick="navigateWizard(-1)" class="btn btn-sm btn-outline-secondary rounded-xl font-bold px-3">
+                        <i class="fa-solid fa-arrow-left me-1"></i> Kembali
                     </button>
+                    
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-light rounded-xl text-slate-500 text-xs" data-bs-dismiss="modal">Batal</button>
+                        
+                        <button type="button" id="btnWizardNext" onclick="navigateWizard(1)" class="btn btn-sm btn-primary rounded-xl font-bold shadow-sm px-4">
+                            <span>Lanjut</span> <i class="fa-solid fa-arrow-right ms-1"></i>
+                        </button>
+                        
+                        <button type="submit" id="btnSubmitCreateOrder" class="hidden btn btn-sm btn-success rounded-xl font-bold shadow-sm px-4">
+                            <i class="fa-solid fa-check-double me-1"></i> Simpan & Cetak Struk
+                        </button>
+                    </div>
                 </div>
+
             </form>
         </div>
     </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL 2: INPUT HPP VENDOR & PENGAJUAN KE OWNER (STAGE 2) -->
-<!-- ======================================================== -->
+<!-- ========================================================================= -->
+<!-- MODAL 2: INPUT HPP VENDOR DENGAN HARGA SATUAN (STAGE 2)                  -->
+<!-- ========================================================================= -->
 <div class="modal fade" id="modalSubmitHpp" tabindex="-1" aria-labelledby="modalSubmitHppLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 540px;">
         <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
             <div class="px-4 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
@@ -419,6 +596,9 @@
 
             <form id="formSubmitHpp" onsubmit="submitHppToOwner(event)" class="p-4 space-y-3 bg-slate-50">
                 <input type="hidden" id="hpp_order_id">
+                <input type="hidden" id="hpp_order_qty" value="1">
+                <input type="hidden" id="hpp_order_unit" value="pcs">
+                <input type="hidden" id="hpp_vendor_cost" value="0">
 
                 <!-- Job & Customer Summary -->
                 <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-xs">
@@ -427,7 +607,10 @@
                             <span class="text-[10px] text-slate-400 font-bold uppercase block">Pekerjaan:</span>
                             <strong id="hpp_job_title_display" class="text-slate-900 text-sm block">-</strong>
                         </div>
-                        <span id="hpp_customer_price_display" class="badge bg-emerald-100 text-emerald-800 text-xs font-mono font-bold px-2 py-1">Rp 0</span>
+                        <div class="text-end">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase block">Harga Customer:</span>
+                            <span id="hpp_customer_price_display" class="badge bg-emerald-100 text-emerald-800 text-xs font-mono font-bold px-2 py-1">Rp 0</span>
+                        </div>
                     </div>
                     <span id="hpp_customer_name_display" class="text-[11px] text-slate-500 block">Customer: -</span>
                 </div>
@@ -437,41 +620,51 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Vendor / Rekanan <span class="text-rose-500">*</span></label>
-                            <input type="text" id="hpp_vendor_name" required class="form-control text-xs font-semibold" placeholder="Misal: Percetakan Prima Offset">
+                            <input type="text" id="hpp_vendor_name" required class="form-control text-xs font-semibold rounded-xl" placeholder="Misal: Percetakan Prima Offset">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase mb-1">No. Telp / WA Vendor</label>
-                            <input type="text" id="hpp_vendor_phone" class="form-control text-xs font-mono" placeholder="08xxxxxxxx">
+                            <input type="text" id="hpp_vendor_phone" class="form-control text-xs font-mono rounded-xl" placeholder="08xxxxxxxx">
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs font-bold text-rose-800 uppercase mb-1">Harga Modal Vendor (HPP) <span class="text-rose-500">*</span></label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text font-bold text-xs bg-rose-50 text-rose-700">Rp</span>
-                                <input type="number" id="hpp_vendor_cost" min="0" step="1000" required oninput="calcHppMarginLive()" class="form-control font-mono font-bold text-rose-700 text-xs" placeholder="0">
-                            </div>
+                    <!-- HARGA MODAL SATUAN VENDOR -->
+                    <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-100 space-y-2">
+                        <label class="block text-xs font-bold text-rose-900 uppercase">
+                            <i class="fa-solid fa-receipt text-rose-600 me-1"></i> Harga Modal Satuan Vendor (Rp) <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text font-bold text-xs bg-rose-50 text-rose-700 border-rose-200">Rp</span>
+                            <input type="number" id="hpp_vendor_unit_price" min="0" step="500" required 
+                                   oninput="calcVendorHppLive()" 
+                                   class="form-control font-mono font-bold text-rose-700 text-xs border-rose-200" placeholder="0">
+                            <span class="input-group-text text-xs text-slate-500 bg-white border-rose-200 font-mono" id="hpp_unit_label">/ pcs</span>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ongkir / Pengiriman</label>
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text font-bold text-xs bg-slate-100 text-slate-700">Rp</span>
-                                <input type="number" id="hpp_shipping_cost" min="0" step="1000" oninput="calcHppMarginLive()" class="form-control font-mono text-slate-800 text-xs" placeholder="0">
-                            </div>
+                        
+                        <div class="flex justify-between items-center text-[11px] text-slate-600 pt-1">
+                            <span>Subtotal Modal Vendor (<span id="hpp_qty_multiply_text">1 pcs x Rp 0</span>):</span>
+                            <strong id="hpp_subtotal_vendor_display" class="font-mono text-rose-700">Rp 0</strong>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ongkir / Pengiriman (Opsional)</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text font-bold text-xs bg-slate-100 text-slate-700">Rp</span>
+                            <input type="number" id="hpp_shipping_cost" min="0" step="1000" oninput="calcVendorHppLive()" class="form-control font-mono text-slate-800 text-xs rounded-r-xl" placeholder="0">
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Catatan Tambahan untuk Vendor</label>
-                        <textarea id="hpp_vendor_notes" rows="2" class="form-control text-xs" placeholder="Spesifikasi vendor, janji selesai, dll..."></textarea>
+                        <textarea id="hpp_vendor_notes" rows="2" class="form-control text-xs rounded-xl" placeholder="Spesifikasi vendor, janji selesai, warna cover..."></textarea>
                     </div>
                 </div>
 
                 <!-- Live Margin Simulation Card -->
                 <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl shadow-md border border-slate-700">
                     <div class="d-flex justify-content-between align-items-center pb-2 border-b border-white/10 text-xs">
-                        <span class="text-slate-300 font-semibold">Simulasi Margin Laba:</span>
+                        <span class="text-slate-300 font-semibold">Simulasi Margin & Laba:</span>
                         <span id="hpp_margin_badge" class="badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold">Margin 0%</span>
                     </div>
                     <div class="grid grid-cols-3 gap-2 mt-2 text-center text-xs">
@@ -480,7 +673,7 @@
                             <span id="hpp_live_omset" class="font-mono font-bold text-blue-300 block mt-0.5">Rp 0</span>
                         </div>
                         <div class="bg-white/5 p-2 rounded-xl border border-white/10">
-                            <span class="text-[9px] text-slate-400 block uppercase">Total Modal (HPP)</span>
+                            <span class="text-[9px] text-slate-400 block uppercase">Total Modal</span>
                             <span id="hpp_live_cost" class="font-mono font-bold text-rose-300 block mt-0.5">Rp 0</span>
                         </div>
                         <div class="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/30">
@@ -501,9 +694,9 @@
     </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL 3: APPROVAL / ACC OWNER (STAGE 3)                  -->
-<!-- ======================================================== -->
+<!-- ========================================================================= -->
+<!-- MODAL 3: APPROVAL / ACC OWNER (STAGE 3)                                  -->
+<!-- ========================================================================= -->
 <div class="modal fade" id="modalApproval" tabindex="-1" aria-labelledby="modalApprovalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 500px;">
         <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
@@ -564,7 +757,7 @@
                 <!-- Form Tolak (Hidden by default) -->
                 <div id="rejection_container" class="hidden bg-rose-50 border border-rose-200 p-3 rounded-2xl space-y-1.5">
                     <label class="block text-xs font-bold text-rose-900 uppercase">Alasan Penolakan <span class="text-rose-600">*</span></label>
-                    <input type="text" id="appr_rejection_reason" class="form-control form-control-sm text-xs" placeholder="Misal: Modal vendor terlalu mahal, cari vendor lain...">
+                    <input type="text" id="appr_rejection_reason" class="form-control form-control-sm text-xs rounded-xl" placeholder="Misal: Modal vendor terlalu mahal, cari vendor lain...">
                 </div>
 
                 <!-- Action Buttons -->
@@ -588,9 +781,9 @@
     </div>
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL 4: BARANG SAMPAI & QUALITY CONTROL (STAGE 4)       -->
-<!-- ======================================================== -->
+<!-- ========================================================================= -->
+<!-- MODAL 4: BARANG SAMPAI & QUALITY CONTROL (STAGE 4)                        -->
+<!-- ========================================================================= -->
 <div class="modal fade" id="modalQc" tabindex="-1" aria-labelledby="modalQcLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
         <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
@@ -610,23 +803,21 @@
             <div class="p-4 space-y-3 bg-slate-50">
                 <input type="hidden" id="qc_order_id">
 
-                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-2 text-xs">
-                    <div>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase block">Pekerjaan / Produk:</span>
-                        <strong id="qc_job_title" class="text-slate-900 text-sm block">-</strong>
-                        <span id="qc_vendor_display" class="text-[11px] text-indigo-700 font-semibold block mt-0.5">Vendor: -</span>
-                    </div>
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-xs">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Pekerjaan:</span>
+                    <strong id="qc_job_title" class="text-slate-900 text-sm block">-</strong>
+                    <span id="qc_vendor_display" class="text-[11px] text-indigo-700 font-semibold block mt-0.5">Vendor: -</span>
+                </div>
 
-                    <div class="pt-2 border-t">
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Catatan Pemeriksaan QC</label>
-                        <textarea id="qc_notes" rows="2" class="form-control text-xs" placeholder="Hasil cetakan tajam, finishing rapi, jumlah lengkap..."></textarea>
-                    </div>
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 uppercase">Catatan Hasil Pengecekan Kualitas (QC)</label>
+                    <textarea id="qc_notes" rows="3" class="form-control text-xs rounded-xl" placeholder="Hasil cetak rapi, warna tajam, jumlah pas..."></textarea>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center pt-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-xl font-bold text-xs" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" onclick="submitPassQc()" class="btn btn-sm btn-primary bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs px-4 shadow-sm">
-                        <i class="fa-solid fa-clipboard-check me-1"></i> Konfirmasi Lolos QC (Siap Diambil)
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-xl font-bold" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" onclick="submitPassQc()" class="btn btn-sm btn-purple rounded-xl font-bold text-white shadow-sm px-4 bg-purple-700 hover:bg-purple-800">
+                        <i class="fa-solid fa-clipboard-check me-1"></i> Lolos QC & Siap Diambil
                     </button>
                 </div>
             </div>
@@ -635,24 +826,186 @@
 </div>
 
 <script>
+let currentWizardStep = 1;
 let currentSelectedCustomerPrice = 0;
 
-function openCreateOrderModal() {
+// Open Wizard Modal
+function openCreateOrderWizard() {
+    currentWizardStep = 1;
+    updateWizardUI();
     document.getElementById('formCreateOrder').reset();
-    document.getElementById('dp_amount_container').classList.add('hidden');
+    document.getElementById('create_qty').value = '1';
+    document.getElementById('create_unit').value = 'pcs';
+    document.getElementById('create_unit_price').value = '';
+    document.getElementById('create_customer_price').value = '0';
+    document.getElementById('create_is_dp').value = '0';
+    toggleDpAmount('0');
+    calcCustomerPriceLive();
+
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCreateOrder'));
     modal.show();
 }
 
-function toggleDpAmount(val) {
+// Wizard Navigation (Next / Prev)
+function navigateWizard(direction) {
+    if (direction === 1) {
+        // Validate Step 1
+        if (currentWizardStep === 1) {
+            const jobTitle = document.getElementById('create_job_title').value.trim();
+            const qty = parseInt(document.getElementById('create_qty').value) || 0;
+            const unitPrice = parseFloat(document.getElementById('create_unit_price').value) || 0;
+
+            if (!jobTitle) {
+                Swal.fire({ icon: 'warning', title: 'Nama Pekerjaan Wajib Diisi', text: 'Silakan isi nama pekerjaan atau produk cetak.' });
+                return;
+            }
+            if (qty <= 0) {
+                Swal.fire({ icon: 'warning', title: 'Qty Tidak Valid', text: 'Jumlah / Qty minimal 1.' });
+                return;
+            }
+            if (unitPrice <= 0) {
+                Swal.fire({ icon: 'warning', title: 'Harga Satuan Wajib Diisi', text: 'Silakan isi harga jual per satuan.' });
+                return;
+            }
+        }
+        // Validate Step 2
+        else if (currentWizardStep === 2) {
+            const customerName = document.getElementById('create_customer_name').value.trim();
+            if (!customerName) {
+                Swal.fire({ icon: 'warning', title: 'Nama Pelanggan Wajib Diisi', text: 'Silakan isi nama pelanggan.' });
+                return;
+            }
+        }
+
+        if (currentWizardStep < 3) {
+            currentWizardStep++;
+            updateWizardUI();
+        }
+    } else if (direction === -1) {
+        if (currentWizardStep > 1) {
+            currentWizardStep--;
+            updateWizardUI();
+        }
+    }
+}
+
+function updateWizardUI() {
+    // Show/Hide Step Content
+    document.querySelectorAll('.wizard-step-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById(`wizard-step-${currentWizardStep}`).classList.remove('hidden');
+
+    // Update Stepper Pills
+    for (let i = 1; i <= 3; i++) {
+        const pill = document.getElementById(`step-pill-${i}`);
+        if (i === currentWizardStep) {
+            pill.className = 'wizard-step-pill active py-1.5 px-2 rounded-xl transition font-bold flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-sm';
+            pill.querySelector('span:first-child').className = 'w-4 h-4 rounded-full bg-white text-blue-600 text-[10px] flex items-center justify-center font-mono font-bold';
+        } else if (i < currentWizardStep) {
+            pill.className = 'wizard-step-pill py-1.5 px-2 rounded-xl transition font-semibold flex items-center justify-center gap-1.5 bg-emerald-800 text-emerald-100';
+            pill.querySelector('span:first-child').className = 'w-4 h-4 rounded-full bg-emerald-500 text-white text-[10px] flex items-center justify-center font-mono';
+        } else {
+            pill.className = 'wizard-step-pill py-1.5 px-2 rounded-xl transition font-semibold flex items-center justify-center gap-1.5 bg-slate-800 text-slate-400';
+            pill.querySelector('span:first-child').className = 'w-4 h-4 rounded-full bg-slate-700 text-slate-300 text-[10px] flex items-center justify-center font-mono';
+        }
+    }
+
+    // Button states
+    const btnPrev = document.getElementById('btnWizardPrev');
+    const btnNext = document.getElementById('btnWizardNext');
+    const btnSubmit = document.getElementById('btnSubmitCreateOrder');
+
+    btnPrev.style.visibility = (currentWizardStep === 1) ? 'hidden' : 'visible';
+
+    if (currentWizardStep === 3) {
+        btnNext.classList.add('hidden');
+        btnSubmit.classList.remove('hidden');
+        updateLiveSummaryCard();
+    } else {
+        btnNext.classList.remove('hidden');
+        btnSubmit.classList.add('hidden');
+    }
+
+    if (currentWizardStep === 2) {
+        const job = document.getElementById('create_job_title').value || '-';
+        const qty = document.getElementById('create_qty').value || '1';
+        const unit = document.getElementById('create_unit').value || 'pcs';
+        const unitPrice = parseFloat(document.getElementById('create_unit_price').value) || 0;
+        const total = qty * unitPrice;
+
+        document.getElementById('step2_job_summary').innerText = `${job} (${qty} ${unit})`;
+        document.getElementById('step2_total_summary').innerText = `Rp ${Number(total).toLocaleString('id-ID')}`;
+    }
+}
+
+// Live calculation for Step 1
+function calcCustomerPriceLive() {
+    const qty = parseInt(document.getElementById('create_qty').value) || 0;
+    const unit = document.getElementById('create_unit').value || 'pcs';
+    const unitPrice = parseFloat(document.getElementById('create_unit_price').value) || 0;
+    const total = qty * unitPrice;
+
+    document.getElementById('create_customer_price').value = total;
+    document.getElementById('create_unit_label').innerText = `/ ${unit}`;
+    document.getElementById('create_calc_preview_text').innerText = `${qty} ${unit} x Rp ${Number(unitPrice).toLocaleString('id-ID')}`;
+    document.getElementById('create_total_display').innerText = `Rp ${Number(total).toLocaleString('id-ID')}`;
+}
+
+// Existing customer select helper
+function fillExistingCustomer(customerId) {
+    const select = document.getElementById('create_customer_select');
+    const opt = select.options[select.selectedIndex];
+    if (customerId && opt) {
+        document.getElementById('create_customer_name').value = opt.getAttribute('data-name') || '';
+        document.getElementById('create_customer_phone').value = opt.getAttribute('data-phone') || '';
+    }
+}
+
+// Toggle DP
+function toggleDpAmount(isDp) {
     const container = document.getElementById('dp_amount_container');
-    if (val === '1') {
+    if (isDp == '1') {
         container.classList.remove('hidden');
     } else {
         container.classList.add('hidden');
     }
 }
 
+// Live Summary Card for Step 3
+function updateLiveSummaryCard() {
+    const job = document.getElementById('create_job_title').value || '-';
+    const cust = document.getElementById('create_customer_name').value || '-';
+    const phone = document.getElementById('create_customer_phone').value || '';
+    const qty = parseInt(document.getElementById('create_qty').value) || 0;
+    const unit = document.getElementById('create_unit').value || 'pcs';
+    const unitPrice = parseFloat(document.getElementById('create_unit_price').value) || 0;
+    const total = qty * unitPrice;
+
+    const isDp = document.getElementById('create_is_dp').value == '1';
+    const paid = isDp ? (parseFloat(document.getElementById('create_paid_amount').value) || 0) : total;
+    const remaining = Math.max(0, total - paid);
+
+    document.getElementById('prev_job_title').innerText = job;
+    document.getElementById('prev_customer_name').innerText = cust + (phone ? ` (${phone})` : '');
+    document.getElementById('prev_unit_detail').innerText = `${qty} ${unit} @ Rp ${Number(unitPrice).toLocaleString('id-ID')}`;
+    document.getElementById('prev_total_price').innerText = `Rp ${Number(total).toLocaleString('id-ID')}`;
+    document.getElementById('prev_paid_amount').innerText = `Rp ${Number(paid).toLocaleString('id-ID')}`;
+
+    const badge = document.getElementById('prev_pay_badge');
+    const remRow = document.getElementById('prev_remaining_row');
+
+    if (isDp) {
+        badge.className = 'badge bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono text-[10px]';
+        badge.innerText = `Uang Muka (DP)`;
+        remRow.classList.remove('hidden');
+        document.getElementById('prev_remaining_amount').innerText = `Rp ${Number(remaining).toLocaleString('id-ID')}`;
+    } else {
+        badge.className = 'badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono text-[10px]';
+        badge.innerText = `Lunas (100%)`;
+        remRow.classList.add('hidden');
+    }
+}
+
+// Submit Order (Stage 1)
 function submitCreateOrder(e) {
     e.preventDefault();
     const btn = document.getElementById('btnSubmitCreateOrder');
@@ -673,14 +1026,14 @@ function submitCreateOrder(e) {
     .then(r => r.json())
     .then(res => {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-check me-1"></i> Simpan & Cetak Struk`;
+        btn.innerHTML = `<i class="fa-solid fa-check-double me-1"></i> Simpan & Cetak Struk`;
         if (res.status === 'success' || res.success) {
             Swal.fire({
                 icon: 'success',
                 title: 'Pesanan Berhasil Dibuat!',
                 text: res.message,
                 showCancelButton: true,
-                confirmButtonText: 'Cetak Struk Customer',
+                confirmButtonText: '<i class="fa-solid fa-print me-1"></i> Cetak Struk Customer',
                 cancelButtonText: 'Tutup',
                 confirmButtonColor: '#2563eb'
             }).then((r) => {
@@ -695,14 +1048,18 @@ function submitCreateOrder(e) {
     })
     .catch(err => {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-check me-1"></i> Simpan & Cetak Struk`;
+        btn.innerHTML = `<i class="fa-solid fa-check-double me-1"></i> Simpan & Cetak Struk`;
         Swal.fire({ icon: 'error', title: 'Terjadi Kesalahan', text: err.message });
     });
 }
 
-// Modal 2: Input HPP
+// Modal 2: Input HPP with Unit Price
 function openSubmitHppModal(order) {
     document.getElementById('hpp_order_id').value = order.id;
+    document.getElementById('hpp_order_qty').value = order.qty || 1;
+    document.getElementById('hpp_order_unit').value = order.unit || 'pcs';
+    document.getElementById('hpp_unit_label').innerText = `/ ${order.unit || 'pcs'}`;
+    
     document.getElementById('hpp_order_number_badge').innerText = `#${order.order_number}`;
     document.getElementById('hpp_job_title_display').innerText = `${order.job_title} (${order.qty} ${order.unit})`;
     document.getElementById('hpp_customer_price_display').innerText = `Rp ${Number(order.customer_price).toLocaleString('id-ID')}`;
@@ -712,20 +1069,30 @@ function openSubmitHppModal(order) {
 
     document.getElementById('hpp_vendor_name').value = order.vendor_name || '';
     document.getElementById('hpp_vendor_phone').value = order.vendor_phone || '';
-    document.getElementById('hpp_vendor_cost').value = (order.vendor_cost > 0) ? order.vendor_cost : '';
+    
+    const existingUnitPrice = order.vendor_unit_price > 0 ? order.vendor_unit_price : (order.vendor_cost > 0 && order.qty > 0 ? (order.vendor_cost / order.qty) : '');
+    document.getElementById('hpp_vendor_unit_price').value = existingUnitPrice;
     document.getElementById('hpp_shipping_cost').value = (order.shipping_cost > 0) ? order.shipping_cost : '';
     document.getElementById('hpp_vendor_notes').value = order.vendor_notes || '';
 
-    calcHppMarginLive();
+    calcVendorHppLive();
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSubmitHpp'));
     modal.show();
 }
 
-function calcHppMarginLive() {
-    const cost = parseFloat(document.getElementById('hpp_vendor_cost')?.value) || 0;
+function calcVendorHppLive() {
+    const qty = parseInt(document.getElementById('hpp_order_qty').value) || 1;
+    const unit = document.getElementById('hpp_order_unit').value || 'pcs';
+    const unitCost = parseFloat(document.getElementById('hpp_vendor_unit_price')?.value) || 0;
+    const subtotalCost = qty * unitCost;
     const shipping = parseFloat(document.getElementById('hpp_shipping_cost')?.value) || 0;
-    const totalCost = cost + shipping;
+    const totalCost = subtotalCost + shipping;
+    
+    document.getElementById('hpp_vendor_cost').value = subtotalCost;
+    document.getElementById('hpp_qty_multiply_text').innerText = `${qty} ${unit} x Rp ${Number(unitCost).toLocaleString('id-ID')}`;
+    document.getElementById('hpp_subtotal_vendor_display').innerText = `Rp ${Number(subtotalCost).toLocaleString('id-ID')}`;
+
     const omset = currentSelectedCustomerPrice;
     const profit = omset - totalCost;
     const marginPct = omset > 0 ? ((profit / omset) * 100).toFixed(1) : 0;
@@ -763,6 +1130,7 @@ function submitHppToOwner(e) {
         body: JSON.stringify({
             vendor_name: document.getElementById('hpp_vendor_name').value,
             vendor_phone: document.getElementById('hpp_vendor_phone').value,
+            vendor_unit_price: document.getElementById('hpp_vendor_unit_price').value,
             vendor_cost: document.getElementById('hpp_vendor_cost').value,
             shipping_cost: document.getElementById('hpp_shipping_cost').value,
             vendor_notes: document.getElementById('hpp_vendor_notes').value

@@ -96,8 +96,11 @@
         @if($order->description)
             <div style="font-size: 10px; color: #475569; margin-bottom: 2px;">{{ $order->description }}</div>
         @endif
+        @php
+            $unitPrice = $order->customer_unit_price > 0 ? $order->customer_unit_price : ($order->qty > 0 ? ($order->customer_price / $order->qty) : $order->customer_price);
+        @endphp
         <div class="item-row">
-            <span>{{ $order->qty }} {{ $order->unit }} x @ Rp {{ number_format($order->customer_price / $order->qty, 0, ',', '.') }}</span>
+            <span>{{ $order->qty }} {{ $order->unit }} x @ Rp {{ number_format($unitPrice, 0, ',', '.') }}</span>
             <span class="font-bold">Rp {{ number_format($order->customer_price, 0, ',', '.') }}</span>
         </div>
     </div>

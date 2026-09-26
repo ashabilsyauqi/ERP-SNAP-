@@ -102,6 +102,7 @@ class OutsourceOrderController extends Controller
             'description' => 'nullable|string',
             'qty' => 'required|integer|min:1',
             'unit' => 'nullable|string|max:50',
+            'customer_unit_price' => 'nullable|numeric|min:0',
             'customer_price' => 'required|numeric|min:0',
             'customer_name' => 'required|string|max:150',
             'customer_phone' => 'nullable|string|max:50',
@@ -136,7 +137,10 @@ class OutsourceOrderController extends Controller
                 $customerId = $cust->id;
             }
 
+            $qty = (int) $request->input('qty', 1);
             $customerPrice = (float) $request->input('customer_price', 0);
+            $customerUnitPrice = (float) $request->input('customer_unit_price', ($qty > 0 ? round($customerPrice / $qty, 2) : $customerPrice));
+
             $isDp = $request->boolean('is_dp');
             $paidAmount = $isDp ? (float) $request->input('paid_amount', 0) : $customerPrice;
             $remainingAmount = max(0, $customerPrice - $paidAmount);
@@ -151,8 +155,9 @@ class OutsourceOrderController extends Controller
                 'customer_phone' => $customerPhone ?: null,
                 'job_title' => $request->input('job_title'),
                 'description' => $request->input('description'),
-                'qty' => (int) $request->input('qty', 1),
+                'qty' => $qty,
                 'unit' => $request->input('unit', 'pcs') ?: 'pcs',
+                'customer_unit_price' => $customerUnitPrice,
                 'customer_price' => $customerPrice,
                 'payment_method' => $request->input('payment_method', 'Cash'),
                 'payment_status' => $paymentStatus,
@@ -198,6 +203,7 @@ class OutsourceOrderController extends Controller
         $request->validate([
             'vendor_name' => 'required|string|max:150',
             'vendor_phone' => 'nullable|string|max:50',
+            'vendor_unit_price' => 'nullable|numeric|min:0',
             'vendor_cost' => 'required|numeric|min:0',
             'shipping_cost' => 'nullable|numeric|min:0',
             'vendor_notes' => 'nullable|string',
@@ -207,12 +213,15 @@ class OutsourceOrderController extends Controller
             $order = OutsourceOrder::findOrFail($id);
 
             $vendorCost = (float) $request->input('vendor_cost', 0);
+            $qty = $order->qty > 0 ? $order->qty : 1;
+            $vendorUnitPrice = (float) $request->input('vendor_unit_price', ($qty > 0 ? round($vendorCost / $qty, 2) : $vendorCost));
             $shippingCost = (float) $request->input('shipping_cost', 0);
             $totalCost = $vendorCost + $shippingCost;
             $estimatedMargin = $order->customer_price - $totalCost;
 
             $order->vendor_name = trim($request->input('vendor_name'));
             $order->vendor_phone = trim($request->input('vendor_phone', '')) ?: null;
+            $order->vendor_unit_price = $vendorUnitPrice;
             $order->vendor_cost = $vendorCost;
             $order->shipping_cost = $shippingCost;
             $order->total_cost = $totalCost;
