@@ -122,7 +122,7 @@
         </div>
         @if($order->remaining_amount > 0)
             <div class="item-row" style="color: #b45309; font-weight: bold;">
-                <span>Sisa Piutang:</span>
+                <span>Sisa Pelunasan:</span>
                 <span>Rp {{ number_format($order->remaining_amount, 0, ',', '.') }}</span>
             </div>
         @else

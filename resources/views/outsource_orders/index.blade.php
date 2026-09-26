@@ -415,7 +415,7 @@
                                         <select id="ws_payment_type" onchange="handleWsPaymentTypeChange(this.value)" class="form-select form-select-sm text-xs font-bold">
                                             <option value="PAID">🟢 Lunas (100%)</option>
                                             <option value="DP">🟡 Uang Muka (DP)</option>
-                                            <option value="UNPAID">🔴 Belum Bayar (Tempo / Piutang)</option>
+                                            <option value="UNPAID">🔴 Belum Bayar (Pelunasan Nanti)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1144,10 +1144,10 @@ function calcOdooTotals() {
         remDisplay.innerText = 'Rp 0 (Lunas)';
         remDisplay.className = 'font-mono font-bold text-emerald-700';
     } else if (paidAmt > 0) {
-        remDisplay.innerText = `Rp ${Number(remaining).toLocaleString('id-ID')} (Sisa DP / Piutang)`;
+        remDisplay.innerText = `Rp ${Number(remaining).toLocaleString('id-ID')} (Sisa Pelunasan)`;
         remDisplay.className = 'font-mono font-bold text-amber-700';
     } else {
-        remDisplay.innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')} (Belum Bayar)`;
+        remDisplay.innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')} (Sisa Pelunasan)`;
         remDisplay.className = 'font-mono font-bold text-rose-700';
     }
 
