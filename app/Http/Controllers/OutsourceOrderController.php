@@ -141,8 +141,15 @@ class OutsourceOrderController extends Controller
             $customerPrice = (float) $request->input('customer_price', 0);
             $customerUnitPrice = (float) $request->input('customer_unit_price', ($qty > 0 ? round($customerPrice / $qty, 2) : $customerPrice));
 
-            $isDp = $request->boolean('is_dp');
-            $paidAmount = $isDp ? (float) $request->input('paid_amount', 0) : $customerPrice;
+            $paymentType = $request->input('payment_type', 'PAID');
+            if ($paymentType === 'PAID' || (!$request->has('payment_type') && !$request->boolean('is_dp') && (float)$request->input('paid_amount', 0) >= $customerPrice)) {
+                $paidAmount = $customerPrice;
+            } elseif ($paymentType === 'UNPAID') {
+                $paidAmount = 0;
+            } else {
+                $paidAmount = (float) $request->input('paid_amount', 0);
+            }
+
             $remainingAmount = max(0, $customerPrice - $paidAmount);
             $paymentStatus = ($paidAmount >= $customerPrice) ? 'PAID' : ($paidAmount > 0 ? 'PARTIAL' : 'UNPAID');
 

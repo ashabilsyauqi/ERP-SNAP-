@@ -187,8 +187,8 @@
                                 <strong class="text-slate-900 block text-xs">
                                     Total: Rp {{ number_format($order->customer_price, 0, ',', '.') }}
                                 </strong>
-                                <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9.5px] mt-0.5">
-                                    {{ $order->payment_method }} ({{ $order->payment_status }})
+                                <span class="badge {{ $order->payment_status === 'PAID' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ($order->payment_status === 'PARTIAL' ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200') }} border text-[9.5px] mt-0.5">
+                                    {{ $order->payment_method }} ({{ $order->payment_status === 'PAID' ? 'LUNAS' : ($order->payment_status === 'PARTIAL' ? 'DP' : 'BELUM BAYAR') }})
                                 </span>
                             </td>
 
@@ -396,7 +396,7 @@
                             </div>
                         </div>
 
-                        <!-- Right Group: Vendor & Payment -->
+                        <!-- Right Group: Vendor & Payment with LUNAS / DP Choice -->
                         <div class="space-y-3.5">
                             <h6 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b pb-1.5 mb-2 text-indigo-700">
                                 <i class="fa-solid fa-industry me-1 text-indigo-600"></i> Informasi Vendor & Pembayaran
@@ -427,10 +427,30 @@
                                 </div>
                             </div>
 
+                            <!-- OPSI BAYAR (LUNAS / DP / TEMPO) -->
                             <div class="grid grid-cols-3 gap-2 items-center">
-                                <label class="text-xs font-semibold text-slate-600">Dibayar (Rp)</label>
+                                <label class="text-xs font-semibold text-slate-600">Opsi Bayar</label>
                                 <div class="col-span-2">
-                                    <input type="number" id="ws_paid_amount" min="0" step="1000" class="form-control form-control-sm text-xs font-mono font-bold" placeholder="0">
+                                    <select id="ws_payment_type" onchange="handleWsPaymentTypeChange(this.value)" class="form-select form-select-sm text-xs font-bold">
+                                        <option value="PAID">🟢 Lunas (100%)</option>
+                                        <option value="DP">🟡 Uang Muka (DP)</option>
+                                        <option value="UNPAID">🔴 Belum Bayar (Tempo / Piutang)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- NOMINAL DIBAYAR & SISA PIUTANG -->
+                            <div class="grid grid-cols-3 gap-2 items-center">
+                                <label class="text-xs font-semibold text-slate-600">Nominal Dibayar</label>
+                                <div class="col-span-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text text-[11px] bg-slate-50 font-mono">Rp</span>
+                                        <input type="number" id="ws_paid_amount" min="0" step="1000" oninput="handleWsPaidAmountInput()" class="form-control form-control-sm text-xs font-mono font-bold" placeholder="0">
+                                    </div>
+                                    <div class="flex justify-between items-center text-[10.5px] mt-1">
+                                        <span class="text-slate-500">Sisa Tagihan:</span>
+                                        <span id="ws_remaining_amount_display" class="font-mono font-bold text-emerald-700">Rp 0 (Lunas)</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -652,7 +672,8 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3 pt-1 border-t">
+                    <!-- Payment Method, Payment Type (LUNAS/DP/TEMPO), & Paid Amount -->
+                    <div class="grid grid-cols-3 gap-2 pt-1 border-t">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Metode Bayar</label>
                             <select name="payment_method" id="create_payment_method" class="form-select form-select-sm text-xs font-bold rounded-lg">
@@ -662,19 +683,16 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Status Bayar</label>
-                            <select name="is_dp" id="create_is_dp" onchange="toggleCreateDp(this.value)" class="form-select form-select-sm text-xs font-bold rounded-lg">
-                                <option value="0">Lunas (100%)</option>
-                                <option value="1">Uang Muka (DP)</option>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Opsi Bayar</label>
+                            <select name="payment_type" id="create_payment_type" onchange="handleCreatePaymentTypeChange(this.value)" class="form-select form-select-sm text-xs font-bold rounded-lg">
+                                <option value="PAID">🟢 Lunas (100%)</option>
+                                <option value="DP">🟡 Uang Muka (DP)</option>
+                                <option value="UNPAID">🔴 Belum Bayar</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div id="create_dp_container" class="hidden pt-1">
-                        <label class="block text-xs font-bold text-amber-800 uppercase mb-1">Nominal DP Dibayar (Rp)</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text font-bold text-xs bg-amber-50 text-amber-700">Rp</span>
-                            <input type="number" name="paid_amount" id="create_paid_amount" min="0" step="1000" class="form-control font-mono font-bold text-amber-800 text-xs rounded-r-lg" placeholder="0">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-1">Nominal Bayar (Rp)</label>
+                            <input type="number" name="paid_amount" id="create_paid_amount" min="0" step="1000" class="form-control form-control-sm text-xs font-mono font-bold rounded-lg" placeholder="0">
                         </div>
                     </div>
                 </div>
@@ -734,7 +752,19 @@ function populateOdooWorksheet(order) {
     document.getElementById('ws_vendor_name').value = order.vendor_name || '';
     document.getElementById('ws_vendor_phone').value = order.vendor_phone || '';
     document.getElementById('ws_payment_method').value = order.payment_method || 'Cash';
-    document.getElementById('ws_paid_amount').value = order.paid_amount || order.customer_price;
+    document.getElementById('ws_paid_amount').value = order.paid_amount || 0;
+
+    // Payment Type
+    const custPrice = parseFloat(order.customer_price) || 0;
+    const paidAmt = parseFloat(order.paid_amount) || 0;
+    const paySelect = document.getElementById('ws_payment_type');
+    if (order.payment_status === 'PAID' || paidAmt >= custPrice) {
+        paySelect.value = 'PAID';
+    } else if (order.payment_status === 'PARTIAL' || paidAmt > 0) {
+        paySelect.value = 'DP';
+    } else {
+        paySelect.value = 'UNPAID';
+    }
 
     // Order Line Inputs
     document.getElementById('ws_table_item_name').innerText = order.job_title || 'Item Cetak';
@@ -765,6 +795,42 @@ function populateOdooWorksheet(order) {
     updateOdooStatusbar(order.status);
 
     // Calculate Totals & Profit
+    calcOdooTotals();
+}
+
+function handleWsPaymentTypeChange(type) {
+    const qty = parseInt(document.getElementById('ws_qty').value) || 1;
+    const custUnitPrice = parseFloat(document.getElementById('ws_customer_unit_price').value) || 0;
+    const totalOmset = qty * custUnitPrice;
+
+    const paidInput = document.getElementById('ws_paid_amount');
+    if (type === 'PAID') {
+        paidInput.value = totalOmset;
+    } else if (type === 'UNPAID') {
+        paidInput.value = 0;
+    } else if (type === 'DP') {
+        const cur = parseFloat(paidInput.value) || 0;
+        if (cur <= 0 || cur >= totalOmset) {
+            paidInput.value = Math.round(totalOmset / 2);
+        }
+    }
+    calcOdooTotals();
+}
+
+function handleWsPaidAmountInput() {
+    const qty = parseInt(document.getElementById('ws_qty').value) || 1;
+    const custUnitPrice = parseFloat(document.getElementById('ws_customer_unit_price').value) || 0;
+    const totalOmset = qty * custUnitPrice;
+    const paidAmt = parseFloat(document.getElementById('ws_paid_amount').value) || 0;
+
+    const paySelect = document.getElementById('ws_payment_type');
+    if (paidAmt >= totalOmset && totalOmset > 0) {
+        paySelect.value = 'PAID';
+    } else if (paidAmt > 0) {
+        paySelect.value = 'DP';
+    } else {
+        paySelect.value = 'UNPAID';
+    }
     calcOdooTotals();
 }
 
@@ -802,7 +868,6 @@ function updateOdooStatusbar(status) {
 }
 
 function switchOdooStage(targetStage) {
-    // When clicking statusbar stage buttons
     updateOdooStatusbar(targetStage);
 }
 
@@ -869,6 +934,27 @@ function calcOdooTotals() {
 
     const profit = totalOmset - totalHpp;
     const marginPct = totalOmset > 0 ? ((profit / totalOmset) * 100).toFixed(1) : '0';
+
+    // Auto-update paid amount if LUNAS
+    const payType = document.getElementById('ws_payment_type').value;
+    if (payType === 'PAID') {
+        document.getElementById('ws_paid_amount').value = totalOmset;
+    }
+
+    const paidAmt = parseFloat(document.getElementById('ws_paid_amount').value) || 0;
+    const remaining = Math.max(0, totalOmset - paidAmt);
+
+    const remDisplay = document.getElementById('ws_remaining_amount_display');
+    if (remaining === 0 && totalOmset > 0) {
+        remDisplay.innerText = 'Rp 0 (Lunas)';
+        remDisplay.className = 'font-mono font-bold text-emerald-700';
+    } else if (paidAmt > 0) {
+        remDisplay.innerText = `Rp ${Number(remaining).toLocaleString('id-ID')} (Sisa DP / Piutang)`;
+        remDisplay.className = 'font-mono font-bold text-amber-700';
+    } else {
+        remDisplay.innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')} (Belum Bayar)`;
+        remDisplay.className = 'font-mono font-bold text-rose-700';
+    }
 
     document.getElementById('ws_sum_omset').innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
     document.getElementById('ws_sum_vendor_subtotal').innerText = `Rp ${Number(vendorSubtotal).toLocaleString('id-ID')}`;
@@ -1096,12 +1182,26 @@ function openCreateOrderModal() {
     document.getElementById('create_unit').value = 'pcs';
     document.getElementById('create_unit_price').value = '';
     document.getElementById('create_customer_price').value = '0';
-    document.getElementById('create_is_dp').value = '0';
-    toggleCreateDp('0');
+    document.getElementById('create_payment_type').value = 'PAID';
     calcCreateCustomerPrice();
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCreateOrder'));
     modal.show();
+}
+
+function handleCreatePaymentTypeChange(type) {
+    const qty = parseInt(document.getElementById('create_qty').value) || 0;
+    const unitPrice = parseFloat(document.getElementById('create_unit_price').value) || 0;
+    const total = qty * unitPrice;
+
+    const paidInput = document.getElementById('create_paid_amount');
+    if (type === 'PAID') {
+        paidInput.value = total;
+    } else if (type === 'UNPAID') {
+        paidInput.value = 0;
+    } else if (type === 'DP') {
+        paidInput.value = total > 0 ? Math.round(total / 2) : 0;
+    }
 }
 
 function calcCreateCustomerPrice() {
@@ -1114,12 +1214,11 @@ function calcCreateCustomerPrice() {
     document.getElementById('create_unit_label').innerText = `/ ${unit}`;
     document.getElementById('create_calc_preview_text').innerText = `${qty} ${unit} x Rp ${Number(unitPrice).toLocaleString('id-ID')}`;
     document.getElementById('create_total_display').innerText = `Total: Rp ${Number(total).toLocaleString('id-ID')}`;
-}
 
-function toggleCreateDp(isDp) {
-    const box = document.getElementById('create_dp_container');
-    if (isDp == '1') box.classList.remove('hidden');
-    else box.classList.add('hidden');
+    const payType = document.getElementById('create_payment_type').value;
+    if (payType === 'PAID') {
+        document.getElementById('create_paid_amount').value = total;
+    }
 }
 
 function submitCreateOrder(e) {
