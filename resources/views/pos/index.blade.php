@@ -4,9 +4,9 @@
 @section('page-title', 'Terminal Kasir Penjualan (POS)')
 
 @section('action-buttons')
-<button type="button" onclick="openCetakOffsetModal()" class="btn-odoo-primary bg-indigo-600 hover:bg-indigo-700 text-white text-decoration-none shadow-sm cursor-pointer">
-    <i class="fa-solid fa-file-invoice-dollar me-1"></i> Cetak Offset / Vendor
-</button>
+<a href="{{ route('outsource-orders.index') }}" class="btn-odoo-primary bg-indigo-600 hover:bg-indigo-700 text-white text-decoration-none shadow-sm flex items-center">
+    <i class="fa-solid fa-truck-ramp-box me-1"></i> Cetak di Luar (Vendor)
+</a>
 <button type="button" onclick="openDraftOrdersModal()" class="btn-odoo-secondary text-decoration-none position-relative">
     <i class="fa-solid fa-inbox me-1 text-amber-600"></i> Pesanan Draft
     <span id="draft-counter-badge" class="badge bg-amber-600 text-white rounded-pill text-[10px] ms-1">0</span>

@@ -95,6 +95,18 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy');
     });
 
+    // Cetak di Luar / Vendor Outsource Module (5-Stage Pipeline)
+    Route::middleware(['role:cashier,owner,manager,sales,operator'])->prefix('cetak-luar')->name('outsource-orders.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\OutsourceOrderController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\OutsourceOrderController::class, 'store'])->name('store');
+        Route::get('/{id}/receipt', [\App\Http\Controllers\OutsourceOrderController::class, 'receipt'])->name('receipt');
+        Route::post('/{id}/submit-vendor', [\App\Http\Controllers\OutsourceOrderController::class, 'submitVendorHpp'])->name('submit-vendor');
+        Route::post('/{id}/approve', [\App\Http\Controllers\OutsourceOrderController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [\App\Http\Controllers\OutsourceOrderController::class, 'reject'])->name('reject');
+        Route::post('/{id}/pass-qc', [\App\Http\Controllers\OutsourceOrderController::class, 'passQc'])->name('pass-qc');
+        Route::post('/{id}/close', [\App\Http\Controllers\OutsourceOrderController::class, 'closeOrder'])->name('close');
+    });
+
     // ==========================================
     // FINANCE MODULE (Owner & Manager)
     // ==========================================

@@ -592,9 +592,9 @@
                     ]
                 ]
             ];
-        } elseif (Str::startsWith($currentRoute, 'pos') || Str::startsWith($currentRoute, 'sales') || Str::startsWith($currentRoute, 'customers')) {
-            $activeApp = (auth()->check() && (auth()->user()->role === 'cashier' || auth()->user()->isOperator())) ? 'Point of Sale' : 'Orders / Penjualan';
-            $appIcon = (auth()->check() && (auth()->user()->role === 'cashier' || auth()->user()->isOperator())) ? 'fa-cash-register' : 'fa-receipt';
+        } elseif (Str::startsWith($currentRoute, 'pos') || Str::startsWith($currentRoute, 'sales') || Str::startsWith($currentRoute, 'customers') || Str::startsWith($currentRoute, 'outsource-orders')) {
+            $activeApp = Str::startsWith($currentRoute, 'outsource-orders') ? 'Cetak di Luar (Vendor)' : ((auth()->check() && (auth()->user()->role === 'cashier' || auth()->user()->isOperator())) ? 'Point of Sale' : 'Orders / Penjualan');
+            $appIcon = Str::startsWith($currentRoute, 'outsource-orders') ? 'fa-truck-ramp-box' : ((auth()->check() && (auth()->user()->role === 'cashier' || auth()->user()->isOperator())) ? 'fa-cash-register' : 'fa-receipt');
             $menuGroups = [
                 [
                     'title' => 'Orders',
@@ -602,6 +602,7 @@
                     'role' => 'cashier,owner,manager,operator,sales',
                     'items' => [
                         ['title' => 'Terminal Kasir / Cek Harga (POS)', 'route' => 'pos.index', 'role' => 'cashier,operator,sales'],
+                        ['title' => 'Cetak di Luar (Vendor)', 'route' => 'outsource-orders.index', 'role' => 'cashier,owner,manager,operator,sales'],
                         ['title' => 'Piutang & Monitoring Pesanan DP', 'route' => 'sales.receivables', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Riwayat Transaksi Penjualan', 'route' => 'sales.index', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Data Pelanggan (Customers)', 'route' => 'customers.index', 'role' => 'cashier,owner,manager'],
@@ -947,6 +948,7 @@
                   apps: [
                       @if(auth()->user()->isSuperAdmin())
                       { name: 'Point of Sale (POS)', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-cash-register', bg: 'bg-gradient-to-tr from-rose-500 to-pink-700' },
+                      { name: 'Cetak di Luar (Vendor)', route: '{{ route('outsource-orders.index') }}', icon: 'fa-solid fa-truck-ramp-box', bg: 'bg-gradient-to-tr from-violet-600 to-purple-800' },
                        { name: 'Executive / Owner', route: '{{ route('owner.dashboard') }}', icon: 'fa-solid fa-chart-pie', bg: 'bg-gradient-to-tr from-blue-700 to-indigo-900', badge: {{ $totalOwnerPendingCount }} },
                        { name: 'Accounting & Finance', route: '{{ route('dashboard') }}', icon: 'fa-solid fa-wallet', bg: 'bg-gradient-to-tr from-emerald-600 to-teal-800', badge: {{ $pendingDailyClosingCount }} },
                       { name: 'Inventory & Stock', route: '{{ route('stock.index') }}', icon: 'fa-solid fa-boxes-stacked', bg: 'bg-gradient-to-tr from-amber-500 to-orange-600' },
@@ -958,6 +960,7 @@
                       { name: 'Settings & Profile', route: '{{ route('profile.index') }}', icon: 'fa-solid fa-gear', bg: 'bg-gradient-to-tr from-slate-600 to-gray-800' }
                       @elseif(auth()->user()->role === 'cashier')
                       { name: 'Point of Sale (POS)', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-cash-register', bg: 'bg-gradient-to-tr from-rose-500 to-pink-700' },
+                      { name: 'Cetak di Luar (Vendor)', route: '{{ route('outsource-orders.index') }}', icon: 'fa-solid fa-truck-ramp-box', bg: 'bg-gradient-to-tr from-violet-600 to-purple-800' },
                       { name: 'Orders / Penjualan', route: '{{ route('sales.index') }}', icon: 'fa-solid fa-receipt', bg: 'bg-gradient-to-tr from-sky-500 to-blue-700' }
                       @elseif(auth()->user()->isOperator())
                       { name: 'Cek Harga & POS', route: '{{ route('pos.index') }}', icon: 'fa-solid fa-calculator', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' }
@@ -975,6 +978,7 @@
                       @if(auth()->user()->isOwner() || auth()->user()->isManager())
                        { name: 'Accounting & Finance', route: '{{ route('dashboard') }}', icon: 'fa-solid fa-wallet', bg: 'bg-gradient-to-tr from-emerald-600 to-teal-800', badge: {{ $pendingDailyClosingCount }} },
                       @endif
+                      { name: 'Cetak di Luar (Vendor)', route: '{{ route('outsource-orders.index') }}', icon: 'fa-solid fa-truck-ramp-box', bg: 'bg-gradient-to-tr from-violet-600 to-purple-800' },
                       { name: 'Inventory & Stock', route: '{{ route('stock.index') }}', icon: 'fa-solid fa-boxes-stacked', bg: 'bg-gradient-to-tr from-amber-500 to-orange-600' },
                       { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
                        { name: 'Pengadaan & Pembelian', route: '{{ route('purchasing.plans.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700', badge: {{ $pendingPurchasingCount }} },
