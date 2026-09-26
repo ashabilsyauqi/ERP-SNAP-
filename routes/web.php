@@ -99,6 +99,8 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:cashier,owner,manager,sales,operator'])->prefix('cetak-luar')->name('outsource-orders.')->group(function () {
         Route::get('/', [\App\Http\Controllers\OutsourceOrderController::class, 'index'])->name('index');
         Route::post('/', [\App\Http\Controllers\OutsourceOrderController::class, 'store'])->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\OutsourceOrderController::class, 'show'])->name('show');
+        Route::put('/{id}', [\App\Http\Controllers\OutsourceOrderController::class, 'update'])->name('update');
         Route::get('/{id}/receipt', [\App\Http\Controllers\OutsourceOrderController::class, 'receipt'])->name('receipt');
         Route::post('/{id}/submit-vendor', [\App\Http\Controllers\OutsourceOrderController::class, 'submitVendorHpp'])->name('submit-vendor');
         Route::post('/{id}/approve', [\App\Http\Controllers\OutsourceOrderController::class, 'approve'])->name('approve');

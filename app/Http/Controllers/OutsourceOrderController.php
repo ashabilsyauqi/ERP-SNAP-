@@ -186,6 +186,111 @@ class OutsourceOrderController extends Controller
         }
     }
 
+    public function show($id)
+    {
+        $order = OutsourceOrder::with(['branch', 'user', 'customer', 'approver', 'qcUser', 'completedBy', 'transaction'])->findOrFail($id);
+        
+        return response()->json([
+            'status' => 'success',
+            'success' => true,
+            'order' => $order,
+            'receipt_url' => route('outsource-orders.receipt', $order->id),
+            'pos_receipt_url' => $order->transaction_id ? route('sales.receipt', $order->transaction_id) : null,
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $order = OutsourceOrder::findOrFail($id);
+
+            // If updating customer job specs
+            if ($request->has('job_title')) {
+                $order->job_title = $request->input('job_title', $order->job_title);
+            }
+            if ($request->has('description')) {
+                $order->description = $request->input('description');
+            }
+            if ($request->has('qty')) {
+                $order->qty = (int) $request->input('qty', $order->qty);
+            }
+            if ($request->has('unit')) {
+                $order->unit = $request->input('unit', $order->unit);
+            }
+            if ($request->has('customer_unit_price')) {
+                $order->customer_unit_price = (float) $request->input('customer_unit_price', $order->customer_unit_price);
+            }
+            if ($request->has('customer_price')) {
+                $order->customer_price = (float) $request->input('customer_price', $order->customer_price);
+            } elseif ($request->has('customer_unit_price') && $request->has('qty')) {
+                $order->customer_price = $order->qty * $order->customer_unit_price;
+            }
+
+            if ($request->has('customer_name')) {
+                $order->customer_name = trim($request->input('customer_name', $order->customer_name));
+            }
+            if ($request->has('customer_phone')) {
+                $order->customer_phone = trim($request->input('customer_phone', '')) ?: null;
+            }
+
+            if ($request->has('payment_method')) {
+                $order->payment_method = $request->input('payment_method', $order->payment_method);
+            }
+            if ($request->has('paid_amount')) {
+                $order->paid_amount = (float) $request->input('paid_amount', $order->paid_amount);
+                $order->remaining_amount = max(0, $order->customer_price - $order->paid_amount);
+                $order->payment_status = ($order->paid_amount >= $order->customer_price) ? 'PAID' : ($order->paid_amount > 0 ? 'PARTIAL' : 'UNPAID');
+            }
+
+            // If updating vendor HPP
+            if ($request->has('vendor_name')) {
+                $order->vendor_name = trim($request->input('vendor_name', $order->vendor_name));
+            }
+            if ($request->has('vendor_phone')) {
+                $order->vendor_phone = trim($request->input('vendor_phone', '')) ?: null;
+            }
+            if ($request->has('vendor_unit_price')) {
+                $order->vendor_unit_price = (float) $request->input('vendor_unit_price', $order->vendor_unit_price);
+            }
+            if ($request->has('vendor_cost')) {
+                $order->vendor_cost = (float) $request->input('vendor_cost', $order->vendor_cost);
+            } elseif ($request->has('vendor_unit_price')) {
+                $order->vendor_cost = $order->qty * $order->vendor_unit_price;
+            }
+            if ($request->has('shipping_cost')) {
+                $order->shipping_cost = (float) $request->input('shipping_cost', $order->shipping_cost);
+            }
+            if ($request->has('vendor_notes')) {
+                $order->vendor_notes = $request->input('vendor_notes');
+            }
+
+            // Recalculate totals and margin
+            $order->total_cost = $order->vendor_cost + $order->shipping_cost;
+            $order->estimated_margin = $order->customer_price - $order->total_cost;
+
+            $order->save();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'success' => true,
+                'message' => "Lembar kerja pesanan #{$order->order_number} berhasil diperbarui!",
+                'order' => $order->fresh(['branch', 'user', 'customer', 'approver', 'qcUser', 'completedBy', 'transaction'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'success' => false,
+                'message' => 'Gagal memperbarui pesanan: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
     public function receipt($id)
     {
         $order = OutsourceOrder::with(['branch', 'user', 'customer'])->findOrFail($id);
