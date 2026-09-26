@@ -705,16 +705,60 @@
                             </div>
                         </div>
 
+                        <!-- Payment & Settlement Card (Pelunasan Customer) -->
+                        <div id="ws_closing_settlement_section" class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200 text-xs space-y-3">
+                            <div class="flex justify-between items-center pb-2 border-b border-amber-200">
+                                <span class="font-bold text-amber-900 flex items-center gap-1.5 uppercase tracking-wider">
+                                    <i class="fa-solid fa-money-bill-transfer text-amber-600"></i> Status Pembayaran & Pelunasan Customer
+                                </span>
+                                <span id="ws_closing_pay_badge" class="badge bg-amber-200 text-amber-900 border border-amber-300 font-bold">DP (Belum Lunas)</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="p-2.5 bg-white rounded-xl border border-amber-200 text-center">
+                                    <span class="text-[10.5px] text-slate-500 uppercase block font-semibold">Total Tagihan</span>
+                                    <strong id="ws_closing_tot_tagihan" class="font-mono text-slate-800 text-sm block mt-0.5">Rp 0</strong>
+                                </div>
+                                <div class="p-2.5 bg-white rounded-xl border border-amber-200 text-center">
+                                    <span class="text-[10.5px] text-slate-500 uppercase block font-semibold">Telah Dibayar (DP)</span>
+                                    <strong id="ws_closing_dp_paid" class="font-mono text-emerald-700 text-sm block mt-0.5">Rp 0</strong>
+                                </div>
+                                <div class="p-2.5 bg-amber-100 rounded-xl border border-amber-300 text-center">
+                                    <span class="text-[10.5px] text-amber-900 uppercase block font-bold">Sisa Pelunasan</span>
+                                    <strong id="ws_closing_sisa_tagihan" class="font-mono text-amber-900 text-sm block mt-0.5">Rp 0</strong>
+                                </div>
+                            </div>
+
+                            <div id="ws_closing_settlement_form" class="pt-2 border-t border-amber-200 grid grid-cols-1 md:grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-700 mb-1 block">Metode Pembayaran Pelunasan</label>
+                                    <select id="ws_settlement_method" class="form-select form-select-sm text-xs font-semibold">
+                                        <option value="Cash">💵 Tunai / Cash</option>
+                                        <option value="Transfer Bank">🏦 Transfer Bank</option>
+                                        <option value="QRIS">📱 QRIS</option>
+                                        <option value="EDC / Debit">💳 Kartu Debit / EDC</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-700 mb-1 block">Nominal Pelunasan Diterima Sekarang</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white font-mono text-[11px]">Rp</span>
+                                        <input type="number" id="ws_settlement_paid_input" min="0" step="1000" class="form-control form-control-sm text-xs font-mono font-bold text-slate-900" placeholder="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Closing Action / Completed Invoice Box -->
                         <div id="ws_closing_action_box" class="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-center">
                             <div id="ws_closing_prompt_text">
                                 <h6 class="text-sm font-bold text-slate-800 mb-1">Pesanan Siap Ditutup & Diserahkan ke Customer</h6>
-                                <p class="text-xs text-slate-500 mb-0">Klik tombol di bawah untuk membukukan transaksi ke <strong>Laporan Penjualan Harian & Kas POS</strong>.</p>
+                                <p class="text-xs text-slate-500 mb-0">Klik tombol di bawah untuk membukukan transaksi pelunasan ke <strong>Laporan Penjualan Harian & Kas POS</strong>.</p>
                             </div>
                             
                             <div id="ws_closing_btn_slot" class="pt-1">
                                 <button type="button" onclick="submitWsCloseOrder()" class="btn btn-md btn-success rounded-xl font-bold px-5 shadow-sm">
-                                    <i class="fa-solid fa-cash-register me-1.5"></i> Closing & Bukukan Penjualan Sekarang
+                                    <i class="fa-solid fa-cash-register me-1.5"></i> Closing & Lunasi Penjualan Sekarang
                                 </button>
                             </div>
 
@@ -1023,6 +1067,37 @@ function populateOdooWorksheet(order) {
     const btnSlot = document.getElementById('ws_closing_btn_slot');
     const compBox = document.getElementById('ws_completed_invoice_box');
     const statusBadge = document.getElementById('ws_closing_status_badge');
+
+    // Stage 4 Settlement Info
+    const totTagihan = parseFloat(order.customer_price) || 0;
+    const dpPaid = parseFloat(order.paid_amount) || 0;
+    const remainingToPay = Math.max(0, totTagihan - dpPaid);
+
+    const elTotTagihan = document.getElementById('ws_closing_tot_tagihan');
+    const elDpPaid = document.getElementById('ws_closing_dp_paid');
+    const elSisaTagihan = document.getElementById('ws_closing_sisa_tagihan');
+    const elPayBadge = document.getElementById('ws_closing_pay_badge');
+    const settlementForm = document.getElementById('ws_closing_settlement_form');
+    const settlementPaidInput = document.getElementById('ws_settlement_paid_input');
+
+    if (elTotTagihan) elTotTagihan.innerText = `Rp ${Number(totTagihan).toLocaleString('id-ID')}`;
+    if (elDpPaid) elDpPaid.innerText = `Rp ${Number(dpPaid).toLocaleString('id-ID')}`;
+    if (elSisaTagihan) elSisaTagihan.innerText = `Rp ${Number(remainingToPay).toLocaleString('id-ID')}`;
+    if (settlementPaidInput) settlementPaidInput.value = remainingToPay;
+
+    if (order.status === 'completed' || remainingToPay <= 0) {
+        if (elPayBadge) {
+            elPayBadge.innerText = 'LUNAS (100%)';
+            elPayBadge.className = 'badge bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold';
+        }
+        if (settlementForm) settlementForm.style.display = 'none';
+    } else {
+        if (elPayBadge) {
+            elPayBadge.innerText = `Belum Lunas (Sisa: Rp ${Number(remainingToPay).toLocaleString('id-ID')})`;
+            elPayBadge.className = 'badge bg-amber-200 text-amber-900 border border-amber-300 font-bold';
+        }
+        if (settlementForm) settlementForm.style.display = 'grid';
+    }
 
     if (order.status === 'completed' && order.transaction) {
         if (promptText) promptText.style.display = 'none';
@@ -1513,19 +1588,57 @@ function submitWsPassQc() {
 }
 
 function submitWsCloseOrder() {
+    const settlementPaid = parseFloat(document.getElementById('ws_settlement_paid_input')?.value) || 0;
+    const settlementMethod = document.getElementById('ws_settlement_method')?.value || 'Cash';
+
+    const totTagihan = parseFloat(currentWsOrder.customer_price) || 0;
+    const dpPaid = parseFloat(currentWsOrder.paid_amount) || 0;
+    const sisa = Math.max(0, totTagihan - dpPaid);
+
+    let htmlPrompt = `
+        <div class="text-xs text-start bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-700 space-y-1.5">
+            <div class="flex justify-between pb-1 border-b">
+                <span>Total Tagihan:</span> <strong class="font-mono text-slate-900">Rp ${Number(totTagihan).toLocaleString('id-ID')}</strong>
+            </div>
+            <div class="flex justify-between pb-1 border-b">
+                <span>DP yang telah dibayar:</span> <strong class="font-mono text-emerald-700">Rp ${Number(dpPaid).toLocaleString('id-ID')}</strong>
+            </div>
+    `;
+
+    if (sisa > 0) {
+        htmlPrompt += `
+            <div class="flex justify-between text-amber-900 font-bold pb-1 border-b">
+                <span>Pelunasan Diterima:</span> <strong class="font-mono text-emerald-700">Rp ${Number(settlementPaid).toLocaleString('id-ID')} (${settlementMethod})</strong>
+            </div>
+        `;
+    }
+
+    htmlPrompt += `
+            <div class="text-[11px] text-slate-500 pt-1">Transaksi resmi akan otomatis dibukukan ke <strong>Laporan Penjualan Harian & Kas POS</strong>.</div>
+        </div>
+    `;
+
     Swal.fire({
-        title: 'Closing Pesanan Cetak Luar?',
-        text: 'Data transaksi resmi akan otomatis dibukukan ke Penjualan Harian & Kas POS.',
+        title: 'Closing & Serahkan Pesanan?',
+        html: htmlPrompt,
         icon: 'question',
         showCancelButton: true,
-        confirmButtonText: 'Ya, Closing Sekarang',
+        confirmButtonText: 'Ya, Closing & Lunasi',
         cancelButtonText: 'Batal',
         confirmButtonColor: '#059669'
     }).then(r => {
         if (r.isConfirmed) {
             fetch(`/cetak-luar/${currentWsOrder.id}/close`, {
                 method: 'POST',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    settlement_paid_amount: settlementPaid,
+                    settlement_payment_method: settlementMethod
+                })
             })
             .then(r => r.json())
             .then(res => {

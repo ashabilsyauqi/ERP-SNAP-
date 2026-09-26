@@ -478,6 +478,14 @@ class OutsourceOrderController extends Controller
                 throw new \Exception("Pesanan ini sudah selesai dan sudah pernah di-closing.");
             }
 
+            // Handle settlement payment if customer had remaining balance
+            $settlementAmount = (float) $request->input('settlement_paid_amount', $order->remaining_amount);
+            $settlementMethod = $request->input('settlement_payment_method', $order->payment_method ?: 'Cash');
+
+            $newPaidAmount = $order->paid_amount + $settlementAmount;
+            $newRemaining = max(0, $order->customer_price - $newPaidAmount);
+            $finalPaymentStatus = ($newRemaining <= 0) ? 'PAID' : ($newPaidAmount > 0 ? 'PARTIAL' : 'UNPAID');
+
             // 1. Create official sales transaction
             $invoiceNumber = 'INV-OUT-' . date('Ymd') . '-' . strtoupper(Str::random(5));
             $transaction = Transaction::create([
@@ -490,10 +498,10 @@ class OutsourceOrderController extends Controller
                 'total_price' => $order->customer_price,
                 'original_price' => $order->customer_price,
                 'total_hpp' => $order->total_cost,
-                'payment_method' => $order->payment_method ?: 'Cash',
-                'payment_status' => 'PAID',
-                'paid_amount' => $order->customer_price,
-                'remaining_amount' => 0,
+                'payment_method' => $settlementMethod,
+                'payment_status' => $finalPaymentStatus,
+                'paid_amount' => $newPaidAmount,
+                'remaining_amount' => $newRemaining,
                 'order_status' => 'completed',
                 'production_notes' => "Cetak di Luar: {$order->job_title} (Vendor: {$order->vendor_name})",
             ]);
@@ -531,6 +539,10 @@ class OutsourceOrderController extends Controller
 
             // 4. Update Outsource Order status
             $order->status = 'completed';
+            $order->paid_amount = $newPaidAmount;
+            $order->remaining_amount = $newRemaining;
+            $order->payment_status = $finalPaymentStatus;
+            $order->payment_method = $settlementMethod;
             $order->completed_by = Auth::id();
             $order->completed_at = now();
             $order->transaction_id = $transaction->id;
