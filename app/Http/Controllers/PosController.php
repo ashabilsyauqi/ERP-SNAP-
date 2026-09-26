@@ -62,7 +62,9 @@ class PosController extends Controller
                 ->get(['id', 'name', 'phone', 'email']);
         }
 
-        return view('pos.index', compact('materials', 'categories', 'customers'));
+        $branches = \App\Models\Branch::all();
+
+        return view('pos.index', compact('materials', 'categories', 'customers', 'branches'));
     }
 
     public function checkout(Request $request)
@@ -87,11 +89,18 @@ class PosController extends Controller
             'items.*.finishing' => 'nullable|string|max:100',
             'items.*.dimension_text' => 'nullable|string|max:100',
             'items.*.qty' => 'required|integer|min:1',
+            'items.*.is_vendor_job' => 'nullable|boolean',
+            'items.*.vendor_name' => 'nullable|string|max:150',
+            'items.*.vendor_cost' => 'nullable|numeric|min:0',
+            'items.*.shipping_cost' => 'nullable|numeric|min:0',
+            'items.*.vendor_notes' => 'nullable|string',
             'payment_method' => $isDraft ? 'nullable|string' : 'required|string|in:Cash,Transfer,QRIS',
             'is_dp' => 'nullable|boolean',
             'dp_amount' => 'nullable|numeric|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'negotiation_notes' => 'nullable|string|max:255',
+            'fulfillment_branch_id' => 'nullable|integer|exists:branches,id',
+            'is_cross_branch' => 'nullable|boolean',
             'customer_id' => 'nullable|exists:customers,id',
             'customer_name' => 'nullable|string|max:150',
             'customer_phone' => 'nullable|string|max:50',
@@ -200,9 +209,52 @@ class PosController extends Controller
 
             foreach ($request->items as $item) {
                 $qty = (int) $item['qty'];
+                $isVendorJob = !empty($item['is_vendor_job']);
+                $materialName = $item['material_name_or_type'];
+
+                if ($isVendorJob) {
+                    $vendorName = $item['vendor_name'] ?? null;
+                    $vendorCost = (float) ($item['vendor_cost'] ?? 0);
+                    $shippingCost = (float) ($item['shipping_cost'] ?? 0);
+                    $vendorNotes = $item['vendor_notes'] ?? null;
+                    $unitPrice = (float) ($item['custom_unit_price'] ?? $item['selling_price'] ?? $item['retail_price'] ?? 0);
+                    $itemHpp = ($vendorCost + $shippingCost) * $qty;
+                    $dimensionText = $item['dimension_text'] ?? ($vendorName ? "Vendor: {$vendorName}" : "Cetak Offset");
+
+                    $totalItemPrice = $qty * $unitPrice;
+                    $accumulatedPrice += $totalItemPrice;
+                    $totalHpp += $itemHpp;
+
+                    TransactionDetail::create([
+                        'transaction_id' => $transaction->id,
+                        'material_id' => null,
+                        'qty_ordered' => $qty,
+                        'selling_price' => $unitPrice,
+                        'click_charge' => 0,
+                        'fixed_length_m' => null,
+                        'custom_width_cm' => null,
+                        'area_m2' => null,
+                        'dimension_text' => $dimensionText,
+                        'is_vendor_job' => true,
+                        'vendor_name' => $vendorName,
+                        'vendor_cost' => $vendorCost,
+                        'shipping_cost' => $shippingCost,
+                        'vendor_notes' => $vendorNotes,
+                    ]);
+
+                    $savedItems[] = [
+                        'material_name' => $materialName,
+                        'qty_ordered' => $qty,
+                        'selling_price' => $unitPrice,
+                        'dimension_text' => $dimensionText,
+                        'subtotal' => $totalItemPrice,
+                        'is_vendor_job' => true,
+                    ];
+                    continue;
+                }
+
                 $isCustomBanner = !empty($item['is_custom_banner']);
                 $materialId = $item['material_id'] ?? null;
-                $materialName = $item['material_name_or_type'];
 
                 $materialToDeduct = null;
                 if ($materialId) {
@@ -323,6 +375,20 @@ class PosController extends Controller
                 $orderStatus = ($isDp && $totalPrice >= 500000) ? 'in_production' : 'completed';
             }
 
+            // Cross-Branch 25/75 Settlement Split Calculation
+            $fulfillmentBranchId = $request->input('fulfillment_branch_id');
+            $isCrossBranch = $request->boolean('is_cross_branch') || (!empty($fulfillmentBranchId) && (int)$fulfillmentBranchId !== (int)$checkoutBranchId);
+            
+            if ($isCrossBranch && !empty($fulfillmentBranchId) && (int)$fulfillmentBranchId !== (int)$checkoutBranchId) {
+                $orderBranchShare = round($totalPrice * 0.25, 2);
+                $fulfillmentBranchShare = round($totalPrice * 0.75, 2);
+            } else {
+                $isCrossBranch = false;
+                $fulfillmentBranchId = null;
+                $orderBranchShare = 0;
+                $fulfillmentBranchShare = 0;
+            }
+
             $transaction->original_price = $originalPrice;
             $transaction->discount_amount = $discountAmount;
             $transaction->negotiation_notes = $negotiationNotes;
@@ -332,6 +398,10 @@ class PosController extends Controller
             $transaction->remaining_amount = $remainingAmount;
             $transaction->payment_status = $paymentStatus;
             $transaction->order_status = $orderStatus;
+            $transaction->fulfillment_branch_id = $fulfillmentBranchId;
+            $transaction->is_cross_branch = $isCrossBranch;
+            $transaction->order_branch_share = $orderBranchShare;
+            $transaction->fulfillment_branch_share = $fulfillmentBranchShare;
             $transaction->save();
 
             // Record Cash Inflow for the actual paid amount (DP or Full) - Never for draft

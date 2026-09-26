@@ -135,6 +135,9 @@ Route::middleware(['auth'])->group(function () {
 
             Route::get('/machine-sales', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'index'])->name('machine-sales');
             Route::get('/machine-sales/export-excel', [\App\Http\Controllers\Report\MachineSalesReportController::class, 'exportExcel'])->name('machine-sales.export-excel');
+
+            Route::get('/inter-branch-settlement', [\App\Http\Controllers\Report\InterBranchSettlementController::class, 'index'])->name('inter-branch-settlement');
+            Route::get('/inter-branch-settlement/export-excel', [\App\Http\Controllers\Report\InterBranchSettlementController::class, 'exportExcel'])->name('inter-branch-settlement.export-excel');
         });
     });
 

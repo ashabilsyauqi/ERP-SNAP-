@@ -4,6 +4,9 @@
 @section('page-title', 'Terminal Kasir Penjualan (POS)')
 
 @section('action-buttons')
+<button type="button" onclick="openCetakOffsetModal()" class="btn-odoo-primary bg-indigo-600 hover:bg-indigo-700 text-white text-decoration-none shadow-sm cursor-pointer">
+    <i class="fa-solid fa-file-invoice-dollar me-1"></i> Cetak Offset / Vendor
+</button>
 <button type="button" onclick="openDraftOrdersModal()" class="btn-odoo-secondary text-decoration-none position-relative">
     <i class="fa-solid fa-inbox me-1 text-amber-600"></i> Pesanan Draft
     <span id="draft-counter-badge" class="badge bg-amber-600 text-white rounded-pill text-[10px] ms-1">0</span>
@@ -406,6 +409,32 @@
                 </div>
             </div>
 
+            <!-- Opsi Pengerjaan Lintas Cabang (Bagi Hasil 25/75) -->
+            <div class="p-2.5 bg-indigo-50/70 rounded-xl border border-indigo-200/80 space-y-1.5 transition-all">
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer mb-0">
+                        <input type="checkbox" id="is_cross_branch_toggle" onchange="toggleCrossBranch(this.checked)" class="form-check-input text-indigo-600 rounded">
+                        <span class="text-xs font-bold text-indigo-950">Pengerjaan Cabang Lain (Bagi Hasil 25/75)</span>
+                    </label>
+                    <span id="cross_branch_badge" class="hidden text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full border border-indigo-200">Split 25:75</span>
+                </div>
+                <div id="cross_branch_select_wrapper" class="hidden space-y-1.5 pt-1.5 border-t border-indigo-200/60 text-xs">
+                    <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Pilih Cabang Pelaksana (Mengerjakan 75%)</label>
+                    <select id="fulfillment_branch_id" class="w-full px-2.5 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="">-- Pilih Cabang yang Mengerjakan --</option>
+                        @foreach($branches ?? [] as $b)
+                            @if($b->id != (auth()->user()->branch_id ?? 1))
+                                <option value="{{ $b->id }}">{{ $b->nama_cabang }} (Menerima 75%)</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    <div class="text-[10px] text-slate-600 bg-white/90 p-2 rounded-lg border border-indigo-100 leading-tight">
+                        💡 <strong>Kasir Cabang Ini:</strong> Terima 100% uang fisik & berhak atas <strong>25%</strong> komisi order.<br>
+                        🏭 <strong>Cabang Pelaksana:</strong> Berhak atas <strong>75%</strong> dari total order (tercatat di Rekonsiliasi Kliring).
+                    </div>
+                </div>
+            </div>
+
             <!-- Payment Method Tiles (Desktop & Mobile) -->
             @if(auth()->user()->isOperator() && !auth()->user()->isSuperAdmin())
                 <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[11px] flex items-center gap-2 font-medium">
@@ -573,6 +602,116 @@
 
 <!-- Input holds global payment selection state -->
 <input type="hidden" id="global_payment_method" value="Cash">
+
+<!-- Modal Cetak Offset / Vendor Luar Outsource -->
+<div class="modal fade" id="modalCetakOffset" tabindex="-1" aria-labelledby="modalCetakOffsetLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 540px;">
+        <div class="modal-content rounded-4 border-0 shadow-2xl overflow-hidden" style="border-radius: 1.25rem;">
+            <!-- Modal Header -->
+            <div class="px-4 py-3.5 d-flex justify-content-between align-items-center bg-slate-900 text-white">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-500/20 border border-indigo-400/30 text-indigo-300">
+                        <i class="fa-solid fa-file-invoice-dollar text-base"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-sm font-bold mb-0 text-white flex items-center gap-2" id="modalCetakOffsetLabel">
+                            <span>Order Cetak Offset & Vendor Luar</span>
+                            <span class="badge bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 text-[10px] font-semibold">Outsource</span>
+                        </h6>
+                        <span class="text-[11px] text-slate-300">Input kalkulasi modal vendor, pengiriman, & margin laba</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-4 space-y-3.5" style="background-color: #f8fafc;">
+                <!-- Form Inputs -->
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Pekerjaan / Produk Offset <span class="text-rose-500">*</span></label>
+                        <input type="text" id="offset_product_name" class="form-control text-xs font-semibold py-2" placeholder="Misal: Cetak Offset Brosur A4 3 Rim, Buku Agenda 500 Pcs">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Vendor / Rekanan (Opsional)</label>
+                            <input type="text" id="offset_vendor_name" class="form-control text-xs py-2" placeholder="Misal: Percetakan Jaya, Offset Prima">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jumlah / Qty <span class="text-rose-500">*</span></label>
+                            <input type="number" id="offset_qty" value="1" min="1" oninput="calculateOffsetMargin()" class="form-control text-xs font-bold font-mono py-2 text-center" placeholder="1">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-bold text-rose-800 uppercase mb-1">Harga Modal Vendor (HPP) <span class="text-rose-500">*</span></label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text font-bold text-xs bg-rose-50 text-rose-700">Rp</span>
+                                <input type="number" id="offset_vendor_cost" min="0" step="1000" oninput="calculateOffsetMargin()" class="form-control font-mono font-bold text-rose-700 text-xs py-2" placeholder="0">
+                            </div>
+                            <span class="text-[10px] text-slate-400 mt-0.5 block">Biaya tagihan dari pihak vendor</span>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ongkir / Pengiriman (Opsional)</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text font-bold text-xs bg-slate-100 text-slate-700">Rp</span>
+                                <input type="number" id="offset_shipping_cost" min="0" step="1000" oninput="calculateOffsetMargin()" class="form-control font-mono text-slate-800 text-xs py-2" placeholder="0">
+                            </div>
+                            <span class="text-[10px] text-slate-400 mt-0.5 block">Biaya ekspedisi/kurir jika ada</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Harga Jual ke Customer (Satuan) <span class="text-rose-500">*</span></label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text font-bold text-sm bg-emerald-50 text-emerald-700">Rp</span>
+                            <input type="number" id="offset_selling_price" min="0" step="1000" oninput="calculateOffsetMargin()" class="form-control font-mono font-black text-emerald-700 text-base py-2" placeholder="0">
+                        </div>
+                        <span class="text-[10px] text-slate-400 mt-0.5 block">Harga satuan yang ditagihkan ke customer di kasir</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Catatan / Spesifikasi Tambahan (Opsional)</label>
+                        <textarea id="offset_notes" rows="2" class="form-control text-xs" placeholder="Spesifikasi cetak, gramasi kertas, finishing laminating doff, dll..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Margin & Profit Live Preview -->
+                <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3.5 rounded-2xl shadow-md border border-slate-700">
+                    <div class="d-flex justify-content-between align-items-center pb-2 border-b border-white/10 text-xs">
+                        <span class="text-slate-300 font-semibold">Simulasi Margin & Keuntungan:</span>
+                        <span id="offset_margin_badge" class="badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold">Margin 0%</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-2.5 text-center">
+                        <div class="bg-white/5 p-2 rounded-xl border border-white/10">
+                            <span class="text-[9.5px] text-slate-400 block uppercase">Total Modal (HPP)</span>
+                            <span id="offset_total_hpp_display" class="font-mono font-bold text-rose-300 text-xs mt-0.5 block">Rp 0</span>
+                        </div>
+                        <div class="bg-white/5 p-2 rounded-xl border border-white/10">
+                            <span class="text-[9.5px] text-slate-400 block uppercase">Total Penjualan</span>
+                            <span id="offset_total_omset_display" class="font-mono font-bold text-blue-300 text-xs mt-0.5 block">Rp 0</span>
+                        </div>
+                        <div class="bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/30">
+                            <span class="text-[9.5px] text-emerald-300 block uppercase font-bold">Laba Bersih</span>
+                            <span id="offset_total_profit_display" class="font-mono font-black text-emerald-400 text-xs mt-0.5 block">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-4 py-3 bg-white border-t border-slate-200 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-1.5 rounded-xl font-bold text-xs" data-bs-dismiss="modal">Batal</button>
+                <button type="button" onclick="addOffsetToCart()" class="btn btn-sm bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-sm flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-cart-plus"></i>
+                    <span>Tambahkan ke Keranjang POS</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Negosiasi Harga Satuan Item (Per-Item Negotiation) -->
 <div class="modal fade" id="modalItemNegotiation" tabindex="-1" aria-labelledby="modalItemNegotiationLabel" aria-hidden="true">
@@ -1679,6 +1818,172 @@
 
         hideBannerModal();
     }
+
+    // --- Cetak Offset / Vendor Luar Modal & Calculation ---
+    function openCetakOffsetModal() {
+        document.getElementById('offset_product_name').value = '';
+        document.getElementById('offset_vendor_name').value = '';
+        document.getElementById('offset_qty').value = '1';
+        document.getElementById('offset_vendor_cost').value = '';
+        document.getElementById('offset_shipping_cost').value = '';
+        document.getElementById('offset_selling_price').value = '';
+        document.getElementById('offset_notes').value = '';
+        calculateOffsetMargin();
+
+        const modalEl = document.getElementById('modalCetakOffset');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+            setTimeout(() => {
+                document.getElementById('offset_product_name')?.focus();
+            }, 300);
+        }
+    }
+
+    function calculateOffsetMargin() {
+        const qty = parseInt(document.getElementById('offset_qty')?.value, 10) || 1;
+        const vendorCost = parseFloat(document.getElementById('offset_vendor_cost')?.value) || 0;
+        const shippingCost = parseFloat(document.getElementById('offset_shipping_cost')?.value) || 0;
+        const sellingPrice = parseFloat(document.getElementById('offset_selling_price')?.value) || 0;
+
+        const totalHpp = (vendorCost + shippingCost) * qty;
+        const totalOmset = sellingPrice * qty;
+        const profit = totalOmset - totalHpp;
+        const marginPct = totalOmset > 0 ? ((profit / totalOmset) * 100).toFixed(1) : 0;
+
+        const hppDisp = document.getElementById('offset_total_hpp_display');
+        const omsetDisp = document.getElementById('offset_total_omset_display');
+        const profitDisp = document.getElementById('offset_total_profit_display');
+        const badgeDisp = document.getElementById('offset_margin_badge');
+
+        if (hppDisp) hppDisp.innerText = `Rp ${Number(totalHpp).toLocaleString('id-ID')}`;
+        if (omsetDisp) omsetDisp.innerText = `Rp ${Number(totalOmset).toLocaleString('id-ID')}`;
+        if (profitDisp) {
+            profitDisp.innerText = `Rp ${Number(profit).toLocaleString('id-ID')}`;
+            if (profit < 0) {
+                profitDisp.className = 'font-mono font-black text-rose-400 text-xs mt-0.5 block';
+            } else {
+                profitDisp.className = 'font-mono font-black text-emerald-400 text-xs mt-0.5 block';
+            }
+        }
+        if (badgeDisp) {
+            if (totalOmset <= 0) {
+                badgeDisp.className = 'badge bg-slate-500/20 text-slate-300 border border-slate-500/30 text-[10px] font-mono font-bold';
+                badgeDisp.innerText = 'Margin 0%';
+            } else if (profit < 0) {
+                badgeDisp.className = 'badge bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] font-mono font-bold';
+                badgeDisp.innerText = `Rugi ${marginPct}%`;
+            } else {
+                badgeDisp.className = 'badge bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono font-bold';
+                badgeDisp.innerText = `Margin ${marginPct}%`;
+            }
+        }
+    }
+
+    function addOffsetToCart() {
+        const productName = (document.getElementById('offset_product_name')?.value || '').trim();
+        const vendorName = (document.getElementById('offset_vendor_name')?.value || '').trim();
+        const qty = parseInt(document.getElementById('offset_qty')?.value, 10) || 1;
+        const vendorCost = parseFloat(document.getElementById('offset_vendor_cost')?.value) || 0;
+        const shippingCost = parseFloat(document.getElementById('offset_shipping_cost')?.value) || 0;
+        const sellingPrice = parseFloat(document.getElementById('offset_selling_price')?.value) || 0;
+        const notes = (document.getElementById('offset_notes')?.value || '').trim();
+
+        if (!productName) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Nama Pekerjaan Wajib Diisi',
+                text: 'Silakan isi nama produk atau deskripsi pekerjaan offset.'
+            });
+            document.getElementById('offset_product_name')?.focus();
+            return;
+        }
+
+        if (sellingPrice <= 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Harga Jual Belum Diisi',
+                text: 'Silakan tentukan harga jual satuan ke customer.'
+            });
+            document.getElementById('offset_selling_price')?.focus();
+            return;
+        }
+
+        const totalHpp = (vendorCost + shippingCost) * qty;
+        const totalOmset = sellingPrice * qty;
+        if (totalOmset < totalHpp) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Harga Jual Lebih Rendah dari Modal!',
+                text: `Total modal vendor (Rp ${Number(totalHpp).toLocaleString('id-ID')}) melebihi total penjualan (Rp ${Number(totalOmset).toLocaleString('id-ID')}). Tetap lanjutkan?`,
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal Periksa Ulang',
+                confirmButtonColor: '#d97706'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    commitOffsetToCart(productName, vendorName, qty, vendorCost, shippingCost, sellingPrice, notes);
+                }
+            });
+            return;
+        }
+
+        commitOffsetToCart(productName, vendorName, qty, vendorCost, shippingCost, sellingPrice, notes);
+    }
+
+    function commitOffsetToCart(productName, vendorName, qty, vendorCost, shippingCost, sellingPrice, notes) {
+        let dimensionText = `Vendor: ${vendorName || 'Luar'}`;
+        if (shippingCost > 0) {
+            dimensionText += ` (Ongkir: Rp ${Number(shippingCost).toLocaleString('id-ID')})`;
+        }
+        if (notes) {
+            dimensionText += ` [${notes}]`;
+        }
+
+        cart.push({
+            id: cartCounter++,
+            material_id: null,
+            material_name_or_type: `[Offset] ${productName}`,
+            requested_size: null,
+            is_custom_banner: false,
+            is_vendor_job: true,
+            vendor_name: vendorName || null,
+            vendor_cost: vendorCost,
+            shipping_cost: shippingCost,
+            vendor_notes: notes || null,
+            dimension_text: dimensionText,
+            qty: qty,
+            retail_price: sellingPrice,
+            wholesale_prices: []
+        });
+
+        renderCart();
+
+        const modalEl = document.getElementById('modalCetakOffset');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+
+        window.dispatchEvent(new CustomEvent('item-added-to-cart', { detail: { name: `[Offset] ${productName}` } }));
+    }
+
+    // --- Toggle Cross Branch Selector ---
+    function toggleCrossBranch(checked) {
+        const wrapper = document.getElementById('cross_branch_select_wrapper');
+        const badge = document.getElementById('cross_branch_badge');
+        const select = document.getElementById('fulfillment_branch_id');
+
+        if (checked) {
+            if (wrapper) wrapper.classList.remove('hidden');
+            if (badge) badge.classList.remove('hidden');
+        } else {
+            if (wrapper) wrapper.classList.add('hidden');
+            if (badge) badge.classList.add('hidden');
+            if (select) select.value = '';
+        }
+    }
+
     // --- Add regular non-banner items to Cart ---
     function addToCart(materialId, materialName, fixedSize, retailPrice, wholesalePrices) {
         const sc = document.getElementById('checkout-success-desktop');
@@ -3948,7 +4253,12 @@
                 area_m2: item.area_m2 || null,
                 billable_area_m2: item.billable_area_m2 || null,
                 is_custom_banner: !!item.is_custom_banner,
-                custom_unit_price: isNegotiated ? item.custom_unit_price : null,
+                is_vendor_job: !!item.is_vendor_job,
+                vendor_name: item.vendor_name || null,
+                vendor_cost: item.vendor_cost || 0,
+                shipping_cost: item.shipping_cost || 0,
+                vendor_notes: item.vendor_notes || null,
+                custom_unit_price: isNegotiated ? item.custom_unit_price : (item.is_vendor_job ? item.retail_price : null),
                 eyelet_count: item.eyelet_count || 0,
                 extra_eyelet_cost: (item.extra_eyelet_cost !== undefined) ? item.extra_eyelet_cost : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0),
                 finishing: item.finishing || null,
@@ -4129,6 +4439,9 @@
         if (successContainerDesktop) successContainerDesktop.classList.add('hidden');
         if (successContainerMobile) successContainerMobile.classList.add('hidden');
 
+        const isCrossBranch = document.getElementById('is_cross_branch_toggle')?.checked || false;
+        const fulfillmentBranchId = isCrossBranch ? (document.getElementById('fulfillment_branch_id')?.value || null) : null;
+
         fetch('{{ route("pos.checkout") }}', {
             method: 'POST',
             headers: {
@@ -4142,6 +4455,8 @@
                 dp_amount: dpAmount,
                 discount_amount: window.negotiationDiscount || 0,
                 negotiation_notes: window.negotiationNotes || null,
+                fulfillment_branch_id: fulfillmentBranchId,
+                is_cross_branch: isCrossBranch,
                 is_draft: isDraft,
                 draft_id: (window.activeEditingDraft ? window.activeEditingDraft.id : null),
                 customer_id: customerId,

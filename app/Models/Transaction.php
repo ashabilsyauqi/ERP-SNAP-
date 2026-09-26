@@ -23,6 +23,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'due_date',
     'production_notes',
     'branch_id',
+    'fulfillment_branch_id',
+    'is_cross_branch',
+    'order_branch_share',
+    'fulfillment_branch_share',
     'original_price',
     'discount_amount',
     'negotiation_notes'
@@ -35,6 +39,9 @@ class Transaction extends Model
         'total_hpp' => 'decimal:2',
         'paid_amount' => 'decimal:2',
         'remaining_amount' => 'decimal:2',
+        'order_branch_share' => 'decimal:2',
+        'fulfillment_branch_share' => 'decimal:2',
+        'is_cross_branch' => 'boolean',
     ];
 
     public function user(): BelongsTo
@@ -55,6 +62,11 @@ class Transaction extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class)->withTrashed();
+    }
+
+    public function fulfillmentBranch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'fulfillment_branch_id')->withTrashed();
     }
 
     public function cashTransactions(): HasMany
