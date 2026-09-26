@@ -56,7 +56,11 @@ class OutsourceOrderController extends Controller
         // Tab / Status Filter
         $activeTab = $request->input('tab', 'all');
         if ($activeTab !== 'all') {
-            $query->where('status', $activeTab);
+            if ($activeTab === 'in_production') {
+                $query->whereIn('status', ['in_production', 'qc_passed']);
+            } else {
+                $query->where('status', $activeTab);
+            }
         }
 
         $orders = $query->orderBy('created_at', 'desc')->get();
