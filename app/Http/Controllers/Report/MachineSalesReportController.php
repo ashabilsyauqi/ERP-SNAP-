@@ -24,11 +24,10 @@ class MachineSalesReportController extends Controller
 
         // Branch Filter
         if ($request->has('branch_id')) {
-                $branchId = $request->input('branch_id');
-                session(['selected_branch_id' => $branchId]);
-            } else {
-                $branchId = session('selected_branch_id', 'all');
-            }
+            $branchId = $request->input('branch_id');
+            session(['selected_branch_id' => $branchId]);
+        } else {
+            $branchId = session('selected_branch_id', 'all');
         }
 
         $branches = Branch::all();
