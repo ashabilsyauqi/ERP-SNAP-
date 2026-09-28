@@ -182,6 +182,14 @@ class PosController extends Controller
                 $transaction->due_date = $request->due_date;
                 $transaction->production_notes = $request->production_notes;
 
+                // When settling a draft with payment, record the transaction date as TODAY (the day it is paid)
+                if (!$isDraft) {
+                    $transaction->user_id = auth()->id();
+                    $transaction->timestamps = false;
+                    $transaction->created_at = now();
+                    $transaction->updated_at = now();
+                }
+
                 // Remove existing details so we can cleanly replace with edited items
                 $transaction->transactionDetails()->delete();
             } else {
@@ -577,17 +585,20 @@ class PosController extends Controller
             $transaction->remaining_amount = $remainingAmount;
             $transaction->payment_status = $paymentStatus;
             $transaction->order_status = $orderStatus;
-            // Record official transaction date at checkout time (e.g. Draft created 4th, settled 6th -> recorded on 6th)
+            $transaction->user_id = auth()->id(); // Record the active cashier receiving payment
+
+            // Record official transaction date at payment time (e.g. Draft created 25th, paid 28th -> recorded on 28th)
+            $transaction->timestamps = false;
             $transaction->created_at = now();
             $transaction->updated_at = now();
             $transaction->save();
+            $transaction->timestamps = true;
 
-            // Also update details created_at to checkout time
-            foreach ($transaction->transactionDetails as $detail) {
-                $detail->created_at = now();
-                $detail->updated_at = now();
-                $detail->save();
-            }
+            // Also update all transaction details created_at to payment date
+            \App\Models\TransactionDetail::where('transaction_id', $transaction->id)->update([
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
             // Record cash inflow
             if ($paidAmount > 0) {
