@@ -108,10 +108,10 @@ class SalesReportController extends Controller
             $selectFields = [
                 DB::raw("{$dateExpr} as date_val"),
                 DB::raw('COUNT(id) as total_transactions'),
-                DB::raw('SUM(total_price) as total_sales'),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN total_price ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN total_price ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total_price ELSE 0 END) as transfer_sales")
+                DB::raw('SUM(paid_amount) as total_sales'),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN paid_amount ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN paid_amount ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN paid_amount ELSE 0 END) as transfer_sales")
             ];
 
             $groupBy = ['date_val'];
@@ -149,10 +149,10 @@ class SalesReportController extends Controller
                 DB::raw("{$yearExpr} as year_val"),
                 DB::raw("{$monthExpr} as month_val"),
                 DB::raw('COUNT(id) as total_transactions'),
-                DB::raw('SUM(total_price) as total_sales'),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN total_price ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN total_price ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total_price ELSE 0 END) as transfer_sales")
+                DB::raw('SUM(paid_amount) as total_sales'),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN paid_amount ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN paid_amount ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN paid_amount ELSE 0 END) as transfer_sales")
             ];
 
             $groupBy = ['year_val', 'month_val'];
@@ -191,10 +191,10 @@ class SalesReportController extends Controller
             $selectFields = [
                 DB::raw("{$yearExpr} as year_val"),
                 DB::raw('COUNT(id) as total_transactions'),
-                DB::raw('SUM(total_price) as total_sales'),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN total_price ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN total_price ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN total_price ELSE 0 END) as transfer_sales")
+                DB::raw('SUM(paid_amount) as total_sales'),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN paid_amount ELSE 0 END) as cash_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN paid_amount ELSE 0 END) as qris_sales"),
+                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN paid_amount ELSE 0 END) as transfer_sales")
             ];
 
             $groupBy = ['year_val'];
@@ -231,8 +231,8 @@ class SalesReportController extends Controller
             ->select(
                 'branch_id',
                 DB::raw('COUNT(id) as total_orders'),
-                DB::raw('SUM(total_price) as total_omzet'),
-                DB::raw('AVG(total_price) as avg_order_value')
+                DB::raw('SUM(paid_amount) as total_omzet'),
+                DB::raw('AVG(paid_amount) as avg_order_value')
             )
             ->groupBy('branch_id')
             ->get()

@@ -118,7 +118,7 @@ class SalesController extends Controller
         $transferTotal = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->sum('paid_amount');
         $transferCount = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->count();
 
-        $totalOmset = (clone $summaryBaseQuery)->sum('total_price');
+        $totalOmset = (clone $summaryBaseQuery)->sum('paid_amount');
         $totalPaid = (clone $summaryBaseQuery)->sum('paid_amount');
         $totalReceivables = (clone $summaryBaseQuery)->sum('remaining_amount');
         $totalTrx = (clone $summaryBaseQuery)->count();

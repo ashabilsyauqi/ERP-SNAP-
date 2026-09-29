@@ -80,8 +80,8 @@ class OwnerController extends Controller
         } // 'all' has no constraints
 
         // Synchronized Financial Calculations:
-        // 1. Omzet: Daily / Period POS Revenue
-        $totalSales = (float) (clone $query)->sum('total_price');
+        // 1. Omzet: Daily / Period POS Revenue (Cash Inflow Basis: DP + Pelunasan)
+        $totalSales = (float) (clone $query)->sum('paid_amount');
         // 2. HPP: Material Cost + Click Charge per product item
         $totalHpp = (float) (clone $query)->sum('total_hpp');
         // 3. Gross Profit: Omzet - HPP

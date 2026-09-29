@@ -67,7 +67,7 @@ class FinanceDashboardController extends Controller
 
         $totalPenjualan = (clone $posQuery)
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-            ->sum('total_price');
+            ->sum('paid_amount');
 
         $recentTransactions = (clone $cashQuery)
             ->with(['account', 'branch', 'transaction.transactionDetails.material', 'transaction.user'])

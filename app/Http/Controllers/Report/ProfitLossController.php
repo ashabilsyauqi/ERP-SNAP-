@@ -92,7 +92,7 @@ class ProfitLossController extends Controller
         }
 
         $cashTransactions = $cashQuery->get();
-        $totalSalesFromTrx = (float) (clone $salesQuery)->sum('total_price');
+        $totalSalesFromTrx = (float) (clone $salesQuery)->sum('paid_amount');
         $totalHppFromTrx = (float) (clone $salesQuery)->sum('total_hpp');
 
         // 1. PENDAPATAN USAHA (OMZET POS)

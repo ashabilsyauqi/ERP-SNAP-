@@ -283,15 +283,25 @@
                                     <i class="fa-solid fa-user-circle text-slate-400 me-1"></i>
                                     {{ $trx->user->full_name ?: ($trx->user->username ?? 'Kasir') }}
                                 </td>
-                                <td class="text-end font-mono fw-bold text-blue-900">
-                                    Rp {{ number_format($trx->total_price, 0, ',', '.') }}
+                                <td class="text-end font-mono">
                                     @if($trx->order_status === 'draft')
+                                        <div class="fw-bold text-slate-500">
+                                            Rp {{ number_format($trx->total_price, 0, ',', '.') }}
+                                        </div>
                                         <div class="text-[10px] text-amber-600 font-semibold">
                                             (Draft Belum Bayar)
                                         </div>
                                     @elseif($trx->remaining_amount > 0)
-                                        <div class="text-[10px] text-amber-700 font-normal">
-                                            Sisa: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}
+                                        <div class="fw-bold text-emerald-800">
+                                            Rp {{ number_format($trx->paid_amount, 0, ',', '.') }}
+                                            <span class="badge bg-amber-100 text-amber-900 border border-amber-300 text-[9px] ms-0.5">DP Masuk</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 font-normal">
+                                            Total: Rp {{ number_format($trx->total_price, 0, ',', '.') }} | <span class="text-rose-600 font-medium">Sisa: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}</span>
+                                        </div>
+                                    @else
+                                        <div class="fw-bold text-blue-900">
+                                            Rp {{ number_format($trx->total_price, 0, ',', '.') }}
                                         </div>
                                     @endif
                                 </td>
