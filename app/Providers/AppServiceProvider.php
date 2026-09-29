@@ -21,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        @ini_set('memory_limit', '512M');
         Schema::defaultStringLength(191);
 
         Gate::before(function ($user, $ability) {

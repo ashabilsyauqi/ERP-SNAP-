@@ -21,6 +21,7 @@ class SalesController extends Controller
      */
     public function index(Request $request)
     {
+        @ini_set('memory_limit', '512M');
         $user = auth()->user();
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
         $statusFilter = $request->input('status', 'sales'); // 'sales' (default: completed/in_production/ready) or 'draft'
