@@ -285,7 +285,7 @@
 
                 <!-- Export & Summary Actions -->
                 <div class="d-flex align-items-center gap-2">
-                    <a href="{{ route('owner.export-analytics', request()->query()) }}" 
+                    <a href="{{ Route::has('owner.export-analytics') ? route('owner.export-analytics', request()->query()) : url('/owner/export-analytics?' . http_build_query(request()->query())) }}" 
                        class="btn btn-sm btn-outline-success rounded-lg py-1 px-2.5 text-xs font-bold text-decoration-none d-inline-flex align-items-center gap-1.5 shadow-xs" 
                        title="Download data grafik harian ke file Excel/CSV">
                         <i class="fa-solid fa-file-excel text-emerald-600"></i>
