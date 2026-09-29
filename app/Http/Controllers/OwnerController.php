@@ -143,6 +143,7 @@ class OwnerController extends Controller
         $chartSales = [];
         $chartVolume = [];
         $chartNet = [];
+        $chartAov = [];
 
         if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
             $s = Carbon::parse($startDateInput)->startOfDay();
@@ -157,11 +158,12 @@ class OwnerController extends Controller
                     if ($branchId && $branchId !== 'all') {
                         $dTrx->where('branch_id', $branchId);
                     }
-                    $salesVal = (float) $dTrx->sum('total_price');
+                    $salesVal = (float) $dTrx->sum('paid_amount');
                     $volVal = (int) $dTrx->count();
                     $chartSales[] = $salesVal;
                     $chartVolume[] = $volVal;
                     $chartNet[] = $salesVal;
+                    $chartAov[] = $volVal > 0 ? round($salesVal / $volVal) : 0;
                 }
             } else {
                 for ($cur = $s->copy()->startOfMonth(); $cur->lte($e); $cur->addMonth()) {
@@ -172,16 +174,17 @@ class OwnerController extends Controller
                     if ($branchId && $branchId !== 'all') {
                         $mSalesQuery->where('branch_id', $branchId);
                     }
-                    $salesVal = (float) $mSalesQuery->sum('total_price');
+                    $salesVal = (float) $mSalesQuery->sum('paid_amount');
                     $volVal = (int) $mSalesQuery->count();
                     $chartSales[] = $salesVal;
                     $chartVolume[] = $volVal;
                     $chartNet[] = $salesVal;
+                    $chartAov[] = $volVal > 0 ? round($salesVal / $volVal) : 0;
                 }
             }
         } elseif ($timeframe === 'today' || $timeframe === '1D') {
             // Aggregate all transactions for today in 1 query
-            $todayTransactions = (clone $query)->get(['total_price', 'created_at']);
+            $todayTransactions = (clone $query)->get(['paid_amount', 'created_at']);
 
             $hourlyData = [];
             // Full 24-Hour Range (00:00 - 23:00) to support all 24 hours seamlessly
@@ -192,7 +195,7 @@ class OwnerController extends Controller
             foreach ($todayTransactions as $trx) {
                 $h = (int) $trx->created_at->format('G');
                 if (isset($hourlyData[$h])) {
-                    $hourlyData[$h]['sales'] += (float) $trx->total_price;
+                    $hourlyData[$h]['sales'] += (float) $trx->paid_amount;
                     $hourlyData[$h]['volume'] += 1;
                 }
             }
@@ -202,6 +205,7 @@ class OwnerController extends Controller
                 $chartSales[] = $data['sales'];
                 $chartVolume[] = $data['volume'];
                 $chartNet[] = $data['sales'];
+                $chartAov[] = $data['volume'] > 0 ? round($data['sales'] / $data['volume']) : 0;
             }
         } elseif ($timeframe === '7days' || $timeframe === '7D') {
             for ($d = 6; $d >= 0; $d--) {
@@ -214,11 +218,12 @@ class OwnerController extends Controller
                     $dTrx->where('branch_id', $branchId);
                 }
 
-                $salesVal = (float) $dTrx->sum('total_price');
+                $salesVal = (float) $dTrx->sum('paid_amount');
                 $volVal = (int) $dTrx->count();
                 $chartSales[] = $salesVal;
                 $chartVolume[] = $volVal;
                 $chartNet[] = $salesVal;
+                $chartAov[] = $volVal > 0 ? round($salesVal / $volVal) : 0;
             }
         } elseif ($timeframe === 'month' || $timeframe === '1M') {
             $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
@@ -232,11 +237,12 @@ class OwnerController extends Controller
                     $dTrx->where('branch_id', $branchId);
                 }
 
-                $salesVal = (float) $dTrx->sum('total_price');
+                $salesVal = (float) $dTrx->sum('paid_amount');
                 $volVal = (int) $dTrx->count();
                 $chartSales[] = $salesVal;
                 $chartVolume[] = $volVal;
                 $chartNet[] = $salesVal;
+                $chartAov[] = $volVal > 0 ? round($salesVal / $volVal) : 0;
             }
         } elseif ($timeframe === 'year' || $timeframe === '1Y') {
             for ($m = 1; $m <= 12; $m++) {
@@ -249,11 +255,12 @@ class OwnerController extends Controller
                     $mTrx->where('branch_id', $branchId);
                 }
 
-                $salesVal = (float) $mTrx->sum('total_price');
+                $salesVal = (float) $mTrx->sum('paid_amount');
                 $volVal = (int) $mTrx->count();
                 $chartSales[] = $salesVal;
                 $chartVolume[] = $volVal;
                 $chartNet[] = $salesVal;
+                $chartAov[] = $volVal > 0 ? round($salesVal / $volVal) : 0;
             }
         } else {
             // Default / 'all': 6 months overview
@@ -273,21 +280,37 @@ class OwnerController extends Controller
                     $mOpexQuery->where('branch_id', $branchId);
                 }
 
-                $mSales = (float) $mSalesQuery->sum('total_price');
+                $mSales = (float) $mSalesQuery->sum('paid_amount');
                 $mHpp = (float) $mSalesQuery->sum('total_hpp');
                 $mOpex = (float) $mOpexQuery->whereDoesntHave('account', function($q) {
                     $q->where('kode_akun', '6-1000');
                 })->sum('jumlah');
+                $mVol = (int) $mSalesQuery->count();
 
                 $chartSales[] = $mSales;
-                $chartVolume[] = (int) $mSalesQuery->count();
+                $chartVolume[] = $mVol;
                 $chartNet[] = $mSales - $mHpp - $mOpex;
+                $chartAov[] = $mVol > 0 ? round($mSales / $mVol) : 0;
             }
         }
 
         $highestSales = !empty($chartSales) ? max($chartSales) : 0;
         $lowestSales = !empty($chartSales) ? min($chartSales) : 0;
         $avgSales = !empty($chartSales) ? round(array_sum($chartSales) / count($chartSales)) : 0;
+
+        // Business Growth & Customer Trust Analytics
+        $avgOrderValue = $totalTransactionsCount > 0 ? round($totalSales / $totalTransactionsCount) : 0;
+        $activeDaysCount = count(array_filter($chartVolume, fn($v) => $v > 0));
+        $dailyAvgTransactions = $activeDaysCount > 0 ? round($totalTransactionsCount / $activeDaysCount, 1) : 0;
+        $dailyAvgSales = $activeDaysCount > 0 ? round($totalSales / $activeDaysCount) : 0;
+
+        $maxVol = !empty($chartVolume) ? max($chartVolume) : 0;
+        $maxVolIdx = !empty($chartVolume) ? array_search($maxVol, $chartVolume) : false;
+        $peakVolumeLabel = ($maxVolIdx !== false && isset($chartLabels[$maxVolIdx]) && $maxVol > 0) ? $chartLabels[$maxVolIdx] . " ({$maxVol} Trx)" : '-';
+
+        $maxSales = !empty($chartSales) ? max($chartSales) : 0;
+        $maxSalesIdx = !empty($chartSales) ? array_search($maxSales, $chartSales) : false;
+        $peakSalesLabel = ($maxSalesIdx !== false && isset($chartLabels[$maxSalesIdx]) && $maxSales > 0) ? $chartLabels[$maxSalesIdx] . " (Rp " . number_format($maxSales, 0, ',', '.') . ")" : '-';
 
         $recentTransactions = (clone $query)->with(['user', 'branch', 'transactionDetails.material'])->orderBy('created_at', 'desc')->take(10)->get();
         $branches = Branch::all();
@@ -317,9 +340,16 @@ class OwnerController extends Controller
             'chartSales',
             'chartVolume',
             'chartNet',
+            'chartAov',
             'highestSales',
             'lowestSales',
             'avgSales',
+            'avgOrderValue',
+            'dailyAvgTransactions',
+            'dailyAvgSales',
+            'activeDaysCount',
+            'peakVolumeLabel',
+            'peakSalesLabel',
             'branches',
             'branchId',
             'timeframe',
@@ -328,5 +358,91 @@ class OwnerController extends Controller
             'startDate',
             'endDate'
         ));
+    }
+
+    /**
+     * Export daily analytics data for Owner to Excel/CSV.
+     */
+    public function exportAnalytics(Request $request)
+    {
+        $timeframe = $request->input('timeframe', $request->input('period', 'month'));
+        $month = (int) $request->input('month', Carbon::now()->month);
+        $year = (int) $request->input('year', Carbon::now()->year);
+        $startDateInput = $request->input('start_date');
+        $endDateInput = $request->input('end_date');
+        $branchId = $request->input('branch_id', 'all');
+
+        $query = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
+        if ($branchId && $branchId !== 'all') {
+            $query->where('branch_id', $branchId);
+        }
+
+        if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
+            $sDate = Carbon::parse($startDateInput)->startOfDay();
+            $eDate = Carbon::parse($endDateInput)->endOfDay();
+            $query->whereBetween('created_at', [$sDate, $eDate]);
+        } elseif ($timeframe === 'today' || $timeframe === '1D') {
+            $query->whereDate('created_at', Carbon::today());
+        } elseif ($timeframe === '7days' || $timeframe === '7D') {
+            $query->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay());
+        } elseif ($timeframe === 'year' || $timeframe === '1Y') {
+            $startDate = Carbon::createFromDate($year, 1, 1)->startOfMonth();
+            $endDate = Carbon::createFromDate($year, 12, 31)->endOfMonth();
+            $query->whereBetween('created_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
+        } else {
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+            $query->whereBetween('created_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
+        }
+
+        $records = $query->with('branch')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->groupBy(fn($t) => $t->created_at->format('Y-m-d'));
+
+        $filename = "Analisa_Pertumbuhan_Snaprint_" . date('Ymd_His') . ".csv";
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($records) {
+            $file = fopen('php://output', 'w');
+            // Add UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            fputcsv($file, [
+                'Tanggal',
+                'Jumlah Transaksi (Traffic)',
+                'Total Omset Riil (Rp)',
+                'Rata-rata Belanja per Pelanggan / AOV (Rp)',
+                'Kas Tunai (Rp)',
+                'QRIS (Rp)',
+                'Transfer Bank (Rp)',
+            ]);
+
+            foreach ($records as $date => $items) {
+                $trxCount = $items->count();
+                $totalPaid = $items->sum('paid_amount');
+                $aov = $trxCount > 0 ? round($totalPaid / $trxCount) : 0;
+                $cash = $items->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
+                $qris = $items->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount');
+                $tf = $items->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount');
+
+                fputcsv($file, [
+                    Carbon::parse($date)->translatedFormat('d F Y'),
+                    $trxCount,
+                    $totalPaid,
+                    $aov,
+                    $cash,
+                    $qris,
+                    $tf,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

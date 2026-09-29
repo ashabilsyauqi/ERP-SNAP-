@@ -256,14 +256,14 @@
 <div class="row g-3 mb-4">
     <div class="col-lg-8">
         <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm h-100">
-            <!-- Chart Header with Trading Metrics -->
+            <!-- Chart Header with Trading & Business Growth Metrics -->
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pb-3 mb-3 border-bottom">
                 <div class="d-flex align-items-center gap-2">
                     <div class="w-8 h-8 rounded-xl bg-slate-900 text-white d-flex align-items-center justify-content-center flex-shrink-0">
-                        <i class="fa-solid fa-chart-candlestick text-xs"></i>
+                        <i class="fa-solid fa-chart-line text-xs"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0 font-extrabold text-slate-900 text-sm">Grafik Performa Penjualan (Live Chart)</h6>
+                        <h6 class="mb-0 font-extrabold text-slate-900 text-sm">Grafik Perkembangan Harian & Trafik Snaprint</h6>
                         <span class="text-[10px] text-blue-700 font-bold">
                             <i class="fa-solid fa-calendar-day me-1"></i>
                             @if(($timeframe ?? '') === 'custom' && !empty($startDate) && !empty($endDate))
@@ -283,20 +283,61 @@
                     </div>
                 </div>
 
-                <!-- Trading Highlights (High, Low, Avg) -->
-                <div class="d-flex align-items-center gap-2 text-xs">
-                    <div class="px-2 py-1 bg-slate-50 rounded-lg border text-slate-600">
-                        <span class="text-[9px] text-slate-400 font-bold uppercase block">High</span>
-                        <span class="font-mono font-bold text-emerald-700">Rp {{ number_format($highestSales, 0, ',', '.') }}</span>
+                <!-- Export & Summary Actions -->
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('owner.export-analytics', request()->query()) }}" 
+                       class="btn btn-sm btn-outline-success rounded-lg py-1 px-2.5 text-xs font-bold text-decoration-none d-inline-flex align-items-center gap-1.5 shadow-xs" 
+                       title="Download data grafik harian ke file Excel/CSV">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                        <span>Ekspor Excel</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Business Growth & Customer Trust KPIs (4 Indikator Papa) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Rata-rata Trx / Hari</span>
+                        <i class="fa-solid fa-users text-slate-400 text-[10px]"></i>
                     </div>
-                    <div class="px-2 py-1 bg-slate-50 rounded-lg border text-slate-600">
-                        <span class="text-[9px] text-slate-400 font-bold uppercase block">Low</span>
-                        <span class="font-mono font-bold text-rose-700">Rp {{ number_format($lowestSales, 0, ',', '.') }}</span>
+                    <div class="font-mono font-extrabold text-slate-900 text-sm">
+                        {{ $dailyAvgTransactions }} <span class="text-[10px] font-normal text-slate-500">Trx/hari</span>
                     </div>
-                    <div class="px-2 py-1 bg-blue-50 rounded-lg border border-blue-200 text-blue-900">
-                        <span class="text-[9px] text-blue-600 font-bold uppercase block">Avg</span>
-                        <span class="font-mono font-bold text-blue-950">Rp {{ number_format($avgSales, 0, ',', '.') }}</span>
+                    <small class="text-[9px] text-slate-400 block truncate">Tingkat keramaian toko</small>
+                </div>
+
+                <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="text-[9px] text-emerald-800 font-bold uppercase tracking-wider block">Rata-rata Nilai / Trx (AOV)</span>
+                        <i class="fa-solid fa-gem text-emerald-600 text-[10px]"></i>
                     </div>
+                    <div class="font-mono font-extrabold text-emerald-950 text-sm">
+                        Rp {{ number_format($avgOrderValue, 0, ',', '.') }}
+                    </div>
+                    <small class="text-[9px] text-emerald-700 block truncate">Tingkat kepercayaan belanja</small>
+                </div>
+
+                <div class="p-2.5 bg-blue-50 rounded-xl border border-blue-200">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="text-[9px] text-blue-800 font-bold uppercase tracking-wider block">Rata-rata Omset / Hari</span>
+                        <i class="fa-solid fa-money-bill-trend-up text-blue-600 text-[10px]"></i>
+                    </div>
+                    <div class="font-mono font-extrabold text-blue-950 text-sm">
+                        Rp {{ number_format($dailyAvgSales, 0, ',', '.') }}
+                    </div>
+                    <small class="text-[9px] text-blue-700 block truncate">Pendapatan harian rerata</small>
+                </div>
+
+                <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                        <span class="text-[9px] text-amber-800 font-bold uppercase tracking-wider block">Puncak Keramaian</span>
+                        <i class="fa-solid fa-fire text-amber-600 text-[10px]"></i>
+                    </div>
+                    <div class="font-mono font-bold text-amber-950 text-xs truncate" title="{{ $peakVolumeLabel }}">
+                        {{ $peakVolumeLabel }}
+                    </div>
+                    <small class="text-[9px] text-amber-700 block truncate">Hari transaksi tertinggi</small>
                 </div>
             </div>
 
@@ -458,7 +499,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        // 1. Trading-Style Multi-Axis Chart (Omset Area + Volume Bar)
+        // 1. Trading-Style Multi-Axis Chart (Omset Area + Volume Bar + AOV Trend Line)
         const tradingChartOptions = {
             series: [
                 {
@@ -470,13 +511,29 @@
                     name: 'Volume Transaksi (Trx)',
                     type: 'column',
                     data: @json($chartVolume)
+                },
+                {
+                    name: 'Rata-rata / Nota (AOV)',
+                    type: 'line',
+                    data: @json($chartAov)
                 }
             ],
             chart: {
                 height: 330,
                 type: 'line',
                 stacked: false,
-                toolbar: { show: false },
+                toolbar: { 
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: false,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: false,
+                        reset: false
+                    }
+                },
                 animations: {
                     enabled: true,
                     easing: 'easeinout',
@@ -484,8 +541,9 @@
                 }
             },
             stroke: {
-                width: [3, 0],
-                curve: 'smooth'
+                width: [3, 0, 2.5],
+                curve: ['smooth', 'straight', 'smooth'],
+                dashArray: [0, 0, 4]
             },
             plotOptions: {
                 bar: {
@@ -493,14 +551,14 @@
                     borderRadius: 4
                 }
             },
-            colors: ['#1e40af', '#94a3b8'],
+            colors: ['#1e40af', '#94a3b8', '#059669'],
             fill: {
-                type: ['gradient', 'solid'],
+                type: ['gradient', 'solid', 'solid'],
                 gradient: {
                     shade: 'light',
                     type: 'vertical',
                     shadeIntensity: 0.5,
-                    gradientToColors: ['#3b82f6'],
+                    gradientToColors: ['#3b82f6', null, null],
                     inverseColors: false,
                     opacityFrom: 0.45,
                     opacityTo: 0.05,
@@ -509,8 +567,8 @@
             },
             labels: @json($chartLabels),
             markers: {
-                size: 4,
-                colors: ['#1e40af'],
+                size: [4, 0, 3],
+                colors: ['#1e40af', '#94a3b8', '#059669'],
                 strokeColors: '#ffffff',
                 strokeWidth: 2,
                 hover: { size: 6 }
@@ -533,7 +591,7 @@
                 },
                 {
                     opposite: true,
-                    title: { text: 'Volume (Trx)', style: { fontSize: '11px', fontWeight: 700, color: '#94a3b8' } },
+                    title: { text: 'Volume (Trx)', style: { fontSize: '11px', fontWeight: 700, color: '#64748b' } },
                     labels: {
                         formatter: function (val) {
                             return Math.round(val) + " Trx";
@@ -555,6 +613,11 @@
                     {
                         formatter: function (y) {
                             return typeof y !== "undefined" ? Math.round(y) + " Transaksi" : y;
+                        }
+                    },
+                    {
+                        formatter: function (y) {
+                            return typeof y !== "undefined" ? "Rp " + new Intl.NumberFormat('id-ID').format(y) + " / nota" : y;
                         }
                     }
                 ]
