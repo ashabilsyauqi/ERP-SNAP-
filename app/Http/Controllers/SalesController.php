@@ -127,7 +127,7 @@ class SalesController extends Controller
             $directReceivables = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->sum('remaining_amount');
             $directTrxCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->count();
 
-            // 1. Find all CashTransaction settlements in this period for older transactions
+            // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
             $cashSettlements = CashTransaction::where('tipe', 'masuk')
                 ->whereNotNull('transaction_id')
                 ->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
@@ -142,47 +142,20 @@ class SalesController extends Controller
                 ->with('transaction')
                 ->get();
 
-            // 2. Find all TransactionPayment settlements in this period for older transactions
-            $paymentSettlements = TransactionPayment::whereBetween('created_at', [$startDate, $endDate])
-                ->whereHas('transaction', function($t) use ($startDate, $branchId) {
-                    $t->where('created_at', '<', $startDate)
-                      ->whereNotIn('order_status', ['draft', 'cancelled'])
-                      ->when($branchId && $branchId !== 'all', fn($bq) => $bq->where('branch_id', $branchId));
-                })
-                ->with('transaction')
-                ->get();
-
             $settleCash = 0;
             $settleQris = 0;
             $settleTransfer = 0;
             $settledTrxIds = [];
 
-            if ($paymentSettlements->count() > 0) {
-                foreach ($paymentSettlements as $ps) {
-                    $settledTrxIds[] = $ps->transaction_id;
-                    $pm = strtolower($ps->payment_method ?? 'transfer');
-                    if (str_contains($pm, 'cash') || str_contains($pm, 'tunai')) {
-                        $settleCash += (float) $ps->amount;
-                    } elseif (str_contains($pm, 'qris')) {
-                        $settleQris += (float) $ps->amount;
-                    } else {
-                        $settleTransfer += (float) $ps->amount;
-                    }
-                }
-            }
-
-            // Also check cash transactions that might not be in payments table
             foreach ($cashSettlements as $cs) {
-                if (!in_array($cs->transaction_id, $settledTrxIds)) {
-                    $settledTrxIds[] = $cs->transaction_id;
-                    $pm = strtolower($cs->transaction->payment_method ?? 'transfer');
-                    if (str_contains($pm, 'cash') || str_contains($pm, 'tunai')) {
-                        $settleCash += (float) $cs->jumlah;
-                    } elseif (str_contains($pm, 'qris')) {
-                        $settleQris += (float) $cs->jumlah;
-                    } else {
-                        $settleTransfer += (float) $cs->jumlah;
-                    }
+                $settledTrxIds[] = $cs->transaction_id;
+                $pm = strtolower($cs->transaction->payment_method ?? 'transfer');
+                if (str_contains($pm, 'cash') || str_contains($pm, 'tunai')) {
+                    $settleCash += (float) $cs->jumlah;
+                } elseif (str_contains($pm, 'qris')) {
+                    $settleQris += (float) $cs->jumlah;
+                } else {
+                    $settleTransfer += (float) $cs->jumlah;
                 }
             }
 
