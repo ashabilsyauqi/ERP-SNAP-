@@ -174,22 +174,30 @@ class SalesController extends Controller
                 $isOlder = $t->created_at < $startDate;
                 $t->is_older_settled = false;
                 $t->period_settled_amount = 0;
+                $t->effective_date = $t->created_at;
                 
                 if ($isOlder) {
-                    $settleSum = $t->cashTransactions
+                    $settleTrx = $t->cashTransactions
                         ->where('tipe', 'masuk')
                         ->filter(function($c) use ($startDayStr, $endDayStr) {
                             $tgl = $c->tanggal ? substr((string)$c->tanggal, 0, 10) : '';
                             return $tgl >= $startDayStr && $tgl <= $endDayStr && str_contains(strtolower($c->keterangan ?? ''), 'pelunasan');
                         })
-                        ->sum('jumlah');
+                        ->first();
 
-                    if ($settleSum > 0) {
+                    if ($settleTrx) {
                         $t->is_older_settled = true;
-                        $t->period_settled_amount = (float) $settleSum;
+                        $t->period_settled_amount = (float) $settleTrx->jumlah;
+                        $t->effective_date = $settleTrx->created_at ?: \Carbon\Carbon::parse($settleTrx->tanggal . ' 14:00:00');
+                        if ($settleTrx->user) {
+                            $t->settle_user = $settleTrx->user;
+                        }
                     }
                 }
             });
+
+            // Re-sort transactions by effective_date so settlements appear chronologically in today's stream!
+            $transactions = $transactions->sortByDesc('effective_date')->values();
         }
 
         $paymentSummary = [

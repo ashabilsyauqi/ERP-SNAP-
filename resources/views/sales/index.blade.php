@@ -280,6 +280,12 @@
                                         <i class="fa-solid fa-file-invoice text-blue-600 text-xs"></i>
                                         <span>{{ $trx->invoice_number }}</span>
                                     </button>
+                                    @if($trx->is_older_settled ?? false)
+                                        <div class="text-[10px] text-emerald-700 font-bold d-flex align-items-center gap-1 mt-0.5">
+                                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                                            <span>Pelunasan Piutang</span>
+                                        </div>
+                                    @endif
                                     @if($trx->customer_name)
                                         <div class="text-[10px] text-slate-500 font-medium">
                                             <i class="fa-solid fa-user text-slate-400 me-0.5"></i> {{ $trx->customer_name }}
@@ -287,10 +293,13 @@
                                     @endif
                                 </td>
                                 <td class="text-slate-600 text-xs">
-                                    <div>{{ $trx->created_at->format('d M Y, H:i') }}</div>
+                                    <div class="fw-bold text-slate-900">{{ ($trx->effective_date ?? $trx->created_at)->format('d M Y, H:i') }}</div>
                                     @if($trx->is_older_settled ?? false)
+                                        <div class="text-[10px] text-slate-400">
+                                            Nota Awal: {{ $trx->created_at->format('d M Y') }}
+                                        </div>
                                         <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[9px] font-bold mt-0.5">
-                                            <i class="fa-solid fa-clock-rotate-left me-0.5"></i> Pelunasan Periode Ini
+                                            <i class="fa-solid fa-clock-rotate-left me-0.5"></i> Pelunasan Hari Ini
                                         </span>
                                     @endif
                                 </td>
@@ -301,7 +310,7 @@
                                 </td>
                                 <td class="text-slate-700 text-xs">
                                     <i class="fa-solid fa-user-circle text-slate-400 me-1"></i>
-                                    {{ $trx->user->full_name ?: ($trx->user->username ?? 'Kasir') }}
+                                    {{ ($trx->settle_user ?? $trx->user)->full_name ?: (($trx->settle_user ?? $trx->user)->username ?? 'Kasir') }}
                                 </td>
                                 <td class="text-end font-mono">
                                     @if($trx->is_older_settled ?? false)
