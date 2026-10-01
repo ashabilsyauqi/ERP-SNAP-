@@ -127,6 +127,20 @@
                 <tbody>
                     @forelse($transactions as $index => $t)
                     @php
+                        $paymentsList = $t->payments && $t->payments->count() > 0
+                            ? $t->payments->sortBy('created_at')->map(fn($p) => [
+                                'date' => $p->created_at->format('d M Y H:i'),
+                                'method' => $p->payment_method,
+                                'amount' => (float) $p->amount,
+                                'note' => $p->reference_note ?: 'Pembayaran',
+                            ])->values()->all()
+                            : ($t->cashTransactions ? $t->cashTransactions->where('tipe', 'masuk')->sortBy('tanggal')->map(fn($c) => [
+                                'date' => $c->tanggal ? \Carbon\Carbon::parse($c->tanggal)->format('d M Y') : '-',
+                                'method' => $t->payment_method,
+                                'amount' => (float) $c->jumlah,
+                                'note' => $c->keterangan ?: 'Pembayaran Kas',
+                            ])->values()->all() : []);
+
                         $invData = [
                             'invoice_number' => $t->invoice_number,
                             'created_at' => $t->created_at->format('d M Y H:i'),
@@ -148,7 +162,8 @@
                                     'selling_price' => $d->selling_price,
                                     'subtotal' => $d->qty_ordered * $d->selling_price
                                 ];
-                            })
+                            }),
+                            'payments' => $paymentsList
                         ];
                     @endphp
                     <tr class="search-row hover:bg-slate-50/80 transition">

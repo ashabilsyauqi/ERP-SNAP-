@@ -37,7 +37,7 @@ class SalesController extends Controller
             }
         }
 
-        $query = Transaction::with(['user', 'branch', 'transactionDetails.material'])
+        $query = Transaction::with(['user', 'branch', 'transactionDetails.material', 'payments', 'cashTransactions'])
             ->orderBy('created_at', 'desc');
 
         if ($branchId && $branchId !== 'all') {
@@ -166,6 +166,31 @@ class SalesController extends Controller
 
         $transactions = $query->get();
         $branches = Branch::orderBy('nama_cabang')->get();
+
+        if ($startDate && $endDate) {
+            $startDayStr = substr($startDate, 0, 10);
+            $endDayStr = substr($endDate, 0, 10);
+            $transactions->each(function($t) use ($startDate, $startDayStr, $endDayStr) {
+                $isOlder = $t->created_at < $startDate;
+                $t->is_older_settled = false;
+                $t->period_settled_amount = 0;
+                
+                if ($isOlder) {
+                    $settleSum = $t->cashTransactions
+                        ->where('tipe', 'masuk')
+                        ->filter(function($c) use ($startDayStr, $endDayStr) {
+                            $tgl = $c->tanggal ? substr((string)$c->tanggal, 0, 10) : '';
+                            return $tgl >= $startDayStr && $tgl <= $endDayStr && str_contains(strtolower($c->keterangan ?? ''), 'pelunasan');
+                        })
+                        ->sum('jumlah');
+
+                    if ($settleSum > 0) {
+                        $t->is_older_settled = true;
+                        $t->period_settled_amount = (float) $settleSum;
+                    }
+                }
+            });
+        }
 
         $paymentSummary = [
             'period' => $period,

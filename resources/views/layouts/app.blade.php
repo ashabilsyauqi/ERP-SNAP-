@@ -1180,6 +1180,47 @@
                     </table>
                 </div>
 
+                <!-- Riwayat Pembayaran (Payment History Timeline) -->
+                <template x-if="inv.payments && inv.payments.length > 0">
+                    <div class="mb-3 p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span class="fw-bold text-slate-800 d-inline-flex align-items-center gap-1.5">
+                                <i class="fa-solid fa-clock-rotate-left text-blue-600"></i>
+                                <span>Riwayat Pembayaran (DP & Pelunasan)</span>
+                            </span>
+                            <span class="badge bg-blue-100 text-blue-800 text-[10px]" x-text="inv.payments.length + ' Kali Bayar'"></span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered bg-white mb-0 text-xs">
+                                <thead class="bg-slate-100 text-slate-700">
+                                    <tr>
+                                        <th style="width: 30px;" class="text-center">#</th>
+                                        <th>Tanggal & Jam</th>
+                                        <th>Tahap / Keterangan</th>
+                                        <th>Metode</th>
+                                        <th class="text-end">Nominal Masuk</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(p, pIdx) in inv.payments" :key="pIdx">
+                                        <tr>
+                                            <td class="text-center font-bold" x-text="pIdx + 1"></td>
+                                            <td class="font-mono text-slate-700" x-text="p.date || '-'"></td>
+                                            <td>
+                                                <strong class="text-slate-800" x-text="p.note || 'Pembayaran'"></strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-slate-100 text-slate-700 border text-[10px]" x-text="p.method || 'Transfer'"></span>
+                                            </td>
+                                            <td class="text-end font-mono fw-bold text-emerald-700" x-text="'Rp ' + Number(p.amount || 0).toLocaleString('id-ID')"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- Footer notes -->
                 <div class="p-2.5 bg-slate-50 rounded border text-center text-[11px] text-slate-500">
                     Terima kasih telah mencetak di <strong>Snaprint</strong>. Simpan invoice ini sebagai bukti transaksi resmi.
@@ -1904,6 +1945,36 @@
                         </tr>
                         `)}
                     </table>
+
+                    ${(inv.payments && inv.payments.length > 0) ? `
+                    <div style="margin-top: 20px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px;">
+                        <div style="font-weight: bold; font-size: 12px; margin-bottom: 8px; color: #1e3a8a;">
+                            Riwayat Pembayaran (DP & Pelunasan)
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                            <thead>
+                                <tr style="background: #e2e8f0; text-align: left;">
+                                    <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: center; width: 30px;">#</th>
+                                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Tanggal & Jam</th>
+                                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Tahap / Keterangan</th>
+                                    <th style="padding: 6px; border: 1px solid #cbd5e1;">Metode</th>
+                                    <th style="padding: 6px; border: 1px solid #cbd5e1; text-align: right;">Jumlah</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${inv.payments.map((p, idx) => `
+                                <tr>
+                                    <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: center;">${idx + 1}</td>
+                                    <td style="padding: 6px; border: 1px solid #cbd5e1; font-family: monospace;">${p.date || '-'}</td>
+                                    <td style="padding: 6px; border: 1px solid #cbd5e1;"><strong>${p.note || 'Pembayaran'}</strong></td>
+                                    <td style="padding: 6px; border: 1px solid #cbd5e1;">${p.method || 'Transfer'}</td>
+                                    <td style="padding: 6px; border: 1px solid #cbd5e1; text-align: right; font-family: monospace; font-weight: bold; color: #059669;">Rp ${Number(p.amount || 0).toLocaleString('id-ID')}</td>
+                                </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
 
                     <div class="footer">
                         Terima kasih atas kepercayaan Anda mencetak di Snaprint.<br>

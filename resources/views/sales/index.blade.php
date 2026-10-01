@@ -237,6 +237,20 @@
                                         'subtotal' => $d->qty_ordered * $d->selling_price,
                                     ];
                                 });
+                                $paymentsList = $trx->payments && $trx->payments->count() > 0
+                                    ? $trx->payments->sortBy('created_at')->map(fn($p) => [
+                                        'date' => $p->created_at->format('d M Y H:i'),
+                                        'method' => $p->payment_method,
+                                        'amount' => (float) $p->amount,
+                                        'note' => $p->reference_note ?: 'Pembayaran',
+                                    ])->values()->all()
+                                    : ($trx->cashTransactions ? $trx->cashTransactions->where('tipe', 'masuk')->sortBy('tanggal')->map(fn($c) => [
+                                        'date' => $c->tanggal ? \Carbon\Carbon::parse($c->tanggal)->format('d M Y') : '-',
+                                        'method' => $trx->payment_method,
+                                        'amount' => (float) $c->jumlah,
+                                        'note' => $c->keterangan ?: 'Pembayaran Kas',
+                                    ])->values()->all() : []);
+
                                 $invPayload = [
                                     'invoice_number' => $trx->invoice_number,
                                     'created_at' => $trx->created_at->format('d M Y H:i'),
@@ -251,10 +265,11 @@
                                     'customer_phone' => $trx->customer_phone,
                                     'due_date' => $trx->due_date ? $trx->due_date->format('d M Y') : null,
                                     'production_notes' => $trx->production_notes,
-                                    'items' => $invItems
+                                    'items' => $invItems,
+                                    'payments' => $paymentsList
                                 ];
                             @endphp
-                            <tr class="search-row">
+                            <tr class="search-row {{ ($trx->is_older_settled ?? false) ? 'table-success bg-emerald-50/40' : '' }}">
                                 <td class="ps-3 text-center">
                                     <input type="checkbox" class="form-check-input">
                                 </td>
@@ -272,7 +287,12 @@
                                     @endif
                                 </td>
                                 <td class="text-slate-600 text-xs">
-                                    {{ $trx->created_at->format('d M Y, H:i') }}
+                                    <div>{{ $trx->created_at->format('d M Y, H:i') }}</div>
+                                    @if($trx->is_older_settled ?? false)
+                                        <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[9px] font-bold mt-0.5">
+                                            <i class="fa-solid fa-clock-rotate-left me-0.5"></i> Pelunasan Periode Ini
+                                        </span>
+                                    @endif
                                 </td>
                                 <td>
                                     <span class="badge bg-slate-100 text-slate-700 border text-[11px] font-normal">
@@ -284,7 +304,18 @@
                                     {{ $trx->user->full_name ?: ($trx->user->username ?? 'Kasir') }}
                                 </td>
                                 <td class="text-end font-mono">
-                                    @if($trx->order_status === 'draft')
+                                    @if($trx->is_older_settled ?? false)
+                                        <div class="fw-bold text-emerald-800">
+                                            + Rp {{ number_format($trx->period_settled_amount, 0, ',', '.') }}
+                                            <span class="badge bg-emerald-100 text-emerald-900 border border-emerald-300 text-[9px] ms-0.5">Pelunasan Masuk</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 font-normal">
+                                            Total Faktur: Rp {{ number_format($trx->total_price, 0, ',', '.') }}
+                                        </div>
+                                        <div class="text-[10px] text-slate-400">
+                                            DP ({{ $trx->created_at->format('d M') }}): Rp {{ number_format($trx->total_price - $trx->period_settled_amount, 0, ',', '.') }}
+                                        </div>
+                                    @elseif($trx->order_status === 'draft')
                                         <div class="fw-bold text-slate-500">
                                             Rp {{ number_format($trx->total_price, 0, ',', '.') }}
                                         </div>
@@ -325,7 +356,7 @@
                                             </span>
                                             @if($trx->isPaid())
                                                 @php
-                                                    $hasSettlement = $trx->cashTransactions && $trx->cashTransactions->where('tipe', 'masuk')->filter(fn($c) => str_contains($c->keterangan, 'Pelunasan'))->isNotEmpty();
+                                                    $hasSettlement = ($trx->is_older_settled ?? false) || ($trx->cashTransactions && $trx->cashTransactions->where('tipe', 'masuk')->filter(fn($c) => str_contains($c->keterangan, 'Pelunasan'))->isNotEmpty());
                                                 @endphp
                                                 @if($hasSettlement)
                                                     <span class="badge bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold" title="Lunas melalui Pelunasan Piutang">
@@ -411,6 +442,20 @@
                                 'subtotal' => $d->qty_ordered * $d->selling_price,
                             ];
                         });
+                        $paymentsList = $trx->payments && $trx->payments->count() > 0
+                            ? $trx->payments->sortBy('created_at')->map(fn($p) => [
+                                'date' => $p->created_at->format('d M Y H:i'),
+                                'method' => $p->payment_method,
+                                'amount' => (float) $p->amount,
+                                'note' => $p->reference_note ?: 'Pembayaran',
+                            ])->values()->all()
+                            : ($trx->cashTransactions ? $trx->cashTransactions->where('tipe', 'masuk')->sortBy('tanggal')->map(fn($c) => [
+                                'date' => $c->tanggal ? \Carbon\Carbon::parse($c->tanggal)->format('d M Y') : '-',
+                                'method' => $trx->payment_method,
+                                'amount' => (float) $c->jumlah,
+                                'note' => $c->keterangan ?: 'Pembayaran Kas',
+                            ])->values()->all() : []);
+
                         $invPayload = [
                             'invoice_number' => $trx->invoice_number,
                             'created_at' => $trx->created_at->format('d M Y H:i'),
@@ -425,17 +470,22 @@
                             'customer_phone' => $trx->customer_phone,
                             'due_date' => $trx->due_date ? $trx->due_date->format('d M Y') : null,
                             'production_notes' => $trx->production_notes,
-                            'items' => $invItems
+                            'items' => $invItems,
+                            'payments' => $paymentsList
                         ];
                     @endphp
-                    <div class="o_kanban_record bg-white border rounded p-3 shadow-sm hover:shadow transition search-card" style="border-left: 4px solid var(--o-accent-color) !important;">
+                    <div class="o_kanban_record bg-white border rounded p-3 shadow-sm hover:shadow transition search-card {{ ($trx->is_older_settled ?? false) ? 'border-success' : '' }}" style="border-left: 4px solid {{ ($trx->is_older_settled ?? false) ? '#059669' : 'var(--o-accent-color)' }} !important;">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <button type="button" 
                                     class="btn btn-link p-0 font-mono fw-bold text-slate-900 text-xs text-decoration-none text-start hover:underline"
                                     onclick='openSnaprintInvoice(@json($invPayload))'>
                                 {{ $trx->invoice_number }}
                             </button>
-                            @if($trx->isPaid())
+                            @if($trx->is_older_settled ?? false)
+                                <span class="badge bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-bold">
+                                    LUNAS (PELUNASAN)
+                                </span>
+                            @elseif($trx->isPaid())
                                 <span class="badge bg-emerald-100 text-emerald-800 text-[10px] font-bold">
                                     PAID
                                 </span>
