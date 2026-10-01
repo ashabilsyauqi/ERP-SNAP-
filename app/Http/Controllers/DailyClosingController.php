@@ -74,7 +74,7 @@ class DailyClosingController extends Controller
         $branch = Branch::find($branchId);
         $branches = Branch::orderBy('nama_cabang')->get();
 
-        // 1. Calculate sales from transactions for this branch and date
+        // 1. Calculate sales from transactions created on targetDate
         $transactions = Transaction::with('payments')
             ->where('branch_id', $branchId)
             ->whereDate('created_at', $targetDate)
@@ -85,12 +85,50 @@ class DailyClosingController extends Controller
         $directTransactions = $transactions->filter(fn($t) => $t->payments->isEmpty());
         $splitPayments = $transactions->flatMap->payments;
 
-        $totalCashSales = (float) $directTransactions->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount')
-            + (float) $splitPayments->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');
-        $totalTransferSales = (float) $directTransactions->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount')
-            + (float) $splitPayments->whereIn('payment_method', ['Transfer', 'transfer'])->sum('amount');
-        $totalQrisSales = (float) $directTransactions->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount')
-            + (float) $splitPayments->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
+        $targetDateStr = Carbon::parse($targetDate)->toDateString();
+        $splitPaymentsToday = $splitPayments->filter(fn($p) => $p->created_at && Carbon::parse($p->created_at)->toDateString() === $targetDateStr);
+
+        $directCash = (float) $directTransactions->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount')
+            + (float) $splitPaymentsToday->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');
+        $directTransfer = (float) $directTransactions->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount')
+            + (float) $splitPaymentsToday->whereIn('payment_method', ['Transfer', 'transfer'])->sum('amount');
+        $directQris = (float) $directTransactions->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount')
+            + (float) $splitPaymentsToday->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
+
+        // 2. Include settlements (Pelunasan Piutang) received on targetDate for older transactions
+        $olderSettlementPayments = \App\Models\TransactionPayment::where('branch_id', $branchId)
+            ->whereDate('created_at', $targetDate)
+            ->whereHas('transaction', fn($q) => $q->whereDate('created_at', '<', $targetDate))
+            ->get();
+
+        $settleCash = (float) $olderSettlementPayments->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');
+        $settleTransfer = (float) $olderSettlementPayments->whereIn('payment_method', ['Transfer', 'transfer'])->sum('amount');
+        $settleQris = (float) $olderSettlementPayments->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
+
+        // Fallback for settlements tracked in CashTransaction
+        $cashTxSettlements = CashTransaction::where('branch_id', $branchId)
+            ->where('tipe', 'masuk')
+            ->whereDate('tanggal', $targetDate)
+            ->whereNotNull('transaction_id')
+            ->where('keterangan', 'like', 'Pelunasan%')
+            ->whereNotIn('transaction_id', $olderSettlementPayments->pluck('transaction_id'))
+            ->get();
+
+        foreach ($cashTxSettlements as $cTx) {
+            $t = $cTx->transaction;
+            $pm = $t ? strtolower($t->payment_method) : 'transfer';
+            if (str_contains($pm, 'cash')) {
+                $settleCash += (float) $cTx->jumlah;
+            } elseif (str_contains($pm, 'qris')) {
+                $settleQris += (float) $cTx->jumlah;
+            } else {
+                $settleTransfer += (float) $cTx->jumlah;
+            }
+        }
+
+        $totalCashSales = $directCash + $settleCash;
+        $totalTransferSales = $directTransfer + $settleTransfer;
+        $totalQrisSales = $directQris + $settleQris;
         $totalSales = $totalCashSales + $totalTransferSales + $totalQrisSales;
 
         // 2. Calculate Cash In and Cash Out

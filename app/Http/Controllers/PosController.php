@@ -412,8 +412,17 @@ class PosController extends Controller
             $transaction->fulfillment_branch_share = $fulfillmentBranchShare;
             $transaction->save();
 
-            // Record Cash Inflow for the actual paid amount (DP or Full) - Never for draft
+            // Record Cash Inflow & Payment Log for the actual paid amount (DP or Full) - Never for draft
             if (!$isDraft && $paidAmount > 0) {
+                \App\Models\TransactionPayment::create([
+                    'transaction_id' => $transaction->id,
+                    'branch_id' => $checkoutBranchId,
+                    'payer_name' => $customerName ?: 'Pelanggan Umum',
+                    'payment_method' => $request->payment_method ?: 'Cash',
+                    'amount' => $paidAmount,
+                    'reference_note' => ($paymentStatus === 'PARTIAL') ? 'Uang Muka (DP)' : 'Pembayaran POS',
+                ]);
+
                 $salesAccount = \App\Models\Account::where('kode_akun', '4-1000')->first();
                 if ($salesAccount) {
                     $keterangan = ($paymentStatus === 'PARTIAL') 

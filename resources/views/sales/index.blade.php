@@ -324,9 +324,18 @@
                                                 @endif
                                             </span>
                                             @if($trx->isPaid())
-                                                <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold">
-                                                    PAID
-                                                </span>
+                                                @php
+                                                    $hasSettlement = $trx->cashTransactions && $trx->cashTransactions->where('tipe', 'masuk')->filter(fn($c) => str_contains($c->keterangan, 'Pelunasan'))->isNotEmpty();
+                                                @endphp
+                                                @if($hasSettlement)
+                                                    <span class="badge bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold" title="Lunas melalui Pelunasan Piutang">
+                                                        <i class="fa-solid fa-check-double me-0.5"></i> LUNAS (PELUNASAN)
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold">
+                                                        PAID
+                                                    </span>
+                                                @endif
                                             @elseif($trx->isPartial())
                                                 <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold" title="Sisa Piutang: Rp {{ number_format($trx->remaining_amount, 0, ',', '.') }}">
                                                     <i class="fa-solid fa-clock-rotate-left me-0.5"></i> UNPAID (DP)

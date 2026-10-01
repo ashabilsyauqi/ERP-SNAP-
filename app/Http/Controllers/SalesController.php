@@ -54,21 +54,37 @@ class SalesController extends Controller
         $period = $request->input('period', 'today');
         $selectedMonth = (int) $request->input('month', now()->month);
         $selectedYear = (int) $request->input('year', now()->year);
+        $startDate = null;
+        $endDate = null;
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
-            $query->whereDate('created_at', '>=', $request->date_from)
-                  ->whereDate('created_at', '<=', $request->date_to);
+            $startDate = $request->date_from . ' 00:00:00';
+            $endDate = $request->date_to . ' 23:59:59';
             $period = 'custom';
         } elseif ($period === 'today') {
-            $query->whereDate('created_at', now()->toDateString());
+            $startDate = now()->startOfDay()->toDateTimeString();
+            $endDate = now()->endOfDay()->toDateTimeString();
         } elseif ($period === 'yesterday') {
-            $query->whereDate('created_at', now()->subDay()->toDateString());
+            $startDate = now()->subDay()->startOfDay()->toDateTimeString();
+            $endDate = now()->subDay()->endOfDay()->toDateTimeString();
         } elseif ($period === '7days') {
-            $query->where('created_at', '>=', now()->subDays(6)->startOfDay());
+            $startDate = now()->subDays(6)->startOfDay()->toDateTimeString();
+            $endDate = now()->endOfDay()->toDateTimeString();
         } elseif ($period === 'this_month' || $period === 'monthly') {
-            $startOfCalendarMonth = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->startOfMonth();
-            $endOfCalendarMonth = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->endOfMonth();
-            $query->whereBetween('created_at', [$startOfCalendarMonth->copy()->startOfDay(), $endOfCalendarMonth->copy()->endOfDay()]);
+            $startDate = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->startOfMonth()->startOfDay()->toDateTimeString();
+            $endDate = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->endOfMonth()->endOfDay()->toDateTimeString();
+        }
+
+        if ($startDate && $endDate) {
+            $settledTrxIds = CashTransaction::where('tipe', 'masuk')
+                ->whereBetween('tanggal', [substr($startDate, 0, 10), substr($endDate, 0, 10)])
+                ->whereNotNull('transaction_id')
+                ->pluck('transaction_id');
+
+            $query->where(function($q) use ($startDate, $endDate, $settledTrxIds) {
+                $q->whereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereIn('id', $settledTrxIds);
+            });
         }
 
         // Payment Method Filter
@@ -81,48 +97,66 @@ class SalesController extends Controller
             $query->where('payment_status', $request->payment_status);
         }
 
-        // Calculate Summary Statistics for confirmed sales ONLY (strictly exclude draft & cancelled)
+        // Calculate Summary Statistics for confirmed sales & settlements in the period
         $summaryBaseQuery = Transaction::query()->whereNotIn('order_status', ['draft', 'cancelled']);
         if ($branchId && $branchId !== 'all') {
             $summaryBaseQuery->where('branch_id', $branchId);
         }
 
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            $summaryBaseQuery->whereDate('created_at', '>=', $request->date_from)
-                             ->whereDate('created_at', '<=', $request->date_to);
-        } elseif ($period === 'today') {
-            $summaryBaseQuery->whereDate('created_at', now()->toDateString());
-        } elseif ($period === 'yesterday') {
-            $summaryBaseQuery->whereDate('created_at', now()->subDay()->toDateString());
-        } elseif ($period === '7days') {
-            $summaryBaseQuery->where('created_at', '>=', now()->subDays(6)->startOfDay());
-        } elseif ($period === 'this_month' || $period === 'monthly') {
-            $startOfCalendarMonth = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->startOfMonth();
-            $endOfCalendarMonth = \Carbon\Carbon::createFromDate($selectedYear, $selectedMonth, 1)->endOfMonth();
-            $summaryBaseQuery->whereBetween('created_at', [$startOfCalendarMonth->copy()->startOfDay(), $endOfCalendarMonth->copy()->endOfDay()]);
+        if ($startDate && $endDate) {
+            $directCash = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Cash')->sum('paid_amount');
+            $directQris = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'QRIS')->sum('paid_amount');
+            $directTransfer = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Transfer')->sum('paid_amount');
+            $directReceivables = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->sum('remaining_amount');
+            $directTrxCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->count();
+
+            // Older transactions settlement cash inflows received during this period
+            $olderSettlements = CashTransaction::where('tipe', 'masuk')
+                ->whereBetween('tanggal', [substr($startDate, 0, 10), substr($endDate, 0, 10)])
+                ->whereNotNull('transaction_id')
+                ->where('keterangan', 'like', 'Pelunasan%')
+                ->whereHas('transaction', fn($t) => $t->where('created_at', '<', $startDate))
+                ->when($branchId && $branchId !== 'all', fn($q) => $q->where('branch_id', $branchId))
+                ->with('transaction')
+                ->get();
+
+            $settleCash = 0;
+            $settleQris = 0;
+            $settleTransfer = 0;
+            foreach ($olderSettlements as $st) {
+                $t = $st->transaction;
+                $pm = $t ? strtolower($t->payment_method) : 'transfer';
+                if (str_contains($pm, 'cash')) {
+                    $settleCash += (float) $st->jumlah;
+                } elseif (str_contains($pm, 'qris')) {
+                    $settleQris += (float) $st->jumlah;
+                } else {
+                    $settleTransfer += (float) $st->jumlah;
+                }
+            }
+
+            $cashTotal = $directCash + $settleCash;
+            $qrisTotal = $directQris + $settleQris;
+            $transferTotal = $directTransfer + $settleTransfer;
+            $totalPaid = $cashTotal + $qrisTotal + $transferTotal;
+            $totalOmset = $totalPaid;
+            $totalReceivables = $directReceivables;
+            $totalTrx = $directTrxCount + $olderSettlements->count();
+            $cashCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Cash')->count() + ($settleCash > 0 ? 1 : 0);
+            $qrisCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'QRIS')->count() + ($settleQris > 0 ? 1 : 0);
+            $transferCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Transfer')->count() + ($settleTransfer > 0 ? 1 : 0);
+        } else {
+            $cashTotal = (clone $summaryBaseQuery)->where('payment_method', 'Cash')->sum('paid_amount');
+            $cashCount = (clone $summaryBaseQuery)->where('payment_method', 'Cash')->count();
+            $qrisTotal = (clone $summaryBaseQuery)->where('payment_method', 'QRIS')->sum('paid_amount');
+            $qrisCount = (clone $summaryBaseQuery)->where('payment_method', 'QRIS')->count();
+            $transferTotal = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->sum('paid_amount');
+            $transferCount = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->count();
+            $totalOmset = (clone $summaryBaseQuery)->sum('paid_amount');
+            $totalPaid = (clone $summaryBaseQuery)->sum('paid_amount');
+            $totalReceivables = (clone $summaryBaseQuery)->sum('remaining_amount');
+            $totalTrx = (clone $summaryBaseQuery)->count();
         }
-
-        if ($request->filled('payment_method') && $request->payment_method !== 'all') {
-            $summaryBaseQuery->where('payment_method', $request->payment_method);
-        }
-
-        if ($request->filled('payment_status') && $request->payment_status !== 'all') {
-            $summaryBaseQuery->where('payment_status', $request->payment_status);
-        }
-
-        $cashTotal = (clone $summaryBaseQuery)->where('payment_method', 'Cash')->sum('paid_amount');
-        $cashCount = (clone $summaryBaseQuery)->where('payment_method', 'Cash')->count();
-
-        $qrisTotal = (clone $summaryBaseQuery)->where('payment_method', 'QRIS')->sum('paid_amount');
-        $qrisCount = (clone $summaryBaseQuery)->where('payment_method', 'QRIS')->count();
-
-        $transferTotal = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->sum('paid_amount');
-        $transferCount = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->count();
-
-        $totalOmset = (clone $summaryBaseQuery)->sum('paid_amount');
-        $totalPaid = (clone $summaryBaseQuery)->sum('paid_amount');
-        $totalReceivables = (clone $summaryBaseQuery)->sum('remaining_amount');
-        $totalTrx = (clone $summaryBaseQuery)->count();
 
         // Count pending drafts for badge display
         $pendingDraftCount = Transaction::query()
@@ -258,7 +292,16 @@ class SalesController extends Controller
 
             $transaction->save();
 
-            // Record Inflow Cash Transaction for Settlement
+            // Record Payment History & Inflow Cash Transaction for Settlement
+            \App\Models\TransactionPayment::create([
+                'transaction_id' => $transaction->id,
+                'branch_id' => $transaction->branch_id,
+                'payer_name' => $transaction->customer_name ?: 'Pelanggan Umum',
+                'payment_method' => $request->payment_method ?: 'Cash',
+                'amount' => $settleAmount,
+                'reference_note' => $request->keterangan ?: "Pelunasan Piutang (#{$transaction->invoice_number})"
+            ]);
+
             $salesAccount = Account::where('kode_akun', '4-1000')->first() ?? Account::where('kode_akun', '1-1300')->first();
             
             CashTransaction::create([
