@@ -76,14 +76,27 @@ class SalesController extends Controller
         }
 
         if ($startDate && $endDate) {
-            $settledTrxIds = CashTransaction::where('tipe', 'masuk')
-                ->whereBetween('tanggal', [substr($startDate, 0, 10), substr($endDate, 0, 10)])
-                ->whereNotNull('transaction_id')
-                ->pluck('transaction_id');
+            $startDayStr = substr($startDate, 0, 10);
+            $endDayStr = substr($endDate, 0, 10);
 
-            $query->where(function($q) use ($startDate, $endDate, $settledTrxIds) {
+            $cashTrxIds = CashTransaction::where('tipe', 'masuk')
+                ->whereNotNull('transaction_id')
+                ->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
+                    $q->whereBetween('tanggal', [$startDayStr, $endDayStr])
+                      ->orWhereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->pluck('transaction_id')
+                ->toArray();
+
+            $paymentTrxIds = TransactionPayment::whereBetween('created_at', [$startDate, $endDate])
+                ->pluck('transaction_id')
+                ->toArray();
+
+            $allMatchedIds = array_unique(array_filter(array_merge($cashTrxIds, $paymentTrxIds)));
+
+            $query->where(function($q) use ($startDate, $endDate, $allMatchedIds) {
                 $q->whereBetween('created_at', [$startDate, $endDate])
-                  ->orWhereIn('id', $settledTrxIds);
+                  ->orWhereIn('id', $allMatchedIds);
             });
         }
 
@@ -104,36 +117,76 @@ class SalesController extends Controller
         }
 
         if ($startDate && $endDate) {
+            $startDayStr = substr($startDate, 0, 10);
+            $endDayStr = substr($endDate, 0, 10);
+
             $directCash = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Cash')->sum('paid_amount');
             $directQris = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'QRIS')->sum('paid_amount');
             $directTransfer = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Transfer')->sum('paid_amount');
             $directReceivables = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->sum('remaining_amount');
             $directTrxCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->count();
 
-            // Older transactions settlement cash inflows received during this period
-            $olderSettlements = CashTransaction::where('tipe', 'masuk')
-                ->whereBetween('tanggal', [substr($startDate, 0, 10), substr($endDate, 0, 10)])
+            // 1. Find all CashTransaction settlements in this period for older transactions
+            $cashSettlements = CashTransaction::where('tipe', 'masuk')
                 ->whereNotNull('transaction_id')
-                ->where('keterangan', 'like', 'Pelunasan%')
-                ->whereHas('transaction', fn($t) => $t->where('created_at', '<', $startDate))
-                ->when($branchId && $branchId !== 'all', fn($q) => $q->where('branch_id', $branchId))
+                ->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
+                    $q->whereBetween('tanggal', [$startDayStr, $endDayStr])
+                      ->orWhereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->whereHas('transaction', function($t) use ($startDate, $branchId) {
+                    $t->where('created_at', '<', $startDate)
+                      ->whereNotIn('order_status', ['draft', 'cancelled'])
+                      ->when($branchId && $branchId !== 'all', fn($bq) => $bq->where('branch_id', $branchId));
+                })
+                ->with('transaction')
+                ->get();
+
+            // 2. Find all TransactionPayment settlements in this period for older transactions
+            $paymentSettlements = TransactionPayment::whereBetween('created_at', [$startDate, $endDate])
+                ->whereHas('transaction', function($t) use ($startDate, $branchId) {
+                    $t->where('created_at', '<', $startDate)
+                      ->whereNotIn('order_status', ['draft', 'cancelled'])
+                      ->when($branchId && $branchId !== 'all', fn($bq) => $bq->where('branch_id', $branchId));
+                })
                 ->with('transaction')
                 ->get();
 
             $settleCash = 0;
             $settleQris = 0;
             $settleTransfer = 0;
-            foreach ($olderSettlements as $st) {
-                $t = $st->transaction;
-                $pm = $t ? strtolower($t->payment_method) : 'transfer';
-                if (str_contains($pm, 'cash')) {
-                    $settleCash += (float) $st->jumlah;
-                } elseif (str_contains($pm, 'qris')) {
-                    $settleQris += (float) $st->jumlah;
-                } else {
-                    $settleTransfer += (float) $st->jumlah;
+            $settledTrxIds = [];
+
+            if ($paymentSettlements->count() > 0) {
+                foreach ($paymentSettlements as $ps) {
+                    $settledTrxIds[] = $ps->transaction_id;
+                    $pm = strtolower($ps->payment_method ?? 'transfer');
+                    if (str_contains($pm, 'cash') || str_contains($pm, 'tunai')) {
+                        $settleCash += (float) $ps->amount;
+                    } elseif (str_contains($pm, 'qris')) {
+                        $settleQris += (float) $ps->amount;
+                    } else {
+                        $settleTransfer += (float) $ps->amount;
+                    }
                 }
             }
+
+            // Also check cash transactions that might not be in payments table
+            foreach ($cashSettlements as $cs) {
+                if (!in_array($cs->transaction_id, $settledTrxIds)) {
+                    $settledTrxIds[] = $cs->transaction_id;
+                    $pm = strtolower($cs->transaction->payment_method ?? 'transfer');
+                    if (str_contains($pm, 'cash') || str_contains($pm, 'tunai')) {
+                        $settleCash += (float) $cs->jumlah;
+                    } elseif (str_contains($pm, 'qris')) {
+                        $settleQris += (float) $cs->jumlah;
+                    } else {
+                        $settleTransfer += (float) $cs->jumlah;
+                    }
+                }
+            }
+
+            $settledTrxIds = array_unique(array_filter($settledTrxIds));
+            $olderSettlementsCount = count($settledTrxIds);
 
             $cashTotal = $directCash + $settleCash;
             $qrisTotal = $directQris + $settleQris;
@@ -141,7 +194,7 @@ class SalesController extends Controller
             $totalPaid = $cashTotal + $qrisTotal + $transferTotal;
             $totalOmset = $totalPaid;
             $totalReceivables = $directReceivables;
-            $totalTrx = $directTrxCount + $olderSettlements->count();
+            $totalTrx = $directTrxCount + $olderSettlementsCount;
             $cashCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Cash')->count() + ($settleCash > 0 ? 1 : 0);
             $qrisCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'QRIS')->count() + ($settleQris > 0 ? 1 : 0);
             $transferCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Transfer')->count() + ($settleTransfer > 0 ? 1 : 0);
@@ -170,27 +223,39 @@ class SalesController extends Controller
         if ($startDate && $endDate) {
             $startDayStr = substr($startDate, 0, 10);
             $endDayStr = substr($endDate, 0, 10);
-            $transactions->each(function($t) use ($startDate, $startDayStr, $endDayStr) {
+            $transactions->each(function($t) use ($startDate, $endDate, $startDayStr, $endDayStr) {
                 $isOlder = $t->created_at < $startDate;
                 $t->is_older_settled = false;
                 $t->period_settled_amount = 0;
                 $t->effective_date = $t->created_at;
                 
                 if ($isOlder) {
-                    $settleTrx = $t->cashTransactions
-                        ->where('tipe', 'masuk')
-                        ->filter(function($c) use ($startDayStr, $endDayStr) {
-                            $tgl = $c->tanggal ? substr((string)$c->tanggal, 0, 10) : '';
-                            return $tgl >= $startDayStr && $tgl <= $endDayStr && str_contains(strtolower($c->keterangan ?? ''), 'pelunasan');
-                        })
+                    // Check TransactionPayment first
+                    $pSettle = $t->payments
+                        ->filter(fn($p) => $p->created_at >= $startDate && $p->created_at <= $endDate)
                         ->first();
 
-                    if ($settleTrx) {
+                    if ($pSettle) {
                         $t->is_older_settled = true;
-                        $t->period_settled_amount = (float) $settleTrx->jumlah;
-                        $t->effective_date = $settleTrx->created_at ?: \Carbon\Carbon::parse($settleTrx->tanggal . ' 14:00:00');
-                        if ($settleTrx->user) {
-                            $t->settle_user = $settleTrx->user;
+                        $t->period_settled_amount = (float) $pSettle->amount;
+                        $t->effective_date = $pSettle->created_at;
+                    } else {
+                        // Check CashTransaction fallback
+                        $cSettle = $t->cashTransactions
+                            ->where('tipe', 'masuk')
+                            ->filter(function($c) use ($startDayStr, $endDayStr, $startDate, $endDate) {
+                                $tgl = $c->tanggal ? substr((string)$c->tanggal, 0, 10) : '';
+                                return ($tgl >= $startDayStr && $tgl <= $endDayStr) || ($c->created_at >= $startDate && $c->created_at <= $endDate);
+                            })
+                            ->first();
+
+                        if ($cSettle) {
+                            $t->is_older_settled = true;
+                            $t->period_settled_amount = (float) $cSettle->jumlah;
+                            $t->effective_date = $cSettle->created_at ?: \Carbon\Carbon::parse($cSettle->tanggal . ' 14:00:00');
+                            if ($cSettle->user) {
+                                $t->settle_user = $cSettle->user;
+                            }
                         }
                     }
                 }

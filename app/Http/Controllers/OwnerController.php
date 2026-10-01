@@ -55,33 +55,102 @@ class OwnerController extends Controller
             $opexQuery->where('branch_id', $branchId);
         }
 
-        // Apply Timeframe Constraints
+        $startDate = null;
+        $endDate = null;
+
         if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
-            $sDate = Carbon::parse($startDateInput)->startOfDay();
-            $eDate = Carbon::parse($endDateInput)->endOfDay();
-            $query->whereBetween('created_at', [$sDate, $eDate]);
-            $opexQuery->whereBetween('tanggal', [$sDate->toDateString(), $eDate->toDateString()]);
+            $startDate = Carbon::parse($startDateInput)->startOfDay();
+            $endDate = Carbon::parse($endDateInput)->endOfDay();
         } elseif ($timeframe === 'today' || $timeframe === '1D') {
-            $query->whereDate('created_at', Carbon::today());
-            $opexQuery->whereDate('tanggal', Carbon::today());
+            $startDate = Carbon::today()->startOfDay();
+            $endDate = Carbon::today()->endOfDay();
         } elseif ($timeframe === '7days' || $timeframe === '7D') {
-            $query->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay());
-            $opexQuery->where('tanggal', '>=', Carbon::now()->subDays(6)->startOfDay());
+            $startDate = Carbon::now()->subDays(6)->startOfDay();
+            $endDate = Carbon::now()->endOfDay();
         } elseif ($timeframe === 'year' || $timeframe === '1Y') {
-            $startDate = Carbon::createFromDate($year, 1, 1)->startOfMonth();
-            $endDate = Carbon::createFromDate($year, 12, 31)->endOfMonth();
-            $query->whereBetween('created_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
-            $opexQuery->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()]);
+            $startDate = Carbon::createFromDate($year, 1, 1)->startOfMonth()->startOfDay();
+            $endDate = Carbon::createFromDate($year, 12, 31)->endOfMonth()->endOfDay();
         } elseif ($timeframe === 'month' || $timeframe === '1M') {
-            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-            $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
-            $query->whereBetween('created_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
-            $opexQuery->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()]);
-        } // 'all' has no constraints
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth()->startOfDay();
+            $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
+        }
+
+        if ($startDate && $endDate) {
+            $startDayStr = $startDate->toDateString();
+            $endDayStr = $endDate->toDateString();
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+            $opexQuery->whereBetween('tanggal', [$startDayStr, $endDayStr]);
+
+            // Older transactions settlement cash inflows received during this period
+            $cashSettlements = CashTransaction::where('tipe', 'masuk')
+                ->whereNotNull('transaction_id')
+                ->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
+                    $q->whereBetween('tanggal', [$startDayStr, $endDayStr])
+                      ->orWhereBetween('created_at', [$startDate, $endDate]);
+                })
+                ->whereHas('transaction', function($t) use ($startDate, $branchId) {
+                    $t->where('created_at', '<', $startDate)
+                      ->whereNotIn('order_status', ['draft', 'cancelled'])
+                      ->when($branchId && $branchId !== 'all', fn($bq) => $bq->where('branch_id', $branchId));
+                })
+                ->with('transaction')
+                ->get();
+
+            $paymentSettlements = TransactionPayment::whereBetween('created_at', [$startDate, $endDate])
+                ->whereHas('transaction', function($t) use ($startDate, $branchId) {
+                    $t->where('created_at', '<', $startDate)
+                      ->whereNotIn('order_status', ['draft', 'cancelled'])
+                      ->when($branchId && $branchId !== 'all', fn($bq) => $bq->where('branch_id', $branchId));
+                })
+                ->with('transaction')
+                ->get();
+
+            $settleCash = 0;
+            $settleQris = 0;
+            $settleTransfer = 0;
+            $settledTrxIds = [];
+
+            if ($paymentSettlements->count() > 0) {
+                foreach ($paymentSettlements as $ps) {
+                    $settledTrxIds[] = $ps->transaction_id;
+                    $pm = strtolower($ps->payment_method ?? 'transfer');
+                    if (str_contains($pm, 'cash') || str_contains($pm, 'tunai')) {
+                        $settleCash += (float) $ps->amount;
+                    } elseif (str_contains($pm, 'qris')) {
+                        $settleQris += (float) $ps->amount;
+                    } else {
+                        $settleTransfer += (float) $ps->amount;
+                    }
+                }
+            }
+
+            foreach ($cashSettlements as $cs) {
+                if (!in_array($cs->transaction_id, $settledTrxIds)) {
+                    $settledTrxIds[] = $cs->transaction_id;
+                    $pm = strtolower($cs->transaction->payment_method ?? 'transfer');
+                    if (str_contains($pm, 'cash') || str_contains($pm, 'tunai')) {
+                        $settleCash += (float) $cs->jumlah;
+                    } elseif (str_contains($pm, 'qris')) {
+                        $settleQris += (float) $cs->jumlah;
+                    } else {
+                        $settleTransfer += (float) $cs->jumlah;
+                    }
+                }
+            }
+
+            $settleTotal = $settleCash + $settleQris + $settleTransfer;
+        } else {
+            $settleCash = 0;
+            $settleQris = 0;
+            $settleTransfer = 0;
+            $settleTotal = 0;
+            $settledTrxIds = [];
+        }
 
         // Synchronized Financial Calculations:
         // 1. Omzet: Daily / Period POS Revenue (Cash Inflow Basis: DP + Pelunasan)
-        $totalSales = (float) (clone $query)->sum('paid_amount');
+        $directSales = (float) (clone $query)->sum('paid_amount');
+        $totalSales = $directSales + $settleTotal;
         // 2. HPP: Material Cost + Click Charge per product item
         $totalHpp = (float) (clone $query)->sum('total_hpp');
         // 3. Gross Profit: Omzet - HPP
@@ -97,12 +166,12 @@ class OwnerController extends Controller
         $opexPct = $omsetBase > 0 ? round(($totalOpex / $omsetBase) * 100, 1) : 0;
         $netPct = $omsetBase > 0 ? round(($netProfit / $omsetBase) * 100, 1) : 0;
 
-        $totalTransactionsCount = (clone $query)->count();
+        $totalTransactionsCount = (clone $query)->count() + count(array_unique(array_filter($settledTrxIds)));
         $totalMaterialsCount = (clone $materialQuery)->count();
         $lowStockCount = (clone $materialQuery)->where('stock_qty', '<=', 5)->count();
         $pendingPOCount = (clone $purchaseQuery)->whereIn('status', ['waiting_approval', 'pending_verification', 'waiting_owner_approval'])->count();
 
-        // Payment Breakdown (including split payments)
+        // Payment Breakdown (including split payments & older settlements)
         $directCash = (clone $query)->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
         $directQris = (clone $query)->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount');
         $directTransfer = (clone $query)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount');
@@ -113,9 +182,9 @@ class OwnerController extends Controller
         $splitQris = (clone $splitPaymentsQuery)->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
         $splitTransfer = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('amount');
 
-        $cashSales = (float) $directCash + (float) $splitCash;
-        $qrisSales = (float) $directQris + (float) $splitQris;
-        $transferSales = (float) $directTransfer + (float) $splitTransfer;
+        $cashSales = (float) $directCash + (float) $splitCash + $settleCash;
+        $qrisSales = (float) $directQris + (float) $splitQris + $settleQris;
+        $transferSales = (float) $directTransfer + (float) $splitTransfer + $settleTransfer;
 
         // Branch Sales Comparison
         $branchSalesData = Branch::all()->map(function ($branch) use ($timeframe, $month, $year, $startDateInput, $endDateInput) {
