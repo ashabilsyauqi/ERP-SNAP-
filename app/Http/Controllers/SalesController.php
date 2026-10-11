@@ -103,7 +103,18 @@ class SalesController extends Controller
 
         // Payment Method Filter
         if ($request->filled('payment_method') && $request->payment_method !== 'all') {
-            $query->where('payment_method', $request->payment_method);
+            $pm = $request->payment_method;
+            if ($pm === 'Split') {
+                $query->where('payment_method', 'like', 'Split%');
+            } else {
+                $query->where(function($q) use ($pm) {
+                    $q->where('payment_method', $pm)
+                      ->orWhere(function($sub) use ($pm) {
+                          $sub->where('payment_method', 'like', 'Split%')
+                              ->whereHas('payments', fn($p) => $p->where('payment_method', $pm));
+                      });
+                });
+            }
         }
 
         // Payment Status Filter
@@ -121,11 +132,22 @@ class SalesController extends Controller
             $startDayStr = substr($startDate, 0, 10);
             $endDayStr = substr($endDate, 0, 10);
 
-            $directCash = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Cash')->sum('paid_amount');
-            $directQris = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'QRIS')->sum('paid_amount');
-            $directTransfer = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Transfer')->sum('paid_amount');
+            $directCash = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
+            $directQris = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount');
+            $directTransfer = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount');
             $directReceivables = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->sum('remaining_amount');
             $directTrxCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->count();
+
+            // Split payments for transactions created within this period
+            $splitTxIds = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'like', 'Split%')->pluck('id');
+            $splitPaymentsQuery = TransactionPayment::whereIn('transaction_id', $splitTxIds);
+            $splitCash = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');
+            $splitQris = (clone $splitPaymentsQuery)->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
+            $splitTransfer = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('amount');
+
+            $splitCashCount = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Cash', 'cash'])->count();
+            $splitQrisCount = (clone $splitPaymentsQuery)->whereIn('payment_method', ['QRIS', 'qris'])->count();
+            $splitTransferCount = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Transfer', 'transfer'])->count();
 
             // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
             $cashSettlements = CashTransaction::where('tipe', 'masuk')
@@ -150,9 +172,10 @@ class SalesController extends Controller
             foreach ($cashSettlements as $cs) {
                 $settledTrxIds[] = $cs->transaction_id;
                 $pm = strtolower($cs->transaction->payment_method ?? 'transfer');
-                if (str_contains($pm, 'cash') || str_contains($pm, 'tunai')) {
+                $ket = strtolower($cs->keterangan ?? '');
+                if (str_contains($pm, 'cash') || str_contains($pm, 'tunai') || str_contains($ket, 'metode cash')) {
                     $settleCash += (float) $cs->jumlah;
-                } elseif (str_contains($pm, 'qris')) {
+                } elseif (str_contains($pm, 'qris') || str_contains($ket, 'metode qris')) {
                     $settleQris += (float) $cs->jumlah;
                 } else {
                     $settleTransfer += (float) $cs->jumlah;
@@ -162,25 +185,42 @@ class SalesController extends Controller
             $settledTrxIds = array_unique(array_filter($settledTrxIds));
             $olderSettlementsCount = count($settledTrxIds);
 
-            $cashTotal = $directCash + $settleCash;
-            $qrisTotal = $directQris + $settleQris;
-            $transferTotal = $directTransfer + $settleTransfer;
+            $cashTotal = (float) $directCash + (float) $splitCash + $settleCash;
+            $qrisTotal = (float) $directQris + (float) $splitQris + $settleQris;
+            $transferTotal = (float) $directTransfer + (float) $splitTransfer + $settleTransfer;
             $totalPaid = $cashTotal + $qrisTotal + $transferTotal;
             $totalOmset = $totalPaid;
             $totalReceivables = $directReceivables;
             $totalTrx = $directTrxCount + $olderSettlementsCount;
-            $cashCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Cash')->count() + ($settleCash > 0 ? 1 : 0);
-            $qrisCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'QRIS')->count() + ($settleQris > 0 ? 1 : 0);
-            $transferCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->where('payment_method', 'Transfer')->count() + ($settleTransfer > 0 ? 1 : 0);
+            $cashCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->whereIn('payment_method', ['Cash', 'cash'])->count() + $splitCashCount + ($settleCash > 0 ? 1 : 0);
+            $qrisCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->whereIn('payment_method', ['QRIS', 'qris'])->count() + $splitQrisCount + ($settleQris > 0 ? 1 : 0);
+            $transferCount = (clone $summaryBaseQuery)->whereBetween('created_at', [$startDate, $endDate])->whereIn('payment_method', ['Transfer', 'transfer'])->count() + $splitTransferCount + ($settleTransfer > 0 ? 1 : 0);
         } else {
-            $cashTotal = (clone $summaryBaseQuery)->where('payment_method', 'Cash')->sum('paid_amount');
-            $cashCount = (clone $summaryBaseQuery)->where('payment_method', 'Cash')->count();
-            $qrisTotal = (clone $summaryBaseQuery)->where('payment_method', 'QRIS')->sum('paid_amount');
-            $qrisCount = (clone $summaryBaseQuery)->where('payment_method', 'QRIS')->count();
-            $transferTotal = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->sum('paid_amount');
-            $transferCount = (clone $summaryBaseQuery)->where('payment_method', 'Transfer')->count();
-            $totalOmset = (clone $summaryBaseQuery)->sum('paid_amount');
-            $totalPaid = (clone $summaryBaseQuery)->sum('paid_amount');
+            $directCash = (clone $summaryBaseQuery)->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
+            $directQris = (clone $summaryBaseQuery)->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount');
+            $directTransfer = (clone $summaryBaseQuery)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount');
+
+            $splitTxIds = (clone $summaryBaseQuery)->where('payment_method', 'like', 'Split%')->pluck('id');
+            $splitPaymentsQuery = TransactionPayment::whereIn('transaction_id', $splitTxIds);
+            $splitCash = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');
+            $splitQris = (clone $splitPaymentsQuery)->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
+            $splitTransfer = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Transfer', 'transfer'])->sum('amount');
+
+            $splitCashCount = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Cash', 'cash'])->count();
+            $splitQrisCount = (clone $splitPaymentsQuery)->whereIn('payment_method', ['QRIS', 'qris'])->count();
+            $splitTransferCount = (clone $splitPaymentsQuery)->whereIn('payment_method', ['Transfer', 'transfer'])->count();
+
+            $cashTotal = (float) $directCash + (float) $splitCash;
+            $cashCount = (clone $summaryBaseQuery)->whereIn('payment_method', ['Cash', 'cash'])->count() + $splitCashCount;
+
+            $qrisTotal = (float) $directQris + (float) $splitQris;
+            $qrisCount = (clone $summaryBaseQuery)->whereIn('payment_method', ['QRIS', 'qris'])->count() + $splitQrisCount;
+
+            $transferTotal = (float) $directTransfer + (float) $splitTransfer;
+            $transferCount = (clone $summaryBaseQuery)->whereIn('payment_method', ['Transfer', 'transfer'])->count() + $splitTransferCount;
+
+            $totalPaid = $cashTotal + $qrisTotal + $transferTotal;
+            $totalOmset = $totalPaid;
             $totalReceivables = (clone $summaryBaseQuery)->sum('remaining_amount');
             $totalTrx = (clone $summaryBaseQuery)->count();
         }

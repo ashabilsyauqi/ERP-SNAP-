@@ -174,10 +174,11 @@
 
             <!-- Filter Metode Pembayaran -->
             <select name="payment_method" onchange="this.form.submit()" class="form-select form-select-sm text-xs font-semibold py-1" style="width: auto;">
-                <option value="all" {{ request('payment_method') === 'all' || !request('payment_method') ? 'selected' : '' }}>Semua Metode (Cash, QRIS, TF)</option>
+                <option value="all" {{ request('payment_method') === 'all' || !request('payment_method') ? 'selected' : '' }}>Semua Metode (Cash, QRIS, TF, Split)</option>
                 <option value="Cash" {{ request('payment_method') === 'Cash' ? 'selected' : '' }}>💵 Cash (Tunai)</option>
                 <option value="QRIS" {{ request('payment_method') === 'QRIS' ? 'selected' : '' }}>📱 QRIS</option>
                 <option value="Transfer" {{ request('payment_method') === 'Transfer' ? 'selected' : '' }}>🏦 Transfer Bank</option>
+                <option value="Split" {{ request('payment_method') === 'Split' ? 'selected' : '' }}>🔀 Split Payment</option>
             </select>
 
             @if(auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
@@ -359,6 +360,8 @@
                                                     📱 QRIS
                                                 @elseif($trx->payment_method === 'Transfer')
                                                     🏦 TF BANK
+                                                @elseif(str_starts_with(strtolower($trx->payment_method ?? ''), 'split'))
+                                                    🔀 {{ strtoupper($trx->payment_method) }}
                                                 @else
                                                     {{ strtoupper($trx->payment_method) }}
                                                 @endif

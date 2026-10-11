@@ -439,7 +439,7 @@ class OwnerController extends Controller
             $query->whereBetween('created_at', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()]);
         }
 
-        $records = $query->with('branch')
+        $records = $query->with(['branch', 'payments'])
             ->orderBy('created_at', 'asc')
             ->get()
             ->groupBy(fn($t) => $t->created_at->format('Y-m-d'));
@@ -469,9 +469,14 @@ class OwnerController extends Controller
                 $trxCount = $items->count();
                 $totalPaid = $items->sum('paid_amount');
                 $aov = $trxCount > 0 ? round($totalPaid / $trxCount) : 0;
-                $cash = $items->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount');
-                $qris = $items->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount');
-                $tf = $items->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount');
+                $splitPayments = $items->filter(fn($t) => str_starts_with(strtolower($t->payment_method ?? ''), 'split'))
+                    ->flatMap(fn($t) => $t->payments);
+                $cash = $items->whereIn('payment_method', ['Cash', 'cash'])->sum('paid_amount')
+                    + $splitPayments->filter(fn($p) => in_array(strtolower($p->payment_method), ['cash', 'tunai']))->sum('amount');
+                $qris = $items->whereIn('payment_method', ['QRIS', 'qris'])->sum('paid_amount')
+                    + $splitPayments->filter(fn($p) => in_array(strtolower($p->payment_method), ['qris']))->sum('amount');
+                $tf = $items->whereIn('payment_method', ['Transfer', 'transfer'])->sum('paid_amount')
+                    + $splitPayments->filter(fn($p) => in_array(strtolower($p->payment_method), ['transfer']))->sum('amount');
 
                 fputcsv($file, [
                     Carbon::parse($date)->translatedFormat('d F Y'),
