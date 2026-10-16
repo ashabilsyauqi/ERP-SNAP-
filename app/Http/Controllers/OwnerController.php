@@ -85,10 +85,7 @@ class OwnerController extends Controller
             $startDayStr = $startDate->toDateString();
             $endDayStr = $endDate->toDateString();
             $query->whereBetween('created_at', [$startDate, $endDate]);
-            $opexQuery->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
-                $q->whereBetween('tanggal', [$startDayStr, $endDayStr])
-                  ->orWhereBetween('created_at', [$startDate, $endDate]);
-            });
+            $opexQuery->whereBetween('tanggal', [$startDayStr, $endDayStr]);
 
             // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
             $cashSettlements = CashTransaction::where('tipe', 'masuk')
