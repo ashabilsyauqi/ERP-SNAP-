@@ -52,7 +52,13 @@ class OwnerController extends Controller
             $query->where('branch_id', $branchId);
             $materialQuery->where('branch_id', $branchId);
             $purchaseQuery->where('branch_id', $branchId);
-            $opexQuery->where('branch_id', $branchId);
+            $opexQuery->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+                $centralBranch = Branch::where('nama_cabang', 'like', '%Pusat%')->first() ?: Branch::first();
+                if ($centralBranch && (int)$branchId === (int)$centralBranch->id) {
+                    $q->orWhereNull('branch_id');
+                }
+            });
         }
 
         $startDate = null;
@@ -79,7 +85,10 @@ class OwnerController extends Controller
             $startDayStr = $startDate->toDateString();
             $endDayStr = $endDate->toDateString();
             $query->whereBetween('created_at', [$startDate, $endDate]);
-            $opexQuery->whereBetween('tanggal', [$startDayStr, $endDayStr]);
+            $opexQuery->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
+                $q->whereBetween('tanggal', [$startDayStr, $endDayStr])
+                  ->orWhereBetween('created_at', [$startDate, $endDate]);
+            });
 
             // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
             $cashSettlements = CashTransaction::where('tipe', 'masuk')
