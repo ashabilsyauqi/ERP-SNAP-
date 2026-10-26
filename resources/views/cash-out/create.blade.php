@@ -14,7 +14,7 @@
                 <!-- Tanggal -->
                 <div>
                     <label for="tanggal" class="block text-sm font-semibold text-gray-700 mb-1">Tanggal Transaksi <span class="text-red-500">*</span></label>
-                    <input type="date" name="tanggal" id="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}" required
+                    <input type="date" name="tanggal" id="tanggal" value="{{ old('tanggal', \Carbon\Carbon::today()->toDateString()) }}" required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors @error('tanggal') border-red-500 @enderror">
                     @error('tanggal')
                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>

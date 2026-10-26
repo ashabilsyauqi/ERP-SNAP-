@@ -85,7 +85,17 @@ class OwnerController extends Controller
             $startDayStr = $startDate->toDateString();
             $endDayStr = $endDate->toDateString();
             $query->whereBetween('created_at', [$startDate, $endDate]);
-            $opexQuery->whereBetween('tanggal', [$startDayStr, $endDayStr]);
+
+            if ($timeframe === 'today' || $timeframe === '1D') {
+                // Daily Store Cash Outflow: capture today's transaction date OR cash transactions entered today
+                $opexQuery->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
+                    $q->whereBetween('tanggal', [$startDayStr, $endDayStr])
+                      ->orWhereBetween('created_at', [$startDate, $endDate]);
+                });
+            } else {
+                // Monthly / Yearly / Custom Accounting Period: strictly filter by financial transaction date (tanggal)
+                $opexQuery->whereBetween('tanggal', [$startDayStr, $endDayStr]);
+            }
 
             // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
             $cashSettlements = CashTransaction::where('tipe', 'masuk')
