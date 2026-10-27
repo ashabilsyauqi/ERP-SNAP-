@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CashTransaction;
 use App\Models\Account;
 use App\Models\Branch;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -31,15 +32,34 @@ class CashOutController extends Controller
         $query = CashTransaction::keluar()->with(['account', 'branch', 'user']);
 
         if ($branchId && $branchId !== 'all') {
-            $query->where('branch_id', $branchId);
+            $query->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+                $centralBranch = Branch::where('nama_cabang', 'like', '%Pusat%')->first() ?: Branch::first();
+                if ($centralBranch && (int)$branchId === (int)$centralBranch->id) {
+                    $q->orWhereNull('branch_id');
+                }
+            });
         }
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('tanggal', [$request->start_date, $request->end_date]);
+            $sDate = Carbon::parse($request->start_date)->startOfDay();
+            $eDate = Carbon::parse($request->end_date)->endOfDay();
+            $query->where(function($q) use ($request, $sDate, $eDate) {
+                $q->whereBetween('tanggal', [$request->start_date, $request->end_date])
+                  ->orWhereBetween('created_at', [$sDate, $eDate]);
+            });
         } elseif ($request->filled('start_date')) {
-            $query->where('tanggal', '>=', $request->start_date);
+            $sDate = Carbon::parse($request->start_date)->startOfDay();
+            $query->where(function($q) use ($request, $sDate) {
+                $q->where('tanggal', '>=', $request->start_date)
+                  ->orWhere('created_at', '>=', $sDate);
+            });
         } elseif ($request->filled('end_date')) {
-            $query->where('tanggal', '<=', $request->end_date);
+            $eDate = Carbon::parse($request->end_date)->endOfDay();
+            $query->where(function($q) use ($request, $eDate) {
+                $q->where('tanggal', '<=', $request->end_date)
+                  ->orWhere('created_at', '<=', $eDate);
+            });
         }
 
         if ($request->filled('account_id')) {

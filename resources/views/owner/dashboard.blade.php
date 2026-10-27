@@ -67,9 +67,9 @@
                     <i class="fa-regular fa-calendar text-blue-600 text-xs"></i>
                     <span class="text-[11px] font-bold text-slate-700 uppercase">Rentang:</span>
                 </div>
-                <input type="date" name="start_date" id="filter-start-date" value="{{ $startDate ?? '' }}" class="form-control form-control-sm py-0.5 px-2 text-xs border-slate-300 rounded-lg font-mono font-semibold" style="width: 130px;" title="Dari Tanggal">
+                <input type="date" name="start_date" id="filter-start-date" value="{{ $startDate ? \Carbon\Carbon::parse($startDate)->format('Y-m-d') : '' }}" class="form-control form-control-sm py-0.5 px-2 text-xs border-slate-300 rounded-lg font-mono font-semibold" style="width: 130px;" title="Dari Tanggal">
                 <span class="text-slate-400 text-xs font-bold">-</span>
-                <input type="date" name="end_date" id="filter-end-date" value="{{ $endDate ?? '' }}" class="form-control form-control-sm py-0.5 px-2 text-xs border-slate-300 rounded-lg font-mono font-semibold" style="width: 130px;" title="Sampai Tanggal">
+                <input type="date" name="end_date" id="filter-end-date" value="{{ $endDate ? \Carbon\Carbon::parse($endDate)->format('Y-m-d') : '' }}" class="form-control form-control-sm py-0.5 px-2 text-xs border-slate-300 rounded-lg font-mono font-semibold" style="width: 130px;" title="Sampai Tanggal">
                 <button type="button" onclick="applyCustomDateRange()" class="btn btn-sm btn-primary text-xs px-2.5 py-1 rounded-lg font-bold shadow-2xs d-flex align-items-center gap-1">
                     <i class="fa-solid fa-filter text-[10px]"></i>
                     <span>Terapkan</span>
@@ -176,8 +176,20 @@
             </div>
         </a>
 
+        @php
+            $kasKeluarParams = [];
+            if ($startDate) {
+                $kasKeluarParams['start_date'] = \Carbon\Carbon::parse($startDate)->format('Y-m-d');
+            }
+            if ($endDate) {
+                $kasKeluarParams['end_date'] = \Carbon\Carbon::parse($endDate)->format('Y-m-d');
+            }
+            if (($branchId ?? 'all') !== 'all') {
+                $kasKeluarParams['branch_id'] = $branchId;
+            }
+        @endphp
         <!-- Card 4: OPEX -->
-        <a href="{{ route('kas-keluar.index') }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #e11d48 !important;" title="Klik untuk melihat Daftar & Bukti Kas Keluar (Beban Operasional)">
+        <a href="{{ route('kas-keluar.index', $kasKeluarParams) }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #e11d48 !important;" title="Klik untuk melihat Daftar & Bukti Kas Keluar (Beban Operasional)">
             <div class="min-w-0 flex-grow me-2">
                 <div class="flex items-center justify-between gap-1 mb-1">
                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate group-hover:text-rose-700">OPEX (Beban)</p>

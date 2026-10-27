@@ -69,7 +69,7 @@
                 <button type="submit" class="btn-odoo-primary flex-grow-1 py-1 text-xs justify-center font-bold">
                     <i class="fa-solid fa-filter me-1"></i> Filter
                 </button>
-                <a href="{{ route('kas-keluar.index') }}" class="btn-odoo-secondary py-1 text-xs" title="Reset Filter">
+                <a href="{{ route('kas-keluar.index', ['branch_id' => 'all']) }}" class="btn-odoo-secondary py-1 text-xs" title="Reset Filter">
                     <i class="fa-solid fa-rotate-left"></i>
                 </a>
             </div>
