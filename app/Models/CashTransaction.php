@@ -15,6 +15,35 @@ class CashTransaction extends Model
         ];
     }
 
+    public function setTanggalAttribute($value)
+    {
+        if (!$value) {
+            $this->attributes['tanggal'] = null;
+            return;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            $this->attributes['tanggal'] = $value->format('Y-m-d');
+            return;
+        }
+
+        $clean = trim((string)$value);
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $clean, $m)) {
+            $this->attributes['tanggal'] = sprintf('%04d-%02d-%02d', (int)$m[3], (int)$m[2], (int)$m[1]);
+            return;
+        }
+        if (preg_match('/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/', $clean, $m)) {
+            $this->attributes['tanggal'] = sprintf('%04d-%02d-%02d', (int)$m[1], (int)$m[2], (int)$m[3]);
+            return;
+        }
+
+        try {
+            $this->attributes['tanggal'] = Carbon::parse($clean)->format('Y-m-d');
+        } catch (\Exception $e) {
+            $this->attributes['tanggal'] = $clean;
+        }
+    }
+
     public function branch() { return $this->belongsTo(Branch::class)->withTrashed(); }
     public function account() { return $this->belongsTo(Account::class); }
     public function user() { return $this->belongsTo(User::class); }

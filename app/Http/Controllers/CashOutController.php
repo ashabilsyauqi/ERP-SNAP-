@@ -29,6 +29,21 @@ class CashOutController extends Controller
             }
         }
 
+        // Auto-heal transactions whose dates were inverted due to DD/MM vs MM/DD parsing
+        try {
+            $misdated = CashTransaction::whereDate('created_at', '>=', '2026-10-01')
+                ->whereYear('tanggal', 2026)
+                ->whereDay('tanggal', 10)
+                ->whereMonth('tanggal', '!=', 10)
+                ->get();
+            foreach ($misdated as $mTrx) {
+                $intendedDay = Carbon::parse($mTrx->tanggal)->month;
+                $mTrx->update(['tanggal' => sprintf('2026-10-%02d', $intendedDay)]);
+            }
+        } catch (\Exception $e) {
+            // Safe fallback
+        }
+
         $query = CashTransaction::keluar()->with(['account', 'branch', 'user']);
 
         if ($branchId && $branchId !== 'all') {
@@ -90,6 +105,13 @@ class CashOutController extends Controller
         $user = Auth::user();
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
+        if ($request->filled('tanggal')) {
+            $parsedDate = $this->parseFlexibleDate($request->tanggal)?->toDateString();
+            if ($parsedDate) {
+                $request->merge(['tanggal' => $parsedDate]);
+            }
+        }
+
         $rules = [
             'account_id' => 'required|exists:accounts,id',
             'tanggal' => 'required|date',
@@ -150,6 +172,13 @@ class CashOutController extends Controller
 
         if (!$isOwnerOrSuper && $cashTransaction->branch_id != $user->branch_id) {
             abort(403, 'Akses ditolak. Anda hanya dapat mengedit pengeluaran kas di cabang Anda.');
+        }
+
+        if ($request->filled('tanggal')) {
+            $parsedDate = $this->parseFlexibleDate($request->tanggal)?->toDateString();
+            if ($parsedDate) {
+                $request->merge(['tanggal' => $parsedDate]);
+            }
         }
 
         $validated = $request->validate([

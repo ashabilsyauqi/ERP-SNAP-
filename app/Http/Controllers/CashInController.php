@@ -63,6 +63,13 @@ class CashInController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->filled('tanggal')) {
+            $parsedDate = $this->parseFlexibleDate($request->tanggal)?->toDateString();
+            if ($parsedDate) {
+                $request->merge(['tanggal' => $parsedDate]);
+            }
+        }
+
         $validated = $request->validate([
             'account_id' => 'required|exists:accounts,id',
             'tanggal' => 'required|date',
@@ -93,6 +100,13 @@ class CashInController extends Controller
 
     public function update(Request $request, CashTransaction $cashTransaction)
     {
+        if ($request->filled('tanggal')) {
+            $parsedDate = $this->parseFlexibleDate($request->tanggal)?->toDateString();
+            if ($parsedDate) {
+                $request->merge(['tanggal' => $parsedDate]);
+            }
+        }
+
         $validated = $request->validate([
             'account_id' => 'required|exists:accounts,id',
             'tanggal' => 'required|date',
@@ -113,5 +127,25 @@ class CashInController extends Controller
         
         $cashTransaction->delete();
         return back()->with('success', 'Kas masuk berhasil dihapus.');
+    }
+
+    /**
+     * Flexible date parser supporting DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD.
+     */
+    protected function parseFlexibleDate($dateStr)
+    {
+        if (!$dateStr) return null;
+        $clean = trim((string)$dateStr);
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $clean, $m)) {
+            return Carbon::createFromDate((int)$m[3], (int)$m[2], (int)$m[1]);
+        }
+        if (preg_match('/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/', $clean, $m)) {
+            return Carbon::createFromDate((int)$m[1], (int)$m[2], (int)$m[3]);
+        }
+        try {
+            return Carbon::parse($clean);
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
