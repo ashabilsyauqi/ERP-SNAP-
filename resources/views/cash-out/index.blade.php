@@ -205,6 +205,34 @@
                                         @else
                                             <p class="text-xs text-slate-400 mb-0">Belum ada catatan pengeluaran kas keluar di sistem.</p>
                                         @endif
+
+                                        @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin())
+                                            @php
+                                                $latestCashOuts = \App\Models\CashTransaction::keluar()->with(['branch', 'account'])->orderBy('id', 'desc')->take(5)->get();
+                                            @endphp
+                                            @if($latestCashOuts->isNotEmpty())
+                                                <div class="mt-4 pt-3 border-top text-start max-w-xl mx-auto">
+                                                    <p class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+                                                        <span><i class="fa-solid fa-clock-rotate-left text-blue-600 me-1"></i> 5 Transaksi Kas Keluar Terakhir di Database (Semua Tanggal):</span>
+                                                    </p>
+                                                    <div class="space-y-1.5 font-mono text-[11px]">
+                                                        @foreach($latestCashOuts as $lTrx)
+                                                            <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-2">
+                                                                <div class="truncate">
+                                                                    <span class="font-bold text-rose-600">{{ $lTrx->nomor_referensi }}</span>
+                                                                    <span class="text-slate-500">({{ $lTrx->branch->nama_cabang ?? 'Pusat' }})</span>:
+                                                                    <span class="text-slate-700">{{ Str::limit($lTrx->keterangan, 30) }}</span>
+                                                                </div>
+                                                                <div class="text-end flex-shrink-0">
+                                                                    <span class="badge bg-slate-200 text-slate-800 font-bold px-1.5 py-0.5">{{ \Carbon\Carbon::parse($lTrx->tanggal)->format('d/m/Y') }}</span>
+                                                                    <span class="font-bold ms-1 text-slate-900">Rp {{ number_format($lTrx->jumlah, 0, ',', '.') }}</span>
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
