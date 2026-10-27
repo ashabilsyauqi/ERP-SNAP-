@@ -65,8 +65,10 @@ class OwnerController extends Controller
         $endDate = null;
 
         if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
-            $startDate = Carbon::parse($startDateInput)->startOfDay();
-            $endDate = Carbon::parse($endDateInput)->endOfDay();
+            $parsedStart = $this->parseFlexibleDate($startDateInput);
+            $parsedEnd = $this->parseFlexibleDate($endDateInput);
+            $startDate = $parsedStart ? $parsedStart->startOfDay() : null;
+            $endDate = $parsedEnd ? $parsedEnd->endOfDay() : null;
         } elseif ($timeframe === 'today' || $timeframe === '1D') {
             $startDate = Carbon::today()->startOfDay();
             $endDate = Carbon::today()->endOfDay();
@@ -86,19 +88,10 @@ class OwnerController extends Controller
             $endDayStr = $endDate->toDateString();
             $query->whereBetween('created_at', [$startDate, $endDate]);
 
-            $isDailyView = ($timeframe === 'today' || $timeframe === '1D' || $startDate->isSameDay($endDate));
-
-            if ($isDailyView) {
-                // Daily Store Cash Outflow: capture transaction date OR cash transactions entered on that day
-                $opexQuery->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
-                    $q->whereBetween('tanggal', [$startDayStr, $endDayStr])
-                      ->orWhereBetween('created_at', [$startDate, $endDate]);
-                });
-            } else {
-                // Monthly / Yearly / Multi-day Accounting Period: strictly filter by financial transaction date (tanggal)
-                // Prevents prior month expenses (like September payroll entered on Oct 1) from leaking into current month
-                $opexQuery->whereBetween('tanggal', [$startDayStr, $endDayStr]);
-            }
+            // OPEX strictly follows financial transaction date (tanggal) in accordance with accounting standards.
+            // This ensures backdated or batch-inputted past expenses (e.g. September payroll entered on Oct 1)
+            // correctly stay in their own transaction date and do not inflate daily or monthly metrics.
+            $opexQuery->whereBetween('tanggal', [$startDayStr, $endDayStr]);
 
             // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
             $cashSettlements = CashTransaction::where('tipe', 'masuk')
@@ -441,9 +434,11 @@ class OwnerController extends Controller
         }
 
         if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
-            $sDate = Carbon::parse($startDateInput)->startOfDay();
-            $eDate = Carbon::parse($endDateInput)->endOfDay();
-            $query->whereBetween('created_at', [$sDate, $eDate]);
+            $sDate = $this->parseFlexibleDate($startDateInput)?->startOfDay();
+            $eDate = $this->parseFlexibleDate($endDateInput)?->endOfDay();
+            if ($sDate && $eDate) {
+                $query->whereBetween('created_at', [$sDate, $eDate]);
+            }
         } elseif ($timeframe === 'today' || $timeframe === '1D') {
             $query->whereDate('created_at', Carbon::today());
         } elseif ($timeframe === '7days' || $timeframe === '7D') {
@@ -512,5 +507,25 @@ class OwnerController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Flexible date parser supporting DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD.
+     */
+    protected function parseFlexibleDate($dateStr)
+    {
+        if (!$dateStr) return null;
+        $clean = trim($dateStr);
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $clean, $m)) {
+            return Carbon::createFromDate((int)$m[3], (int)$m[2], (int)$m[1]);
+        }
+        if (preg_match('/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/', $clean, $m)) {
+            return Carbon::createFromDate((int)$m[1], (int)$m[2], (int)$m[3]);
+        }
+        try {
+            return Carbon::parse($clean);
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }

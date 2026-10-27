@@ -42,24 +42,21 @@ class CashOutController extends Controller
         }
 
         if ($request->filled('start_date') && $request->filled('end_date')) {
-            $sDate = Carbon::parse($request->start_date)->startOfDay();
-            $eDate = Carbon::parse($request->end_date)->endOfDay();
-            $query->where(function($q) use ($request, $sDate, $eDate) {
-                $q->whereBetween('tanggal', [$request->start_date, $request->end_date])
-                  ->orWhereBetween('created_at', [$sDate, $eDate]);
-            });
+            $sDate = $this->parseFlexibleDate($request->start_date)?->toDateString();
+            $eDate = $this->parseFlexibleDate($request->end_date)?->toDateString();
+            if ($sDate && $eDate) {
+                $query->whereBetween('tanggal', [$sDate, $eDate]);
+            }
         } elseif ($request->filled('start_date')) {
-            $sDate = Carbon::parse($request->start_date)->startOfDay();
-            $query->where(function($q) use ($request, $sDate) {
-                $q->where('tanggal', '>=', $request->start_date)
-                  ->orWhere('created_at', '>=', $sDate);
-            });
+            $sDate = $this->parseFlexibleDate($request->start_date)?->toDateString();
+            if ($sDate) {
+                $query->where('tanggal', '>=', $sDate);
+            }
         } elseif ($request->filled('end_date')) {
-            $eDate = Carbon::parse($request->end_date)->endOfDay();
-            $query->where(function($q) use ($request, $eDate) {
-                $q->where('tanggal', '<=', $request->end_date)
-                  ->orWhere('created_at', '<=', $eDate);
-            });
+            $eDate = $this->parseFlexibleDate($request->end_date)?->toDateString();
+            if ($eDate) {
+                $query->where('tanggal', '<=', $eDate);
+            }
         }
 
         if ($request->filled('account_id')) {
@@ -183,5 +180,25 @@ class CashOutController extends Controller
         $ref = $cashTransaction->nomor_referensi;
         $cashTransaction->delete();
         return back()->with('success', "Kas keluar #{$ref} berhasil dihapus.");
+    }
+
+    /**
+     * Flexible date parser supporting DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD.
+     */
+    protected function parseFlexibleDate($dateStr)
+    {
+        if (!$dateStr) return null;
+        $clean = trim($dateStr);
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $clean, $m)) {
+            return Carbon::createFromDate((int)$m[3], (int)$m[2], (int)$m[1]);
+        }
+        if (preg_match('/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/', $clean, $m)) {
+            return Carbon::createFromDate((int)$m[1], (int)$m[2], (int)$m[3]);
+        }
+        try {
+            return Carbon::parse($clean);
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }
