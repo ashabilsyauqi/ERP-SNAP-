@@ -60,35 +60,35 @@ class CashOutController extends Controller
             $sDate = $this->parseFlexibleDate($request->start_date)?->toDateString();
             $eDate = $this->parseFlexibleDate($request->end_date)?->toDateString();
             if ($sDate && $eDate) {
-                $rawSlashStart = Carbon::parse($sDate)->format('d/m/Y');
-                $rawSlashEnd = Carbon::parse($eDate)->format('d/m/Y');
-                $query->where(function($q) use ($sDate, $eDate, $rawSlashStart, $rawSlashEnd) {
-                    $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $eDate . ' 23:59:59'])
-                      ->orWhereDate('tanggal', '>=', $sDate)->whereDate('tanggal', '<=', $eDate)
-                      ->orWhereBetween('tanggal', [$sDate, $eDate])
-                      ->orWhereBetween('tanggal', [$rawSlashStart, $rawSlashEnd])
-                      ->orWhere('tanggal', $sDate)
-                      ->orWhere('tanggal', $rawSlashStart);
-                });
+                if ($sDate === $eDate) {
+                    $rawSlash = Carbon::parse($sDate)->format('d/m/Y');
+                    $query->where(function($q) use ($sDate, $rawSlash) {
+                        $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $sDate . ' 23:59:59'])
+                          ->orWhereDate('tanggal', '=', $sDate)
+                          ->orWhere('tanggal', $sDate)
+                          ->orWhere('tanggal', $rawSlash);
+                    });
+                } else {
+                    $query->where(function($q) use ($sDate, $eDate) {
+                        $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $eDate . ' 23:59:59'])
+                          ->orWhereDate('tanggal', '>=', $sDate)->whereDate('tanggal', '<=', $eDate);
+                    });
+                }
             }
         } elseif ($request->filled('start_date')) {
             $sDate = $this->parseFlexibleDate($request->start_date)?->toDateString();
             if ($sDate) {
-                $rawSlashStart = Carbon::parse($sDate)->format('d/m/Y');
-                $query->where(function($q) use ($sDate, $rawSlashStart) {
+                $query->where(function($q) use ($sDate) {
                     $q->where('tanggal', '>=', $sDate . ' 00:00:00')
-                      ->orWhereDate('tanggal', '>=', $sDate)
-                      ->orWhere('tanggal', '>=', $rawSlashStart);
+                      ->orWhereDate('tanggal', '>=', $sDate);
                 });
             }
         } elseif ($request->filled('end_date')) {
             $eDate = $this->parseFlexibleDate($request->end_date)?->toDateString();
             if ($eDate) {
-                $rawSlashEnd = Carbon::parse($eDate)->format('d/m/Y');
-                $query->where(function($q) use ($eDate, $rawSlashEnd) {
+                $query->where(function($q) use ($eDate) {
                     $q->where('tanggal', '<=', $eDate . ' 23:59:59')
-                      ->orWhereDate('tanggal', '<=', $eDate)
-                      ->orWhere('tanggal', '<=', $rawSlashEnd);
+                      ->orWhereDate('tanggal', '<=', $eDate);
                 });
             }
         }

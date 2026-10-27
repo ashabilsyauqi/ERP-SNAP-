@@ -91,16 +91,20 @@ class OwnerController extends Controller
             // OPEX strictly follows financial transaction date (tanggal) in accordance with accounting standards.
             // This ensures backdated or batch-inputted past expenses (e.g. September payroll entered on Oct 1)
             // correctly stay in their own transaction date and do not inflate daily or monthly metrics.
-            $rawSlashStart = Carbon::parse($startDayStr)->format('d/m/Y');
-            $rawSlashEnd = Carbon::parse($endDayStr)->format('d/m/Y');
-            $opexQuery->where(function($q) use ($startDayStr, $endDayStr, $rawSlashStart, $rawSlashEnd) {
-                $q->whereBetween('tanggal', [$startDayStr . ' 00:00:00', $endDayStr . ' 23:59:59'])
-                  ->orWhereDate('tanggal', '>=', $startDayStr)->whereDate('tanggal', '<=', $endDayStr)
-                  ->orWhereBetween('tanggal', [$startDayStr, $endDayStr])
-                  ->orWhereBetween('tanggal', [$rawSlashStart, $rawSlashEnd])
-                  ->orWhere('tanggal', $startDayStr)
-                  ->orWhere('tanggal', $rawSlashStart);
-            });
+            if ($startDayStr === $endDayStr) {
+                $rawSlash = Carbon::parse($startDayStr)->format('d/m/Y');
+                $opexQuery->where(function($q) use ($startDayStr, $rawSlash) {
+                    $q->whereBetween('tanggal', [$startDayStr . ' 00:00:00', $startDayStr . ' 23:59:59'])
+                      ->orWhereDate('tanggal', '=', $startDayStr)
+                      ->orWhere('tanggal', $startDayStr)
+                      ->orWhere('tanggal', $rawSlash);
+                });
+            } else {
+                $opexQuery->where(function($q) use ($startDayStr, $endDayStr) {
+                    $q->whereBetween('tanggal', [$startDayStr . ' 00:00:00', $endDayStr . ' 23:59:59'])
+                      ->orWhereDate('tanggal', '>=', $startDayStr)->whereDate('tanggal', '<=', $endDayStr);
+                });
+            }
 
             // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
             $cashSettlements = CashTransaction::where('tipe', 'masuk')
