@@ -29,13 +29,35 @@
     <!-- Filter Toolbar -->
     <div class="o_form_sheet mb-3 p-3 bg-white">
         <form method="GET" action="{{ route('kas-keluar.index') }}" class="row g-2 align-items-end">
+            @php
+                $sDateInput = request('start_date');
+                if ($sDateInput) {
+                    try {
+                        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $sDateInput, $m)) {
+                            $sDateInput = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+                        } else {
+                            $sDateInput = \Carbon\Carbon::parse($sDateInput)->format('Y-m-d');
+                        }
+                    } catch (\Exception $e) {}
+                }
+                $eDateInput = request('end_date');
+                if ($eDateInput) {
+                    try {
+                        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $eDateInput, $m)) {
+                            $eDateInput = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+                        } else {
+                            $eDateInput = \Carbon\Carbon::parse($eDateInput)->format('Y-m-d');
+                        }
+                    } catch (\Exception $e) {}
+                }
+            @endphp
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Dari Tanggal</label>
-                <input type="date" name="start_date" value="{{ request('start_date') }}" class="form-control form-control-sm">
+                <input type="date" name="start_date" value="{{ $sDateInput }}" class="form-control form-control-sm">
             </div>
             <div class="col-12 col-md-2">
                 <label class="form-label font-semibold text-slate-700 text-xs uppercase">Sampai Tanggal</label>
-                <input type="date" name="end_date" value="{{ request('end_date') }}" class="form-control form-control-sm">
+                <input type="date" name="end_date" value="{{ $eDateInput }}" class="form-control form-control-sm">
             </div>
             
             @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin())
@@ -159,8 +181,30 @@
                             <tr>
                                 <td colspan="7" class="text-center py-5 text-muted">
                                     <div class="p-4">
-                                        <i class="fa-solid fa-circle-arrow-up fs-1 text-slate-300 mb-2"></i>
-                                        <p class="mb-0">Belum ada transaksi pengeluaran kas keluar.</p>
+                                        <i class="fa-solid fa-filter-circle-xmark fs-1 text-slate-300 mb-2"></i>
+                                        <p class="mb-1 font-semibold text-slate-700">Tidak ada transaksi kas keluar yang cocok dengan filter saat ini.</p>
+                                        @if(request('start_date') || request('end_date') || ($branchId && $branchId !== 'all') || request('account_id') || request('search'))
+                                            <div class="text-xs text-slate-500 mb-3 space-y-1">
+                                                <p class="mb-0">
+                                                    Filter aktif:
+                                                    @if(request('start_date') && request('end_date'))
+                                                        Periode <b>{{ request('start_date') }}</b> s/d <b>{{ request('end_date') }}</b>
+                                                    @elseif(request('start_date'))
+                                                        Dari <b>{{ request('start_date') }}</b>
+                                                    @elseif(request('end_date'))
+                                                        Sampai <b>{{ request('end_date') }}</b>
+                                                    @endif
+                                                    @if($branchId && $branchId !== 'all')
+                                                        • Cabang: <b>{{ $branches->firstWhere('id', $branchId)?->nama_cabang ?? 'Cabang #' . $branchId }}</b>
+                                                    @endif
+                                                </p>
+                                            </div>
+                                            <a href="{{ route('kas-keluar.index', ['branch_id' => 'all']) }}" class="btn btn-sm btn-outline-primary px-3 py-1.5 text-xs rounded-lg font-semibold inline-flex items-center gap-1.5 shadow-xs">
+                                                <i class="fa-solid fa-rotate-left"></i> Reset Filter & Tampilkan Semua Cabang
+                                            </a>
+                                        @else
+                                            <p class="text-xs text-slate-400 mb-0">Belum ada catatan pengeluaran kas keluar di sistem.</p>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

@@ -81,24 +81,37 @@ class CashOutController extends Controller
     public function create()
     {
         $accounts = Account::where('tipe', 'beban')->active()->orderBy('nama_akun')->get();
-        return view('cash-out.create', compact('accounts'));
+        $branches = Branch::orderBy('nama_cabang')->get();
+        return view('cash-out.create', compact('accounts', 'branches'));
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $user = Auth::user();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        $rules = [
             'account_id' => 'required|exists:accounts,id',
             'tanggal' => 'required|date',
             'jumlah' => 'required|numeric|min:1',
             'keterangan' => 'required|string',
             'bukti_transaksi' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf|max:10240',
-        ]);
+        ];
 
-        $user = Auth::user();
-        $branchId = $user->branch_id;
-        if (!$branchId) {
-            $centralBranch = Branch::where('nama_cabang', 'like', '%Pusat%')->first() ?: Branch::first();
-            $branchId = $centralBranch ? $centralBranch->id : null;
+        if ($isOwnerOrSuper) {
+            $rules['branch_id'] = 'nullable|exists:branches,id';
+        }
+
+        $validated = $request->validate($rules);
+
+        if ($isOwnerOrSuper && !empty($validated['branch_id'])) {
+            $branchId = $validated['branch_id'];
+        } else {
+            $branchId = $user->branch_id;
+            if (!$branchId) {
+                $centralBranch = Branch::where('nama_cabang', 'like', '%Pusat%')->first() ?: Branch::first();
+                $branchId = $centralBranch ? $centralBranch->id : null;
+            }
         }
 
         $buktiPath = null;
@@ -106,7 +119,7 @@ class CashOutController extends Controller
             $buktiPath = $request->file('bukti_transaksi')->store('receipts', 'public');
         }
 
-        CashTransaction::create([
+        $trx = CashTransaction::create([
             'branch_id' => $branchId,
             'account_id' => $validated['account_id'],
             'user_id' => $user->id,
@@ -118,7 +131,11 @@ class CashOutController extends Controller
             'bukti_transaksi' => $buktiPath,
         ]);
 
-        return redirect()->route('kas-keluar.index')->with('success', 'Kas keluar beserta bukti nota/struk berhasil ditambahkan.');
+        return redirect()->route('kas-keluar.index', [
+            'start_date' => $validated['tanggal'],
+            'end_date' => $validated['tanggal'],
+            'branch_id' => $isOwnerOrSuper ? 'all' : $branchId,
+        ])->with('success', "Kas keluar #{$trx->nomor_referensi} (Rp " . number_format($validated['jumlah'], 0, ',', '.') . ") tanggal " . \Carbon\Carbon::parse($validated['tanggal'])->format('d/m/Y') . " berhasil dicatat.");
     }
 
     public function update(Request $request, $id)

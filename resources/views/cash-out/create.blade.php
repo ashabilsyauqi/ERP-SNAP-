@@ -21,6 +21,25 @@
                     @enderror
                 </div>
 
+                @if(Auth::user()->isOwner() || Auth::user()->isSuperAdmin())
+                <!-- Cabang Toko (Khusus Owner / SuperAdmin) -->
+                <div>
+                    <label for="branch_id" class="block text-sm font-semibold text-gray-700 mb-1">Cabang Toko <span class="text-red-500">*</span></label>
+                    <select name="branch_id" id="branch_id" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors @error('branch_id') border-red-500 @enderror">
+                        <option value="">-- Pilih Cabang --</option>
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ old('branch_id', (session('selected_branch_id') && session('selected_branch_id') !== 'all') ? session('selected_branch_id') : Auth::user()->branch_id) == $branch->id ? 'selected' : '' }}>
+                                {{ $branch->nama_cabang }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('branch_id')
+                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
+                @endif
+
                 <!-- Akun Beban -->
                 <div>
                     <label for="account_id" class="block text-sm font-semibold text-gray-700 mb-1">Akun Beban / Pengeluaran <span class="text-red-500">*</span></label>
