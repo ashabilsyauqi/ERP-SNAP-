@@ -167,10 +167,19 @@
             background-color: #eff6ff;
             color: #1e3a8a;
         }
-        .o_main_navbar .dropdown-item.active {
+        .o_main_navbar .dropdown-item:hover:not(.active) {
             background-color: #eff6ff;
             color: #1e3a8a;
-            font-weight: 700;
+        }
+        .o_main_navbar .dropdown-item.active,
+        .o_main_navbar .dropdown-item.active:hover {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }
+        .o_main_navbar .dropdown-item.active i,
+        .o_main_navbar .dropdown-item.active:hover i {
+            color: #ffffff !important;
         }
         
         /* Snaprint Two-Tier Control Panel */
@@ -755,8 +764,11 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-1 p-2" :class="{ 'show': open }" x-show="open" style="position: absolute; top: 100%; right: 0; min-width: 220px; display: none;" x-cloak>
                         <li class="px-2 py-1 text-[10px] uppercase font-bold text-slate-400">Pilih Cabang (Company)</li>
                         <li>
-                            <a class="dropdown-item rounded-2 text-xs py-1.5 {{ $selectedBranchId === 'all' ? 'active bg-blue-600 text-white font-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['branch_id' => 'all']) }}">
-                                <i class="fa-solid fa-globe me-2"></i> Semua Cabang (Konsolidasi)
+                            <a class="dropdown-item d-flex align-items-center justify-content-between rounded-2 text-xs py-2 px-2.5 my-0.5 {{ $selectedBranchId === 'all' ? 'active font-bold' : 'text-slate-700' }}" href="{{ request()->fullUrlWithQuery(['branch_id' => 'all']) }}">
+                                <span><i class="fa-solid fa-globe me-2 {{ $selectedBranchId === 'all' ? 'text-white' : 'text-slate-500' }}"></i> Semua Cabang (Konsolidasi)</span>
+                                @if($selectedBranchId === 'all')
+                                    <i class="fa-solid fa-check text-white text-xs ms-2"></i>
+                                @endif
                             </a>
                         </li>
                         <li><hr class="dropdown-divider my-1"></li>
@@ -765,8 +777,11 @@
                         @endphp
                         @foreach($allBranches as $br)
                             <li>
-                                <a class="dropdown-item rounded-2 text-xs py-1.5 {{ $selectedBranchId == $br->id ? 'active bg-blue-600 text-white font-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['branch_id' => $br->id]) }}">
-                                    <i class="fa-solid fa-shop me-2"></i> {{ $br->nama_cabang }}
+                                <a class="dropdown-item d-flex align-items-center justify-content-between rounded-2 text-xs py-2 px-2.5 my-0.5 {{ $selectedBranchId == $br->id ? 'active font-bold' : 'text-slate-700' }}" href="{{ request()->fullUrlWithQuery(['branch_id' => $br->id]) }}">
+                                    <span><i class="fa-solid fa-shop me-2 {{ $selectedBranchId == $br->id ? 'text-white' : 'text-slate-500' }}"></i> {{ $br->nama_cabang }}</span>
+                                    @if($selectedBranchId == $br->id)
+                                        <i class="fa-solid fa-check text-white text-xs ms-2"></i>
+                                    @endif
                                 </a>
                             </li>
                         @endforeach
