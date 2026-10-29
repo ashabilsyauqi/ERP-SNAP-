@@ -75,7 +75,7 @@
         },
         toggleDp(checked) {
             this.isDp = checked;
-            if (checked && (!this.dpAmount || this.dpAmount < this.minDpAmount)) {
+            if (checked && (!this.dpAmount || Number(this.dpAmount) < this.minDpAmount)) {
                 this.dpAmount = this.minDpAmount;
             }
         },
@@ -85,13 +85,17 @@
             this.dpAmount = Math.round(total * (pct / 100));
         },
         handleCartTotalUpdate(total, count) {
+            const previousTotal = this.cartTotal;
             this.cartTotal = Number(total) || 0;
             this.cartItemCount = Number(count) || 0;
             if (this.cartTotal < this.minDpThreshold) {
                 this.isDp = false;
                 this.dpAmount = 0;
-            } else if (this.isDp && (!this.dpAmount || this.dpAmount < this.minDpAmount)) {
-                this.dpAmount = this.minDpAmount;
+            } else if (this.isDp) {
+                // Hanya update otomatis jika dpAmount kosong ATAU jika total belanja berubah dan nominal saat ini di bawah 50% yang baru
+                if (!this.dpAmount || (previousTotal !== this.cartTotal && Number(this.dpAmount) < this.minDpAmount)) {
+                    this.dpAmount = this.minDpAmount;
+                }
             }
         }
      }"
@@ -385,8 +389,12 @@
                                 <label class="text-[10px] font-bold text-slate-600 uppercase">Nominal DP (Rp)</label>
                                 <span class="text-[9px] text-amber-700 font-bold" x-text="'Min. 50%: Rp ' + minDpAmount.toLocaleString('id-ID')"></span>
                             </div>
-                            <input type="number" x-model="dpAmount" :min="minDpAmount" placeholder="0" 
-                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-emerald-800">
+                            <input type="number" x-model.number="dpAmount" placeholder="Ketik nominal DP..." 
+                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-emerald-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <div x-show="isDp && dpAmount > 0 && Number(dpAmount) < minDpAmount" x-cloak class="text-[10px] text-rose-600 font-bold mt-0.5">
+                                <i class="fa-solid fa-triangle-exclamation me-0.5"></i> Kurang dari 50% (Min: Rp <span x-text="minDpAmount.toLocaleString('id-ID')"></span>)
+                            </div>
+                            <span class="text-[9px] text-slate-400 block mt-0.5">Bisa ketik bebas nominal &ge; 50% atau klik shortcut di bawah</span>
                         </div>
                     </div>
 
@@ -4084,8 +4092,12 @@
                             <span style="font-weight: 600; color: #334155;">Bayar Sebagai DP (Uang Muka)</span>
                         </label>
                         <div id="settle_dp_wrap" style="display: none; margin-top: 6px;">
-                            <label style="font-size: 11px; color: #64748b;">Nominal DP (Minimal 50% = Rp ${Number(Math.round(totalPrice * 0.5)).toLocaleString('id-ID')}):</label>
-                            <input type="number" id="settle_dp_amount" min="${Math.round(totalPrice * 0.5)}" value="${Math.round(totalPrice * 0.5)}" class="form-control form-control-sm" style="font-family: monospace;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <label style="font-size: 11px; color: #64748b; margin-bottom: 0;">Nominal DP:</label>
+                                <span style="font-size: 10px; color: #b45309; font-weight: bold;">Min. 50%: Rp ${Number(Math.round(totalPrice * 0.5)).toLocaleString('id-ID')}</span>
+                            </div>
+                            <input type="number" id="settle_dp_amount" value="${Math.round(totalPrice * 0.5)}" class="form-control form-control-sm" style="font-family: monospace;" placeholder="Ketik nominal DP...">
+                            <small style="font-size: 9.5px; color: #64748b; display: block; margin-top: 2px;">Bisa ketik bebas nominal uang muka (minimal 50%).</small>
                         </div>
                     </div>
                 </div>
@@ -4182,11 +4194,19 @@
 
         if (isDp) {
             const minAllowedDp = alpineData ? alpineData.minDpAmount : Math.round(currentGrand * 0.5);
-            if (dpAmount < minAllowedDp) {
+            if (!dpAmount || dpAmount < minAllowedDp) {
                 Swal.fire({ 
                     icon: 'warning', 
                     title: 'Nominal DP Kurang dari 50%', 
                     text: 'Nominal uang muka (DP) minimal 50% dari total pesanan (Minimal: Rp ' + Number(minAllowedDp).toLocaleString('id-ID') + ').' 
+                });
+                return;
+            }
+            if (dpAmount >= currentGrand) {
+                Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'Nominal DP Mencapai / Melebihi Total', 
+                    text: 'Nominal DP tidak boleh menyamai atau melebihi total pesanan (Rp ' + Number(currentGrand).toLocaleString('id-ID') + '). Jika ingin bayar lunas, matikan opsi DP.' 
                 });
                 return;
             }
