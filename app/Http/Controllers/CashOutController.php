@@ -60,11 +60,20 @@ class CashOutController extends Controller
             $sDate = $this->parseFlexibleDate($request->start_date)?->toDateString();
             $eDate = $this->parseFlexibleDate($request->end_date)?->toDateString();
             if ($sDate && $eDate) {
-                $query->where(function($q) use ($sDate, $eDate) {
-                    $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $eDate . ' 23:59:59'])
-                      ->orWhereDate('tanggal', '>=', $sDate)->whereDate('tanggal', '<=', $eDate)
-                      ->orWhereBetween('tanggal', [$sDate, $eDate]);
-                });
+if ($sDate === $eDate) {
+                    $rawSlash = Carbon::parse($sDate)->format('d/m/Y');
+                    $query->where(function($q) use ($sDate, $rawSlash) {
+                        $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $sDate . ' 23:59:59'])
+                          ->orWhereDate('tanggal', '=', $sDate)
+                          ->orWhere('tanggal', $sDate)
+                          ->orWhere('tanggal', $rawSlash);
+                    });
+                } else {
+                    $query->where(function($q) use ($sDate, $eDate) {
+                        $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $eDate . ' 23:59:59'])
+                          ->orWhereDate('tanggal', '>=', $sDate)->whereDate('tanggal', '<=', $eDate);
+                    });
+                }
             }
         } elseif ($request->filled('start_date')) {
             $sDate = $this->parseFlexibleDate($request->start_date)?->toDateString();
