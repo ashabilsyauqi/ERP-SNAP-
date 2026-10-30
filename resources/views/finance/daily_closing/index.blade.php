@@ -164,7 +164,7 @@
                 <h6 class="mb-0 font-extrabold text-slate-800 text-xs text-uppercase tracking-wider">
                     <i class="fa-solid fa-list-check me-1.5 text-blue-800"></i> Riwayat Laporan Closing & Rekonsiliasi Peti Cash
                 </h6>
-                <p class="mb-0 text-[11px] text-slate-500 mt-0.5">Saldo Peti Cash terakumulasi setiap hari dari kas fisik closing dan berkurang saat diambil Boss.</p>
+                <p class="mb-0 text-[11px] text-slate-500 mt-0.5">Riwayat kas fisik closing harian dan penarikan kas Boss. Akumulasi saldo peti kas terpantau pada kartu ringkasan di atas.</p>
             </div>
             <span class="badge bg-white text-slate-700 border border-slate-200 text-xs px-2.5 py-1 font-mono font-bold">
                 Total: {{ $reports->total() }} Data
@@ -182,7 +182,7 @@
                         <th class="py-2.5 text-end">Total Omset POS</th>
                         <th class="py-2.5 text-end text-emerald-800">Kas Fisik Masuk</th>
                         <th class="py-2.5 text-center text-amber-800">Diambil Boss</th>
-                        <th class="py-2.5 text-end text-emerald-900 bg-emerald-50/50">Saldo Peti Cash</th>
+                        <th class="py-2.5 text-end text-emerald-900 bg-emerald-50/50">Aktual Cash Harian</th>
                         <th class="py-2.5 text-center">Status</th>
                         <th class="pe-3 py-2.5 text-center" style="width: 130px;">Aksi</th>
                     </tr>
@@ -191,6 +191,8 @@
                     @forelse($reports as $r)
                         @php
                             $rowActualCash = (float)$r->actual_cash;
+                            $rowWithdrawnToday = (float)($r->total_withdrawn_today ?? 0);
+                            $rowDailyRemaining = max(0, $rowActualCash - $rowWithdrawnToday);
                             $rowPettyCash = (float)($r->running_petty_cash ?? $r->actual_cash);
                             $rowBranchName = addslashes($r->branch->nama_cabang ?? 'Cabang');
                         @endphp
@@ -255,11 +257,21 @@
                                     </button>
                                 @endif
                             </td>
-                            <td class="text-end font-mono font-black text-emerald-900 bg-emerald-50/40">
-                                <div class="fs-6 text-emerald-900">
-                                    Rp {{ number_format($r->running_petty_cash ?? $r->actual_cash, 0, ',', '.') }}
+                            <td class="text-end font-mono font-black {{ $rowDailyRemaining > 0 ? 'text-emerald-900 bg-emerald-50/40' : 'text-slate-400 bg-slate-50/20' }}">
+                                <div class="fs-6 {{ $rowDailyRemaining > 0 ? 'text-emerald-900' : 'text-slate-500' }}">
+                                    Rp {{ number_format($rowDailyRemaining, 0, ',', '.') }}
                                 </div>
-                                <div class="text-[9px] text-slate-400 font-sans font-normal">Akumulasi sisa laci</div>
+                                <div class="text-[9px] font-sans font-normal {{ $rowDailyRemaining > 0 ? 'text-emerald-700' : 'text-slate-400' }}">
+                                    @if($rowWithdrawnToday > 0)
+                                        @if($rowDailyRemaining == 0)
+                                            <i class="fa-solid fa-check text-slate-400 me-0.5"></i> Diambil Boss (Nihil)
+                                        @else
+                                            <i class="fa-solid fa-coins text-emerald-600 me-0.5"></i> Sisa aktual harian
+                                        @endif
+                                    @else
+                                        <i class="fa-solid fa-cash-register text-emerald-600 me-0.5"></i> Aktual cash harian
+                                    @endif
+                                </div>
                             </td>
                             <td class="text-center">
                                 @if($r->isVerified())

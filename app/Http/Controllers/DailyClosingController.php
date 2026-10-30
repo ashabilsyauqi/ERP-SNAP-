@@ -110,6 +110,7 @@ class DailyClosingController extends Controller
             $dStr = Carbon::parse($r->closing_date)->toDateString();
             $r->day_withdrawals = $withdrawalsByDate[$dStr] ?? [];
             $r->total_withdrawn_today = isset($withdrawalsByDate[$dStr]) ? collect($withdrawalsByDate[$dStr])->sum('amount') : 0;
+            $r->daily_remaining_cash = max(0, (float)$r->actual_cash - (float)$r->total_withdrawn_today);
         }
 
         // Overall Peti Cash Balance
