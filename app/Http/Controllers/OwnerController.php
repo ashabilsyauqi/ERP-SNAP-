@@ -45,20 +45,25 @@ class OwnerController extends Controller
         $materialQuery = Material::query();
         $purchaseQuery = Purchase::query();
         $opexQuery = CashTransaction::keluar()->whereDoesntHave('account', function($q) {
-            $q->where('kode_akun', '6-1000'); // Exclude manual HPP 6-1000 from cash out OPEX
+            $q->whereIn('kode_akun', ['6-1000', '5-1100']); // Exclude HPP 6-1000 and Click Charge 5-1100 from cash out OPEX
+        });
+        $clickChargeQuery = CashTransaction::keluar()->whereHas('account', function($q) {
+            $q->where('kode_akun', '5-1100'); // Direct Click Charge expenses routed to HPP
         });
 
         if ($branchId && $branchId !== 'all') {
             $query->where('branch_id', $branchId);
             $materialQuery->where('branch_id', $branchId);
             $purchaseQuery->where('branch_id', $branchId);
-            $opexQuery->where(function($q) use ($branchId) {
+            $branchFilter = function($q) use ($branchId) {
                 $q->where('branch_id', $branchId);
                 $centralBranch = Branch::where('nama_cabang', 'like', '%Pusat%')->first() ?: Branch::first();
                 if ($centralBranch && (int)$branchId === (int)$centralBranch->id) {
                     $q->orWhereNull('branch_id');
                 }
-            });
+            };
+            $opexQuery->where($branchFilter);
+            $clickChargeQuery->where($branchFilter);
         }
 
         $startDate = null;
@@ -88,14 +93,16 @@ class OwnerController extends Controller
             $endDayStr = $endDate->toDateString();
             $query->whereBetween('created_at', [$startDate, $endDate]);
 
-            // OPEX strictly follows financial transaction date (tanggal) in accordance with accounting standards.
+            // OPEX & Click Charge strictly follow financial transaction date (tanggal) in accordance with accounting standards.
             // This ensures backdated or batch-inputted past expenses (e.g. September payroll entered on Oct 1)
             // correctly stay in their own transaction date and do not inflate daily or monthly metrics.
-            $opexQuery->where(function($q) use ($startDayStr, $endDayStr) {
+            $dateRangeFilter = function($q) use ($startDayStr, $endDayStr) {
                 $q->whereBetween('tanggal', [$startDayStr . ' 00:00:00', $endDayStr . ' 23:59:59'])
                   ->orWhereDate('tanggal', '>=', $startDayStr)->whereDate('tanggal', '<=', $endDayStr)
                   ->orWhereBetween('tanggal', [$startDayStr, $endDayStr]);
-            });
+            };
+            $opexQuery->where($dateRangeFilter);
+            $clickChargeQuery->where($dateRangeFilter);
 
             // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
             $cashSettlements = CashTransaction::where('tipe', 'masuk')
@@ -142,11 +149,13 @@ class OwnerController extends Controller
         // 1. Omzet: Daily / Period POS Revenue (Cash Inflow Basis: DP + Pelunasan)
         $directSales = (float) (clone $query)->sum('paid_amount');
         $totalSales = $directSales + $settleTotal;
-        // 2. HPP: Material Cost + Click Charge per product item
-        $totalHpp = (float) (clone $query)->sum('total_hpp');
+        // 2. HPP: Material Cost from POS + Direct Click Charge Cash Out (COA 5-1100)
+        $posHpp = (float) (clone $query)->sum('total_hpp');
+        $clickChargeCash = (float) (clone $clickChargeQuery)->sum('jumlah');
+        $totalHpp = $posHpp + $clickChargeCash;
         // 3. Gross Profit: Omzet - HPP
         $grossProfit = $totalSales - $totalHpp;
-        // 4. OPEX: Cash Outflows (Kas Keluar)
+        // 4. OPEX: Cash Outflows (Kas Keluar Non-HPP & Non-Click Charge)
         $totalOpex = (float) (clone $opexQuery)->sum('jumlah');
         // 5. Net Profit: Gross Profit - OPEX
         $netProfit = $grossProfit - $totalOpex;
@@ -341,9 +350,16 @@ class OwnerController extends Controller
                 }
 
                 $mSales = (float) $mSalesQuery->sum('paid_amount');
-                $mHpp = (float) $mSalesQuery->sum('total_hpp');
+                $mClickCharge = (float) CashTransaction::keluar()
+                    ->whereHas('account', fn($q) => $q->where('kode_akun', '5-1100'))
+                    ->whereYear('tanggal', $date->year)
+                    ->whereMonth('tanggal', $date->month)
+                    ->when($branchId && $branchId !== 'all', function($bq) use ($branchId) {
+                        $bq->where('branch_id', $branchId);
+                    })->sum('jumlah');
+                $mHpp = (float) $mSalesQuery->sum('total_hpp') + $mClickCharge;
                 $mOpex = (float) $mOpexQuery->whereDoesntHave('account', function($q) {
-                    $q->where('kode_akun', '6-1000');
+                    $q->whereIn('kode_akun', ['6-1000', '5-1100']);
                 })->sum('jumlah');
                 $mVol = (int) $mSalesQuery->count();
 

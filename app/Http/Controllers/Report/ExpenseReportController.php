@@ -17,8 +17,7 @@ class ExpenseReportController extends Controller
         $query = CashTransaction::where('tipe', 'keluar')
             ->whereHas('account', function($q) {
                 $q->where('tipe', 'beban')
-                  ->where('kode_akun', '!=', '6-1000')
-                  ->where('kode_akun', '!=', '5-1000');
+                  ->whereNotIn('kode_akun', ['6-1000', '5-1000', '5-1100']);
             })->with('account');
 
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();

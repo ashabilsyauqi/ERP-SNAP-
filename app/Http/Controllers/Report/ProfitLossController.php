@@ -137,11 +137,25 @@ class ProfitLossController extends Controller
         
         if ($totalHppFromTrx > 0) {
             $hpp->push((object)[
-                'nama_akun' => 'HPP Penjualan (Harga Modal Bahan & Click Charge Mesin)',
+                'nama_akun' => 'HPP Penjualan POS (Harga Modal Bahan Baku)',
                 'jumlah' => $totalHppFromTrx
             ]);
             $totalHpp += $totalHppFromTrx;
-        } else {
+        }
+
+        // Biaya Click Charge Mesin dari Kas Keluar (COA 5-1100)
+        $clickChargeCash = $cashTransactions->where('tipe', 'keluar')
+            ->filter(function($t) { return $t->account && $t->account->kode_akun === '5-1100'; });
+        $sumClickCharge = (float) $clickChargeCash->sum('jumlah');
+        if ($sumClickCharge > 0) {
+            $hpp->push((object)[
+                'nama_akun' => 'Biaya Click Charge Mesin Cetak (COA 5-1100)',
+                'jumlah' => $sumClickCharge
+            ]);
+            $totalHpp += $sumClickCharge;
+        }
+
+        if ($totalHpp == 0) {
             $hppTrx = $cashTransactions->where('tipe', 'keluar')
                 ->filter(function($t) { return $t->account && $t->account->kode_akun === '6-1000'; })
                 ->groupBy('account.nama_akun');
@@ -162,8 +176,8 @@ class ProfitLossController extends Controller
         
         $bebanTrx = $cashTransactions->where('tipe', 'keluar')
             ->filter(function($t) { 
-                // Exclude manual 6-1000 to prevent double counting HPP
-                return !$t->account || $t->account->kode_akun !== '6-1000'; 
+                // Exclude manual 6-1000 and 5-1100 to prevent double counting or miscategorizing HPP
+                return !$t->account || !in_array($t->account->kode_akun, ['6-1000', '5-1100']); 
             })
             ->groupBy(function($t) {
                 return $t->account->nama_akun ?? 'Beban Operasional Kas Keluar';
