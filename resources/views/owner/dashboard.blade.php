@@ -121,7 +121,7 @@
         $calcNetPct = $netPct ?? ($omsetBase > 0 ? round((($netProfit ?? 0) / $omsetBase) * 100, 1) : 0);
     @endphp
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-3">
         <!-- Card 1: Revenue -->
         <a href="{{ route('sales.index') }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #1e40af !important;" title="Klik untuk membuka Laporan & Riwayat Penjualan POS">
             <div class="min-w-0 flex-grow me-2">
@@ -223,6 +223,24 @@
                 <i class="fa-solid fa-wallet text-lg"></i>
             </div>
         </a>
+
+        <!-- Card 6: Sisa Peti Cash (Laci Kasir / Brankas Toko) -->
+        <a href="{{ route('daily-closing.index', ['branch_id' => $branchId ?? 'all']) }}" class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 transition duration-200 text-decoration-none group cursor-pointer" style="border-left: 4px solid #059669 !important;" title="Klik untuk membuka Rekonsiliasi Peti Cash & Riwayat Penarikan Kas">
+            <div class="min-w-0 flex-grow me-2">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0 truncate group-hover:text-emerald-700">Peti Cash (Laci)</p>
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 flex-shrink-0 animate-pulse">LIVE</span>
+                </div>
+                <h4 class="text-base font-extrabold text-emerald-900 font-mono truncate mb-0 group-hover:text-emerald-950">Rp {{ number_format($totalLivePettyCash ?? 0, 0, ',', '.') }}</h4>
+                <div class="flex items-center justify-between mt-1">
+                    <small class="text-slate-400 text-[10px] truncate">Kas fisik di brankas toko</small>
+                    <span class="text-[9px] font-bold text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity">Rekap &rarr;</span>
+                </div>
+            </div>
+            <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <i class="fa-solid fa-vault text-lg"></i>
+            </div>
+        </a>
     </div>
 
     <!-- Quick Operational Reference Links Bar -->
@@ -264,6 +282,147 @@
     </div>
 </div>
 
+
+<!-- ========================================================================= -->
+<!-- WIDGET MONITORING PETI CASH & KAS FISIK TOKO (UNTUK OWNER & MANAGEMENT) -->
+<!-- ========================================================================= -->
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pb-3 mb-3 border-bottom">
+        <div class="d-flex align-items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white d-flex align-items-center justify-content-center shadow-xs flex-shrink-0">
+                <i class="fa-solid fa-vault text-base"></i>
+            </div>
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h6 class="mb-0 font-extrabold text-slate-900 text-sm">Monitoring Peti Cash & Kas Fisik Toko</h6>
+                    <span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded-lg">
+                        <i class="fa-solid fa-circle text-[7px] text-emerald-600 me-1 animate-ping"></i> LIVE SALDO
+                    </span>
+                    @if(($pendingClosingCount ?? 0) > 0)
+                        <span class="badge bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-lg animate-pulse">
+                            <i class="fa-solid fa-clock me-1"></i> {{ $pendingClosingCount }} Closing Butuh ACC
+                        </span>
+                    @endif
+                </div>
+                <p class="text-[11px] text-slate-500 mb-0 mt-0.5">
+                    Akumulasi uang kas fisik di brankas/laci toko dari closing harian kasir setelah dikurangi penarikan kas oleh Boss.
+                </p>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Tombol Ambil Semua Cash (Di Luar Lembar Kerja) -->
+            <a href="{{ route('daily-closing.index', ['action' => 'sweep_all', 'branch_id' => $branchId ?? 'all']) }}" 
+               class="btn btn-sm text-white rounded-xl py-1.5 px-3 text-xs font-extrabold text-decoration-none d-inline-flex align-items-center gap-1.5 shadow-sm" 
+               style="background: linear-gradient(135deg, #e11d48 0%, #be123c 100%); border: none;"
+               title="Tarik seluruh sisa uang kas fisik di brankas toko">
+                <i class="fa-solid fa-sack-dollar"></i>
+                <span>⚡ Ambil Semua Cash (Rp {{ number_format($totalLivePettyCash ?? 0, 0, ',', '.') }})</span>
+            </a>
+            <a href="{{ route('daily-closing.index', ['branch_id' => $branchId ?? 'all']) }}" class="btn btn-sm btn-outline-success rounded-xl py-1.5 px-3 text-xs font-bold text-decoration-none d-inline-flex align-items-center gap-1.5 shadow-xs bg-white">
+                <i class="fa-solid fa-clipboard-check text-emerald-600"></i>
+                <span>Rekonsiliasi Peti Cash</span>
+            </a>
+            <a href="{{ route('daily-closing.index', ['branch_id' => $branchId ?? 'all']) }}" class="btn btn-sm text-white rounded-xl py-1.5 px-3 text-xs font-bold text-decoration-none d-inline-flex align-items-center gap-1.5 shadow-xs" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border: none;">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+                <span>- Diambil Boss</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 Mini Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- 1. Saldo Fisik Live -->
+        <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Sisa Saldo Peti (Live)</span>
+                <i class="fa-solid fa-cash-register text-emerald-600 text-xs"></i>
+            </div>
+            <div class="font-mono font-black text-emerald-950 text-lg">
+                Rp {{ number_format($totalLivePettyCash ?? 0, 0, ',', '.') }}
+            </div>
+            <div class="text-[10px] text-emerald-700 mt-0.5 d-flex align-items-center gap-1">
+                <i class="fa-solid fa-circle-check text-emerald-600 text-[9px]"></i>
+                <span>Fisik kas siap pakai di toko</span>
+            </div>
+        </div>
+
+        <!-- 2. Masuk Peti Bulan Ini -->
+        <div class="p-3 bg-blue-50/70 rounded-xl border border-blue-200">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-[10px] font-bold text-blue-800 uppercase tracking-wider">Masuk Peti (Bulan Ini)</span>
+                <i class="fa-solid fa-arrow-down-left text-blue-600 text-xs"></i>
+            </div>
+            <div class="font-mono font-black text-blue-950 text-lg">
+                + Rp {{ number_format($monthCashIn ?? 0, 0, ',', '.') }}
+            </div>
+            <div class="text-[10px] text-blue-700 mt-0.5 d-flex align-items-center gap-1">
+                <i class="fa-solid fa-calendar text-blue-600 text-[9px]"></i>
+                <span>Total kas closing kasir disetor</span>
+            </div>
+        </div>
+
+        <!-- 3. Diambil Boss Bulan Ini -->
+        <div class="p-3 bg-amber-50/70 rounded-xl border border-amber-200">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Diambil Boss (Bulan Ini)</span>
+                <i class="fa-solid fa-arrow-up-right text-amber-600 text-xs"></i>
+            </div>
+            <div class="font-mono font-black text-amber-950 text-lg">
+                - Rp {{ number_format($monthWithdrawn ?? 0, 0, ',', '.') }}
+            </div>
+            <div class="text-[10px] text-amber-800 mt-0.5 d-flex align-items-center gap-1">
+                <i class="fa-solid fa-user-tie text-amber-700 text-[9px]"></i>
+                <span>Setor bank / penarikan owner</span>
+            </div>
+        </div>
+
+        <!-- 4. Laporan Menunggu ACC -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Verifikasi Tutup Kas</span>
+                <i class="fa-solid fa-file-signature text-slate-500 text-xs"></i>
+            </div>
+            <div class="font-mono font-black text-slate-900 text-lg d-flex align-items-center gap-2">
+                <span>{{ $pendingClosingCount ?? 0 }} Laporan</span>
+                @if(($pendingClosingCount ?? 0) > 0)
+                    <span class="badge bg-amber-100 text-amber-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded">Perlu ACC</span>
+                @else
+                    <span class="badge bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-1.5 py-0.5 rounded">Semua ACC</span>
+                @endif
+            </div>
+            <div class="text-[10px] text-slate-500 mt-0.5">
+                <a href="{{ route('daily-closing.index', ['status' => 'submitted']) }}" class="text-blue-600 hover:underline font-bold text-decoration-none">
+                    Tinjau & ACC Laporan &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if(($branchId ?? 'all') === 'all' && !empty($branchPettyCashList))
+        <!-- Rincian Peti Cash Tiap Cabang (Saat Mode Konsolidasi Semua Cabang) -->
+        <div class="mt-3 pt-3 border-top">
+            <div class="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider mb-2 d-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-store text-slate-400"></i> Rincian Fisik Kas Per Cabang:
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                @foreach($branchPettyCashList as $bpc)
+                    <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 d-flex justify-content-between align-items-center text-xs">
+                        <div>
+                            <span class="font-bold text-slate-800 block">{{ $bpc['branch']->nama_cabang }}</span>
+                            <span class="text-[10px] text-slate-500 font-mono">Masuk: Rp {{ number_format($bpc['cash_in'], 0, ',', '.') }} | Diambil: Rp {{ number_format($bpc['withdrawn'], 0, ',', '.') }}</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono font-black text-xs px-2 py-1">
+                                Rp {{ number_format($bpc['live_balance'], 0, ',', '.') }}
+                            </span>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+</div>
 <!-- Interactive Trading-Platform Style Chart Section -->
 <div class="row g-3 mb-4">
     <div class="col-lg-8">

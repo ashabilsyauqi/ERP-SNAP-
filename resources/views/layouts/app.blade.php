@@ -614,6 +614,7 @@
                         ['title' => 'Cetak di Luar (Vendor)', 'route' => 'outsource-orders.index', 'role' => 'cashier,owner,manager,operator,sales'],
                         ['title' => 'Piutang & Monitoring Pesanan DP', 'route' => 'sales.receivables', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Riwayat Transaksi Penjualan', 'route' => 'sales.index', 'role' => 'cashier,owner,manager'],
+                        ['title' => 'Tutup Kasir Harian (Closing)', 'route' => 'daily-closing.create', 'role' => 'cashier,owner,manager'],
                         ['title' => 'Data Pelanggan (Customers)', 'route' => 'customers.index', 'role' => 'cashier,owner,manager'],
                     ]
                 ],

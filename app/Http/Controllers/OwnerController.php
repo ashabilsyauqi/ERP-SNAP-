@@ -9,6 +9,8 @@ use App\Models\Purchase;
 use App\Models\Branch;
 use App\Models\CashTransaction;
 use App\Models\TransactionPayment;
+use App\Models\DailyClosingReport;
+use App\Models\BossCashWithdrawal;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -377,6 +379,47 @@ class OwnerController extends Controller
         $startDate = $startDateInput;
         $endDate = $endDateInput;
 
+        // Calculate Cumulative Petty Cash & Boss Withdrawals for Owner & Management
+        $withdrawalsQuery = BossCashWithdrawal::with(['branch', 'user']);
+        $historicalReportsQuery = DailyClosingReport::query();
+
+        if ($branchId && $branchId !== 'all') {
+            $withdrawalsQuery->where('branch_id', $branchId);
+            $historicalReportsQuery->where('branch_id', $branchId);
+        }
+
+        $allWithdrawals = $withdrawalsQuery->get();
+        $allHistoricalReports = $historicalReportsQuery->get();
+
+        $totalCashInAllTime = (float) $allHistoricalReports->sum('actual_cash');
+        $totalWithdrawnAllTime = (float) $allWithdrawals->sum('amount');
+        $totalLivePettyCash = max(0, $totalCashInAllTime - $totalWithdrawnAllTime);
+
+        // Metrics untuk bulan berjalan
+        $currentMonth = date('Y-m');
+        $monthCashIn = (float) $allHistoricalReports->filter(fn($r) => Carbon::parse($r->closing_date)->format('Y-m') === $currentMonth)->sum('actual_cash');
+        $monthWithdrawn = (float) $allWithdrawals->filter(fn($w) => Carbon::parse($w->withdrawal_date)->format('Y-m') === $currentMonth)->sum('amount');
+
+        // Status ACC Laporan Closing
+        $pendingClosingCount = DailyClosingReport::where('status', 'submitted')
+            ->when($branchId && $branchId !== 'all', fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+
+        // Breakdown Peti Cash per Cabang (khusus jika view mode All Cabang)
+        $branchPettyCashList = [];
+        if ($branchId === 'all') {
+            foreach ($branches as $br) {
+                $bIn = (float) $allHistoricalReports->where('branch_id', $br->id)->sum('actual_cash');
+                $bOut = (float) $allWithdrawals->where('branch_id', $br->id)->sum('amount');
+                $branchPettyCashList[] = [
+                    'branch' => $br,
+                    'cash_in' => $bIn,
+                    'withdrawn' => $bOut,
+                    'live_balance' => max(0, $bIn - $bOut)
+                ];
+            }
+        }
+
         return view('owner.dashboard', compact(
             'totalSales',
             'totalHpp',
@@ -387,6 +430,11 @@ class OwnerController extends Controller
             'grossPct',
             'opexPct',
             'netPct',
+            'totalLivePettyCash',
+            'monthCashIn',
+            'monthWithdrawn',
+            'pendingClosingCount',
+            'branchPettyCashList',
             'totalTransactionsCount',
             'totalMaterialsCount',
             'lowStockCount',

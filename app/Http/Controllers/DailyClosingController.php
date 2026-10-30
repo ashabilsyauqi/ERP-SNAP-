@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\DailyClosingReport;
 use App\Models\Branch;
 use App\Models\Transaction;
+use App\Models\TransactionPayment;
 use App\Models\CashTransaction;
+use App\Models\BossCashWithdrawal;
+use App\Models\Account;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,15 +17,24 @@ use Carbon\Carbon;
 class DailyClosingController extends Controller
 {
     /**
-     * List all Daily Closing Reports.
+     * Check if current user is allowed to switch branch (KINGAshabil or SWANTO or superadmin).
+     */
+    private function canChangeBranch($user): bool
+    {
+        $allowedUsernames = ['kingashabil', 'swanto'];
+        return in_array(strtolower($user->username ?? ''), $allowedUsernames) || $user->isSuperAdmin();
+    }
+
+    /**
+     * List all Daily Closing Reports with Petty Cash Accumulation & Boss Withdrawals.
      */
     public function index(Request $request)
     {
         $user = Auth::user();
-        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+        $canChange = $this->canChangeBranch($user);
 
-        if (!$isOwnerOrSuper) {
-            $branchId = $user->branch_id;
+        if (!$canChange) {
+            $branchId = (int)($user->branch_id ?: 1);
         } else {
             if ($request->has('branch_id')) {
                 $branchId = $request->input('branch_id');
@@ -48,30 +60,169 @@ class DailyClosingController extends Controller
             $query->where('status', $request->status);
         }
 
-        $reports = $query->paginate(15);
+        $reports = $query->paginate(20);
         $branches = Branch::orderBy('nama_cabang')->get();
 
         $pendingCount = DailyClosingReport::where('status', 'submitted')->count();
 
-        return view('finance.daily_closing.index', compact('reports', 'branches', 'pendingCount', 'branchId'));
+        // Calculate Cumulative Petty Cash & Boss Withdrawals
+        $withdrawalsQuery = BossCashWithdrawal::with(['branch', 'user'])->orderBy('withdrawal_date', 'desc')->orderBy('id', 'desc');
+        $historicalReportsQuery = DailyClosingReport::query();
+
+        if ($branchId && $branchId !== 'all') {
+            $withdrawalsQuery->where('branch_id', $branchId);
+            $historicalReportsQuery->where('branch_id', $branchId);
+        }
+
+        $allWithdrawals = $withdrawalsQuery->get();
+        $allHistoricalReports = $historicalReportsQuery->orderBy('closing_date', 'asc')->orderBy('id', 'asc')->get();
+
+        // Group withdrawals by date string Y-m-d
+        $withdrawalsByDate = [];
+        foreach ($allWithdrawals as $w) {
+            $dStr = Carbon::parse($w->withdrawal_date)->toDateString();
+            $withdrawalsByDate[$dStr][] = $w;
+        }
+
+        // Chronological running balance calculation per report
+        $cumulativeBalance = 0;
+        $runningBalances = [];
+        $appliedWithdrawalDates = [];
+
+        foreach ($allHistoricalReports as $rep) {
+            $dStr = Carbon::parse($rep->closing_date)->toDateString();
+            $cumulativeBalance += (float) $rep->actual_cash;
+
+            // Apply boss withdrawals on or before this date
+            if (isset($withdrawalsByDate[$dStr]) && !isset($appliedWithdrawalDates[$dStr])) {
+                foreach ($withdrawalsByDate[$dStr] as $w) {
+                    $cumulativeBalance -= (float) $w->amount;
+                }
+                $appliedWithdrawalDates[$dStr] = true;
+            }
+
+            $runningBalances[$rep->id] = $cumulativeBalance;
+        }
+
+        // Attach running balance & day withdrawals to paginated reports
+        foreach ($reports as $r) {
+            $r->running_petty_cash = $runningBalances[$r->id] ?? (float)$r->actual_cash;
+            $dStr = Carbon::parse($r->closing_date)->toDateString();
+            $r->day_withdrawals = $withdrawalsByDate[$dStr] ?? [];
+            $r->total_withdrawn_today = isset($withdrawalsByDate[$dStr]) ? collect($withdrawalsByDate[$dStr])->sum('amount') : 0;
+        }
+
+        // Overall Peti Cash Balance
+        $totalCashInAllTime = (float) $allHistoricalReports->sum('actual_cash');
+        $totalWithdrawnAllTime = (float) $allWithdrawals->sum('amount');
+        $totalLivePettyCash = max(0, $totalCashInAllTime - $totalWithdrawnAllTime);
+
+        // Current month metrics
+        $currentMonth = date('Y-m');
+        $monthCashIn = (float) $allHistoricalReports->filter(fn($r) => Carbon::parse($r->closing_date)->format('Y-m') === $currentMonth)->sum('actual_cash');
+        $monthWithdrawn = (float) $allWithdrawals->filter(fn($w) => Carbon::parse($w->withdrawal_date)->format('Y-m') === $currentMonth)->sum('amount');
+
+        // Live Petty Cash per Branch
+        $branchLivePettyCash = [];
+        foreach ($branches as $b) {
+            $bIn = (float) $allHistoricalReports->where('branch_id', $b->id)->sum('actual_cash');
+            $bOut = (float) $allWithdrawals->where('branch_id', $b->id)->sum('amount');
+            $branchLivePettyCash[$b->id] = max(0, $bIn - $bOut);
+        }
+
+        $recentWithdrawals = $allWithdrawals->take(15);
+
+        return view('finance.daily_closing.index', compact(
+            'reports',
+            'branches',
+            'pendingCount',
+            'branchId',
+            'canChange',
+            'totalLivePettyCash',
+            'monthCashIn',
+            'monthWithdrawn',
+            'recentWithdrawals',
+            'branchLivePettyCash'
+        ));
     }
 
     /**
-     * Show form to create a new Daily Closing Report.
+     * Store Boss Cash Withdrawal ("Diambil Boss") with PIN Verification (PIN: 2209).
+     */
+    public function storeBossWithdrawal(Request $request)
+    {
+        $user = Auth::user();
+        $canChange = $this->canChangeBranch($user);
+
+        $branchId = ($canChange && $request->filled('branch_id')) 
+            ? (int)$request->branch_id 
+            : (int)($user->branch_id ?: 1);
+
+        $request->validate([
+            'withdrawal_date' => 'required|date',
+            'amount' => 'required|numeric|min:1',
+            'taken_by' => 'required|string|max:100',
+            'purpose' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:500',
+            'daily_closing_report_id' => 'nullable|exists:daily_closing_reports,id',
+            'boss_pin' => 'required',
+        ]);
+
+        // Verifikasi PIN Otorisasi (2209)
+        if (trim($request->input('boss_pin')) !== '2209') {
+            return redirect()->back()->with('error', 'PIN Otorisasi Penarikan Kas Salah! Uang kas tidak dapat ditarik.');
+        }
+
+        $withdrawal = BossCashWithdrawal::create([
+            'branch_id' => $branchId,
+            'user_id' => $user->id,
+            'withdrawal_date' => $request->withdrawal_date,
+            'amount' => $request->amount,
+            'taken_by' => $request->taken_by,
+            'purpose' => $request->purpose ?: 'Setor Kas / Pengambilan Boss',
+            'notes' => $request->notes,
+            'daily_closing_report_id' => $request->input('daily_closing_report_id'),
+        ]);
+
+        $branch = Branch::find($branchId);
+        $branchName = $branch ? $branch->nama_cabang : 'Cabang';
+
+        return redirect()->back()->with('success', "PIN Terverifikasi! Kas sebesar Rp " . number_format($request->amount, 0, ',', '.') . " di {$branchName} berhasil dicatat ditarik oleh Boss.");
+    }
+
+    /**
+     * Delete Boss Cash Withdrawal.
+     */
+    public function destroyBossWithdrawal($id)
+    {
+        $user = Auth::user();
+        if (!$user->isOwner() && !$user->isSuperAdmin() && !$user->isManager()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $withdrawal = BossCashWithdrawal::findOrFail($id);
+        $amountStr = number_format($withdrawal->amount, 0, ',', '.');
+        $withdrawal->delete();
+
+        return redirect()->back()->with('success', "Data penarikan 'Diambil Boss' sebesar Rp {$amountStr} berhasil dihapus.");
+    }
+
+    /**
+     * Show form to create a new Daily Closing Report (Lembar Kerja).
      */
     public function create(Request $request)
     {
         $user = Auth::user();
         $targetDate = $request->input('closing_date', date('Y-m-d'));
-        
-        $branchId = $user->branch_id;
-        if (($user->isOwner() || $user->isSuperAdmin()) && $request->filled('branch_id')) {
-            $branchId = $request->branch_id;
-        } elseif (!$branchId) {
-            $branchId = Branch::first()->id ?? 1;
+        $canChangeBranch = $this->canChangeBranch($user);
+
+        if ($canChangeBranch && $request->filled('branch_id')) {
+            $branchId = (int)$request->branch_id;
+        } else {
+            $branchId = (int)($user->branch_id ?: 1);
         }
 
-        $branch = Branch::find($branchId);
+        $branch = Branch::find($branchId) ?: Branch::first();
         $branches = Branch::orderBy('nama_cabang')->get();
 
         // 1. Calculate sales from transactions created on targetDate
@@ -96,7 +247,7 @@ class DailyClosingController extends Controller
             + (float) $splitPaymentsToday->whereIn('payment_method', ['QRIS', 'qris'])->sum('amount');
 
         // 2. Include settlements (Pelunasan Piutang) received on targetDate for older transactions
-        $olderSettlementPayments = \App\Models\TransactionPayment::where('branch_id', $branchId)
+        $olderSettlementPayments = TransactionPayment::where('branch_id', $branchId)
             ->whereDate('created_at', $targetDate)
             ->whereHas('transaction', fn($q) => $q->whereDate('created_at', '<', $targetDate))
             ->get();
@@ -131,30 +282,40 @@ class DailyClosingController extends Controller
         $totalQrisSales = $directQris + $settleQris;
         $totalSales = $totalCashSales + $totalTransferSales + $totalQrisSales;
 
-        // 2. Calculate Cash In and Cash Out
-        $cashIn = CashTransaction::where('branch_id', $branchId)
-            ->where('tipe', 'masuk')
-            ->whereDate('tanggal', $targetDate)
-            ->whereNull('transaction_id')
-            ->sum('jumlah');
-
-        $cashOut = CashTransaction::where('branch_id', $branchId)
+        // 3. Existing cash expenses recorded on targetDate
+        $cashOut = (float) CashTransaction::where('branch_id', $branchId)
             ->where('tipe', 'keluar')
             ->whereDate('tanggal', $targetDate)
             ->sum('jumlah');
 
-        // Opening cash from previous closing or default 0
-        $lastReport = DailyClosingReport::where('branch_id', $branchId)
-            ->where('closing_date', '<', $targetDate)
-            ->orderBy('closing_date', 'desc')
-            ->first();
+        $existingExpenses = CashTransaction::with('account')
+            ->where('branch_id', $branchId)
+            ->where('tipe', 'keluar')
+            ->whereDate('tanggal', $targetDate)
+            ->orderBy('id', 'asc')
+            ->get();
 
-        $openingCash = $lastReport ? $lastReport->actual_cash : 0;
-        $expectedCash = $openingCash + $totalCashSales + $cashIn - $cashOut;
+        // Expense accounts list for dynamic addition
+        $expenseAccounts = Account::where('tipe', 'beban')
+            ->active()
+            ->orderBy('kode_akun')
+            ->get();
+
+        // 4. Existing boss withdrawals recorded on targetDate
+        $existingBossWithdrawals = BossCashWithdrawal::where('branch_id', $branchId)
+            ->whereDate('withdrawal_date', $targetDate)
+            ->get();
+        $existingBossWithdrawalTotal = (float) $existingBossWithdrawals->sum('amount');
+
+        // Expected cash purely = total Cash Sales minus Cash Out minus Boss Withdrawals
+        $openingCash = 0;
+        $cashIn = 0;
+        $expectedCash = max(0, $totalCashSales - $cashOut - $existingBossWithdrawalTotal);
 
         return view('finance.daily_closing.create', compact(
             'branches',
             'branch',
+            'canChangeBranch',
             'targetDate',
             'totalOrdersCount',
             'totalCashSales',
@@ -163,74 +324,213 @@ class DailyClosingController extends Controller
             'totalSales',
             'cashIn',
             'cashOut',
+            'existingExpenses',
+            'expenseAccounts',
+            'existingBossWithdrawals',
+            'existingBossWithdrawalTotal',
             'openingCash',
             'expectedCash'
         ));
     }
 
     /**
-     * Store Daily Closing Report and auto-sign Manager signature.
+     * Store Daily Closing Report, record dynamic expenses, boss withdrawal, and auto-sign Manager signature.
      */
     public function store(Request $request)
     {
         $user = Auth::user();
+        $canChangeBranch = $this->canChangeBranch($user);
 
         $request->validate([
             'branch_id' => 'required|exists:branches,id',
             'closing_date' => 'required|date',
-            'shift_type' => 'required|string|max:50',
-            'opening_cash' => 'required|numeric|min:0',
+            'shift_type' => 'nullable|string|max:50',
             'actual_cash' => 'required|numeric|min:0',
             'total_cash_sales' => 'required|numeric|min:0',
             'total_transfer_sales' => 'required|numeric|min:0',
             'total_qris_sales' => 'required|numeric|min:0',
-            'total_cash_in' => 'required|numeric|min:0',
-            'total_cash_out' => 'required|numeric|min:0',
+            'boss_withdrawal_amount' => 'nullable|numeric|min:0',
+            'boss_withdrawal_taken_by' => 'nullable|string|max:100',
+            'boss_withdrawal_purpose' => 'nullable|string|max:255',
+            'boss_withdrawal_notes' => 'nullable|string|max:500',
             'click_counter_start' => 'nullable|integer|min:0',
             'click_counter_end' => 'nullable|integer|min:0',
             'production_notes' => 'nullable|string|max:1000',
+            'denominations' => 'nullable|array',
+            'new_expenses' => 'nullable|array',
+            'new_expenses.*' => 'nullable',
         ]);
 
-        $branch = Branch::findOrFail($request->branch_id);
-
-        $totalSales = $request->total_cash_sales + $request->total_transfer_sales + $request->total_qris_sales;
-        $expectedCash = $request->opening_cash + $request->total_cash_sales + $request->total_cash_in - $request->total_cash_out;
-        $cashDifference = $request->actual_cash - $expectedCash;
-
-        $clickCount = null;
-        if ($request->filled('click_counter_start') && $request->filled('click_counter_end')) {
-            $clickCount = max(0, $request->click_counter_end - $request->click_counter_start);
+        // Verifikasi PIN jika di lembar kerja ada penarikan kas oleh Boss
+        $bossWithdrawalAmount = (float) $request->input('boss_withdrawal_amount', 0);
+        if ($bossWithdrawalAmount > 0) {
+            if (trim($request->input('boss_pin')) !== '2209') {
+                return redirect()->back()->withInput()->with('error', 'PIN Otorisasi Penarikan Kas Salah! Masukkan PIN otorisasi yang valid.');
+            }
         }
 
-        $reportNumber = DailyClosingReport::generateReportNumber($branch->nama_cabang);
+        if ($canChangeBranch && $request->filled('branch_id')) {
+            $branchId = (int)$request->branch_id;
+        } else {
+            $branchId = (int)($user->branch_id ?: 1);
+        }
 
-        $report = DailyClosingReport::create([
-            'report_number' => $reportNumber,
-            'branch_id' => $branch->id,
-            'user_id' => $user->id,
-            'closing_date' => $request->closing_date,
-            'shift_type' => $request->shift_type,
-            'total_orders_count' => (int) $request->input('total_orders_count', 0),
-            'total_cash_sales' => $request->total_cash_sales,
-            'total_transfer_sales' => $request->total_transfer_sales,
-            'total_qris_sales' => $request->total_qris_sales,
-            'total_sales' => $totalSales,
-            'total_cash_in' => $request->total_cash_in,
-            'total_cash_out' => $request->total_cash_out,
-            'opening_cash' => $request->opening_cash,
-            'expected_cash' => $expectedCash,
-            'actual_cash' => $request->actual_cash,
-            'cash_difference' => $cashDifference,
-            'click_counter_start' => $request->click_counter_start,
-            'click_counter_end' => $request->click_counter_end,
-            'click_count_total' => $clickCount,
-            'production_notes' => $request->production_notes,
-            'manager_signature_path' => $user->signature_path,
-            'manager_signed_at' => Carbon::now(),
-            'status' => 'submitted',
-        ]);
+        $branch = Branch::findOrFail($branchId);
 
-        return redirect()->route('daily-closing.show', $report->id)->with('success', "Laporan Tutup Hari #{$report->report_number} berhasil dibuat dan ditandatangani digital oleh Manager.");
+        return DB::transaction(function () use ($request, $user, $branch, $bossWithdrawalAmount) {
+            // 1. Process and record dynamic new expenses into CashTransaction (tipe: keluar)
+            $newExpenses = $request->input('new_expenses', []);
+            $defaultAccount = Account::where('tipe', 'beban')->first();
+            $defaultAccountId = $defaultAccount ? $defaultAccount->id : 11;
+
+            if (is_array($newExpenses)) {
+                foreach ($newExpenses as $exp) {
+                    $amount = isset($exp['amount']) ? (float)$exp['amount'] : 0;
+                    $keterangan = trim($exp['keterangan'] ?? '');
+                    $accountId = !empty($exp['account_id']) ? (int)$exp['account_id'] : $defaultAccountId;
+
+                    if ($amount > 0 && !empty($keterangan)) {
+                        CashTransaction::create([
+                            'branch_id' => $branch->id,
+                            'account_id' => $accountId,
+                            'user_id' => $user->id,
+                            'tipe' => 'keluar',
+                            'nomor_referensi' => CashTransaction::generateNomorReferensi('keluar'),
+                            'tanggal' => $request->closing_date,
+                            'jumlah' => $amount,
+                            'keterangan' => $keterangan,
+                        ]);
+                    }
+                }
+            }
+
+            // 2. Fetch all expenses recorded on this date for audit trail
+            $allExpenses = CashTransaction::with('account')
+                ->where('branch_id', $branch->id)
+                ->where('tipe', 'keluar')
+                ->whereDate('tanggal', $request->closing_date)
+                ->orderBy('id', 'asc')
+                ->get()
+                ->map(fn($e) => [
+                    'id' => $e->id,
+                    'nomor_referensi' => $e->nomor_referensi,
+                    'keterangan' => $e->keterangan,
+                    'account_name' => $e->account->nama_akun ?? 'Beban Operasional',
+                    'jumlah' => (float)$e->jumlah,
+                ])
+                ->values()
+                ->toArray();
+
+            $totalCashOut = CashTransaction::where('branch_id', $branch->id)
+                ->where('tipe', 'keluar')
+                ->whereDate('tanggal', $request->closing_date)
+                ->sum('jumlah');
+
+            // 3. Process cash denominations breakdown (Lembaran & Koin)
+            $denominationsInput = $request->input('denominations', []);
+            $billsConfig = [100000, 50000, 20000, 10000, 5000, 2000, 1000];
+            $coinsConfig = [1000, 500, 200, 100];
+
+            $billsData = [];
+            $totalBills = 0;
+            foreach ($billsConfig as $nom) {
+                $qty = isset($denominationsInput['bills'][$nom]) ? max(0, (int)$denominationsInput['bills'][$nom]) : 0;
+                $subtotal = $qty * $nom;
+                $billsData[$nom] = [
+                    'nominal' => $nom,
+                    'qty' => $qty,
+                    'subtotal' => $subtotal,
+                ];
+                $totalBills += $subtotal;
+            }
+
+            $coinsData = [];
+            $totalCoins = 0;
+            foreach ($coinsConfig as $nom) {
+                $qty = isset($denominationsInput['coins'][$nom]) ? max(0, (int)$denominationsInput['coins'][$nom]) : 0;
+                $subtotal = $qty * $nom;
+                $coinsData[$nom] = [
+                    'nominal' => $nom,
+                    'qty' => $qty,
+                    'subtotal' => $subtotal,
+                ];
+                $totalCoins += $subtotal;
+            }
+
+            $totalDenominationCash = $totalBills + $totalCoins;
+
+            $cashDenominations = [
+                'bills' => $billsData,
+                'total_bills' => $totalBills,
+                'coins' => $coinsData,
+                'total_coins' => $totalCoins,
+                'grand_total' => $totalDenominationCash,
+            ];
+
+            // If user counted via denominations, synchronize actual cash
+            $actualCash = $totalDenominationCash > 0 ? $totalDenominationCash : (float)$request->actual_cash;
+
+            // 4. Boss Withdrawal handling directly on work sheet
+            $bossWithdrawalTakenBy = $request->input('boss_withdrawal_taken_by') ?: 'Boss SWANTO';
+            $bossWithdrawalPurpose = $request->input('boss_withdrawal_purpose') ?: 'Setor Kas / Pengambilan Boss';
+            $bossWithdrawalNotes = $request->input('boss_withdrawal_notes');
+
+            // Expected cash = POS cash sales - Total cash out - Boss withdrawal
+            $totalSales = (float)$request->total_cash_sales + (float)$request->total_transfer_sales + (float)$request->total_qris_sales;
+            $expectedCash = max(0, (float)$request->total_cash_sales - (float)$totalCashOut - $bossWithdrawalAmount);
+            $cashDifference = $actualCash - $expectedCash;
+
+            $clickCount = null;
+            if ($request->filled('click_counter_start') && $request->filled('click_counter_end')) {
+                $clickCount = max(0, (int)$request->click_counter_end - (int)$request->click_counter_start);
+            }
+
+            $reportNumber = DailyClosingReport::generateReportNumber($branch->nama_cabang);
+
+            $report = DailyClosingReport::create([
+                'report_number' => $reportNumber,
+                'branch_id' => $branch->id,
+                'user_id' => $user->id,
+                'closing_date' => $request->closing_date,
+                'shift_type' => 'Full Day',
+                'total_orders_count' => (int) $request->input('total_orders_count', 0),
+                'total_cash_sales' => $request->total_cash_sales,
+                'total_transfer_sales' => $request->total_transfer_sales,
+                'total_qris_sales' => $request->total_qris_sales,
+                'total_sales' => $totalSales,
+                'total_cash_in' => 0,
+                'total_cash_out' => $totalCashOut,
+                'opening_cash' => 0,
+                'expected_cash' => $expectedCash,
+                'actual_cash' => $actualCash,
+                'cash_difference' => $cashDifference,
+                'cash_denominations' => $cashDenominations,
+                'expenses_data' => $allExpenses,
+                'click_counter_start' => $request->click_counter_start,
+                'click_counter_end' => $request->click_counter_end,
+                'click_count_total' => $clickCount,
+                'production_notes' => $request->production_notes,
+                'manager_signature_path' => $user->signature_path,
+                'manager_signed_at' => Carbon::now(),
+                'status' => 'submitted',
+            ]);
+
+            // Save Boss Withdrawal if entered on work sheet
+            if ($bossWithdrawalAmount > 0) {
+                BossCashWithdrawal::create([
+                    'branch_id' => $branch->id,
+                    'user_id' => $user->id,
+                    'withdrawal_date' => $request->closing_date,
+                    'amount' => $bossWithdrawalAmount,
+                    'taken_by' => $bossWithdrawalTakenBy,
+                    'purpose' => $bossWithdrawalPurpose,
+                    'notes' => $bossWithdrawalNotes,
+                    'daily_closing_report_id' => $report->id,
+                ]);
+            }
+
+            return redirect()->route('daily-closing.show', $report->id)->with('success', "Laporan Tutup Hari #{$report->report_number} berhasil disimpan dengan rekonsiliasi kas dan pencatatan penarikan boss.");
+        });
     }
 
     /**
@@ -239,7 +539,11 @@ class DailyClosingController extends Controller
     public function show($id)
     {
         $report = DailyClosingReport::with(['branch', 'manager', 'owner'])->findOrFail($id);
-        return view('finance.daily_closing.show', compact('report'));
+        $dayWithdrawals = BossCashWithdrawal::where('branch_id', $report->branch_id)
+            ->whereDate('withdrawal_date', $report->closing_date)
+            ->get();
+            
+        return view('finance.daily_closing.show', compact('report', 'dayWithdrawals'));
     }
 
     /**

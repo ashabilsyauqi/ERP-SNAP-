@@ -8,7 +8,7 @@
     <i class="fa-solid fa-arrow-left"></i> Kembali
 </a>
 <button type="button" onclick="window.print()" class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1.5 rounded-xl text-xs font-bold px-3 py-1.5">
-    <i class="fa-solid fa-print"></i> Cetak Laporan
+    <i class="fa-solid fa-print"></i> Cetak Berita Acara
 </button>
 @endsection
 
@@ -80,8 +80,9 @@
                 
                 <!-- Sisi Penjualan -->
                 <div class="border rounded-xl overflow-hidden">
-                    <div class="bg-slate-100 p-2.5 font-bold text-xs text-slate-700 border-b">
-                        1. Ringkasan Omset Penjualan POS ({{ $report->total_orders_count }} Trx)
+                    <div class="bg-slate-100 p-2.5 font-bold text-xs text-slate-700 border-b d-flex justify-content-between align-items-center">
+                        <span>1. Ringkasan Omset Penjualan POS ({{ $report->total_orders_count }} Trx)</span>
+                        <i class="fa-solid fa-receipt text-slate-400"></i>
                     </div>
                     <table class="table table-sm mb-0 text-xs">
                         <tbody>
@@ -97,50 +98,47 @@
                                 <td class="ps-3 py-2 text-slate-600">📱 QRIS Statis/Dinamis</td>
                                 <td class="pe-3 py-2 text-end font-mono font-bold text-indigo-700">Rp {{ number_format($report->total_qris_sales, 0, ',', '.') }}</td>
                             </tr>
-                            <tr class="bg-blue-50 border-t font-bold">
-                                <td class="ps-3 py-2 text-blue-900">Total Omset Hari Ini</td>
-                                <td class="pe-3 py-2 text-end font-mono text-blue-950 fs-6">Rp {{ number_format($report->total_sales, 0, ',', '.') }}</td>
+                            <tr class="bg-slate-50 font-bold border-t">
+                                <td class="ps-3 py-2 text-slate-900">Total Penjualan Hari Ini</td>
+                                <td class="pe-3 py-2 text-end font-mono text-slate-900 fs-6">Rp {{ number_format($report->total_sales, 0, ',', '.') }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Sisi Kas Fisik -->
+                <!-- Sisi Rekonsiliasi Kas Toko -->
                 <div class="border rounded-xl overflow-hidden">
-                    <div class="bg-slate-100 p-2.5 font-bold text-xs text-slate-700 border-b">
-                        2. Rekonsiliasi Kas Laci & Selisih
+                    <div class="bg-slate-100 p-2.5 font-bold text-xs text-slate-700 border-b d-flex justify-content-between align-items-center">
+                        <span>2. Rekonsiliasi Fisik Kas Laci Kasir</span>
+                        <i class="fa-solid fa-vault text-slate-400"></i>
                     </div>
                     <table class="table table-sm mb-0 text-xs">
                         <tbody>
                             <tr>
-                                <td class="ps-3 py-2 text-slate-600">Kas Awal Modal Laci</td>
-                                <td class="pe-3 py-2 text-end font-mono font-semibold">Rp {{ number_format($report->opening_cash, 0, ',', '.') }}</td>
+                                <td class="ps-3 py-2 text-slate-600">💵 Uang Cash Penjualan POS</td>
+                                <td class="pe-3 py-2 text-end font-mono font-bold text-emerald-700">+ Rp {{ number_format($report->total_cash_sales, 0, ',', '.') }}</td>
                             </tr>
                             <tr>
-                                <td class="ps-3 py-2 text-slate-600">+ Kas Masuk Non-POS</td>
-                                <td class="pe-3 py-2 text-end font-mono text-emerald-700 font-semibold">+ Rp {{ number_format($report->total_cash_in, 0, ',', '.') }}</td>
-                            </tr>
-                            <tr>
-                                <td class="ps-3 py-2 text-slate-600">- Kas Keluar Operasional</td>
-                                <td class="pe-3 py-2 text-end font-mono text-rose-700 font-semibold">- Rp {{ number_format($report->total_cash_out, 0, ',', '.') }}</td>
+                                <td class="ps-3 py-2 text-slate-600">📤 Pengeluaran Kas Toko</td>
+                                <td class="pe-3 py-2 text-end font-mono font-bold text-rose-700">- Rp {{ number_format($report->total_cash_out, 0, ',', '.') }}</td>
                             </tr>
                             <tr class="border-t">
-                                <td class="ps-3 py-2 text-slate-800 font-bold">Estimasi Kas Sistem (Expected)</td>
-                                <td class="pe-3 py-2 text-end font-mono font-bold text-slate-900">Rp {{ number_format($report->expected_cash, 0, ',', '.') }}</td>
+                                <td class="ps-3 py-2 font-bold text-slate-700">Total Seharusnya di Laci (Expected)</td>
+                                <td class="pe-3 py-2 text-end font-mono font-bold text-slate-800">Rp {{ number_format($report->expected_cash, 0, ',', '.') }}</td>
                             </tr>
-                            <tr class="bg-emerald-50 font-bold">
-                                <td class="ps-3 py-2 text-emerald-900">Kas Fisik Aktual di Laci</td>
-                                <td class="pe-3 py-2 text-end font-mono text-emerald-900 fs-6">Rp {{ number_format($report->actual_cash, 0, ',', '.') }}</td>
+                            <tr class="bg-emerald-50/60 font-bold">
+                                <td class="ps-3 py-2 text-emerald-900">Fisik Kas Dihitung (Actual Cash)</td>
+                                <td class="pe-3 py-2 text-end font-mono text-emerald-900 fs-6 font-extrabold">Rp {{ number_format($report->actual_cash, 0, ',', '.') }}</td>
                             </tr>
-                            <tr class="border-t">
+                            <tr class="border-t {{ $report->cash_difference == 0 ? 'bg-emerald-50/40 text-emerald-800' : ($report->cash_difference > 0 ? 'bg-blue-50/40 text-blue-800' : 'bg-rose-50/40 text-rose-800') }}">
                                 <td class="ps-3 py-2 font-bold">Status Selisih Kas</td>
-                                <td class="pe-3 py-2 text-end font-mono font-bold">
+                                <td class="pe-3 py-2 text-end font-mono font-extrabold">
                                     @if($report->cash_difference == 0)
-                                        <span class="badge bg-emerald-100 text-emerald-800 text-[10px]">Rp 0 (PAS)</span>
+                                        ✅ PAS (Rp 0)
                                     @elseif($report->cash_difference > 0)
-                                        <span class="badge bg-blue-100 text-blue-800 text-[10px]">+ Rp {{ number_format($report->cash_difference, 0, ',', '.') }} (LEBIH)</span>
+                                        🔵 LEBIH (+ Rp {{ number_format($report->cash_difference, 0, ',', '.') }})
                                     @else
-                                        <span class="badge bg-rose-100 text-rose-800 text-[10px]">- Rp {{ number_format(abs($report->cash_difference), 0, ',', '.') }} (KURANG)</span>
+                                        🔴 KURANG (- Rp {{ number_format(abs($report->cash_difference), 0, ',', '.') }})
                                     @endif
                                 </td>
                             </tr>
@@ -149,6 +147,148 @@
                 </div>
 
             </div>
+
+            <!-- RINCIAN DENOMINASI LEMBARAN & KOIN (JIKA TERSEDIA) -->
+            @if(!empty($report->cash_denominations))
+                @php
+                    $denom = $report->cash_denominations;
+                    $bills = $denom['bills'] ?? [];
+                    $coins = $denom['coins'] ?? [];
+                @endphp
+                <div class="border rounded-2xl overflow-hidden">
+                    <div class="bg-slate-900 text-white p-3 font-bold text-xs d-flex justify-content-between align-items-center">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-money-bill-wave text-emerald-400"></i>
+                            Rincian Hitungan Fisik Kas Laci (Lembaran & Koin)
+                        </span>
+                        <span class="font-mono text-emerald-300 font-extrabold">
+                            Total: Rp {{ number_format($denom['grand_total'] ?? $report->actual_cash, 0, ',', '.') }}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x border-b">
+                        <!-- Uang Kertas -->
+                        <div class="p-3 text-xs">
+                            <div class="font-bold text-slate-700 uppercase text-[10px] mb-2 d-flex justify-content-between">
+                                <span>💵 Uang Kertas (Lembaran)</span>
+                                <span class="font-mono text-emerald-700 font-bold">Subtotal: Rp {{ number_format($denom['total_bills'] ?? 0, 0, ',', '.') }}</span>
+                            </div>
+                            <table class="table table-sm table-borderless mb-0">
+                                <tbody>
+                                    @foreach([100000, 50000, 20000, 10000, 5000, 2000, 1000] as $nom)
+                                        @php
+                                            $qty = $bills[$nom]['qty'] ?? ($bills[$nom] ?? 0);
+                                            $sub = is_array($bills[$nom] ?? null) ? ($bills[$nom]['subtotal'] ?? ($qty * $nom)) : ($qty * $nom);
+                                        @endphp
+                                        <tr class="{{ $qty > 0 ? 'bg-emerald-50/50 font-semibold' : 'text-slate-400' }}">
+                                            <td class="py-1">Rp {{ number_format($nom, 0, ',', '.') }}</td>
+                                            <td class="py-1 text-center font-mono">&times; {{ $qty }} lbr</td>
+                                            <td class="py-1 text-end font-mono font-bold text-slate-800">Rp {{ number_format($sub, 0, ',', '.') }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Uang Koin -->
+                        <div class="p-3 text-xs">
+                            <div class="font-bold text-slate-700 uppercase text-[10px] mb-2 d-flex justify-content-between">
+                                <span>🪙 Uang Logam (Koin)</span>
+                                <span class="font-mono text-amber-700 font-bold">Subtotal: Rp {{ number_format($denom['total_coins'] ?? 0, 0, ',', '.') }}</span>
+                            </div>
+                            <table class="table table-sm table-borderless mb-0">
+                                <tbody>
+                                    @foreach([1000, 500, 200, 100] as $nom)
+                                        @php
+                                            $qty = $coins[$nom]['qty'] ?? ($coins[$nom] ?? 0);
+                                            $sub = is_array($coins[$nom] ?? null) ? ($coins[$nom]['subtotal'] ?? ($qty * $nom)) : ($qty * $nom);
+                                        @endphp
+                                        <tr class="{{ $qty > 0 ? 'bg-amber-50/50 font-semibold' : 'text-slate-400' }}">
+                                            <td class="py-1">Rp {{ number_format($nom, 0, ',', '.') }}</td>
+                                            <td class="py-1 text-center font-mono">&times; {{ $qty }} kpg</td>
+                                            <td class="py-1 text-end font-mono font-bold text-slate-800">Rp {{ number_format($sub, 0, ',', '.') }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <!-- RINCIAN PENGELUARAN KAS HARI INI (JIKA TERSEDIA) -->
+            @if(!empty($report->expenses_data) && count($report->expenses_data) > 0)
+                <div class="border rounded-2xl overflow-hidden">
+                    <div class="bg-rose-900 text-white p-3 font-bold text-xs d-flex justify-content-between align-items-center">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-arrow-up-from-bracket text-rose-300"></i>
+                            Rincian Pengeluaran Kas Operasional yang Dicatat Hari Ini
+                        </span>
+                        <span class="font-mono text-rose-200 font-extrabold">
+                            Total: Rp {{ number_format($report->total_cash_out, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <table class="table table-sm mb-0 text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-[10px] text-slate-500 uppercase border-b">
+                                <th class="ps-3 py-2">No. Referensi</th>
+                                <th class="py-2">Kategori Beban</th>
+                                <th class="py-2">Keterangan</th>
+                                <th class="pe-3 py-2 text-end">Jumlah (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($report->expenses_data as $exp)
+                                <tr class="border-b">
+                                    <td class="ps-3 py-1.5 font-mono font-semibold text-slate-700">{{ $exp['nomor_referensi'] ?? '-' }}</td>
+                                    <td class="py-1.5 text-slate-600">{{ $exp['account_name'] ?? 'Beban Operasional' }}</td>
+                                    <td class="py-1.5 text-slate-800 font-medium">{{ $exp['keterangan'] ?? '-' }}</td>
+                                    <td class="pe-3 py-1.5 text-end font-mono font-bold text-rose-700">Rp {{ number_format($exp['jumlah'] ?? 0, 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
+            <!-- PENGAMBILAN UANG KAS OLEH BOSS DI HARI INI (JIKA ADA) -->
+            @if(isset($dayWithdrawals) && $dayWithdrawals->isNotEmpty())
+                <div class="border rounded-2xl overflow-hidden">
+                    <div class="bg-amber-900 text-white p-3 font-bold text-xs d-flex justify-content-between align-items-center">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-hand-holding-dollar text-amber-300"></i>
+                            Pencatatan Kas Diambil Boss pada Tanggal Ini
+                        </span>
+                        <span class="font-mono text-amber-200 font-extrabold">
+                            Total: - Rp {{ number_format($dayWithdrawals->sum('amount'), 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <table class="table table-sm mb-0 text-xs">
+                        <thead>
+                            <tr class="bg-amber-50 text-[10px] text-amber-900 uppercase border-b">
+                                <th class="ps-3 py-2">Diambil Oleh</th>
+                                <th class="py-2">Keperluan / Tujuan</th>
+                                <th class="py-2">Catatan Detail</th>
+                                <th class="pe-3 py-2 text-end text-rose-800">Nominal Diambil</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($dayWithdrawals as $w)
+                                <tr class="border-b">
+                                    <td class="ps-3 py-2 font-bold text-amber-900">
+                                        <i class="fa-solid fa-user-tie text-amber-700 me-1"></i> {{ $w->taken_by }}
+                                    </td>
+                                    <td class="py-2 font-semibold text-slate-800">{{ $w->purpose ?? 'Pengambilan Kas' }}</td>
+                                    <td class="py-2 text-slate-500 text-[11px]">{{ $w->notes ?: '-' }}</td>
+                                    <td class="pe-3 py-2 text-end font-mono font-bold text-rose-700">
+                                        - Rp {{ number_format($w->amount, 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
 
             <!-- Meteran Mesin & Catatan Produksi -->
             @if($report->click_count_total !== null || $report->production_notes)

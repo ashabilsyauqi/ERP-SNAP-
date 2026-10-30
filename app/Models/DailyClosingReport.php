@@ -28,6 +28,8 @@ class DailyClosingReport extends Model
         'expected_cash',
         'actual_cash',
         'cash_difference',
+        'cash_denominations',
+        'expenses_data',
         'click_counter_start',
         'click_counter_end',
         'click_count_total',
@@ -57,6 +59,8 @@ class DailyClosingReport extends Model
             'expected_cash' => 'decimal:2',
             'actual_cash' => 'decimal:2',
             'cash_difference' => 'decimal:2',
+            'cash_denominations' => 'array',
+            'expenses_data' => 'array',
         ];
     }
 

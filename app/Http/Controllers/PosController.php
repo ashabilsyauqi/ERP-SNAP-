@@ -367,20 +367,27 @@ class PosController extends Controller
                 $remainingAmount = 0;
                 $paymentStatus = 'UNPAID';
                 $orderStatus = 'draft';
-            } elseif ($isDp && $totalPrice >= 500000) {
+            } elseif ($isDp && $totalPrice > 0) {
                 $minDp = round($totalPrice * 0.5);
                 if ($requestedDp < $minDp) {
                     throw new \Exception("Nominal Uang Muka (DP) minimal 50% dari total pesanan (Minimal Rp " . number_format($minDp, 0, ',', '.') . ").");
                 }
-                $paidAmount = $requestedDp;
-                $remainingAmount = max(0, $totalPrice - $paidAmount);
-                $paymentStatus = 'PARTIAL';
-                $orderStatus = 'in_production';
+                if ($requestedDp >= $totalPrice) {
+                    $paidAmount = $totalPrice;
+                    $remainingAmount = 0;
+                    $paymentStatus = 'PAID';
+                    $orderStatus = 'completed';
+                } else {
+                    $paidAmount = $requestedDp;
+                    $remainingAmount = max(0, $totalPrice - $paidAmount);
+                    $paymentStatus = 'PARTIAL';
+                    $orderStatus = 'in_production';
+                }
             } else {
                 $paidAmount = $totalPrice;
                 $remainingAmount = 0;
                 $paymentStatus = 'PAID';
-                $orderStatus = ($isDp && $totalPrice >= 500000) ? 'in_production' : 'completed';
+                $orderStatus = 'completed';
             }
 
             // Cross-Branch 25/75 Settlement Split Calculation
@@ -573,15 +580,22 @@ class PosController extends Controller
             $isDp = $request->boolean('is_dp');
             $requestedDp = $isDp ? (float) $request->input('dp_amount', 0) : 0;
 
-            if ($isDp && $totalPrice >= 500000) {
+            if ($isDp && $totalPrice > 0) {
                 $minDp = round($totalPrice * 0.5);
                 if ($requestedDp < $minDp) {
                     throw new \Exception("Nominal Uang Muka (DP) minimal 50% dari total pesanan (Minimal Rp " . number_format($minDp, 0, ',', '.') . ").");
                 }
-                $paidAmount = $requestedDp;
-                $remainingAmount = max(0, $totalPrice - $paidAmount);
-                $paymentStatus = 'PARTIAL';
-                $orderStatus = 'in_production';
+                if ($requestedDp >= $totalPrice) {
+                    $paidAmount = $totalPrice;
+                    $remainingAmount = 0;
+                    $paymentStatus = 'PAID';
+                    $orderStatus = 'completed';
+                } else {
+                    $paidAmount = $requestedDp;
+                    $remainingAmount = max(0, $totalPrice - $paidAmount);
+                    $paymentStatus = 'PARTIAL';
+                    $orderStatus = 'in_production';
+                }
             } else {
                 $paidAmount = $totalPrice;
                 $remainingAmount = 0;

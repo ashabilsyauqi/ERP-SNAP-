@@ -17,6 +17,9 @@
 <a href="{{ route('sales.index') }}" class="btn-odoo-secondary text-decoration-none">
     <i class="fa-solid fa-receipt me-1 text-blue-600"></i> Riwayat Penjualan
 </a>
+<a href="{{ route('daily-closing.create') }}" class="btn-odoo-secondary text-rose-700 hover:text-rose-800 hover:bg-rose-50 border-rose-200 text-decoration-none shadow-xs flex items-center">
+    <i class="fa-solid fa-calculator me-1 text-rose-600"></i> Tutup Kasir Harian
+</a>
 @endsection
 
 @section('content')
@@ -27,7 +30,7 @@
         isDp: false, 
         cartTotal: 0,
         cartItemCount: 0,
-        minDpThreshold: 500000,
+        minDpThreshold: 0,
         customerId: null,
         customerName: '', 
         customerPhone: '', 
@@ -71,12 +74,14 @@
             return Math.round((Number(this.cartTotal) || 0) * 0.5);
         },
         get isEligibleForDp() {
-            return Number(this.cartTotal) >= this.minDpThreshold;
+            return Number(this.cartTotal) > 0;
         },
         toggleDp(checked) {
             this.isDp = checked;
-            if (checked && (!this.dpAmount || this.dpAmount < this.minDpAmount)) {
-                this.dpAmount = this.minDpAmount;
+            if (checked) {
+                if (!this.dpAmount || this.dpAmount <= 0) {
+                    this.dpAmount = this.minDpAmount;
+                }
             }
         },
         setDpPercent(pct) {
@@ -87,10 +92,10 @@
         handleCartTotalUpdate(total, count) {
             this.cartTotal = Number(total) || 0;
             this.cartItemCount = Number(count) || 0;
-            if (this.cartTotal < this.minDpThreshold) {
+            if (this.cartTotal <= 0) {
                 this.isDp = false;
                 this.dpAmount = 0;
-            } else if (this.isDp && (!this.dpAmount || this.dpAmount < this.minDpAmount)) {
+            } else if (this.isDp && (!this.dpAmount || this.dpAmount <= 0)) {
                 this.dpAmount = this.minDpAmount;
             }
         }
@@ -362,7 +367,7 @@
                 </div>
             </div>
 
-            <!-- DP (Down Payment) & Custom Order Toggle - Hanya Muncul jika Total Tagihan >= Rp 500.000 -->
+            <!-- DP (Down Payment) & Custom Order Toggle - Berlaku untuk Seluruh Pesanan (Minimal 50%) -->
             <div x-show="isEligibleForDp" x-cloak class="p-2.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-2 transition-all">
                 <div class="flex items-center justify-between">
                     <label class="flex items-center gap-2 cursor-pointer mb-0">
@@ -382,21 +387,39 @@
                         </div>
                         <div>
                             <div class="flex justify-between items-center mb-0.5">
-                                <label class="text-[10px] font-bold text-slate-600 uppercase">Nominal DP (Rp)</label>
+                                <label class="text-[10px] font-bold text-slate-600 uppercase">Nominal DP (Bisa Free Text / Bebas Ketik)</label>
                                 <span class="text-[9px] text-amber-700 font-bold" x-text="'Min. 50%: Rp ' + minDpAmount.toLocaleString('id-ID')"></span>
                             </div>
-                            <input type="number" x-model="dpAmount" :min="minDpAmount" placeholder="0" 
-                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-emerald-800">
+                            <input type="number" 
+                                   x-model.number="dpAmount" 
+                                   step="any"
+                                   placeholder="Ketik nominal DP..." 
+                                   class="w-full px-2 py-1 bg-white border rounded-lg text-xs font-mono font-bold text-emerald-800 transition"
+                                   :class="dpAmount >= minDpAmount ? 'border-emerald-400 focus:border-emerald-600' : 'border-amber-400 focus:border-rose-500'">
+                            <div class="mt-0.5 text-[9.5px]">
+                                <template x-if="dpAmount >= minDpAmount">
+                                    <span class="text-emerald-700 font-semibold">
+                                        ✓ DP Sah: Rp <span x-text="Number(dpAmount || 0).toLocaleString('id-ID')"></span> 
+                                        (<span x-text="cartTotal > 0 ? Math.round((dpAmount / cartTotal) * 100) : 0"></span>% dari total)
+                                    </span>
+                                </template>
+                                <template x-if="dpAmount < minDpAmount && dpAmount > 0">
+                                    <span class="text-rose-600 font-bold">
+                                        ⚠ Kurang dari 50% (Minimal: Rp <span x-text="minDpAmount.toLocaleString('id-ID')"></span>)
+                                    </span>
+                                </template>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Shortcut DP Buttons (Minimal 50%) -->
                     <div class="flex items-center justify-between text-[10px]">
-                        <span class="text-slate-500 font-semibold">Pilihan DP (Min 50%):</span>
-                        <div class="flex gap-1">
+                        <span class="text-slate-500 font-semibold">Pilihan Cepat (Bebas Ketik):</span>
+                        <div class="flex gap-1 flex-wrap">
                             <button type="button" @click="setDpPercent(50)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">50% (Min)</button>
                             <button type="button" @click="setDpPercent(70)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">70%</button>
                             <button type="button" @click="setDpPercent(80)" class="px-2 py-0.5 bg-white border border-blue-300 text-blue-700 rounded font-bold hover:bg-blue-100">80%</button>
+                            <button type="button" @click="setDpPercent(100)" class="px-2 py-0.5 bg-white border border-emerald-300 text-emerald-700 rounded font-bold hover:bg-emerald-100">100%</button>
                         </div>
                     </div>
 
@@ -4186,7 +4209,7 @@
                 Swal.fire({ 
                     icon: 'warning', 
                     title: 'Nominal DP Kurang dari 50%', 
-                    text: 'Nominal uang muka (DP) minimal 50% dari total pesanan (Minimal: Rp ' + Number(minAllowedDp).toLocaleString('id-ID') + ').' 
+                    text: 'Nominal uang muka (DP) minimal 50% dari total pesanan (Minimal: Rp ' + Number(minAllowedDp).toLocaleString('id-ID') + '). Anda dapat mengetik nominal DP bebas di atas batas minimal tersebut.' 
                 });
                 return;
             }

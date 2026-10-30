@@ -94,6 +94,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/sales/send-whatsapp-pdf', [SalesController::class, 'sendWhatsAppPdf'])->name('sales.send-whatsapp-pdf');
         Route::post('/sales/{id}/refund', [SalesController::class, 'refund'])->name('sales.refund');
         Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy');
+
+        // Tutup Kasir Harian & Laporan Tutup Hari (Daily Closing Report)
+        Route::post('daily-closing/boss-withdrawal', [\App\Http\Controllers\DailyClosingController::class, 'storeBossWithdrawal'])->name('daily-closing.boss-withdrawal.store');
+        Route::delete('daily-closing/boss-withdrawal/{id}', [\App\Http\Controllers\DailyClosingController::class, 'destroyBossWithdrawal'])->name('daily-closing.boss-withdrawal.destroy');
+        Route::resource('daily-closing', \App\Http\Controllers\DailyClosingController::class);
+        Route::post('daily-closing/{id}/verify', [\App\Http\Controllers\DailyClosingController::class, 'verify'])->name('daily-closing.verify');
     });
 
     // Cetak di Luar / Vendor Outsource Module (5-Stage Pipeline)
@@ -123,10 +129,6 @@ Route::middleware(['auth'])->group(function () {
         // Transaksi Kas
         Route::resource('kas-masuk', \App\Http\Controllers\CashInController::class)->except(['show', 'edit']);
         Route::resource('kas-keluar', \App\Http\Controllers\CashOutController::class)->except(['show', 'edit']);
-        
-        // Laporan Tutup Hari (Daily Closing Report)
-        Route::resource('daily-closing', \App\Http\Controllers\DailyClosingController::class);
-        Route::post('daily-closing/{id}/verify', [\App\Http\Controllers\DailyClosingController::class, 'verify'])->name('daily-closing.verify');
         
         // Laporan
         Route::prefix('reports')->name('reports.')->group(function () {
