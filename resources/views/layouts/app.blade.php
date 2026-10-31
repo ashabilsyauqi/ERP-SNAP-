@@ -1081,6 +1081,11 @@
                     <div class="text-end">
                         <!-- Payment Status Stamp Badge -->
                         <div class="mb-2">
+                            <template x-if="inv.payment_status === 'REFUNDED' || inv.order_status === 'cancelled'">
+                                <span class="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 text-rose-800 border-2 border-rose-500 rounded-md text-xs font-black uppercase tracking-wider shadow-sm">
+                                    <i class="fa-solid fa-rotate-left text-rose-600"></i> REFUNDED (DIBATALKAN)
+                                </span>
+                            </template>
                             <template x-if="inv.payment_status === 'PAID' && (!inv.remaining_amount || Number(inv.remaining_amount) <= 0)">
                                 <span class="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-500 rounded-md text-xs font-extrabold uppercase tracking-wider">
                                     <i class="fa-solid fa-circle-check text-emerald-600"></i> PAID (LUNAS)
@@ -1099,6 +1104,17 @@
                         </div>
                         <div class="text-xs text-slate-500 font-mono" x-text="'Tgl: ' + (inv.created_at || '-')"></div>
                         <div class="text-xs text-slate-500" x-text="'Kasir: ' + (inv.cashier_name || 'Kasir')"></div>
+                    </div>
+                </div>
+
+                <!-- Refund Notice Callout (If Refunded) -->
+                <div class="p-3 mb-3 bg-rose-50 border border-rose-300 rounded-2xl text-xs text-rose-900" x-show="inv.payment_status === 'REFUNDED' || inv.order_status === 'cancelled'">
+                    <div class="d-flex align-items-center gap-2 font-bold text-rose-800 mb-1">
+                        <i class="fa-solid fa-circle-exclamation fs-6"></i>
+                        <span>STATUS: FAKTUR DIBATALKAN / REFUND</span>
+                    </div>
+                    <div x-show="inv.production_notes" class="text-slate-800 mt-1">
+                        <strong>Catatan Refund:</strong> <span x-text="inv.production_notes"></span>
                     </div>
                 </div>
 
@@ -1805,14 +1821,19 @@
         window.printSnaprintInvoice = function(inv) {
             const printWindow = window.open('', '_blank');
             const logoUrl = "{{ asset('images/logosnaprint.jpeg') }}";
-            const isUnpaid = inv.payment_status === 'UNPAID' || inv.order_status === 'draft';
-            const isPartial = !isUnpaid && (inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0));
+            const isRefunded = inv.payment_status === 'REFUNDED' || inv.order_status === 'cancelled';
+            const isUnpaid = !isRefunded && (inv.payment_status === 'UNPAID' || inv.order_status === 'draft');
+            const isPartial = !isRefunded && !isUnpaid && (inv.payment_status === 'PARTIAL' || (inv.remaining_amount && Number(inv.remaining_amount) > 0));
             
             let stampColor = '#059669';
             let stampBg = '#ecfdf5';
             let stampText = '✓ PAID (LUNAS)';
 
-            if (isUnpaid) {
+            if (isRefunded) {
+                stampColor = '#dc2626';
+                stampBg = '#fef2f2';
+                stampText = '✕ REFUNDED (DIBATALKAN)';
+            } else if (isUnpaid) {
                 stampColor = '#dc2626';
                 stampBg = '#fef2f2';
                 stampText = '✕ UNPAID (BELUM DIBAYAR)';
@@ -1867,7 +1888,11 @@
                     </style>
                 </head>
                 <body>
-                    ${(isUnpaid || isPartial) ? `
+                    ${isRefunded ? `
+                        <div style="position: absolute; top: 35%; left: 15%; right: 15%; text-align: center; transform: rotate(-15deg); opacity: 0.12; font-size: 100px; font-weight: 900; color: #dc2626; border: 10px solid #dc2626; padding: 10px 20px; border-radius: 20px; font-family: monospace; pointer-events: none;">
+                            REFUNDED
+                        </div>
+                    ` : (isUnpaid || isPartial) ? `
                         <div style="position: absolute; top: 35%; left: 15%; right: 15%; text-align: center; transform: rotate(-15deg); opacity: 0.08; font-size: 110px; font-weight: 900; color: #dc2626; border: 10px solid #dc2626; padding: 10px 20px; border-radius: 20px; font-family: monospace; pointer-events: none;">
                             UNPAID
                         </div>
@@ -1919,6 +1944,12 @@
                         </tr>
                     </table>
 
+                    ${(isRefunded && inv.production_notes) ? `
+                        <div style="background: #fef2f2; border: 1.5px solid #f87171; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; color: #991b1b; font-size: 12px; line-height: 1.4;">
+                            <strong style="color: #b91c1c; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">✕ CATATAN REFUND / PEMBATALAN:</strong><br>
+                            ${inv.production_notes}
+                        </div>
+                    ` : ''}
                     <table class="items-table">
                         <thead>
                             <tr>

@@ -354,6 +354,7 @@ function confirmRefundOrder(event, form, invoiceNumber, isDraft, paidAmount) {
                                     'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
                                     'payment_method' => $trx->payment_method ?? 'Cash',
                                     'payment_status' => $trx->payment_status,
+                                    'order_status' => $trx->order_status,
                                     'total_price' => $trx->total_price,
                                     'paid_amount' => $trx->paid_amount,
                                     'remaining_amount' => $trx->remaining_amount,
@@ -385,6 +386,14 @@ function confirmRefundOrder(event, form, invoiceNumber, isDraft, paidAmount) {
                                     @if($trx->customer_name)
                                         <div class="text-[10px] text-slate-500 font-medium">
                                             <i class="fa-solid fa-user text-slate-400 me-0.5"></i> {{ $trx->customer_name }}
+                                        </div>
+                                    @endif
+                                    @if($trx->isRefunded() && $trx->production_notes)
+                                        <div class="mt-1.5 p-1.5 bg-rose-50 border border-rose-200 rounded text-[10.5px] text-rose-900 leading-snug">
+                                            <div class="fw-bold text-rose-700 d-flex align-items-center gap-1">
+                                                <i class="fa-solid fa-note-sticky"></i> Catatan Refund:
+                                            </div>
+                                            <div class="mt-0.5 text-slate-700 whitespace-pre-line">{{ $trx->production_notes }}</div>
                                         </div>
                                     @endif
                                 </td>
@@ -597,6 +606,7 @@ function confirmRefundOrder(event, form, invoiceNumber, isDraft, paidAmount) {
                             'branch_name' => $trx->branch->nama_cabang ?? 'Pusat',
                             'payment_method' => $trx->payment_method ?? 'Cash',
                             'payment_status' => $trx->payment_status,
+                            'order_status' => $trx->order_status,
                             'total_price' => $trx->total_price,
                             'paid_amount' => $trx->paid_amount,
                             'remaining_amount' => $trx->remaining_amount,
@@ -643,6 +653,14 @@ function confirmRefundOrder(event, form, invoiceNumber, isDraft, paidAmount) {
                         @if($trx->customer_name)
                             <div class="text-xs font-semibold text-slate-800 mb-1">
                                 Client: {{ $trx->customer_name }}
+                            </div>
+                        @endif
+                        @if($trx->isRefunded() && $trx->production_notes)
+                            <div class="mt-1.5 mb-2 p-2 bg-rose-50 border border-rose-200 rounded text-xs text-rose-900 leading-snug">
+                                <div class="fw-bold text-rose-700 d-flex align-items-center gap-1 mb-0.5">
+                                    <i class="fa-solid fa-note-sticky"></i> Catatan Refund:
+                                </div>
+                                <div class="text-slate-800 whitespace-pre-line">{{ $trx->production_notes }}</div>
                             </div>
                         @endif
                         <div class="d-flex justify-content-between align-items-center pt-2 border-top">
