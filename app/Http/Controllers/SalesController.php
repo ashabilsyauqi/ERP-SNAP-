@@ -47,10 +47,14 @@ class SalesController extends Controller
 
         if ($statusFilter === 'draft') {
             $query->where('order_status', 'draft');
+        } elseif ($statusFilter === 'refunded') {
+            $query->where(function($q) {
+                $q->where('order_status', 'cancelled')
+                  ->orWhere('payment_status', 'REFUNDED');
+            });
         } else {
             $query->whereNotIn('order_status', ['draft', 'cancelled']);
         }
-
         // Period filter (today, yesterday, 7days, this_month, monthly, all, or custom date range)
         $period = $request->input('period', 'today');
         $selectedMonth = (int) $request->input('month', now()->month);
@@ -231,6 +235,16 @@ class SalesController extends Controller
             ->when(!$user->isOwner(), fn($q) => $q->where('branch_id', $user->branch_id))
             ->count();
 
+        // Count refunded/cancelled transactions for badge display
+        $refundedCount = Transaction::query()
+            ->where(function($q) {
+                $q->where('order_status', 'cancelled')
+                  ->orWhere('payment_status', 'REFUNDED');
+            })
+            ->when(!$isOwnerOrSuper, fn($q) => $q->where('branch_id', $user->branch_id))
+            ->when($isOwnerOrSuper && $branchId && $branchId !== 'all', fn($q) => $q->where('branch_id', $branchId))
+            ->count();
+
         $transactions = $query->get();
         $branches = Branch::orderBy('nama_cabang')->get();
 
@@ -294,7 +308,7 @@ class SalesController extends Controller
             'pending_drafts' => $pendingDraftCount,
         ];
 
-        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period', 'statusFilter', 'pendingDraftCount', 'branchId', 'selectedMonth', 'selectedYear'));
+        return view('sales.index', compact('transactions', 'branches', 'paymentSummary', 'period', 'statusFilter', 'pendingDraftCount', 'refundedCount', 'branchId', 'selectedMonth', 'selectedYear'));
     }
 
     /**
@@ -573,65 +587,90 @@ class SalesController extends Controller
     }
 
     /**
-     * Void/Refund transaction and restore stock to material inventory (Cashier or Super Admin KINGAshabil).
+     * Void/Refund transaction and restore stock to material inventory (Store Manager, Cashier, or Super Admin KINGAshabil).
      */
-    public function refund($id)
+    public function refund(Request $request, $id)
     {
         $user = auth()->user();
         $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
 
         $isSuperAdmin = $user->isSuperAdmin() || $user->isOwner() || ($user->username === 'KINGAshabil');
+        $isManager = $user->isManager();
         $isCashier = $user->isCashier();
         $isDrafter = ($transaction->order_status === 'draft' && (int)$transaction->user_id === (int)$user->id);
 
-        if (!$isSuperAdmin && !$isCashier && !$isDrafter) {
-            abort(403, 'Kegiatan pembatalan / penghapusan transaksi hanya dapat dilakukan oleh petugas Kasir, pembuat draft, atau Super Admin KINGAshabil.');
+        if (!$isSuperAdmin && !$isManager && !$isCashier && !$isDrafter) {
+            abort(403, 'Kegiatan refund / pembatalan transaksi hanya dapat dilakukan oleh Manager Toko, Kasir, atau Super Admin KINGAshabil.');
         }
 
-        if (!$isSuperAdmin && !$isDrafter && $transaction->branch_id && $user->branch_id && $transaction->branch_id !== $user->branch_id) {
-            abort(403, 'Anda hanya dapat mengelola transaksi pada cabang Anda.');
+        if (!$isSuperAdmin && !$isDrafter && $transaction->branch_id && $user->branch_id && (int)$transaction->branch_id !== (int)$user->branch_id) {
+            abort(403, 'Anda hanya dapat memproses refund pada cabang Anda.');
+        }
+
+        if ($transaction->order_status === 'cancelled' || $transaction->payment_status === 'REFUNDED') {
+            return redirect()->back()->with('error', "Transaksi {$transaction->invoice_number} sudah berstatus Refund / Dibatalkan sebelumnya.");
         }
 
         try {
             DB::beginTransaction();
 
             $isDraft = ($transaction->order_status === 'draft');
+            $invoiceNumber = $transaction->invoice_number;
+            $refundReason = $request->input('reason', 'Permintaan pelanggan / pembatalan transaksi');
 
-            // Restore all items stock ONLY IF NOT DRAFT (drafts never deducted stock)
-            if (!$isDraft) {
-                foreach ($transaction->transactionDetails as $detail) {
-                    $material = $detail->material;
-                    if ($material) {
-                        $material->stock_qty += $detail->qty_ordered;
-                        $material->save();
-                    }
+            if ($isDraft) {
+                // Drafts have no stock deducted and no cash transactions
+                $transaction->transactionDetails()->delete();
+                $transaction->delete();
+
+                DB::commit();
+                return redirect()->back()->with('success', "Draft pesanan {$invoiceNumber} berhasil dihapus.");
+            }
+
+            // OPSI A: REFUND & CANCELLED
+            // 1. Restore all items stock ONLY IF NOT DRAFT
+            foreach ($transaction->transactionDetails as $detail) {
+                $material = $detail->material;
+                if ($material) {
+                    $material->stock_qty += $detail->qty_ordered;
+                    $material->save();
                 }
             }
 
-            $invoiceNumber = $transaction->invoice_number;
-            $transaction->transactionDetails()->delete();
-            $transaction->delete();
+            // 2. Delete / reverse cash transactions and transaction payments to deduct cash inflow and revenue
+            $paidToRevert = (float) $transaction->paid_amount;
+            DB::table('cash_transactions')->where('transaction_id', $transaction->id)->delete();
+            DB::table('transaction_payments')->where('transaction_id', $transaction->id)->delete();
+
+            // 3. Mark transaction as cancelled & REFUNDED with audit note
+            $actorRole = $isSuperAdmin ? 'Super Admin' : ($isManager ? 'Manager Toko' : 'Kasir');
+            $auditNote = "[REFUND OPSI A] Dibatalkan & Refund oleh {$user->name} ({$actorRole}) pada " . now()->format('d/m/Y H:i') . " WIB. Alasan: {$refundReason}";
+
+            $transaction->order_status = 'cancelled';
+            $transaction->payment_status = 'REFUNDED';
+            $transaction->paid_amount = 0;
+            $transaction->remaining_amount = 0;
+            $transaction->production_notes = trim(($transaction->production_notes ? $transaction->production_notes . "\n" : '') . $auditNote);
+            $transaction->save();
 
             DB::commit();
 
-            $msg = $isDraft 
-                ? "Draft pesanan {$invoiceNumber} berhasil dihapus."
-                : "Transaksi {$invoiceNumber} berhasil dihapus/dibatalkan. Seluruh stok bahan telah dikembalikan.";
+            $msg = "Transaksi {$invoiceNumber} berhasil di-refund! Seluruh stok bahan telah dikembalikan ke inventaris dan pemasukan kas sebesar Rp " . number_format($paidToRevert, 0, ',', '.') . " telah dipotong.";
 
             return redirect()->back()->with('success', $msg);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal memproses penghapusan transaksi: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal memproses refund transaksi: ' . $e->getMessage());
         }
     }
 
     /**
-     * Delete transaction alias (Super Admin KINGAshabil / Cashier).
+     * Delete transaction alias (Super Admin KINGAshabil / Manager / Cashier).
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        return $this->refund($id);
+        return $this->refund($request, $id);
     }
 
     /**

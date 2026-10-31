@@ -8,6 +8,88 @@
     <i class="fa-solid fa-cash-register"></i>
     <span>Transaksi Baru (POS)</span>
 </a>
+<script>
+function confirmRefundOrder(event, form, invoiceNumber, isDraft, paidAmount) {
+    event.preventDefault();
+    if (isDraft) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Hapus Draft Pesanan?',
+                text: `Apakah Anda yakin ingin menghapus draft pesanan ${invoiceNumber}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Ya, Hapus Draft',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        } else {
+            if (confirm(`Hapus draft pesanan ${invoiceNumber}?`)) {
+                form.submit();
+            }
+        }
+        return false;
+    }
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Konfirmasi Refund Transaksi',
+            html: `
+                <div class="text-start fs-7">
+                    <p class="mb-2">Anda akan memproses <b>REFUND & PEMBATALAN</b> untuk faktur: <b class="text-primary">${invoiceNumber}</b>.</p>
+                    <div class="alert alert-danger py-2 px-3 text-xs mb-3">
+                        <ul class="mb-0 ps-3">
+                            <li>Pemasukan kas toko akan <b>otomatis dipotong Rp ${Number(paidAmount).toLocaleString('id-ID')}</b>.</li>
+                            <li>Seluruh <b>stok bahan baku</b> akan dikembalikan ke inventaris toko.</li>
+                            <li>Status transaksi resmi menjadi <b>REFUNDED / DIBATALKAN</b>.</li>
+                        </ul>
+                    </div>
+                    <label class="form-label text-xs fw-bold mb-1">Alasan Refund <span class="text-danger">*</span>:</label>
+                    <input type="text" id="swal-refund-reason" class="form-control form-control-sm text-xs" placeholder="Contoh: Customer batal pesanan / salah ukuran cetak">
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: '<i class="fa-solid fa-rotate-left me-1"></i> Ya, Proses Refund',
+            cancelButtonText: 'Batal',
+            preConfirm: () => {
+                const reason = document.getElementById('swal-refund-reason').value.trim();
+                if (!reason) {
+                    Swal.showValidationMessage('Mohon isi alasan refund transaksi!');
+                    return false;
+                }
+                return reason;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let inputReason = document.createElement('input');
+                inputReason.type = 'hidden';
+                inputReason.name = 'reason';
+                inputReason.value = result.value;
+                form.appendChild(inputReason);
+                form.submit();
+            }
+        });
+    } else {
+        const reason = prompt(`Refund transaksi ${invoiceNumber} senilai Rp ${Number(paidAmount).toLocaleString('id-ID')}?\nMasukkan alasan refund:`);
+        if (reason !== null && reason.trim() !== '') {
+            let inputReason = document.createElement('input');
+            inputReason.type = 'hidden';
+            inputReason.name = 'reason';
+            inputReason.value = reason;
+            form.appendChild(inputReason);
+            form.submit();
+        }
+    }
+    return false;
+}
+</script>
 @endsection
 
 @section('content')
@@ -112,11 +194,11 @@
         </div>
     </div>
 
-    <!-- Status Filter Tabs: Faktur Penjualan vs Draft Kasir -->
+    <!-- Status Filter Tabs: Faktur Penjualan vs Draft Kasir vs Refund -->
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div class="d-flex align-items-center gap-1.5">
             <a href="{{ route('sales.index', array_merge(request()->query(), ['status' => 'sales'])) }}" 
-               class="btn btn-sm {{ ($statusFilter ?? 'sales') !== 'draft' ? 'btn-primary font-bold shadow-sm' : 'btn-light border text-slate-600' }} rounded-pill px-3 py-1.5 text-xs d-inline-flex align-items-center gap-1.5">
+               class="btn btn-sm {{ ($statusFilter ?? 'sales') === 'sales' || empty($statusFilter) ? 'btn-primary font-bold shadow-sm' : 'btn-light border text-slate-600' }} rounded-pill px-3 py-1.5 text-xs d-inline-flex align-items-center gap-1.5">
                 <i class="fa-solid fa-receipt"></i>
                 <span>Faktur Penjualan (Selesai & DP)</span>
             </a>
@@ -128,11 +210,24 @@
                     <span class="badge {{ ($statusFilter ?? 'sales') === 'draft' ? 'bg-amber-950 text-white' : 'bg-amber-500 text-white' }} rounded-pill px-1.5 py-0.5 text-[10px]">{{ $pendingDraftCount }}</span>
                 @endif
             </a>
+            <a href="{{ route('sales.index', array_merge(request()->query(), ['status' => 'refunded'])) }}" 
+               class="btn btn-sm {{ ($statusFilter ?? 'sales') === 'refunded' ? 'btn-danger font-bold shadow-sm text-white' : 'btn-light border text-slate-600' }} rounded-pill px-3 py-1.5 text-xs d-inline-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Refund / Dibatalkan</span>
+                @if(($refundedCount ?? 0) > 0)
+                    <span class="badge {{ ($statusFilter ?? 'sales') === 'refunded' ? 'bg-white text-rose-700' : 'bg-rose-500 text-white' }} rounded-pill px-1.5 py-0.5 text-[10px]">{{ $refundedCount }}</span>
+                @endif
+            </a>
         </div>
         @if(($statusFilter ?? 'sales') === 'draft')
             <div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-pill px-3 py-1 font-medium d-inline-flex align-items-center gap-1.5">
                 <i class="fa-solid fa-circle-info text-amber-600"></i>
                 <span>Draft kasir adalah antrean pesanan yang belum dibayar / belum masuk omset.</span>
+            </div>
+        @elseif(($statusFilter ?? 'sales') === 'refunded')
+            <div class="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-pill px-3 py-1 font-medium d-inline-flex align-items-center gap-1.5">
+                <i class="fa-solid fa-circle-info text-rose-600"></i>
+                <span>Daftar pesanan yang di-refund / dibatalkan. Transaksi ini tidak dihitung dalam omset kas toko.</span>
             </div>
         @endif
     </div>
@@ -325,6 +420,13 @@
                                         <div class="text-[10px] text-slate-400">
                                             DP ({{ $trx->created_at->format('d M') }}): Rp {{ number_format($trx->total_price - $trx->period_settled_amount, 0, ',', '.') }}
                                         </div>
+                                    @elseif($trx->order_status === 'cancelled' || $trx->payment_status === 'REFUNDED')
+                                        <div class="fw-bold text-slate-400 text-decoration-line-through">
+                                            Rp {{ number_format($trx->total_price, 0, ',', '.') }}
+                                        </div>
+                                        <div class="text-[10px] text-rose-600 font-semibold">
+                                            (Refund / Dibatalkan)
+                                        </div>
                                     @elseif($trx->order_status === 'draft')
                                         <div class="fw-bold text-slate-500">
                                             Rp {{ number_format($trx->total_price, 0, ',', '.') }}
@@ -348,7 +450,11 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="d-inline-flex align-items-center gap-1">
-                                        @if($trx->order_status === 'draft')
+                                        @if($trx->order_status === 'cancelled' || $trx->payment_status === 'REFUNDED')
+                                            <span class="badge bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold">
+                                                <i class="fa-solid fa-rotate-left me-0.5"></i> DIBATALKAN / REFUND
+                                            </span>
+                                        @elseif($trx->order_status === 'draft')
                                             <span class="badge bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 text-[10px] font-bold">
                                                 <i class="fa-solid fa-file-pen me-0.5"></i> DRAFT KASIR
                                             </span>
@@ -410,17 +516,33 @@
                                             <i class="fa-solid fa-receipt text-xs"></i>
                                         </a>
                                         @if(auth()->user()->isSuperAdmin() || auth()->user()->isOwner())
-                                            <a href="{{ route('sales.edit', $trx->id) }}" class="btn btn-sm btn-outline-warning py-0 px-2 text-amber-700" title="Edit Transaksi (Super Admin)">
-                                                <i class="fa-solid fa-pen-to-square text-xs"></i>
-                                            </a>
+                                            @if(!$trx->isRefunded())
+                                                <a href="{{ route('sales.edit', $trx->id) }}" class="btn btn-sm btn-outline-warning py-0 px-2 text-amber-700" title="Edit Transaksi (Super Admin)">
+                                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                                </a>
+                                            @endif
                                         @endif
-                                        @if(auth()->user()->isCashier() || auth()->user()->isSuperAdmin() || auth()->user()->isOwner() || (auth()->user()->username === 'KINGAshabil') || ($trx->order_status === 'draft' && $trx->user_id === auth()->id()))
-                                            <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus / Batalkan pesanan {{ $trx->invoice_number }} ini?');">
+                                        @php
+                                            $canRefund = !$trx->isRefunded() && (
+                                                auth()->user()->isSuperAdmin() || 
+                                                auth()->user()->isOwner() || 
+                                                (auth()->user()->username === 'KINGAshabil') ||
+                                                (auth()->user()->isManager() && (auth()->user()->branch_id === null || auth()->user()->branch_id == $trx->branch_id)) ||
+                                                (auth()->user()->isCashier() && (auth()->user()->branch_id === null || auth()->user()->branch_id == $trx->branch_id)) ||
+                                                ($trx->order_status === 'draft' && $trx->user_id === auth()->id())
+                                            );
+                                        @endphp
+                                        @if($canRefund)
+                                            <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirmRefundOrder(event, this, '{{ $trx->invoice_number }}', {{ $trx->order_status === 'draft' ? 'true' : 'false' }}, {{ (float)$trx->paid_amount }});">
                                                 @csrf
-                                                <button class="btn btn-sm btn-outline-danger py-0 px-2" type="submit" title="Hapus / Batalkan Transaksi atau Draft">
-                                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                                <button class="btn btn-sm btn-outline-danger py-0 px-2" type="submit" title="{{ $trx->order_status === 'draft' ? 'Hapus Draft Pesanan' : 'Refund & Batalkan Transaksi' }}">
+                                                    <i class="fa-solid {{ $trx->order_status === 'draft' ? 'fa-trash-can' : 'fa-rotate-left' }} text-xs"></i>
                                                 </button>
                                             </form>
+                                        @elseif($trx->isRefunded())
+                                            <span class="badge bg-rose-50 text-rose-600 border border-rose-200 py-1 px-1.5 text-[10px]" title="{{ $trx->production_notes }}">
+                                                <i class="fa-solid fa-ban"></i> Refunded
+                                            </span>
                                         @endif
                                     </div>
                                 </td>
@@ -493,7 +615,11 @@
                                     onclick='openSnaprintInvoice(@json($invPayload))'>
                                 {{ $trx->invoice_number }}
                             </button>
-                            @if($trx->is_older_settled ?? false)
+                            @if($trx->order_status === 'cancelled' || $trx->payment_status === 'REFUNDED')
+                                <span class="badge bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-bold">
+                                    <i class="fa-solid fa-rotate-left me-0.5"></i> REFUNDED
+                                </span>
+                            @elseif($trx->is_older_settled ?? false)
                                 <span class="badge bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-bold">
                                     LUNAS (PELUNASAN)
                                 </span>
@@ -536,17 +662,33 @@
                                     <i class="fa-solid fa-receipt"></i>
                                 </a>
                                 @if(auth()->user()->isSuperAdmin() || auth()->user()->isOwner())
-                                    <a href="{{ route('sales.edit', $trx->id) }}" class="btn btn-sm btn-light border border-warning text-amber-700 py-0 px-2 text-xs" title="Edit Transaksi">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </a>
+                                    @if(!$trx->isRefunded())
+                                        <a href="{{ route('sales.edit', $trx->id) }}" class="btn btn-sm btn-light border border-warning text-amber-700 py-0 px-2 text-xs" title="Edit Transaksi">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </a>
+                                    @endif
                                 @endif
-                                @if(auth()->user()->isCashier() || auth()->user()->isSuperAdmin() || auth()->user()->isOwner() || (auth()->user()->username === 'KINGAshabil') || ($trx->order_status === 'draft' && $trx->user_id === auth()->id()))
-                                    <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus / Batalkan pesanan {{ $trx->invoice_number }} ini?');">
+                                @php
+                                    $canRefundMobile = !$trx->isRefunded() && (
+                                        auth()->user()->isSuperAdmin() || 
+                                        auth()->user()->isOwner() || 
+                                        (auth()->user()->username === 'KINGAshabil') ||
+                                        (auth()->user()->isManager() && (auth()->user()->branch_id === null || auth()->user()->branch_id == $trx->branch_id)) ||
+                                        (auth()->user()->isCashier() && (auth()->user()->branch_id === null || auth()->user()->branch_id == $trx->branch_id)) ||
+                                        ($trx->order_status === 'draft' && $trx->user_id === auth()->id())
+                                    );
+                                @endphp
+                                @if($canRefundMobile)
+                                    <form action="{{ route('sales.refund', $trx->id) }}" method="POST" class="d-inline" onsubmit="return confirmRefundOrder(event, this, '{{ $trx->invoice_number }}', {{ $trx->order_status === 'draft' ? 'true' : 'false' }}, {{ (float)$trx->paid_amount }});">
                                         @csrf
-                                        <button class="btn btn-sm btn-light border border-danger text-danger py-0 px-2 text-xs" type="submit" title="Hapus / Batalkan Transaksi atau Draft">
-                                            <i class="fa-solid fa-trash-can"></i>
+                                        <button class="btn btn-sm btn-light border border-danger text-danger py-0 px-2 text-xs" type="submit" title="{{ $trx->order_status === 'draft' ? 'Hapus Draft Pesanan' : 'Refund & Batalkan Transaksi' }}">
+                                            <i class="fa-solid {{ $trx->order_status === 'draft' ? 'fa-trash-can' : 'fa-rotate-left' }}"></i>
                                         </button>
                                     </form>
+                                @elseif($trx->isRefunded())
+                                    <span class="badge bg-rose-50 text-rose-600 border border-rose-200 py-0 px-1 text-[9px]" title="{{ $trx->production_notes }}">
+                                        <i class="fa-solid fa-ban"></i> Refund
+                                    </span>
                                 @endif
                             </div>
                         </div>
