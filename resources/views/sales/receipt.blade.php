@@ -363,6 +363,24 @@
                     <td>Bayar ({{ $transaction->payment_method }})</td>
                     <td class="text-right">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</td>
                 </tr>
+                @php
+                    $cashPay = $transaction->payments->where('payment_method', 'Cash')->first();
+                @endphp
+                @if($cashPay && str_contains($cashPay->reference_note ?? '', 'Tunai Diterima:'))
+                    @php
+                        preg_match('/Tunai Diterima: Rp ([\d\.,]+) \| Kembalian: Rp ([\d\.,]+)/', $cashPay->reference_note, $matches);
+                    @endphp
+                    @if(!empty($matches[1]))
+                    <tr>
+                        <td style="color: #444; font-size: 10px;">• Uang Diterima</td>
+                        <td class="text-right font-mono" style="font-size: 10px;">Rp {{ $matches[1] }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #047857; font-weight: bold; font-size: 10px;">• Kembalian</td>
+                        <td class="text-right font-mono font-bold" style="font-size: 10px; color: #047857;">Rp {{ $matches[2] }}</td>
+                    </tr>
+                    @endif
+                @endif
                 <tr style="font-weight: bold;">
                     <td>STATUS</td>
                     <td class="text-right">LUNAS</td>

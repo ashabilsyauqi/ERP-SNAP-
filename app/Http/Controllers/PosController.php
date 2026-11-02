@@ -414,13 +414,20 @@ class PosController extends Controller
 
             // Record Cash Inflow & Payment Log for the actual paid amount (DP or Full) - Never for draft
             if (!$isDraft && $paidAmount > 0) {
+                $refNote = ($paymentStatus === 'PARTIAL') ? 'Uang Muka (DP)' : 'Pembayaran POS';
+                if (($request->payment_method ?: 'Cash') === 'Cash' && $request->filled('cash_received')) {
+                    $receivedVal = (float) $request->cash_received;
+                    $changeVal = max(0, $receivedVal - $paidAmount);
+                    $refNote .= " (Tunai Diterima: Rp " . number_format($receivedVal, 0, ',', '.') . " | Kembalian: Rp " . number_format($changeVal, 0, ',', '.') . ")";
+                }
+
                 \App\Models\TransactionPayment::create([
                     'transaction_id' => $transaction->id,
                     'branch_id' => $checkoutBranchId,
                     'payer_name' => $customerName ?: 'Pelanggan Umum',
                     'payment_method' => $request->payment_method ?: 'Cash',
                     'amount' => $paidAmount,
-                    'reference_note' => ($paymentStatus === 'PARTIAL') ? 'Uang Muka (DP)' : 'Pembayaran POS',
+                    'reference_note' => $refNote,
                 ]);
 
                 $salesAccount = \App\Models\Account::where('kode_akun', '4-1000')->first();
@@ -609,8 +616,24 @@ class PosController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Record cash inflow
+            // Record cash inflow & transaction payment
             if ($paidAmount > 0) {
+                $refNote = ($paymentStatus === 'PARTIAL') ? 'Pelunasan Draft (DP)' : 'Pelunasan Draft';
+                if ($request->payment_method === 'Cash' && $request->filled('cash_received')) {
+                    $receivedVal = (float) $request->cash_received;
+                    $changeVal = max(0, $receivedVal - $paidAmount);
+                    $refNote .= " (Tunai Diterima: Rp " . number_format($receivedVal, 0, ',', '.') . " | Kembalian: Rp " . number_format($changeVal, 0, ',', '.') . ")";
+                }
+
+                \App\Models\TransactionPayment::create([
+                    'transaction_id' => $transaction->id,
+                    'branch_id' => auth()->user()->branch_id ?: $transaction->branch_id,
+                    'payer_name' => $transaction->customer_name ?: 'Pelanggan Umum',
+                    'payment_method' => $request->payment_method ?: 'Cash',
+                    'amount' => $paidAmount,
+                    'reference_note' => $refNote,
+                ]);
+
                 $salesAccount = \App\Models\Account::where('kode_akun', '4-1000')->first();
                 if ($salesAccount) {
                     $keterangan = ($paymentStatus === 'PARTIAL') 
