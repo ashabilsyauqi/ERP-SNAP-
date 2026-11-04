@@ -189,7 +189,7 @@
                         <tr class="hover:bg-slate-50/50">
                             <td class="py-3 px-3 text-center text-slate-500 font-medium">{{ $idx + 1 }}</td>
                             <td class="py-3 px-3">
-                                <div class="font-bold text-slate-900 text-[13px]">{{ $detail->material->material_name ?? 'Item Cetak' }}</div>
+                                <div class="font-bold text-slate-900 text-[13px]">{{ $detail->item_name }}</div>
                                 @if($detail->dimension_text)
                                     <span class="inline-block bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5">
                                         {{ $detail->dimension_text }}

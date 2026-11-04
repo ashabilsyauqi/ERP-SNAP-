@@ -236,6 +236,9 @@ class PosController extends Controller
                     TransactionDetail::create([
                         'transaction_id' => $transaction->id,
                         'material_id' => null,
+                        'product_name_snapshot' => $materialName ?: ($vendorName ? "Offset: {$vendorName}" : "Cetak Offset"),
+                        'unit_snapshot' => 'pcs',
+                        'base_hpp_snapshot' => $vendorCost + $shippingCost,
                         'qty_ordered' => $qty,
                         'selling_price' => $unitPrice,
                         'click_charge' => 0,
@@ -337,6 +340,9 @@ class PosController extends Controller
                 TransactionDetail::create([
                     'transaction_id' => $transaction->id,
                     'material_id' => $materialToDeduct->id,
+                    'product_name_snapshot' => $materialToDeduct->material_name,
+                    'unit_snapshot' => $materialToDeduct->fixed_size ? 'lembar' : 'm2',
+                    'base_hpp_snapshot' => $materialToDeduct->purchase_price,
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
                     'click_charge' => $clickChargePerUnit,
@@ -1123,6 +1129,9 @@ class PosController extends Controller
             TransactionDetail::create([
                 'transaction_id' => $transaction->id,
                 'material_id' => $materialToDeduct->id,
+                'product_name_snapshot' => $materialToDeduct->material_name,
+                'unit_snapshot' => $materialToDeduct->fixed_size ? 'lembar' : 'm2',
+                'base_hpp_snapshot' => $materialToDeduct->purchase_price,
                 'qty_ordered' => $qty,
                 'selling_price' => $unitPrice,
                 'click_charge' => $clickChargePerUnit,

@@ -136,7 +136,7 @@
                                     <td class="ps-3 text-center text-slate-500 font-mono">{{ $idx + 1 }}</td>
                                     <td>
                                         <input type="hidden" name="items[{{ $idx }}][id]" value="{{ $d->id }}">
-                                        <span class="font-bold text-slate-800">{{ $d->material->material_name ?? 'Item #' . $d->id }}</span>
+                                        <span class="font-bold text-slate-800">{{ $d->item_name }}</span>
                                         @if($d->dimension_text)
                                             <div class="text-[10px] text-blue-700 font-semibold mt-0.5">[{{ $d->dimension_text }}]</div>
                                         @endif

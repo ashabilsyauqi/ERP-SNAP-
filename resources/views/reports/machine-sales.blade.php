@@ -334,7 +334,7 @@
                         <td class="text-slate-600 font-mono">{{ $d->created_at->format('d/m/Y H:i') }}</td>
                         <td>{{ $d->transaction->customer_name ?: 'Pelanggan Umum' }}</td>
                         <td>
-                            <div class="fw-bold text-slate-800">{{ $d->material->material_name ?? ($d->dimension_text ?: '-') }}</div>
+                            <div class="fw-bold text-slate-800">{{ $d->item_name }}</div>
                         </td>
                         <td class="text-center font-mono font-bold">{{ $d->qty_ordered }}</td>
                         <td class="text-end font-mono text-slate-600">Rp {{ number_format($d->selling_price, 0, ',', '.') }}</td>

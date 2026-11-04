@@ -231,7 +231,7 @@
                             @php
                                 $invItems = $trx->transactionDetails->map(function($d) {
                                     return [
-                                        'material_name' => $d->material->material_name ?? 'Bahan Cetak',
+                                        'material_name' => $d->item_name,
                                         'dimension_text' => $d->dimension_text ?? ($d->fixed_length_m ? ($d->fixed_length_m . 'm x ' . $d->custom_width_cm . 'cm') : null),
                                         'qty_ordered' => $d->qty_ordered,
                                         'selling_price' => $d->selling_price,
@@ -447,7 +447,7 @@
                     @php
                         $invItems = $trx->transactionDetails->map(function($d) {
                             return [
-                                'material_name' => $d->material->material_name ?? 'Bahan Cetak',
+                                'material_name' => $d->item_name,
                                 'dimension_text' => $d->dimension_text ?? ($d->fixed_length_m ? ($d->fixed_length_m . 'm x ' . $d->custom_width_cm . 'cm') : null),
                                 'qty_ordered' => $d->qty_ordered,
                                 'selling_price' => $d->selling_price,

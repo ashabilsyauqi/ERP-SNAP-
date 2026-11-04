@@ -171,6 +171,8 @@
                     'Nota' => ['icon' => 'fa-receipt', 'color' => 'text-blue-500'],
                     'Brosur' => ['icon' => 'fa-newspaper', 'color' => 'text-emerald-500'],
                     'Tumbler' => ['icon' => 'fa-mug-hot', 'color' => 'text-teal-500'],
+                    'Kartu Nama' => ['icon' => 'fa-address-card', 'color' => 'text-orange-500'],
+                    'Buku Yasin' => ['icon' => 'fa-book-open', 'color' => 'text-cyan-500'],
                 ];
             @endphp
 
@@ -1414,6 +1416,11 @@
     function isBannerProduct(name, fixedSize, category) {
         const nameLower = (name || '').toLowerCase();
         const catLower = (category || '').toLowerCase();
+
+        // Fixed packages and accessories should NOT open meteran dimension modal
+        if (nameLower.startsWith('paket ') || nameLower.startsWith('tiang ') || nameLower.includes('dtf a4') || nameLower.includes('dtf a3')) {
+            return false;
+        }
 
         // Check outdoor / indoor category
         if (catLower.includes('outdoor') || catLower.includes('indoor') || catLower.includes('banner') || catLower.includes('spanduk')) {

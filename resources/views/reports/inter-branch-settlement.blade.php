@@ -472,7 +472,7 @@
                                 <strong class="text-slate-900 block">{{ $trx->customer_name ?: ($trx->customer ? $trx->customer->name : 'Pelanggan Umum') }}</strong>
                                 <div class="text-[11px] text-slate-500 truncate max-w-xs">
                                     @foreach($trx->transactionDetails as $d)
-                                        <span>{{ $d->material ? $d->material->material_name : ($d->is_vendor_job ? "[Offset] {$d->vendor_name}" : 'Item') }} ({{ $d->qty_ordered }}x)</span>@if(!$loop->last), @endif
+                                        <span>{{ $d->item_name }} ({{ $d->qty_ordered }}x)</span>@if(!$loop->last), @endif
                                     @endforeach
                                 </div>
                             </td>

@@ -436,7 +436,7 @@
                     @php
                         $invItems = $tx->transactionDetails->map(function($d) {
                             return [
-                                'material_name' => $d->material->material_name ?? 'Bahan Cetak',
+                                'material_name' => $d->item_name,
                                 'qty_ordered' => $d->qty_ordered,
                                 'selling_price' => $d->selling_price,
                                 'subtotal' => $d->qty_ordered * $d->selling_price,

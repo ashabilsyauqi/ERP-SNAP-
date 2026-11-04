@@ -157,7 +157,7 @@
                             'production_notes' => $t->production_notes,
                             'items' => $t->transactionDetails->map(function($d) {
                                 return [
-                                    'material_name' => $d->material->material_name ?? 'Item',
+                                    'material_name' => $d->item_name,
                                     'qty_ordered' => $d->qty_ordered,
                                     'selling_price' => $d->selling_price,
                                     'subtotal' => $d->qty_ordered * $d->selling_price
@@ -210,7 +210,7 @@
                         <td>
                             <div class="text-xs text-slate-700 line-clamp-1">
                                 @foreach($t->transactionDetails as $d)
-                                    <span class="font-medium">{{ $d->material->material_name ?? 'Bahan' }}</span> ({{ $d->qty_ordered }}x){{ !$loop->last ? ', ' : '' }}
+                                    <span class="font-medium">{{ $d->item_name }}</span> ({{ $d->qty_ordered }}x){{ !$loop->last ? ', ' : '' }}
                                 @endforeach
                             </div>
                             @if($t->production_notes)

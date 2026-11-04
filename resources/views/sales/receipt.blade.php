@@ -270,7 +270,7 @@
                 @foreach($transaction->transactionDetails as $detail)
                 <tr>
                     <td class="text-left">
-                        <div class="item-name">{{ $detail->material->material_name ?? 'Bahan Cetak' }}</div>
+                        <div class="item-name">{{ $detail->item_name }}</div>
                         @if($detail->dimension_text || ($detail->fixed_length_m && $detail->custom_width_cm))
                             <div class="item-meta" style="color: #000; font-weight: bold;">
                                 [{{ $detail->dimension_text ?: ($detail->fixed_length_m . 'm x ' . $detail->custom_width_cm . 'cm (' . ($detail->area_m2 ?: round($detail->fixed_length_m * ($detail->custom_width_cm / 100), 2)) . ' m²)') }}]
