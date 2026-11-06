@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'transaction_id',
     'material_id',
+    'material_roll_id',
     'product_name_snapshot',
     'unit_snapshot',
     'base_hpp_snapshot',
@@ -18,6 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'fixed_length_m',
     'custom_width_cm',
     'area_m2',
+    'cut_length_m',
+    'roll_width_snapshot',
+    'offcut_width_cm',
     'dimension_text',
     'is_vendor_job',
     'vendor_name',
@@ -34,6 +38,9 @@ class TransactionDetail extends Model
         'base_hpp_snapshot' => 'decimal:2',
         'vendor_cost' => 'decimal:2',
         'shipping_cost' => 'decimal:2',
+        'cut_length_m' => 'decimal:2',
+        'roll_width_snapshot' => 'decimal:2',
+        'offcut_width_cm' => 'integer',
         'qty_ordered' => 'integer',
     ];
 
@@ -45,6 +52,11 @@ class TransactionDetail extends Model
     public function material(): BelongsTo
     {
         return $this->belongsTo(Material::class)->withTrashed();
+    }
+
+    public function materialRoll(): BelongsTo
+    {
+        return $this->belongsTo(MaterialRoll::class, 'material_roll_id');
     }
 
     /**

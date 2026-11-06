@@ -1339,6 +1339,22 @@
                                 </div>
                             </div>
 
+                            <!-- 5. PILIHAN GULUNGAN ROLL (WORKSHOP/GUDANG) -->
+                            <div id="wrapper_roll_selection" class="border-t border-slate-100 pt-2.5">
+                                <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                    <label class="font-bold text-slate-900 text-xs uppercase mb-0 d-inline-flex align-items-center">
+                                        <i class="fa-solid fa-scroll text-blue-600 me-1.5"></i>
+                                        <span>5. Pilihan Gulungan Roll (Stok Gudang) <span class="text-rose-600">*</span></span>
+                                    </label>
+                                    <span id="badge_roll_status" class="text-[10px] font-bold px-2 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-200">
+                                        Auto-Detect Efisiensi
+                                    </span>
+                                </div>
+                                <div id="roll_options_container" class="space-y-1.5">
+                                    <!-- Rendered dynamically via JavaScript -->
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -1370,6 +1386,10 @@
                             <div class="text-[12px]" style="color: #94a3b8;">
                                 <span>Harga Satuan:</span>
                                 <strong id="dim_preview_unit_price" class="font-mono font-bold ms-1" style="color: #facc15 !important;">Rp 0</strong> / lembar
+                            </div>
+                            <div id="dim_preview_roll_wrapper" class="w-100 mt-1 pt-1 border-t border-slate-700/60 text-xs">
+                                <span style="color: #94a3b8;"><i class="fa-solid fa-scroll text-cyan-400 me-1"></i>Potong Stok Roll:</span>
+                                <strong id="dim_preview_roll_desc" class="font-mono text-cyan-300 font-bold ms-1">-</strong>
                             </div>
                         </div>
                         <div class="col-12 col-md-5 text-md-end mt-2 mt-md-0">
@@ -1525,12 +1545,21 @@
 
     // --- Open Banner Dimension Modal ---
     function openBannerDimensionModal(materialId, materialName, fixedSize, retailPrice, wholesalePrices, editCartItem = null) {
+        const prodData = productsCatalog[materialId || (editCartItem ? editCartItem.material_id : null)] || {};
         activeDimProduct = {
             materialId: materialId || (editCartItem ? editCartItem.material_id : null),
             name: materialName,
             fixedSize: fixedSize,
             retailPrice: retailPrice,
             wholesalePrices: wholesalePrices || [],
+            rolls: prodData.rolls || (editCartItem && editCartItem.rolls ? editCartItem.rolls : []),
+            selectedRollOption: editCartItem ? {
+                roll_id: editCartItem.material_roll_id,
+                roll_width_m: editCartItem.roll_width_snapshot,
+                cut_length_m: editCartItem.cut_length_m,
+                offcut_width_cm: editCartItem.offcut_width_cm,
+                orientation: editCartItem.roll_orientation || "normal"
+            } : null,
             editCartId: editCartItem ? editCartItem.id : null
         };
 
@@ -1743,6 +1772,7 @@
 
         document.getElementById('canvas_dim_label').innerText = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m`;
         document.getElementById('canvas_area_label').innerText = `${areaM2.toFixed(2)} m²`;
+        renderRollSelectionOptions(rawWidth, rawLength, qty);
 
         // Update Rule Badge & Desc in input section
         const badgeRule = document.getElementById('badge_mata_ayam_rule');
@@ -1786,7 +1816,169 @@
         }
     }
 
-    // --- Confirm Custom Banner to Cart ---
+    
+    // --- Dynamic Roll Evaluation & Selection for Custom Banner ---
+    function evaluateRollsForDimension(rolls, widthM, lengthM, qty = 1) {
+        let candidates = [];
+        if (!rolls || !Array.isArray(rolls) || rolls.length === 0) return candidates;
+
+        rolls.forEach(r => {
+            const rollW = parseFloat(r.roll_width_m) || 0;
+            const currentLen = parseFloat(r.current_length_m) || 0;
+            if (rollW <= 0) return;
+
+            // Opsi 1: Orientasi Normal (lebar print masuk ke lebar roll)
+            if (rollW >= widthM) {
+                candidates.push({
+                    roll_id: r.id,
+                    roll_name: r.roll_name,
+                    roll_width_m: rollW,
+                    cut_length_m: lengthM,
+                    total_cut_m: Math.round((lengthM * qty) * 100) / 100,
+                    offcut_width_cm: Math.round((rollW - widthM) * 100),
+                    orientation: "normal",
+                    orientation_label: "Normal",
+                    current_length_m: currentLen,
+                    has_enough_stock: currentLen >= (lengthM * qty)
+                });
+            }
+
+            // Opsi 2: Diputar 90 Derajat (panjang print masuk ke lebar roll)
+            if (rollW >= lengthM && Math.abs(widthM - lengthM) > 0.001) {
+                candidates.push({
+                    roll_id: r.id,
+                    roll_name: r.roll_name,
+                    roll_width_m: rollW,
+                    cut_length_m: widthM,
+                    total_cut_m: Math.round((widthM * qty) * 100) / 100,
+                    offcut_width_cm: Math.round((rollW - lengthM) * 100),
+                    orientation: "rotated",
+                    orientation_label: "Diputar 90°",
+                    current_length_m: currentLen,
+                    has_enough_stock: currentLen >= (widthM * qty)
+                });
+            }
+        });
+
+        // Urutkan kandidat: 1. Stok cukup duluan, 2. Waste terkecil, 3. Panjang potong terpendek
+        candidates.sort((a, b) => {
+            if (a.has_enough_stock !== b.has_enough_stock) return a.has_enough_stock ? -1 : 1;
+            if (a.offcut_width_cm !== b.offcut_width_cm) return a.offcut_width_cm - b.offcut_width_cm;
+            return a.cut_length_m - b.cut_length_m;
+        });
+
+        return candidates;
+    }
+
+    function renderRollSelectionOptions(widthM, lengthM, qty = 1) {
+        const container = document.getElementById("roll_options_container");
+        const badge = document.getElementById("badge_roll_status");
+        const summaryDesc = document.getElementById("dim_preview_roll_desc");
+        if (!container) return;
+
+        const rolls = activeDimProduct.rolls || (productsCatalog[activeDimProduct.materialId]?.rolls) || [];
+        if (!rolls || rolls.length === 0) {
+            container.innerHTML = `<div class="text-[11px] text-slate-500 italic p-2 bg-slate-50 rounded-lg border">Tidak ada data gulungan roll khusus untuk bahan ini (stok dipotong per m²).</div>`;
+            if (summaryDesc) summaryDesc.innerText = "Potong Luas Biasa (m²)";
+            activeDimProduct.selectedRollOption = null;
+            return;
+        }
+
+        const candidates = evaluateRollsForDimension(rolls, widthM, lengthM, qty);
+
+        if (candidates.length === 0) {
+            const maxW = Math.max(...rolls.map(r => parseFloat(r.roll_width_m)));
+            container.innerHTML = `
+                <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                    <div class="font-bold d-flex align-items-center gap-1.5 mb-1">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                        <span>Ukuran Melebihi Lebar Roll Maksimal</span>
+                    </div>
+                    <div class="text-[11px]">Dimensi ${widthM.toFixed(2)}m x ${lengthM.toFixed(2)}m tidak muat di roll yang tersedia (Max ${maxW}m). Perlu sambungan bahan (seaming).</div>
+                </div>
+            `;
+            if (badge) {
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-300";
+                badge.innerText = "Perlu Sambungan";
+            }
+            if (summaryDesc) summaryDesc.innerText = "Perlu Sambungan (Lebar Melebihi Roll)";
+            activeDimProduct.selectedRollOption = null;
+            return;
+        }
+
+        // Tentukan kandidat yang aktif
+        let selectedCandidate = null;
+        if (activeDimProduct.selectedRollOption) {
+            selectedCandidate = candidates.find(c => 
+                c.roll_id === activeDimProduct.selectedRollOption.roll_id && 
+                c.orientation === activeDimProduct.selectedRollOption.orientation
+            );
+        }
+        if (!selectedCandidate) {
+            selectedCandidate = candidates[0]; // Rekomendasi terbaik
+        }
+        activeDimProduct.selectedRollOption = selectedCandidate;
+
+        let html = "";
+        candidates.forEach((c, idx) => {
+            const isBest = (idx === 0);
+            const isSelected = (c.roll_id === selectedCandidate.roll_id && c.orientation === selectedCandidate.orientation);
+            const isLowStock = !c.has_enough_stock;
+
+            html += `
+                <label class="d-flex align-items-center justify-content-between p-2 rounded-xl border transition cursor-pointer ${isSelected ? "border-blue-500 bg-blue-50/70 shadow-xs" : "border-slate-200 bg-white hover:border-slate-300"} ${isLowStock ? "opacity-60" : ""}" style="border-radius: 0.75rem;">
+                    <div class="d-flex align-items-center gap-2.5 min-w-0">
+                        <input type="radio" name="banner_roll_choice" value="${c.roll_id}_${c.orientation}" 
+                               ${isSelected ? "checked" : ""} 
+                               onchange="selectRollOption(${c.roll_id}, '${c.orientation}')"
+                               class="form-check-input text-blue-600 focus:ring-blue-500 h-4 w-4">
+                        <div class="min-w-0">
+                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-xs ${isSelected ? "text-blue-900" : "text-slate-900"}">${c.roll_name || ("Roll " + c.roll_width_m + "m")}</span>
+                                <span class="badge bg-slate-100 text-slate-700 border border-slate-200 text-[10px] py-0.5 px-1.5">
+                                    Potong: <strong class="text-blue-700">${c.cut_length_m.toFixed(2)}m</strong>
+                                </span>
+                                ${c.orientation === "rotated" ? '<span class="badge bg-indigo-50 text-indigo-700 text-[9.5px] py-0.5 px-1.5">Diputar 90°</span>' : ""}
+                            </div>
+                            <div class="text-[10.5px] text-slate-500 mt-0.5 truncate">
+                                ${c.offcut_width_cm === 0 ? '<span class="text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check me-0.5"></i>Zero Waste (Pas!)</span>' : `Sisa samping: <span class="text-amber-700 font-semibold">${c.offcut_width_cm} cm</span>`} • Sisa Roll: <strong>${c.current_length_m.toFixed(1)}m</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-end flex-shrink-0 ms-2">
+                        ${isBest ? '<span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-star text-amber-500 me-0.5"></i> Rekomendasi</span>' : (isLowStock ? '<span class="badge bg-rose-100 text-rose-800 text-[10px]">Stok Kurang</span>' : "")}
+                    </div>
+                </label>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        if (badge) {
+            badge.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-200";
+            badge.innerText = `Otomatis: ${selectedCandidate.roll_name || ("Roll " + selectedCandidate.roll_width_m + "m")}`;
+        }
+
+        if (summaryDesc) {
+            summaryDesc.innerHTML = `<span class="text-cyan-300">${selectedCandidate.roll_name || ("Roll " + selectedCandidate.roll_width_m + "m")}</span> ➜ Potong <strong class="text-yellow-300 font-bold">${selectedCandidate.cut_length_m.toFixed(2)}m</strong> (Total ${(selectedCandidate.cut_length_m * qty).toFixed(2)}m untuk ${qty}x) • ${selectedCandidate.offcut_width_cm === 0 ? '<span class="text-emerald-400">Zero Waste</span>' : `Waste: ${selectedCandidate.offcut_width_cm}cm`}`;
+        }
+    }
+
+    function selectRollOption(rollId, orientation) {
+        const rolls = activeDimProduct.rolls || (productsCatalog[activeDimProduct.materialId]?.rolls) || [];
+        let rawWidth = parseFloat(document.getElementById("banner_width_m")?.value) || 1.0;
+        let rawLength = parseFloat(document.getElementById("banner_length_m")?.value) || 1.0;
+        const qty = parseInt(document.getElementById("dim_qty")?.value, 10) || 1;
+
+        const candidates = evaluateRollsForDimension(rolls, rawWidth, rawLength, qty);
+        const match = candidates.find(c => c.roll_id === rollId && c.orientation === orientation);
+        if (match) {
+            activeDimProduct.selectedRollOption = match;
+            renderRollSelectionOptions(rawWidth, rawLength, qty);
+        }
+    }
+
+// --- Confirm Custom Banner to Cart ---
     function confirmBannerDimensionAddToCart() {
         let rawWidth = parseFloat(document.getElementById('banner_width_m')?.value) || 1.0;
         let rawLength = parseFloat(document.getElementById('banner_length_m')?.value) || 1.0;
@@ -1834,6 +2026,11 @@
                 item.extra_eyelet_cost = extraEyeletCost;
                 item.qty = qty;
                 item.dimension_text = noteDim;
+                item.material_roll_id = rollId;
+                item.cut_length_m = cutLen;
+                item.roll_width_snapshot = rollWidth;
+                item.offcut_width_cm = offcutCm;
+                item.roll_orientation = rollOrientation;
             }
         } else {
             // Add new custom banner item to cart
@@ -1851,6 +2048,11 @@
                 eyelet_count: eyeletCount,
                 extra_eyelet_cost: extraEyeletCost,
                 dimension_text: noteDim,
+                material_roll_id: rollId,
+                cut_length_m: cutLen,
+                roll_width_snapshot: rollWidth,
+                offcut_width_cm: offcutCm,
+                roll_orientation: rollOrientation,
                 requested_size: rawWidth,
                 is_custom_banner: true,
                 qty: qty,
@@ -2196,10 +2398,15 @@
                             <span class="font-bold text-slate-900 text-xs truncate block">${item.material_name_or_type}</span>
                             
                             ${item.is_custom_banner ? `
-                                <div class="mt-0.5">
+                                <div class="mt-0.5 flex flex-wrap gap-1 items-center">
                                     <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono font-semibold py-0.5 px-1.5 rounded inline-block text-wrap">
                                         <i class="fa-solid fa-ruler-combined me-1"></i>${item.dimension_text || (item.fixed_length_m + 'm x ' + item.custom_width_cm + 'cm')}
                                     </span>
+                                    ${item.roll_width_snapshot ? `
+                                        <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-[9.5px] font-mono py-0.5 px-1.5 rounded inline-block">
+                                            <i class="fa-solid fa-scroll me-1"></i>Roll ${item.roll_width_snapshot}m (Potong ${item.cut_length_m}m)
+                                        </span>
+                                    ` : ''}
                                 </div>
                             ` : (item.requested_size ? `<span class="block text-[10px] text-blue-600 font-medium">Ukuran: ${item.requested_size}m</span>` : '')}
                             
@@ -4092,6 +4299,10 @@
                     extra_eyelet_cost: (item.extra_eyelet_cost !== undefined) ? item.extra_eyelet_cost : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0),
                     finishing: item.finishing || null,
                     dimension_text: item.dimension_text || null,
+                    material_roll_id: item.material_roll_id || null,
+                    cut_length_m: item.cut_length_m || null,
+                    roll_width_snapshot: item.roll_width_snapshot || null,
+                    offcut_width_cm: item.offcut_width_cm !== undefined ? item.offcut_width_cm : null,
                     qty: bi.qty
                 };
             });
@@ -4192,6 +4403,10 @@
                 extra_eyelet_cost: (item.extra_eyelet_cost !== undefined) ? item.extra_eyelet_cost : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0),
                 finishing: item.finishing || null,
                 dimension_text: item.dimension_text || null,
+                material_roll_id: item.material_roll_id || null,
+                cut_length_m: item.cut_length_m || null,
+                roll_width_snapshot: item.roll_width_snapshot || null,
+                offcut_width_cm: item.offcut_width_cm !== undefined ? item.offcut_width_cm : null,
                 qty: item.qty
             };
         });
@@ -4534,6 +4749,10 @@
                 extra_eyelet_cost: (item.extra_eyelet_cost !== undefined) ? item.extra_eyelet_cost : (item.eyelet_count > 4 ? (item.eyelet_count - 4) * 500 : 0),
                 finishing: item.finishing || null,
                 dimension_text: item.dimension_text || null,
+                material_roll_id: item.material_roll_id || null,
+                cut_length_m: item.cut_length_m || null,
+                roll_width_snapshot: item.roll_width_snapshot || null,
+                offcut_width_cm: item.offcut_width_cm !== undefined ? item.offcut_width_cm : null,
                 qty: item.qty
             };
         });

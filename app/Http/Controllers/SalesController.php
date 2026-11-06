@@ -630,6 +630,13 @@ class SalesController extends Controller
             // OPSI A: REFUND & CANCELLED
             // 1. Restore all items stock ONLY IF NOT DRAFT
             foreach ($transaction->transactionDetails as $detail) {
+                if ($detail->material_roll_id && $detail->cut_length_m) {
+                    $roll = \App\Models\MaterialRoll::find($detail->material_roll_id);
+                    if ($roll) {
+                        $roll->current_length_m += ((float)$detail->cut_length_m * $detail->qty_ordered);
+                        $roll->save();
+                    }
+                }
                 $material = $detail->material;
                 if ($material) {
                     $material->stock_qty += $detail->qty_ordered;

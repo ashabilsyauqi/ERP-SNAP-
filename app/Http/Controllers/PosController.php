@@ -38,7 +38,7 @@ class PosController extends Controller
         }
 
         // Load all materials for this branch (excluding Tinta OPEX)
-        $materials = Material::with('wholesalePrices')
+        $materials = Material::with(['wholesalePrices', 'rolls'])
             ->where('branch_id', $branchId)
             ->where('material_name', 'not like', '%tinta%')
             ->get()
@@ -88,6 +88,10 @@ class PosController extends Controller
             'items.*.extra_eyelet_cost' => 'nullable|numeric|min:0',
             'items.*.finishing' => 'nullable|string|max:100',
             'items.*.dimension_text' => 'nullable|string|max:100',
+            'items.*.material_roll_id' => 'nullable|integer',
+            'items.*.cut_length_m' => 'nullable|numeric|min:0',
+            'items.*.roll_width_snapshot' => 'nullable|numeric|min:0',
+            'items.*.offcut_width_cm' => 'nullable|integer',
             'items.*.qty' => 'required|integer|min:1',
             'items.*.is_vendor_job' => 'nullable|boolean',
             'items.*.vendor_name' => 'nullable|string|max:150',
@@ -332,6 +336,16 @@ class PosController extends Controller
 
                 // Deduct stock only if not draft (stock is deducted upon payment)
                 if (!$isDraft) {
+                    // Deduct length from physical roll if roll was chosen
+                    if (!empty($item['material_roll_id'])) {
+                        $roll = \App\Models\MaterialRoll::find($item['material_roll_id']);
+                        if ($roll) {
+                            $cutLen = (float)($item['cut_length_m'] ?? 0);
+                            $totalCut = $cutLen * $qty;
+                            $roll->current_length_m = max(0, (float)$roll->current_length_m - $totalCut);
+                            $roll->save();
+                        }
+                    }
                     $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($physicalAreaM2 * $qty)) : $qty;
                     $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $stockDeductUnits);
                     $materialToDeduct->save();
@@ -346,6 +360,10 @@ class PosController extends Controller
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
                     'click_charge' => $clickChargePerUnit,
+                    'material_roll_id' => !empty($item['material_roll_id']) ? $item['material_roll_id'] : null,
+                    'cut_length_m' => !empty($item['cut_length_m']) ? (float)$item['cut_length_m'] : null,
+                    'roll_width_snapshot' => !empty($item['roll_width_snapshot']) ? (float)$item['roll_width_snapshot'] : null,
+                    'offcut_width_cm' => isset($item['offcut_width_cm']) ? (int)$item['offcut_width_cm'] : null,
                     'fixed_length_m' => $widthM ?: $fixedLength,
                     'custom_width_cm' => $customWidth,
                     'area_m2' => $physicalAreaM2 ?: $areaM2,
@@ -580,6 +598,14 @@ class PosController extends Controller
 
             // Deduct stock for all items
             foreach ($transaction->transactionDetails as $detail) {
+                if ($detail->material_roll_id && $detail->cut_length_m) {
+                    $roll = \App\Models\MaterialRoll::find($detail->material_roll_id);
+                    if ($roll) {
+                        $totalCut = (float)$detail->cut_length_m * $detail->qty_ordered;
+                        $roll->current_length_m = max(0, (float)$roll->current_length_m - $totalCut);
+                        $roll->save();
+                    }
+                }
                 if ($detail->material) {
                     $material = $detail->material;
                     $isCustomBanner = $detail->area_m2 > 0 && $detail->custom_width_cm > 0;

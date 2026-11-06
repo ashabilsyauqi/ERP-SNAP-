@@ -45,6 +45,11 @@ class Material extends Model
         return $this->hasMany(TransactionDetail::class);
     }
 
+        public function rolls(): HasMany
+    {
+        return $this->hasMany(MaterialRoll::class);
+    }
+
     public function wholesalePrices(): HasMany
     {
         return $this->hasMany(MaterialWholesalePrice::class)->orderBy('min_qty', 'asc');
