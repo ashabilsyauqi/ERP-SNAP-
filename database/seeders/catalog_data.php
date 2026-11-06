@@ -1736,6 +1736,399 @@ return array (
   ),
   103 => 
   array (
+    'category' => 'Kartu Nama',
+    'name' => 'Paket Kartu Nama AC 260 1 Sisi',
+    'retail_price' => 35000,
+    'purchase_price' => 9920,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 3,
+        'price' => 30000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 6,
+        'price' => 25000,
+      ),
+    ),
+  ),
+  104 => 
+  array (
+    'category' => 'Kartu Nama',
+    'name' => 'Paket Kartu Nama AC 260 2 Sisi',
+    'retail_price' => 55000,
+    'purchase_price' => 13920,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 3,
+        'price' => 50000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 6,
+        'price' => 45000,
+      ),
+    ),
+  ),
+  105 => 
+  array (
+    'category' => 'Kartu Nama',
+    'name' => 'Paket Kartu Nama Bluswhite 1 Sisi',
+    'retail_price' => 40000,
+    'purchase_price' => 12800,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 3,
+        'price' => 35000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 6,
+        'price' => 30000,
+      ),
+    ),
+  ),
+  106 => 
+  array (
+    'category' => 'Kartu Nama',
+    'name' => 'Paket Kartu Nama Bluswhite 2 Sisi',
+    'retail_price' => 60000,
+    'purchase_price' => 16800,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 3,
+        'price' => 55000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 6,
+        'price' => 50000,
+      ),
+    ),
+  ),
+  107 => 
+  array (
+    'category' => 'Kartu Nama',
+    'name' => 'Paket Kartu Nama Linen 1 Sisi',
+    'retail_price' => 42000,
+    'purchase_price' => 13800,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 3,
+        'price' => 37000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 6,
+        'price' => 32000,
+      ),
+    ),
+  ),
+  108 => 
+  array (
+    'category' => 'Kartu Nama',
+    'name' => 'Paket Kartu Nama Linen 2 Sisi',
+    'retail_price' => 62000,
+    'purchase_price' => 17800,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 3,
+        'price' => 57000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 6,
+        'price' => 52000,
+      ),
+    ),
+  ),
+  109 => 
+  array (
+    'category' => 'Kartu Nama',
+    'name' => 'Tambahan Laminasi Glossy/Doff 1 Sisi (Kartu Nama)',
+    'retail_price' => 12000,
+    'purchase_price' => 2000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  110 => 
+  array (
+    'category' => 'Kartu Nama',
+    'name' => 'Tambahan Laminasi Glossy/Doff 2 Sisi (Kartu Nama)',
+    'retail_price' => 20000,
+    'purchase_price' => 4000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  111 => 
+  array (
+    'category' => 'Kartu Nama',
+    'name' => 'Finishing Rounded Kartunama / Box',
+    'retail_price' => 10000,
+    'purchase_price' => 0,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  112 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Soft Cover 128 Halaman',
+    'retail_price' => 15000,
+    'purchase_price' => 7000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 14000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 13000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 10000,
+      ),
+    ),
+  ),
+  113 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Soft Cover 148 Halaman',
+    'retail_price' => 17000,
+    'purchase_price' => 8000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 16000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 15000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 12000,
+      ),
+    ),
+  ),
+  114 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Soft Cover 178 Halaman',
+    'retail_price' => 20000,
+    'purchase_price' => 9500,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 19000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 18000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 15000,
+      ),
+    ),
+  ),
+  115 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Soft Cover 208 Halaman',
+    'retail_price' => 22000,
+    'purchase_price' => 10500,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 21000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 20000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 17000,
+      ),
+    ),
+  ),
+  116 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Soft Cover 240 Halaman',
+    'retail_price' => 25000,
+    'purchase_price' => 12000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 24000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 23000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 20000,
+      ),
+    ),
+  ),
+  117 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Soft Cover 424 Halaman',
+    'retail_price' => 30000,
+    'purchase_price' => 15000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 28000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 27000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 25000,
+      ),
+    ),
+  ),
+  118 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Hard Cover 176 Halaman',
+    'retail_price' => 30000,
+    'purchase_price' => 15000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 28000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 27000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 25000,
+      ),
+    ),
+  ),
+  119 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Hard Cover 208 Halaman',
+    'retail_price' => 35000,
+    'purchase_price' => 17500,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 33000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 32000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 3000,
+      ),
+    ),
+  ),
+  120 => 
+  array (
+    'category' => 'Buku Yasin',
+    'name' => 'Buku Yasin Hard Cover 248 Halaman',
+    'retail_price' => 37500,
+    'purchase_price' => 19000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+      0 => 
+      array (
+        'min_qty' => 51,
+        'price' => 35000,
+      ),
+      1 => 
+      array (
+        'min_qty' => 101,
+        'price' => 34000,
+      ),
+      2 => 
+      array (
+        'min_qty' => 201,
+        'price' => 32000,
+      ),
+    ),
+  ),
+  121 => 
+  array (
     'category' => 'Brosur',
     'name' => 'Brosur A5 1 Sisi',
     'retail_price' => 1400,
@@ -1765,7 +2158,7 @@ return array (
       ),
     ),
   ),
-  104 => 
+  122 => 
   array (
     'category' => 'Brosur',
     'name' => 'Brosur A5 2 Sisi',
@@ -1796,7 +2189,7 @@ return array (
       ),
     ),
   ),
-  105 => 
+  123 => 
   array (
     'category' => 'Brosur',
     'name' => 'Brosur A4 1 Sisi',
@@ -1827,7 +2220,7 @@ return array (
       ),
     ),
   ),
-  106 => 
+  124 => 
   array (
     'category' => 'Brosur',
     'name' => 'Brosur A4 2 Sisi',
@@ -1858,441 +2251,224 @@ return array (
       ),
     ),
   ),
-  107 => 
+  125 => 
   array (
     'category' => 'Brosur',
-    'name' => 'Paket Brosur A5 1 Sisi (1 Rim / 500 lbr)',
+    'name' => 'Paket Brosur A5 1 Sisi (50 lbr / 1/10 Rim)',
+    'retail_price' => 70000,
+    'purchase_price' => 18876,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  126 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 1 Sisi (100 lbr / 1/5 Rim)',
+    'retail_price' => 115000,
+    'purchase_price' => 38750,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  127 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 1 Sisi (125 lbr / 1/4 Rim)',
+    'retail_price' => 130000,
+    'purchase_price' => 47000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  128 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 1 Sisi (250 lbr / 1/2 Rim)',
+    'retail_price' => 230000,
+    'purchase_price' => 91350,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  129 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 1 Sisi (500 lbr / 1 Rim)',
     'retail_price' => 390000,
+    'purchase_price' => 180000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  130 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 2 Sisi (50 lbr / 1/10 Rim)',
+    'retail_price' => 120000,
+    'purchase_price' => 32500,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  131 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 2 Sisi (100 lbr / 1/5 Rim)',
+    'retail_price' => 180000,
+    'purchase_price' => 65000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  132 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 2 Sisi (125 lbr / 1/4 Rim)',
+    'retail_price' => 220000,
+    'purchase_price' => 84800,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  133 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 2 Sisi (250 lbr / 1/2 Rim)',
+    'retail_price' => 380000,
+    'purchase_price' => 163800,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  134 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A5 2 Sisi (500 lbr / 1 Rim)',
+    'retail_price' => 640000,
+    'purchase_price' => 290000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  135 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A4 1 Sisi (50 lbr / 1/10 Rim)',
+    'retail_price' => 120000,
+    'purchase_price' => 36500,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  136 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A4 1 Sisi (100 lbr / 1/5 Rim)',
+    'retail_price' => 200000,
+    'purchase_price' => 73000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  137 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A4 1 Sisi (125 lbr / 1/4 Rim)',
+    'retail_price' => 235000,
+    'purchase_price' => 90000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  138 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A4 1 Sisi (250 lbr / 1/2 Rim)',
+    'retail_price' => 415000,
+    'purchase_price' => 175000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  139 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A4 1 Sisi (500 lbr / 1 Rim)',
+    'retail_price' => 765000,
+    'purchase_price' => 350000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  140 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A4 2 Sisi (50 lbr / 1/10 Rim)',
+    'retail_price' => 190000,
+    'purchase_price' => 65000,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  141 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A4 2 Sisi (100 lbr / 1/5 Rim)',
+    'retail_price' => 340000,
+    'purchase_price' => 122600,
+    'fixed_size' => true,
+    'tiers' => 
+    array (
+    ),
+  ),
+  142 => 
+  array (
+    'category' => 'Brosur',
+    'name' => 'Paket Brosur A4 2 Sisi (125 lbr / 1/4 Rim)',
+    'retail_price' => 395000,
     'purchase_price' => 150000,
     'fixed_size' => true,
     'tiers' => 
     array (
     ),
   ),
-  108 => 
+  143 => 
   array (
     'category' => 'Brosur',
-    'name' => 'Paket Brosur A5 2 Sisi (1 Rim / 500 lbr)',
-    'retail_price' => 640000,
-    'purchase_price' => 250000,
+    'name' => 'Paket Brosur A4 2 Sisi (250 lbr / 1/2 Rim)',
+    'retail_price' => 690000,
+    'purchase_price' => 295000,
     'fixed_size' => true,
     'tiers' => 
     array (
     ),
   ),
-  109 => 
+  144 => 
   array (
     'category' => 'Brosur',
-    'name' => 'Paket Brosur A4 1 Sisi (1 Rim / 500 lbr)',
-    'retail_price' => 765000,
-    'purchase_price' => 300000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-    ),
-  ),
-  110 => 
-  array (
-    'category' => 'Brosur',
-    'name' => 'Paket Brosur A4 2 Sisi (1 Rim / 500 lbr)',
+    'name' => 'Paket Brosur A4 2 Sisi (500 lbr / 1 Rim)',
     'retail_price' => 1265000,
-    'purchase_price' => 500000,
+    'purchase_price' => 580000,
     'fixed_size' => true,
     'tiers' => 
     array (
-    ),
-  ),
-  111 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Paket Kartu Nama AC 260 1 Sisi',
-    'retail_price' => 35000,
-    'purchase_price' => 9920,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 3,
-        'price' => 30000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 6,
-        'price' => 25000,
-      ),
-    ),
-  ),
-  112 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Paket Kartu Nama AC 260 2 Sisi',
-    'retail_price' => 55000,
-    'purchase_price' => 13920,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 3,
-        'price' => 50000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 6,
-        'price' => 45000,
-      ),
-    ),
-  ),
-  113 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Paket Kartu Nama Bluswhite 1 Sisi',
-    'retail_price' => 40000,
-    'purchase_price' => 12800,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 3,
-        'price' => 35000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 6,
-        'price' => 30000,
-      ),
-    ),
-  ),
-  114 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Paket Kartu Nama Bluswhite 2 Sisi',
-    'retail_price' => 60000,
-    'purchase_price' => 16800,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 3,
-        'price' => 55000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 6,
-        'price' => 50000,
-      ),
-    ),
-  ),
-  115 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Paket Kartu Nama Linen 1 Sisi',
-    'retail_price' => 42000,
-    'purchase_price' => 13800,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 3,
-        'price' => 37000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 6,
-        'price' => 32000,
-      ),
-    ),
-  ),
-  116 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Paket Kartu Nama Linen 2 Sisi',
-    'retail_price' => 62000,
-    'purchase_price' => 17800,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 3,
-        'price' => 57000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 6,
-        'price' => 52000,
-      ),
-    ),
-  ),
-  117 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Tambahan Laminasi Glossy/Doff 1 Sisi (Kartu Nama)',
-    'retail_price' => 12000,
-    'purchase_price' => 2000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-    ),
-  ),
-  118 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Tambahan Laminasi Glossy/Doff 2 Sisi (Kartu Nama)',
-    'retail_price' => 20000,
-    'purchase_price' => 4000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-    ),
-  ),
-  119 => 
-  array (
-    'category' => 'Kartu Nama',
-    'name' => 'Finishing Rounded Kartunama / Box',
-    'retail_price' => 10000,
-    'purchase_price' => 0,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-    ),
-  ),
-  120 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Soft Cover 128 Halaman',
-    'retail_price' => 15000,
-    'purchase_price' => 7000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 14000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 13000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 10000,
-      ),
-    ),
-  ),
-  121 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Soft Cover 148 Halaman',
-    'retail_price' => 17000,
-    'purchase_price' => 8000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 16000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 15000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 12000,
-      ),
-    ),
-  ),
-  122 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Soft Cover 178 Halaman',
-    'retail_price' => 20000,
-    'purchase_price' => 9500,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 19000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 18000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 15000,
-      ),
-    ),
-  ),
-  123 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Soft Cover 208 Halaman',
-    'retail_price' => 22000,
-    'purchase_price' => 10500,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 21000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 20000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 17000,
-      ),
-    ),
-  ),
-  124 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Soft Cover 240 Halaman',
-    'retail_price' => 25000,
-    'purchase_price' => 12000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 24000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 23000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 20000,
-      ),
-    ),
-  ),
-  125 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Soft Cover 424 Halaman',
-    'retail_price' => 30000,
-    'purchase_price' => 15000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 28000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 27000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 25000,
-      ),
-    ),
-  ),
-  126 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Hard Cover 176 Halaman',
-    'retail_price' => 30000,
-    'purchase_price' => 15000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 28000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 27000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 25000,
-      ),
-    ),
-  ),
-  127 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Hard Cover 208 Halaman',
-    'retail_price' => 35000,
-    'purchase_price' => 17500,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 33000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 32000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 3000,
-      ),
-    ),
-  ),
-  128 => 
-  array (
-    'category' => 'Buku Yasin',
-    'name' => 'Buku Yasin Hard Cover 248 Halaman',
-    'retail_price' => 37500,
-    'purchase_price' => 19000,
-    'fixed_size' => true,
-    'tiers' => 
-    array (
-      0 => 
-      array (
-        'min_qty' => 51,
-        'price' => 35000,
-      ),
-      1 => 
-      array (
-        'min_qty' => 101,
-        'price' => 34000,
-      ),
-      2 => 
-      array (
-        'min_qty' => 201,
-        'price' => 32000,
-      ),
     ),
   ),
 );
