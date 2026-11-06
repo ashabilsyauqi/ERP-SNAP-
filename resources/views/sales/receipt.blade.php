@@ -363,6 +363,24 @@
                     <td>Bayar ({{ $transaction->payment_method }})</td>
                     <td class="text-right">Rp {{ number_format($transaction->paid_amount ?: $transaction->total_price, 0, ',', '.') }}</td>
                 </tr>
+                @php
+                    $cashPay = $transaction->payments->where('payment_method', 'Cash')->first();
+                @endphp
+                @if($cashPay && str_contains($cashPay->reference_note ?? '', 'Tunai Diterima:'))
+                    @php
+                        preg_match('/Tunai Diterima: Rp ([\d\.,]+) \| Kembalian: Rp ([\d\.,]+)/', $cashPay->reference_note, $matches);
+                    @endphp
+                    @if(!empty($matches[1]))
+                    <tr>
+                        <td style="color: #444; font-size: 10px;">• Uang Diterima</td>
+                        <td class="text-right font-mono" style="font-size: 10px;">Rp {{ $matches[1] }}</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #047857; font-weight: bold; font-size: 10px;">• Kembalian</td>
+                        <td class="text-right font-mono font-bold" style="font-size: 10px; color: #047857;">Rp {{ $matches[2] }}</td>
+                    </tr>
+                    @endif
+                @endif
                 <tr style="font-weight: bold;">
                     <td>STATUS</td>
                     <td class="text-right">LUNAS</td>
@@ -373,8 +391,8 @@
 
         @if($transaction->production_notes)
         <div class="divider"></div>
-        <div style="font-size: 9.5px; margin: 2px 0;">
-            <strong>Catatan Produksi:</strong><br>
+        <div style="font-size: 9.5px; margin: 2px 0; {{ $transaction->isRefunded() ? 'color: #dc2626;' : '' }}">
+            <strong>{{ $transaction->isRefunded() ? 'CATATAN REFUND / PEMBATALAN:' : 'Catatan Produksi:' }}</strong><br>
             {{ $transaction->production_notes }}
         </div>
         @endif
@@ -389,6 +407,9 @@
             @elseif($transaction->order_status === 'draft' || $transaction->payment_status === 'UNPAID')
                 <div class="stamp-lunas" style="border: 1.5px solid #dc2626; color: #dc2626;">*** UNPAID (BELUM BAYAR) ***</div>
                 <div style="font-size: 9px; color: #dc2626; font-weight: bold;">Pesanan belum dibayar. Mohon lunasi di kasir.</div>
+            @elseif($transaction->isRefunded())
+                <div class="stamp-lunas" style="border: 2px solid #dc2626; color: #dc2626; font-size: 11px;">*** REFUND / DIBATALKAN ***</div>
+                <div style="font-size: 9px; color: #dc2626; font-weight: bold;">Pesanan ini telah resmi di-refund & kas telah dipotong.</div>
             @elseif($transaction->payment_status === 'PARTIAL' || $transaction->remaining_amount > 0)
                 <div class="stamp-lunas" style="border: 1.5px solid #dc2626; color: #dc2626;">*** UNPAID (SISA PIUTANG) ***</div>
                 <div style="font-size: 9px; color: #333;">Sisa tagihan Rp {{ number_format($transaction->remaining_amount, 0, ',', '.') }} wajib dilunasi saat pengambilan.</div>

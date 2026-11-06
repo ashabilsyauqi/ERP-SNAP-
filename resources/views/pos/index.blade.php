@@ -78,10 +78,8 @@
         },
         toggleDp(checked) {
             this.isDp = checked;
-            if (checked) {
-                if (!this.dpAmount || this.dpAmount <= 0) {
-                    this.dpAmount = this.minDpAmount;
-                }
+            if (checked && (!this.dpAmount || Number(this.dpAmount) < this.minDpAmount)) {
+                this.dpAmount = this.minDpAmount;
             }
         },
         setDpPercent(pct) {
@@ -90,13 +88,17 @@
             this.dpAmount = Math.round(total * (pct / 100));
         },
         handleCartTotalUpdate(total, count) {
+            const previousTotal = this.cartTotal;
             this.cartTotal = Number(total) || 0;
             this.cartItemCount = Number(count) || 0;
             if (this.cartTotal <= 0) {
                 this.isDp = false;
                 this.dpAmount = 0;
-            } else if (this.isDp && (!this.dpAmount || this.dpAmount <= 0)) {
-                this.dpAmount = this.minDpAmount;
+            } else if (this.isDp) {
+                // Hanya update otomatis jika dpAmount kosong ATAU jika total belanja berubah dan nominal saat ini di bawah 50% yang baru
+                if (!this.dpAmount || (previousTotal !== this.cartTotal && Number(this.dpAmount) < this.minDpAmount)) {
+                    this.dpAmount = this.minDpAmount;
+                }
             }
         }
      }"
@@ -392,25 +394,12 @@
                                 <label class="text-[10px] font-bold text-slate-600 uppercase">Nominal DP (Bisa Free Text / Bebas Ketik)</label>
                                 <span class="text-[9px] text-amber-700 font-bold" x-text="'Min. 50%: Rp ' + minDpAmount.toLocaleString('id-ID')"></span>
                             </div>
-                            <input type="number" 
-                                   x-model.number="dpAmount" 
-                                   step="any"
-                                   placeholder="Ketik nominal DP..." 
-                                   class="w-full px-2 py-1 bg-white border rounded-lg text-xs font-mono font-bold text-emerald-800 transition"
-                                   :class="dpAmount >= minDpAmount ? 'border-emerald-400 focus:border-emerald-600' : 'border-amber-400 focus:border-rose-500'">
-                            <div class="mt-0.5 text-[9.5px]">
-                                <template x-if="dpAmount >= minDpAmount">
-                                    <span class="text-emerald-700 font-semibold">
-                                        ✓ DP Sah: Rp <span x-text="Number(dpAmount || 0).toLocaleString('id-ID')"></span> 
-                                        (<span x-text="cartTotal > 0 ? Math.round((dpAmount / cartTotal) * 100) : 0"></span>% dari total)
-                                    </span>
-                                </template>
-                                <template x-if="dpAmount < minDpAmount && dpAmount > 0">
-                                    <span class="text-rose-600 font-bold">
-                                        ⚠ Kurang dari 50% (Minimal: Rp <span x-text="minDpAmount.toLocaleString('id-ID')"></span>)
-                                    </span>
-                                </template>
+                            <input type="number" x-model.number="dpAmount" placeholder="Ketik nominal DP..." 
+                                class="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-emerald-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <div x-show="isDp && dpAmount > 0 && Number(dpAmount) < minDpAmount" x-cloak class="text-[10px] text-rose-600 font-bold mt-0.5">
+                                <i class="fa-solid fa-triangle-exclamation me-0.5"></i> Kurang dari 50% (Min: Rp <span x-text="minDpAmount.toLocaleString('id-ID')"></span>)
                             </div>
+                            <span class="text-[9px] text-slate-400 block mt-0.5">Bisa ketik bebas nominal &ge; 50% atau klik shortcut di bawah</span>
                         </div>
                     </div>
 
@@ -435,17 +424,19 @@
             </div>
 
             <!-- Opsi Pengerjaan Lintas Cabang (Bagi Hasil 25/75) -->
-            <div class="p-2.5 bg-indigo-50/70 rounded-xl border border-indigo-200/80 space-y-1.5 transition-all">
+            <div id="cross_branch_container" class="p-2.5 bg-slate-50 rounded-xl border-2 border-slate-200 space-y-1.5 transition-all">
                 <div class="flex items-center justify-between">
                     <label class="flex items-center gap-2 cursor-pointer mb-0">
-                        <input type="checkbox" id="is_cross_branch_toggle" onchange="toggleCrossBranch(this.checked)" class="form-check-input text-indigo-600 rounded">
-                        <span class="text-xs font-bold text-indigo-950">Pengerjaan Cabang Lain (Bagi Hasil 25/75)</span>
+                        <input type="checkbox" id="is_cross_branch_toggle" onchange="toggleCrossBranch(this.checked)" class="form-check-input text-amber-600 rounded">
+                        <span id="cross_branch_label" class="text-xs font-bold text-slate-700">Pengerjaan Cabang Lain (Bagi Hasil 25/75)</span>
                     </label>
-                    <span id="cross_branch_badge" class="hidden text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full border border-indigo-200">Split 25:75</span>
+                    <span id="cross_branch_badge" class="hidden text-[10px] bg-amber-500 text-white font-extrabold px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> AKTIF (25/75)
+                    </span>
                 </div>
-                <div id="cross_branch_select_wrapper" class="hidden space-y-1.5 pt-1.5 border-t border-indigo-200/60 text-xs">
-                    <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Pilih Cabang Pelaksana (Mengerjakan 75%)</label>
-                    <select id="fulfillment_branch_id" class="w-full px-2.5 py-1.5 bg-white border border-indigo-300 rounded-lg text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <div id="cross_branch_select_wrapper" class="hidden space-y-1.5 pt-1.5 border-t border-amber-300 text-xs">
+                    <label class="block text-[10px] font-extrabold text-amber-900 uppercase mb-0.5">⚠️ Pilih Cabang Pelaksana (Menerima 75%):</label>
+                    <select id="fulfillment_branch_id" class="w-full px-2.5 py-1.5 bg-white border-2 border-amber-400 rounded-lg text-xs font-bold text-amber-950 focus:ring-2 focus:ring-amber-500 focus:outline-none">
                         <option value="">-- Pilih Cabang yang Mengerjakan --</option>
                         @foreach($branches ?? [] as $b)
                             @if($b->id != (auth()->user()->branch_id ?? 1))
@@ -453,7 +444,7 @@
                             @endif
                         @endforeach
                     </select>
-                    <div class="text-[10px] text-slate-600 bg-white/90 p-2 rounded-lg border border-indigo-100 leading-tight">
+                    <div class="text-[10px] text-amber-900 bg-amber-100/90 p-2 rounded-lg border border-amber-300 leading-tight font-medium">
                         💡 <strong>Kasir Cabang Ini:</strong> Terima 100% uang fisik & berhak atas <strong>25%</strong> komisi order.<br>
                         🏭 <strong>Cabang Pelaksana:</strong> Berhak atas <strong>75%</strong> dari total order (tercatat di Rekonsiliasi Kliring).
                     </div>
@@ -495,6 +486,32 @@
                             <i class="fa-solid fa-code-fork text-sm mb-0.5 text-indigo-600"></i>
                             <span class="text-[11px] font-bold">Split Bill</span>
                         </button>
+                    </div>
+
+                    <!-- Cash Received & Change Calculator Panel (Active only when Cash is selected) -->
+                    <div id="cash-calculator-panel" class="mt-2 p-2.5 bg-emerald-50/90 border-2 border-emerald-400 rounded-xl space-y-2 transition-all">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[10.5px] font-extrabold text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
+                                <i class="fa-solid fa-money-bill-wave text-emerald-600"></i> Uang Tunai Diterima:
+                            </label>
+                            <span class="text-[10px] text-emerald-800 font-bold" id="cash-target-text">Tagihan: Rp 0</span>
+                        </div>
+                        
+                        <div class="relative">
+                            <span class="absolute left-2.5 top-1.5 text-xs font-bold text-emerald-700">Rp</span>
+                            <input type="text" id="cash_received_input" oninput="handleCashReceivedInput(this.value)" placeholder="0"
+                                class="w-full pl-8 pr-3 py-1.5 bg-white border-2 border-emerald-500 rounded-lg text-sm font-black text-emerald-950 font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+
+                        <!-- Quick Nominal Buttons -->
+                        <div class="flex flex-wrap gap-1" id="quick-cash-buttons">
+                        </div>
+
+                        <!-- Kembalian Display Box -->
+                        <div id="change-display-box" class="p-2 bg-white rounded-lg border-2 border-emerald-300 flex items-center justify-between shadow-2xs">
+                            <span id="cash_change_label" class="text-xs font-bold text-slate-700">Kembalian:</span>
+                            <span id="cash_change_amount" class="text-base font-black font-mono text-emerald-700">Rp 0</span>
+                        </div>
                     </div>
                 </div>
             @endif
@@ -2000,14 +2017,32 @@
 
     // --- Toggle Cross Branch Selector ---
     function toggleCrossBranch(checked) {
+        const container = document.getElementById('cross_branch_container');
         const wrapper = document.getElementById('cross_branch_select_wrapper');
         const badge = document.getElementById('cross_branch_badge');
         const select = document.getElementById('fulfillment_branch_id');
+        const label = document.getElementById('cross_branch_label');
 
         if (checked) {
+            if (container) {
+                container.classList.remove('bg-slate-50', 'border-slate-200');
+                container.classList.add('bg-amber-50', 'border-2', 'border-amber-500', 'shadow-sm');
+            }
+            if (label) {
+                label.classList.remove('text-slate-700');
+                label.classList.add('text-amber-950', 'font-black');
+            }
             if (wrapper) wrapper.classList.remove('hidden');
             if (badge) badge.classList.remove('hidden');
         } else {
+            if (container) {
+                container.classList.add('bg-slate-50', 'border-slate-200');
+                container.classList.remove('bg-amber-50', 'border-2', 'border-amber-500', 'shadow-sm');
+            }
+            if (label) {
+                label.classList.add('text-slate-700');
+                label.classList.remove('text-amber-950', 'font-black');
+            }
             if (wrapper) wrapper.classList.add('hidden');
             if (badge) badge.classList.add('hidden');
             if (select) select.value = '';
@@ -2222,6 +2257,13 @@
         const finalAfterDiscount = Math.max(0, grandTotal - (window.negotiationDiscount || 0));
         window.currentGrandTotal = finalAfterDiscount;
 
+        if (typeof updateQuickCashButtons === 'function') {
+            updateQuickCashButtons();
+        }
+        if (typeof calculateCashChange === 'function') {
+            calculateCashChange();
+        }
+
         const negoRow = document.getElementById('nego-discount-row');
         const negoFinalRow = document.getElementById('nego-final-row');
         const negoDiscountText = document.getElementById('nego-discount-text');
@@ -2322,34 +2364,174 @@
     window.filterProducts = filterProducts;
     window.applyCombinedFilter = applyCombinedFilter;
 
-    // --- Switch Selected Payment Tile UI ---
+    // --- Cash Received & Change State ---
+    let currentCashReceived = 0;
+
+    function getCashTargetAmount() {
+        const posContainer = document.getElementById('pos-main-container');
+        const alpineData = (posContainer && window.Alpine) ? Alpine.$data(posContainer) : null;
+        const currentGrand = window.currentGrandTotal || 0;
+        if (alpineData && alpineData.isDp && alpineData.isEligibleForDp) {
+            return parseFloat(alpineData.dpAmount) || 0;
+        }
+        return currentGrand;
+    }
+
+    function updateQuickCashButtons() {
+        const target = getCashTargetAmount();
+        const targetText = document.getElementById('cash-target-text');
+        if (targetText) {
+            targetText.textContent = `Tagihan: Rp ${Number(target).toLocaleString('id-ID')}`;
+        }
+
+        const container = document.getElementById('quick-cash-buttons');
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (target <= 0) return;
+
+        // Button 1: Uang Pas
+        const btnPas = document.createElement('button');
+        btnPas.type = 'button';
+        btnPas.className = 'px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-bold text-[10px] border border-emerald-300 transition';
+        btnPas.textContent = 'Uang Pas';
+        btnPas.onclick = () => setQuickCash(target);
+        container.appendChild(btnPas);
+
+        // Standard nominal candidates: 10k, 20k, 50k, 100k, 200k, 300k, 500k, 1jt
+        const standardNominals = [10000, 20000, 50000, 100000, 150000, 200000, 300000, 500000, 1000000];
+        const higherNominals = standardNominals.filter(n => n > target).slice(0, 3);
+
+        higherNominals.forEach(nom => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'px-2 py-0.5 bg-white hover:bg-slate-100 text-slate-700 rounded font-bold text-[10px] border border-slate-300 font-mono transition';
+            btn.textContent = Number(nom).toLocaleString('id-ID');
+            btn.onclick = () => setQuickCash(nom);
+            container.appendChild(btn);
+        });
+    }
+
+    function setQuickCash(amount) {
+        currentCashReceived = amount;
+        const input = document.getElementById('cash_received_input');
+        if (input) {
+            input.value = Number(amount).toLocaleString('id-ID');
+        }
+        calculateCashChange();
+    }
+
+    function handleCashReceivedInput(val) {
+        const num = parseInt(val.replace(/\D/g, ''), 10) || 0;
+        currentCashReceived = num;
+        const input = document.getElementById('cash_received_input');
+        if (input) {
+            input.value = num > 0 ? Number(num).toLocaleString('id-ID') : '';
+        }
+        calculateCashChange();
+    }
+
+    function calculateCashChange() {
+        const target = getCashTargetAmount();
+        const changeLabel = document.getElementById('cash_change_label');
+        const changeAmount = document.getElementById('cash_change_amount');
+        const box = document.getElementById('change-display-box');
+
+        if (!changeLabel || !changeAmount) return;
+
+        if (currentCashReceived === 0) {
+            changeLabel.textContent = 'Kembalian:';
+            changeLabel.className = 'text-xs font-bold text-slate-600';
+            changeAmount.textContent = 'Rp 0';
+            changeAmount.className = 'text-base font-black font-mono text-slate-700';
+            if (box) box.className = 'p-2 bg-white rounded-lg border-2 border-emerald-300 flex items-center justify-between shadow-2xs';
+            return;
+        }
+
+        const diff = currentCashReceived - target;
+        if (diff >= 0) {
+            changeLabel.textContent = 'Kembalian:';
+            changeLabel.className = 'text-xs font-bold text-emerald-800';
+            changeAmount.textContent = `Rp ${Number(diff).toLocaleString('id-ID')}`;
+            changeAmount.className = 'text-lg font-black font-mono text-emerald-700';
+            if (box) box.className = 'p-2 bg-emerald-50 rounded-lg border-2 border-emerald-400 flex items-center justify-between shadow-2xs';
+        } else {
+            changeLabel.textContent = 'Uang Kurang:';
+            changeLabel.className = 'text-xs font-bold text-rose-700';
+            changeAmount.textContent = `- Rp ${Number(Math.abs(diff)).toLocaleString('id-ID')}`;
+            changeAmount.className = 'text-lg font-black font-mono text-rose-600';
+            if (box) box.className = 'p-2 bg-rose-50 rounded-lg border-2 border-rose-400 flex items-center justify-between shadow-2xs';
+        }
+    }
+
+    // --- Switch Selected Payment Tile UI with High-Contrast Notice Colors ---
     function setPaymentMethod(method) {
         document.getElementById('global_payment_method').value = method;
+
+        const pmConfig = {
+            Cash: {
+                activeClass: ['bg-emerald-600', 'border-2', 'border-emerald-700', 'text-white', 'shadow-md', 'ring-2', 'ring-emerald-300'],
+                iconActive: 'text-white',
+                iconInactive: 'text-emerald-600',
+                inactiveClass: ['bg-white', 'border-slate-200', 'text-slate-700', 'hover:bg-slate-50']
+            },
+            Transfer: {
+                activeClass: ['bg-blue-600', 'border-2', 'border-blue-700', 'text-white', 'shadow-md', 'ring-2', 'ring-blue-300'],
+                iconActive: 'text-white',
+                iconInactive: 'text-blue-600',
+                inactiveClass: ['bg-white', 'border-slate-200', 'text-slate-700', 'hover:bg-slate-50']
+            },
+            QRIS: {
+                activeClass: ['bg-indigo-600', 'border-2', 'border-indigo-700', 'text-white', 'shadow-md', 'ring-2', 'ring-indigo-300'],
+                iconActive: 'text-white',
+                iconInactive: 'text-indigo-600',
+                inactiveClass: ['bg-white', 'border-slate-200', 'text-slate-700', 'hover:bg-slate-50']
+            }
+        };
 
         ['Cash', 'Transfer', 'QRIS'].forEach(m => {
             const btnD = document.getElementById(`pm-desktop-${m}`);
             const btnM = document.getElementById(`pm-mobile-${m}`);
+            const conf = pmConfig[m];
 
-            if (m === method) {
-                if (btnD) {
-                    btnD.classList.add('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-2', 'ring-blue-500/20');
-                    btnD.classList.remove('border-slate-200', 'bg-white', 'text-slate-600');
+            [btnD, btnM].forEach(btn => {
+                if (!btn) return;
+                const icon = btn.querySelector('i');
+                const span = btn.querySelector('span');
+
+                if (m === method) {
+                    btn.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-blue-500/20');
+                    btn.classList.remove(...conf.inactiveClass);
+                    btn.classList.add(...conf.activeClass);
+                    if (icon) {
+                        icon.classList.remove(conf.iconInactive, 'text-emerald-600', 'text-blue-600', 'text-indigo-600');
+                        icon.classList.add(conf.iconActive);
+                    }
+                    if (span) span.className = 'text-[11px] font-extrabold text-white';
+                } else {
+                    btn.classList.remove(...conf.activeClass);
+                    btn.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-blue-500/20');
+                    btn.classList.add(...conf.inactiveClass);
+                    if (icon) {
+                        icon.classList.remove(conf.iconActive);
+                        icon.classList.add(conf.iconInactive);
+                    }
+                    if (span) span.className = 'text-[11px] font-bold text-slate-700';
                 }
-                if (btnM) {
-                    btnM.classList.add('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-2', 'ring-blue-500/20');
-                    btnM.classList.remove('border-slate-200', 'bg-white', 'text-slate-600');
-                }
-            } else {
-                if (btnD) {
-                    btnD.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-2', 'ring-blue-500/20');
-                    btnD.classList.add('border-slate-200', 'bg-white', 'text-slate-600');
-                }
-                if (btnM) {
-                    btnM.classList.remove('border-blue-600', 'bg-blue-50', 'text-blue-700', 'ring-2', 'ring-blue-500/20');
-                    btnM.classList.add('border-slate-200', 'bg-white', 'text-slate-600');
-                }
-            }
+            });
         });
+
+        // Toggle Cash Calculator Panel
+        const cashPanel = document.getElementById('cash-calculator-panel');
+        if (cashPanel) {
+            if (method === 'Cash') {
+                cashPanel.classList.remove('hidden');
+                updateQuickCashButtons();
+                calculateCashChange();
+            } else {
+                cashPanel.classList.add('hidden');
+            }
+        }
     }
 
     // Initialize Default Payment Method (Cash)
@@ -2700,7 +2882,9 @@
                                     <span class="badge bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold">
                                         <i class="fa-solid fa-store me-1 text-blue-500"></i>${d.branch ? d.branch.nama_cabang : 'Cabang Utama'}
                                     </span>
-                                    <span class="text-[10px] text-slate-400">${new Date(d.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span class="badge bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-semibold py-0.5 px-2">
+                                        <i class="fa-regular fa-calendar-check me-1 text-slate-500"></i>${new Date(d.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}, ${new Date(d.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+                                    </span>
                                 </div>
                                 <div class="font-bold text-slate-800 text-xs">${d.customer_name || 'Pelanggan Umum'} ${d.customer_phone ? `<small class="text-slate-500 font-mono">(${d.customer_phone})</small>` : ''}</div>
                                 <div class="mt-1 flex flex-wrap gap-1">${itemsSummary}</div>
@@ -4101,11 +4285,39 @@
 
                     <div>
                         <label style="font-weight: bold; color: #334155; margin-bottom: 4px; display: block;">Metode Pembayaran:</label>
-                        <select id="settle_pm" class="form-select form-select-sm" style="font-size: 12px;">
+                        <select id="settle_pm" onchange="const cw = document.getElementById('settle_cash_wrap'); if(cw) cw.style.display = this.value === 'Cash' ? 'block' : 'none';" class="form-select form-select-sm" style="font-size: 12px;">
                             <option value="Cash">Tunai (Cash)</option>
                             <option value="Transfer">Transfer Bank</option>
                             <option value="QRIS">QRIS</option>
                         </select>
+                    </div>
+
+                    <div id="settle_cash_wrap" style="background: #ecfdf5; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #a7f3d0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                            <label style="font-weight: bold; color: #065f46; font-size: 11px; margin-bottom: 0;">💵 Uang Tunai Diterima:</label>
+                            <span style="font-size: 10px; color: #059669; font-weight: bold; cursor: pointer; text-decoration: underline;" onclick="document.getElementById('settle_cash_received').value = (document.getElementById('settle_is_dp').checked ? (document.getElementById('settle_dp_amount').value || Math.round(${totalPrice} * 0.5)) : ${totalPrice}); const ev = new Event('input'); document.getElementById('settle_cash_received').dispatchEvent(ev);">Uang Pas</span>
+                        </div>
+                        <input type="number" id="settle_cash_received" oninput="
+                            const tgt = document.getElementById('settle_is_dp').checked ? (parseFloat(document.getElementById('settle_dp_amount').value) || Math.round(${totalPrice} * 0.5)) : ${totalPrice};
+                            const rec = parseFloat(this.value) || 0;
+                            const diff = rec - tgt;
+                            const lbl = document.getElementById('settle_change_label');
+                            const val = document.getElementById('settle_change_amount');
+                            if (rec === 0) {
+                                lbl.textContent = 'Kembalian:'; lbl.style.color = '#047857';
+                                val.textContent = 'Rp 0'; val.style.color = '#047857';
+                            } else if (diff >= 0) {
+                                lbl.textContent = 'Kembalian:'; lbl.style.color = '#047857';
+                                val.textContent = 'Rp ' + Number(diff).toLocaleString('id-ID'); val.style.color = '#047857';
+                            } else {
+                                lbl.textContent = 'Uang Kurang:'; lbl.style.color = '#dc2626';
+                                val.textContent = '- Rp ' + Number(Math.abs(diff)).toLocaleString('id-ID'); val.style.color = '#dc2626';
+                            }
+                        " class="form-control form-control-sm" style="font-family: monospace; font-weight: bold;" placeholder="Ketik uang tunai diterima...">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #6ee7b7;">
+                            <span style="font-size: 11px; font-weight: bold; color: #047857;" id="settle_change_label">Kembalian:</span>
+                            <span id="settle_change_amount" style="font-family: monospace; font-size: 13px; font-weight: 800; color: #047857;">Rp 0</span>
+                        </div>
                     </div>
 
                     <div>
@@ -4114,8 +4326,12 @@
                             <span style="font-weight: 600; color: #334155;">Bayar Sebagai DP (Uang Muka)</span>
                         </label>
                         <div id="settle_dp_wrap" style="display: none; margin-top: 6px;">
-                            <label style="font-size: 11px; color: #64748b;">Nominal DP (Minimal 50% = Rp ${Number(Math.round(totalPrice * 0.5)).toLocaleString('id-ID')}):</label>
-                            <input type="number" id="settle_dp_amount" min="${Math.round(totalPrice * 0.5)}" value="${Math.round(totalPrice * 0.5)}" class="form-control form-control-sm" style="font-family: monospace;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <label style="font-size: 11px; color: #64748b; margin-bottom: 0;">Nominal DP:</label>
+                                <span style="font-size: 10px; color: #b45309; font-weight: bold;">Min. 50%: Rp ${Number(Math.round(totalPrice * 0.5)).toLocaleString('id-ID')}</span>
+                            </div>
+                            <input type="number" id="settle_dp_amount" value="${Math.round(totalPrice * 0.5)}" class="form-control form-control-sm" style="font-family: monospace;" placeholder="Ketik nominal DP...">
+                            <small style="font-size: 9.5px; color: #64748b; display: block; margin-top: 2px;">Bisa ketik bebas nominal uang muka (minimal 50%).</small>
                         </div>
                     </div>
                 </div>
@@ -4129,13 +4345,20 @@
                 const pm = document.getElementById('settle_pm').value;
                 const isDp = document.getElementById('settle_is_dp').checked;
                 const dpAmount = isDp ? parseFloat(document.getElementById('settle_dp_amount').value) || 0 : 0;
+                const cashReceived = (pm === 'Cash') ? (parseFloat(document.getElementById('settle_cash_received')?.value) || 0) : 0;
+                const targetAmt = isDp ? dpAmount : totalPrice;
 
                 if (isDp && dpAmount < Math.round(totalPrice * 0.5)) {
                     Swal.showValidationMessage(`Nominal DP minimal Rp ${Number(Math.round(totalPrice * 0.5)).toLocaleString('id-ID')}`);
                     return false;
                 }
 
-                return { payment_method: pm, is_dp: isDp, dp_amount: dpAmount };
+                if (pm === 'Cash' && cashReceived > 0 && cashReceived < targetAmt) {
+                    Swal.showValidationMessage(`Uang tunai diterima kurang Rp ${Number(targetAmt - cashReceived).toLocaleString('id-ID')}`);
+                    return false;
+                }
+
+                return { payment_method: pm, is_dp: isDp, dp_amount: dpAmount, cash_received: cashReceived || targetAmt };
             }
         }).then((res) => {
             if (res.isConfirmed && res.value) {
@@ -4212,7 +4435,7 @@
 
         if (isDp) {
             const minAllowedDp = alpineData ? alpineData.minDpAmount : Math.round(currentGrand * 0.5);
-            if (dpAmount < minAllowedDp) {
+            if (!dpAmount || dpAmount < minAllowedDp) {
                 Swal.fire({ 
                     icon: 'warning', 
                     title: 'Nominal DP Kurang dari 50%', 
@@ -4220,9 +4443,27 @@
                 });
                 return;
             }
+            if (dpAmount >= currentGrand) {
+                Swal.fire({ 
+                    icon: 'warning', 
+                    title: 'Nominal DP Mencapai / Melebihi Total', 
+                    text: 'Nominal DP tidak boleh menyamai atau melebihi total pesanan (Rp ' + Number(currentGrand).toLocaleString('id-ID') + '). Jika ingin bayar lunas, matikan opsi DP.' 
+                });
+                return;
+            }
         }
 
         const paymentMethod = isDraft ? 'Draft' : (document.getElementById('global_payment_method').value || 'Cash');
+        const targetBillAmount = isDp ? dpAmount : currentGrand;
+
+        if (!isDraft && paymentMethod === 'Cash' && currentCashReceived > 0 && currentCashReceived < targetBillAmount) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Uang Tunai Kurang',
+                text: `Uang tunai diterima (Rp ${Number(currentCashReceived).toLocaleString('id-ID')}) kurang Rp ${Number(targetBillAmount - currentCashReceived).toLocaleString('id-ID')} dari tagihan (Rp ${Number(targetBillAmount).toLocaleString('id-ID')}).`
+            });
+            return;
+        }
         const errContainerDesktop = document.getElementById('checkout-error-desktop');
         const errContainerMobile = document.getElementById('checkout-error-mobile');
         const successContainerDesktop = document.getElementById('checkout-success-desktop');
@@ -4391,6 +4632,19 @@
 
                 ${financialSummaryHtml}
 
+                ${(!isDraft && paymentMethod === 'Cash') ? `
+                    <div style="background: #ecfdf5; border-radius: 8px; padding: 8px 12px; border: 1.5px solid #a7f3d0; margin-top: 8px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; color: #065f46;">
+                            <span>💵 Uang Tunai Diterima:</span>
+                            <strong style="font-family: monospace;">Rp ${Number(currentCashReceived || (isDp ? dpAmount : finalAfterNego)).toLocaleString('id-ID')}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; color: #047857; border-top: 1px dashed #6ee7b7; padding-top: 4px;">
+                            <span>Kembalian Kasir:</span>
+                            <span style="font-family: monospace;">Rp ${Number(Math.max(0, (currentCashReceived || (isDp ? dpAmount : finalAfterNego)) - (isDp ? dpAmount : finalAfterNego))).toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                ` : ''}
+
                 ${productionNotes ? `<div style="font-size: 10.5px; color: #475569; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 6px 8px; margin-top: 8px;"><i class="fa-solid fa-note-sticky text-amber-500 me-1"></i> Catatan SPK: <em>${productionNotes}</em></div>` : ''}
 
                 <!-- Split Bill Option in Confirmation -->
@@ -4483,6 +4737,7 @@
                 items: payloadItems,
                 is_dp: isDp,
                 dp_amount: dpAmount,
+                cash_received: (!isDraft && paymentMethod === 'Cash') ? (currentCashReceived || (isDp ? dpAmount : (window.currentGrandTotal || 0))) : null,
                 discount_amount: window.negotiationDiscount || 0,
                 negotiation_notes: window.negotiationNotes || null,
                 fulfillment_branch_id: fulfillmentBranchId,
@@ -4519,6 +4774,9 @@
                 // Clear cart & negotiation state
                 cart = [];
                 resetNegotiation();
+                currentCashReceived = 0;
+                const crInput = document.getElementById('cash_received_input');
+                if (crInput) crInput.value = '';
                 renderCart();
                 if (alpineData.clearCustomer) alpineData.clearCustomer();
 

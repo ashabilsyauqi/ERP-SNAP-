@@ -79,28 +79,45 @@ class Transaction extends Model
         return $this->hasMany(TransactionPayment::class);
     }
 
+    public function isRefunded(): bool
+    {
+        return $this->payment_status === 'REFUNDED' || $this->order_status === 'cancelled';
+    }
+
     public function isPaid(): bool
     {
+        if ($this->isRefunded()) {
+            return false;
+        }
         return $this->payment_status === 'PAID' && ($this->remaining_amount === null || (float) $this->remaining_amount <= 0);
     }
 
     public function isPartial(): bool
     {
+        if ($this->isRefunded()) {
+            return false;
+        }
         return $this->payment_status === 'PARTIAL' || ((float) $this->remaining_amount > 0 && (float) $this->paid_amount > 0);
     }
 
     public function isUnpaid(): bool
     {
+        if ($this->isRefunded()) {
+            return false;
+        }
         return $this->payment_status === 'UNPAID' || $this->order_status === 'draft' || ((float) $this->paid_amount <= 0 && (float) $this->total_price > 0);
     }
 
     public function getOrderStatusLabelAttribute(): string
     {
+        if ($this->isRefunded()) {
+            return 'Refund / Dibatalkan';
+        }
         return match($this->order_status) {
             'in_production' => 'Dalam Pengerjaan (Produksi)',
             'ready' => 'Selesai / Siap Diambil',
             'completed' => 'Selesai & Lunas',
-            'cancelled' => 'Dibatalkan',
+            'cancelled' => 'Refund / Dibatalkan',
             default => 'Selesai'
         };
     }

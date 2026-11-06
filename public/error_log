@@ -1,0 +1,15 @@
+[23-Aug-2026 15:58:48 UTC] PHP Warning:  require(/home/nexaeraw/serp.nexaeraweb.com/public/../vendor/autoload.php): Failed to open stream: No such file or directory in /home/nexaeraw/serp.nexaeraweb.com/public/index.php on line 14
+[23-Aug-2026 15:58:48 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/nexaeraw/serp.nexaeraweb.com/public/../vendor/autoload.php' (include_path='.:/opt/alt/php84/usr/share/pear:/opt/alt/php84/usr/share/php:/usr/share/pear:/usr/share/php') in /home/nexaeraw/serp.nexaeraweb.com/public/index.php:14
+Stack trace:
+#0 {main}
+  thrown in /home/nexaeraw/serp.nexaeraweb.com/public/index.php on line 14
+[25-Aug-2026 07:34:06 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 48250880 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/e78197e2809a52a27d9bc646e2b3b787.php on line 134
+[25-Aug-2026 07:48:19 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 48250880 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/e78197e2809a52a27d9bc646e2b3b787.php on line 134
+[25-Aug-2026 07:49:27 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 10502144 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/8e0a6eea51581f1e5bccca359c095596.php on line 172
+[25-Aug-2026 07:56:17 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 23085056 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/e937425c98f2e3b39f26122eeafac01d.php on line 133
+[25-Aug-2026 07:56:53 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 23085056 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/e937425c98f2e3b39f26122eeafac01d.php on line 133
+[25-Aug-2026 07:58:32 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 23085056 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/e937425c98f2e3b39f26122eeafac01d.php on line 133
+[25-Aug-2026 07:59:05 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 10502144 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/8e0a6eea51581f1e5bccca359c095596.php on line 172
+[25-Aug-2026 07:59:32 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 10502144 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/8e0a6eea51581f1e5bccca359c095596.php on line 172
+[25-Aug-2026 08:08:43 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 23085056 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/e937425c98f2e3b39f26122eeafac01d.php on line 133
+[25-Aug-2026 08:08:59 UTC] PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 23085056 bytes) in /home/nexaeraw/serp.nexaeraweb.com/storage/framework/views/e937425c98f2e3b39f26122eeafac01d.php on line 133
