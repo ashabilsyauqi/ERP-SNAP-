@@ -13,7 +13,7 @@ class NewProductCatalogSeeder extends Seeder
     public function run(): void
     {
         // 1. Soft delete all current active materials (preserves historical links)
-        Material::whereNull('deleted_at')->delete();
+        DB::table('materials')->whereNull('deleted_at')->update(['deleted_at' => now()]);
 
         // 2. Load catalog definitions
         $catalog = require __DIR__ . '/catalog_data.php';
