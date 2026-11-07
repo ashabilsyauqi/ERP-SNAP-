@@ -136,6 +136,20 @@ class DailyClosingController extends Controller
 
         $recentWithdrawals = $allWithdrawals->take(15);
 
+        // Waste Records for Search & Summary
+        $wastesQuery = DailyClosingWaste::with(['material', 'materialRoll', 'branch', 'user', 'dailyClosingReport'])
+            ->orderBy('created_at', 'desc');
+
+        if ($branchId && $branchId !== 'all') {
+            $wastesQuery->where('branch_id', $branchId);
+        }
+
+        $allWastes = $wastesQuery->take(100)->get();
+        $monthWasteHpp = (float) DailyClosingWaste::whereMonth('created_at', date('m'))
+            ->whereYear('created_at', date('Y'))
+            ->when($branchId && $branchId !== 'all', fn($q) => $q->where('branch_id', $branchId))
+            ->sum('total_hpp');
+
         return view('finance.daily_closing.index', compact(
             'reports',
             'branches',
@@ -146,7 +160,9 @@ class DailyClosingController extends Controller
             'monthCashIn',
             'monthWithdrawn',
             'recentWithdrawals',
-            'branchLivePettyCash'
+            'branchLivePettyCash',
+            'allWastes',
+            'monthWasteHpp'
         ));
     }
 

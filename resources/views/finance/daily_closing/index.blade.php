@@ -16,6 +16,10 @@
     <i class="fa-solid fa-hand-holding-dollar"></i>
     <span>- Diambil Boss</span>
 </button>
+<button type="button" class="btn btn-outline-warning text-xs px-3 py-1.5 rounded-xl font-bold d-inline-flex align-items-center gap-1.5 text-amber-950 border-amber-300 bg-amber-50/70 hover:bg-amber-100 shadow-2xs" data-bs-toggle="modal" data-bs-target="#modalHistoryWaste" title="Cari & lihat riwayat seluruh bahan yang terbuang karena trial error">
+    <i class="fa-solid fa-recycle text-amber-600"></i>
+    <span>Cari & Log Waste</span>
+</button>
 <button type="button" class="btn btn-outline-secondary text-xs px-3 py-1.5 rounded-xl font-bold d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalHistoryBossWithdrawal">
     <i class="fa-solid fa-clock-rotate-left text-slate-600"></i>
     <span>Riwayat Tarik Kas</span>
@@ -24,6 +28,150 @@
     <i class="fa-solid fa-plus me-1"></i>
     <span>Tutup Kasir Baru</span>
 </a>
+
+<!-- MODAL RIWAYAT & PENCARIAN WASTE BAHAN -->
+<div class="modal fade" id="modalHistoryWaste" tabindex="-1" aria-labelledby="modalHistoryWasteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
+            <div class="modal-header text-white p-4" style="background: linear-gradient(135deg, #78350f 0%, #451a03 100%);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-300 d-flex align-items-center justify-content-center text-lg border border-amber-400/30">
+                        <i class="fa-solid fa-recycle"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-extrabold text-sm mb-0 tracking-wide text-white" id="modalHistoryWasteLabel">
+                            PENCARIAN & LOG WASTE BAHAN (TRIAL & ERROR MESIN)
+                        </h5>
+                        <p class="text-[11px] text-amber-200/80 mb-0 mt-0.5">
+                            Daftar seluruh bahan baku & gulungan roll yang terpotong akibat kalibrasi mesin, trial error, atau cacat produksi.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Filter & Search Toolbar in Modal -->
+            <div class="p-3 bg-slate-50 border-b d-flex flex-column sm:flex-row justify-content-between align-items-center gap-3">
+                <div class="w-full sm:w-80">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-slate-200 text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="wasteSearchInput" class="form-control text-xs" placeholder="Ketik nama bahan, roll, atau alasan..." onkeyup="filterWasteTable()">
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-amber-100 text-amber-900 border border-amber-300 font-mono text-xs px-3 py-1.5 rounded-xl font-bold">
+                        Akumulasi Bulan Ini: Rp {{ number_format($monthWasteHpp ?? 0, 0, ',', '.') }}
+                    </span>
+                    <a href="{{ route('daily-closing.create') }}" class="btn btn-sm btn-primary rounded-xl text-xs font-bold px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1" style="background-color: #d97706; border-color: #d97706;">
+                        <i class="fa-solid fa-plus"></i> Input Waste Baru
+                    </a>
+                </div>
+            </div>
+
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-xs" id="tableWasteRecords">
+                        <thead class="bg-slate-100 text-[10px] text-slate-600 uppercase border-b">
+                            <tr>
+                                <th class="ps-4 py-2.5">Tanggal</th>
+                                <th class="py-2.5">Cabang</th>
+                                <th class="py-2.5">Nama Bahan Baku</th>
+                                <th class="py-2.5">Gulungan Roll</th>
+                                <th class="py-2.5 text-center">Qty Terbuang</th>
+                                <th class="py-2.5">Alasan & Catatan</th>
+                                <th class="py-2.5 text-end">Kerugian HPP</th>
+                                <th class="py-2.5">Dicatat Oleh</th>
+                                <th class="pe-4 py-2.5 text-center">Berita Acara</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($allWastes as $w)
+                                <tr class="waste-row border-b">
+                                    <td class="ps-4 py-2 font-mono font-bold text-slate-800 whitespace-nowrap">
+                                        {{ $w->created_at ? $w->created_at->format('d/m/Y') : '-' }}
+                                    </td>
+                                    <td class="py-2">
+                                        <span class="badge bg-slate-100 text-slate-700 border text-[10px] font-semibold">
+                                            {{ $w->branch->nama_cabang ?? 'Pusat' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2 font-bold text-slate-900 search-target">
+                                        {{ $w->material->material_name ?? '-' }}
+                                    </td>
+                                    <td class="py-2 search-target">
+                                        @if($w->materialRoll)
+                                            <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">
+                                                <i class="fa-solid fa-scroll me-0.5"></i> {{ $w->materialRoll->roll_name ?: 'Roll ' . $w->materialRoll->roll_width_m . 'm' }}
+                                            </span>
+                                        @else
+                                            <span class="text-slate-400 font-mono text-[11px]">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-2 text-center font-mono font-black text-rose-700 search-target">
+                                        {{ $w->waste_qty }} {{ $w->unit }}
+                                    </td>
+                                    <td class="py-2 search-target">
+                                        <div class="font-bold text-slate-800">{{ $w->reason }}</div>
+                                        @if($w->notes)
+                                            <div class="text-[11px] text-slate-500 mt-0.5">{{ $w->notes }}</div>
+                                        @endif
+                                    </td>
+                                    <td class="py-2 text-end font-mono font-bold text-amber-800 whitespace-nowrap">
+                                        Rp {{ number_format($w->total_hpp, 0, ',', '.') }}
+                                    </td>
+                                    <td class="py-2 text-slate-600 text-[11px]">
+                                        {{ $w->user->full_name ?? $w->user->username ?? '-' }}
+                                    </td>
+                                    <td class="pe-4 py-2 text-center">
+                                        @if($w->dailyClosingReport)
+                                            <a href="{{ route('daily-closing.show', $w->dailyClosingReport->id) }}" class="btn btn-xs btn-outline-secondary rounded-lg font-mono text-[10px]" title="Buka Berita Acara Tutup Hari">
+                                                {{ $w->dailyClosingReport->report_number }}
+                                            </a>
+                                        @else
+                                            <span class="text-slate-400">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="text-center py-5 text-slate-400 text-xs">
+                                        <i class="fa-solid fa-recycle text-amber-400 text-2xl mb-1 d-block"></i>
+                                        Belum ada catatan waste bahan di sistem.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-slate-50 p-3 justify-content-between">
+                <span class="text-[11px] text-slate-500">
+                    Menampilkan {{ $allWastes->count() }} pencatatan waste terbaru.
+                </span>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-xl text-xs px-4 font-semibold" data-bs-dismiss="modal">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterWasteTable() {
+    var input = document.getElementById("wasteSearchInput");
+    if (!input) return;
+    var filter = input.value.toLowerCase();
+    var rows = document.querySelectorAll("#tableWasteRecords .waste-row");
+    rows.forEach(function(row) {
+        var text = row.innerText.toLowerCase();
+        row.style.display = text.indexOf(filter) > -1 ? "" : "none";
+    });
+}
+</script>
+
 @endsection
 
 @section('content')
@@ -1076,4 +1224,148 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- MODAL RIWAYAT & PENCARIAN WASTE BAHAN -->
+<div class="modal fade" id="modalHistoryWaste" tabindex="-1" aria-labelledby="modalHistoryWasteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
+            <div class="modal-header text-white p-4" style="background: linear-gradient(135deg, #78350f 0%, #451a03 100%);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-300 d-flex align-items-center justify-content-center text-lg border border-amber-400/30">
+                        <i class="fa-solid fa-recycle"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title font-extrabold text-sm mb-0 tracking-wide text-white" id="modalHistoryWasteLabel">
+                            PENCARIAN & LOG WASTE BAHAN (TRIAL & ERROR MESIN)
+                        </h5>
+                        <p class="text-[11px] text-amber-200/80 mb-0 mt-0.5">
+                            Daftar seluruh bahan baku & gulungan roll yang terpotong akibat kalibrasi mesin, trial error, atau cacat produksi.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Filter & Search Toolbar in Modal -->
+            <div class="p-3 bg-slate-50 border-b d-flex flex-column sm:flex-row justify-content-between align-items-center gap-3">
+                <div class="w-full sm:w-80">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-slate-200 text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="wasteSearchInput" class="form-control text-xs" placeholder="Ketik nama bahan, roll, atau alasan..." onkeyup="filterWasteTable()">
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-amber-100 text-amber-900 border border-amber-300 font-mono text-xs px-3 py-1.5 rounded-xl font-bold">
+                        Akumulasi Bulan Ini: Rp {{ number_format($monthWasteHpp ?? 0, 0, ',', '.') }}
+                    </span>
+                    <a href="{{ route('daily-closing.create') }}" class="btn btn-sm btn-primary rounded-xl text-xs font-bold px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1" style="background-color: #d97706; border-color: #d97706;">
+                        <i class="fa-solid fa-plus"></i> Input Waste Baru
+                    </a>
+                </div>
+            </div>
+
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-xs" id="tableWasteRecords">
+                        <thead class="bg-slate-100 text-[10px] text-slate-600 uppercase border-b">
+                            <tr>
+                                <th class="ps-4 py-2.5">Tanggal</th>
+                                <th class="py-2.5">Cabang</th>
+                                <th class="py-2.5">Nama Bahan Baku</th>
+                                <th class="py-2.5">Gulungan Roll</th>
+                                <th class="py-2.5 text-center">Qty Terbuang</th>
+                                <th class="py-2.5">Alasan & Catatan</th>
+                                <th class="py-2.5 text-end">Kerugian HPP</th>
+                                <th class="py-2.5">Dicatat Oleh</th>
+                                <th class="pe-4 py-2.5 text-center">Berita Acara</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($allWastes as $w)
+                                <tr class="waste-row border-b">
+                                    <td class="ps-4 py-2 font-mono font-bold text-slate-800 whitespace-nowrap">
+                                        {{ $w->created_at ? $w->created_at->format('d/m/Y') : '-' }}
+                                    </td>
+                                    <td class="py-2">
+                                        <span class="badge bg-slate-100 text-slate-700 border text-[10px] font-semibold">
+                                            {{ $w->branch->nama_cabang ?? 'Pusat' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2 font-bold text-slate-900 search-target">
+                                        {{ $w->material->material_name ?? '-' }}
+                                    </td>
+                                    <td class="py-2 search-target">
+                                        @if($w->materialRoll)
+                                            <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">
+                                                <i class="fa-solid fa-scroll me-0.5"></i> {{ $w->materialRoll->roll_name ?: 'Roll ' . $w->materialRoll->roll_width_m . 'm' }}
+                                            </span>
+                                        @else
+                                            <span class="text-slate-400 font-mono text-[11px]">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-2 text-center font-mono font-black text-rose-700 search-target">
+                                        {{ $w->waste_qty }} {{ $w->unit }}
+                                    </td>
+                                    <td class="py-2 search-target">
+                                        <div class="font-bold text-slate-800">{{ $w->reason }}</div>
+                                        @if($w->notes)
+                                            <div class="text-[11px] text-slate-500 mt-0.5">{{ $w->notes }}</div>
+                                        @endif
+                                    </td>
+                                    <td class="py-2 text-end font-mono font-bold text-amber-800 whitespace-nowrap">
+                                        Rp {{ number_format($w->total_hpp, 0, ',', '.') }}
+                                    </td>
+                                    <td class="py-2 text-slate-600 text-[11px]">
+                                        {{ $w->user->full_name ?? $w->user->username ?? '-' }}
+                                    </td>
+                                    <td class="pe-4 py-2 text-center">
+                                        @if($w->dailyClosingReport)
+                                            <a href="{{ route('daily-closing.show', $w->dailyClosingReport->id) }}" class="btn btn-xs btn-outline-secondary rounded-lg font-mono text-[10px]" title="Buka Berita Acara Tutup Hari">
+                                                {{ $w->dailyClosingReport->report_number }}
+                                            </a>
+                                        @else
+                                            <span class="text-slate-400">-</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="text-center py-5 text-slate-400 text-xs">
+                                        <i class="fa-solid fa-recycle text-amber-400 text-2xl mb-1 d-block"></i>
+                                        Belum ada catatan waste bahan di sistem.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-slate-50 p-3 justify-content-between">
+                <span class="text-[11px] text-slate-500">
+                    Menampilkan {{ $allWastes->count() }} pencatatan waste terbaru.
+                </span>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-xl text-xs px-4 font-semibold" data-bs-dismiss="modal">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterWasteTable() {
+    var input = document.getElementById("wasteSearchInput");
+    if (!input) return;
+    var filter = input.value.toLowerCase();
+    var rows = document.querySelectorAll("#tableWasteRecords .waste-row");
+    rows.forEach(function(row) {
+        var text = row.innerText.toLowerCase();
+        row.style.display = text.indexOf(filter) > -1 ? "" : "none";
+    });
+}
+</script>
+
 @endsection
