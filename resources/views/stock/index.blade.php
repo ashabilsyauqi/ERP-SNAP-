@@ -22,236 +22,6 @@
     @endif
 </a>
 
-<!-- MODAL CATAT WASTE BAHAN (STOCK & INVENTORY) -->
-<div class="modal fade" id="modalRecordStockWaste" tabindex="-1" aria-labelledby="modalRecordStockWasteLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content rounded-3xl border-0 shadow-2xl overflow-hidden">
-            <div class="modal-header text-white p-4" style="background: linear-gradient(135deg, #78350f 0%, #451a03 100%);">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-300 d-flex align-items-center justify-content-center text-lg border border-amber-400/30">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </div>
-                    <div>
-                        <h5 class="modal-title font-extrabold text-sm mb-0 tracking-wide text-white" id="modalRecordStockWasteLabel">
-                            PENCATATAN WASTE BAHAN (TRIAL & ERROR MESIN)
-                        </h5>
-                        <p class="text-[11px] text-amber-200/80 mb-0 mt-0.5">
-                            Kurangi stok bahan atau panjang gulungan roll yang rusak saat kalibrasi / trial print.
-                        </p>
-                    </div>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <form action="{{ route('stock.waste.store') }}" method="POST" id="formRecordStockWaste">
-                @csrf
-                @if(isset($branchId) && $branchId !== 'all')
-                    <input type="hidden" name="branch_id" value="{{ $branchId }}">
-                @endif
-
-                <div class="modal-body p-4 space-y-4">
-                    
-                    <!-- Alert Keterangan -->
-                    <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 d-flex items-start gap-2.5 text-xs text-amber-900">
-                        <i class="fa-solid fa-shield-halved text-amber-600 fs-6 mt-0.5"></i>
-                        <div>
-                            <strong>Stok Terpotong Real-Time & Masuk Closing Harian:</strong><br>
-                            Sisa panjang gulungan roll atau stok fisik bahan akan langsung terpotong saat ini juga, dan otomatis terakumulasi pada Laporan Tutup Hari (Daily Closing) tanpa mengurangi uang fisik kasir.
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-12 gap-3 text-xs">
-                        
-                        <!-- 1. Pilih Bahan Baku -->
-                        <div class="col-span-12 sm:col-span-6">
-                            <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">
-                                Pilih Bahan Baku <span class="text-rose-600">*</span>
-                            </label>
-                            <select name="material_id" id="stockWasteMaterialSelect" class="form-select form-select-sm text-xs rounded-xl font-medium" onchange="onStockWasteMaterialChange()" required>
-                                <option value="">-- Pilih Bahan Baku / Produk --</option>
-                                @if(isset($materialsForWaste))
-                                    @foreach($materialsForWaste->groupBy('category') as $cat => $mats)
-                                        <optgroup label="{{ $cat ?: 'Lainnya' }}">
-                                            @foreach($mats as $m)
-                                                <option value="{{ $m->id }}" 
-                                                        data-unit="{{ $m->unit ?: 'pcs' }}" 
-                                                        data-price="{{ (float)$m->purchase_price }}"
-                                                        data-rolls="{{ json_encode($m->rolls->map(fn($r) => ['id' => $r->id, 'name' => $r->roll_name ?: 'Roll ' . $r->roll_width_m . 'm', 'width' => (float)$r->roll_width_m, 'length' => (float)$r->current_length_m])) }}">
-                                                    {{ $m->material_name }} ({{ $m->rolls->count() > 0 ? $m->rolls->count() . ' Roll' : 'Stok: ' . $m->stock_qty . ' ' . ($m->unit ?: 'pcs') }})
-                                                </option>
-                                            @endforeach
-                                        </optgroup>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
-
-                        <!-- 2. Pilih Gulungan Roll -->
-                        <div class="col-span-12 sm:col-span-6" id="stockWasteRollContainer">
-                            <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">
-                                Pilihan Gulungan (Roll Media)
-                            </label>
-                            <select name="material_roll_id" id="stockWasteRollSelect" class="form-select form-select-sm text-xs rounded-xl font-medium" onchange="calculateStockWasteHpp()">
-                                <option value="">(Bukan Produk Roll)</option>
-                            </select>
-                            <span class="text-[10px] text-slate-400 mt-1 d-block" id="stockWasteRollInfo"></span>
-                        </div>
-
-                        <!-- 3. Kuantitas Terbuang -->
-                        <div class="col-span-12 sm:col-span-6">
-                            <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">
-                                Kuantitas Terbuang (Panjang / Lembar) <span class="text-rose-600">*</span>
-                            </label>
-                            <div class="input-group input-group-sm">
-                                <input type="number" name="waste_qty" id="stockWasteQty" class="form-control form-control-sm text-xs font-mono font-bold text-end rounded-start-xl" placeholder="0" min="0.01" step="0.01" oninput="calculateStockWasteHpp()" required>
-                                <span class="input-group-text text-xs font-bold bg-slate-100" id="stockWasteUnitLabel">m</span>
-                            </div>
-                        </div>
-
-                        <!-- 4. Alasan Waste -->
-                        <div class="col-span-12 sm:col-span-6">
-                            <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">
-                                Alasan Waste / Kerusakan <span class="text-rose-600">*</span>
-                            </label>
-                            <select name="reason" id="stockWasteReason" class="form-select form-select-sm text-xs rounded-xl font-medium" required>
-                                <option value="Trial Alignment Printhead">Trial Alignment Printhead</option>
-                                <option value="Error Profil / Kalibrasi Warna">Error Profil / Kalibrasi Warna</option>
-                                <option value="Bahan Macet / Mengkerut (Head Strike)">Bahan Macet / Mengkerut (Head Strike)</option>
-                                <option value="Salah Ukuran / Salah File Desain">Salah Ukuran / Salah File Desain</option>
-                                <option value="Rusak Finishing / Potongan Miring">Rusak Finishing / Potongan Miring</option>
-                                <option value="Bahan Cacat dari Supplier">Bahan Cacat dari Supplier</option>
-                                <option value="Lain-lain">Lain-lain</option>
-                            </select>
-                        </div>
-
-                        <!-- 5. Catatan Detail -->
-                        <div class="col-span-12">
-                            <label class="form-label font-bold text-slate-700 text-xs uppercase mb-1">
-                                Catatan Teknisi / Operator (Opsional)
-                            </label>
-                            <input type="text" name="notes" id="stockWasteNotes" class="form-control form-control-sm text-xs rounded-xl" placeholder="Contoh: Mesin outdoor tinta kuning bergaris, running tes 1.5 meter">
-                        </div>
-
-                    </div>
-
-                    <!-- Ringkasan Nilai Kerugian HPP -->
-                    <div class="p-3 rounded-2xl bg-slate-900 text-white d-flex justify-content-between align-items-center">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Estimasi Nilai Modal Kerugian (HPP):</span>
-                            <div class="font-mono text-base font-black text-amber-400" id="stockWasteHppPreview">Rp 0</div>
-                        </div>
-                        <div class="text-end">
-                            <span class="badge bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[10px] font-bold px-2 py-1 rounded-lg">
-                                <i class="fa-solid fa-bolt me-1"></i> Potong Stok Detik Ini
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="modal-footer bg-slate-50 p-3 justify-content-between">
-                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-xl text-xs px-3 font-semibold" data-bs-dismiss="modal">
-                        Batal
-                    </button>
-                    <button type="submit" class="btn btn-sm text-white rounded-xl text-xs font-bold px-4 py-2 shadow-sm d-inline-flex align-items-center gap-1.5" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); border: none;">
-                        <i class="fa-solid fa-check"></i>
-                        <span>Simpan & Potong Stok Sekarang</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-function openWasteModalFor(materialId) {
-    var select = document.getElementById('stockWasteMaterialSelect');
-    if (!select) return;
-    select.value = materialId;
-    onStockWasteMaterialChange();
-    var modalEl = document.getElementById('modalRecordStockWaste');
-    if (modalEl) {
-        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
-    }
-}
-
-function onStockWasteMaterialChange() {
-    var select = document.getElementById('stockWasteMaterialSelect');
-    if (!select) return;
-    var selectedOpt = select.options[select.selectedIndex];
-    var rollSelect = document.getElementById('stockWasteRollSelect');
-    var unitLabel = document.getElementById('stockWasteUnitLabel');
-    var rollInfo = document.getElementById('stockWasteRollInfo');
-
-    if (!selectedOpt || !selectedOpt.value) {
-        if (rollSelect) {
-            rollSelect.innerHTML = '<option value="">(Bukan Produk Roll)</option>';
-            rollSelect.disabled = true;
-        }
-        if (unitLabel) unitLabel.innerText = 'pcs';
-        if (rollInfo) rollInfo.innerText = '';
-        calculateStockWasteHpp();
-        return;
-    }
-
-    var unit = selectedOpt.getAttribute('data-unit') || 'pcs';
-    var rawRolls = selectedOpt.getAttribute('data-rolls');
-    var rolls = [];
-    try { rolls = JSON.parse(rawRolls) || []; } catch(e) {}
-
-    if (rolls && rolls.length > 0) {
-        var html = '';
-        rolls.forEach(function(r) {
-            html += '<option value="' + r.id + '" data-width="' + r.width + '" data-length="' + r.length + '">' + r.name + ' (Sisa: ' + r.length + 'm)</option>';
-        });
-        if (rollSelect) {
-            rollSelect.innerHTML = html;
-            rollSelect.disabled = false;
-        }
-        if (unitLabel) unitLabel.innerText = 'm';
-        if (rollInfo) rollInfo.innerText = 'Media gulungan: terpotong linear meter.';
-    } else {
-        if (rollSelect) {
-            rollSelect.innerHTML = '<option value="">(Bukan Produk Roll)</option>';
-            rollSelect.disabled = true;
-        }
-        if (unitLabel) unitLabel.innerText = unit;
-        if (rollInfo) rollInfo.innerText = '';
-    }
-
-    calculateStockWasteHpp();
-}
-
-function calculateStockWasteHpp() {
-    var matSelect = document.getElementById('stockWasteMaterialSelect');
-    if (!matSelect) return;
-    var selectedOpt = matSelect.options[matSelect.selectedIndex];
-    var rollSelect = document.getElementById('stockWasteRollSelect');
-    var qtyInput = document.getElementById('stockWasteQty');
-    var preview = document.getElementById('stockWasteHppPreview');
-
-    if (!selectedOpt || !selectedOpt.value || !preview) {
-        if (preview) preview.innerText = 'Rp 0';
-        return;
-    }
-
-    var basePrice = parseFloat(selectedOpt.getAttribute('data-price')) || 0;
-    var qty = parseFloat(qtyInput.value) || 0;
-    var subtotal = 0;
-
-    if (rollSelect && !rollSelect.disabled && rollSelect.value) {
-        var selectedRollOpt = rollSelect.options[rollSelect.selectedIndex];
-        var rollWidth = parseFloat(selectedRollOpt.getAttribute('data-width')) || 1.0;
-        subtotal = qty * (basePrice * rollWidth);
-    } else {
-        subtotal = qty * basePrice;
-    }
-
-    preview.innerText = 'Rp ' + Math.round(subtotal).toLocaleString('id-ID');
-}
-</script>
-
 @endsection
 
 @section('content')
@@ -499,10 +269,19 @@ function calculateStockWasteHpp() {
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-        </div>
 
-        <!-- View Mode 2: Kanban Cards -->
+                @if(method_exists($materials, "hasPages") && $materials->hasPages())
+                <div class="px-4 py-3 bg-white border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="text-xs text-slate-500 font-medium">
+                        Menampilkan <span class="font-bold text-slate-800">{{ $materials->firstItem() }}</span> - <span class="font-bold text-slate-800">{{ $materials->lastItem() }}</span> dari <span class="font-bold text-slate-800">{{ $materials->total() }}</span> produk stok
+                    </div>
+                    <div>
+                        {{ $materials->links() }}
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>        <!-- View Mode 2: Kanban Cards -->
         <div class="grid-view-container d-none p-4 bg-slate-50 border-top">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 @forelse($materials as $material)

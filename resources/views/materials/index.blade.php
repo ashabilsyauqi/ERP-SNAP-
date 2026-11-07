@@ -45,7 +45,7 @@
                                             <i class="fa-solid fa-box text-slate-400 text-xs"></i>
                                         </div>
                                         <div>
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#modalEditMaterial{{ $mat->id }}" class="fw-bold text-slate-800 text-decoration-none hover:text-teal-700">
+                                            <a href="#" onclick="openEditMaterialModal({{ $mat->id }})" class="fw-bold text-slate-800 text-decoration-none hover:text-teal-700">
                                                 {{ $mat->material_name }}
                                             </a>
                                             <div class="d-flex align-items-center gap-1.5 flex-wrap mt-0.5">
@@ -117,7 +117,7 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" data-bs-toggle="modal" data-bs-target="#modalEditMaterial{{ $mat->id }}" title="Edit Product">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="openEditMaterialModal({{ $mat->id }})" title="Edit Product">
                                             <i class="fa-solid fa-pen-to-square text-xs"></i>
                                         </button>
                                         <form action="{{ route('materials.destroy', $mat->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus produk ini?');">
@@ -142,10 +142,19 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
-        </div>
 
-        <!-- View Mode 2: Odoo Kanban Cards View -->
+                @if(method_exists($materials, "hasPages") && $materials->hasPages())
+                <div class="px-4 py-3 bg-white border-top d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="text-xs text-slate-500 font-medium">
+                        Menampilkan <span class="font-bold text-slate-800">{{ $materials->firstItem() }}</span> - <span class="font-bold text-slate-800">{{ $materials->lastItem() }}</span> dari <span class="font-bold text-slate-800">{{ $materials->total() }}</span> produk
+                    </div>
+                    <div>
+                        {{ $materials->links() }}
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>        <!-- View Mode 2: Odoo Kanban Cards View -->
         <div class="grid-view-container d-none p-4 bg-slate-50 border-top">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 @forelse($materials as $mat)
@@ -183,7 +192,7 @@
                         <div class="d-flex justify-content-between align-items-center pt-2 border-top border-slate-100">
                             <span class="text-[10px] font-mono text-slate-400">#MAT-{{ $mat->id }}</span>
                             <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" data-bs-toggle="modal" data-bs-target="#modalEditMaterial{{ $mat->id }}">
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="openEditMaterialModal({{ $mat->id }})">
                                     <i class="fa-solid fa-pen-to-square text-xs"></i>
                                 </button>
                                 <form action="{{ route('materials.destroy', $mat->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus produk ini?');">
@@ -411,16 +420,17 @@
 </div>
 
 <!-- Modals Edit Material -->
-@foreach($materials as $mat)
-    <div class="modal fade" id="modalEditMaterial{{ $mat->id }}" tabindex="-1" aria-hidden="true">
+
+    <!-- SINGLE DYNAMIC EDIT MODAL -->
+    <div class="modal fade" id="modalEditMaterialDynamic" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content rounded-3 shadow-2xl border-0 overflow-hidden">
-                <form action="{{ route('materials.update', $mat->id) }}" method="POST">
+                <form id="formEditMaterialDynamic" action="" method="POST">
                     @csrf
-                    @method('PUT')
+                    @method("PUT")
                     <div class="modal-header bg-slate-900 text-white py-3 px-4 d-flex justify-content-between align-items-center">
                         <h5 class="modal-title fs-6 fw-bold text-white mb-0 d-flex align-items-center gap-2">
-                            <i class="fa-solid fa-pen-to-square text-teal-400"></i> Edit Produk: {{ $mat->material_name }}
+                            <i class="fa-solid fa-pen-to-square text-teal-400"></i> Edit Produk: <span id="editMatTitle"></span>
                         </h5>
                         <button type="button" class="btn-close btn-close-white text-xs" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -430,31 +440,31 @@
                                 <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
                                     <i class="fa-solid fa-box text-primary me-1"></i> Nama Bahan / Produk Cetak <span class="text-danger">*</span>
                                 </label>
-                                <input type="text" name="material_name" value="{{ $mat->material_name }}" class="form-control form-control-sm font-bold text-slate-900" required>
+                                <input type="text" id="editMatName" name="material_name" value="" class="form-control form-control-sm font-bold text-slate-900" required>
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
                                     <i class="fa-solid fa-layer-group text-primary me-1"></i> Kategori Produk
                                 </label>
-                                <input type="text" name="category" value="{{ $mat->category }}" list="mat-category-list" class="form-control form-control-sm font-semibold">
+                                <input type="text" id="editMatCategory" name="category" value="" list="mat-category-list" class="form-control form-control-sm font-semibold">
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
                                     <i class="fa-solid fa-gear text-purple-600 me-1"></i> Mesin / Partner (Opsional)
                                 </label>
-                                <input type="text" name="machine_tag" value="{{ $mat->machine_tag }}" list="machine-tag-list" class="form-control form-control-sm font-semibold" placeholder="Contoh: Mesin Pak Gunawan">
+                                <input type="text" id="editMatMachineTag" name="machine_tag" value="" list="machine-tag-list" class="form-control form-control-sm font-semibold" placeholder="Contoh: Mesin Pak Gunawan">
                             </div>
 
                             <div class="col-md-6">
                                 <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
                                     <i class="fa-solid fa-truck text-secondary me-1"></i> Vendor / Supplier Utama
                                 </label>
-                                <select name="supplier_id" class="form-select form-select-sm">
+                                <select id="editMatSupplierId" name="supplier_id" class="form-select form-select-sm">
                                     <option value="">-- Pilih Vendor --</option>
                                     @foreach($suppliers as $sup)
-                                        <option value="{{ $sup->id }}" {{ $mat->supplier_id == $sup->id ? 'selected' : '' }}>{{ $sup->name }}</option>
+                                        <option value="{{ $sup->id }}">{{ $sup->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -463,14 +473,14 @@
                                 <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
                                     <i class="fa-solid fa-arrows-left-right text-secondary me-1"></i> Panjang / Ukuran (Meter)
                                 </label>
-                                <input type="number" step="0.01" name="fixed_size" value="{{ $mat->fixed_size }}" class="form-control form-control-sm">
+                                <input type="number" step="0.01" id="editMatFixedSize" name="fixed_size" value="" class="form-control form-control-sm">
                             </div>
 
                             <div class="col-md-4">
                                 <label class="form-label fw-bold text-slate-800 text-xs text-uppercase mb-1">
                                     <i class="fa-solid fa-cubes text-primary me-1"></i> Stok Fisik (On Hand) <span class="text-danger">*</span>
                                 </label>
-                                <input type="number" name="stock_qty" value="{{ $mat->stock_qty }}" class="form-control form-control-sm font-bold text-blue-900" required min="0">
+                                <input type="number" id="editMatStockQty" name="stock_qty" value="" class="form-control form-control-sm font-bold text-blue-900" required min="0">
                             </div>
 
                             <!-- Cost Price (HPP) -->
@@ -481,7 +491,7 @@
                                     </label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white fw-bold text-amber-800">Rp</span>
-                                        <input type="number" name="purchase_price" value="{{ $mat->purchase_price }}" class="form-control form-control-sm fw-bold font-monospace" required min="0">
+                                        <input type="number" id="editMatPurchasePrice" name="purchase_price" value="" class="form-control form-control-sm fw-bold font-monospace" required min="0">
                                     </div>
                                     <span class="text-[10px] text-amber-700 mt-1 d-block">Harga beli/modal per unit</span>
                                 </div>
@@ -495,7 +505,7 @@
                                     </label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white fw-bold text-emerald-700">Rp</span>
-                                        <input type="number" name="retail_price" value="{{ $mat->retail_price }}" class="form-control form-control-sm fw-bold text-emerald-800 font-monospace" required min="0">
+                                        <input type="number" id="editMatRetailPrice" name="retail_price" value="" class="form-control form-control-sm fw-bold text-emerald-800 font-monospace" required min="0">
                                     </div>
                                     <span class="text-[10px] text-emerald-700 mt-1 d-block">Harga normal eceran kasir</span>
                                 </div>
@@ -505,23 +515,23 @@
                             <div class="col-12">
                                 <div class="p-3 rounded-3 bg-slate-50 border border-slate-200">
                                     <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
-                                        <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="toggleClickChargeEdit{{ $mat->id }}" name="has_click_charge" value="1" {{ $mat->has_click_charge ? 'checked' : '' }} onchange="document.getElementById('clickChargeEditInputWrapper{{ $mat->id }}').style.display = this.checked ? 'block' : 'none'">
-                                        <label class="form-check-label fw-bold text-slate-800 text-xs text-uppercase cursor-pointer mb-0" for="toggleClickChargeEdit{{ $mat->id }}">
+                                        <input class="form-check-input cursor-pointer" type="checkbox" role="switch" id="editMatToggleClick" name="has_click_charge" value="1" onchange="document.getElementById('editMatClickWrapper').style.display = this.checked ? 'block' : 'none'">
+                                        <label class="form-check-label fw-bold text-slate-800 text-xs text-uppercase cursor-pointer mb-0" for="editMatToggleClick">
                                             <i class="fa-solid fa-print text-indigo-600 me-1"></i> Biaya Klik Mesin Digital (Click Charge) [Opsional]
                                         </label>
                                     </div>
-                                    <div id="clickChargeEditInputWrapper{{ $mat->id }}" style="display: {{ $mat->has_click_charge ? 'block' : 'none' }};" class="mt-2 pt-2 border-top border-slate-200">
+                                    <div id="editMatClickWrapper" style="display: none;" class="mt-2 pt-2 border-top border-slate-200">
                                         <div class="row g-2 align-items-center">
                                             <div class="col-md-6">
                                                 <label class="form-label text-slate-600 text-xs fw-semibold mb-1">Tarif Klik Mesin per Lembar / Unit (Rp):</label>
                                                 <div class="input-group input-group-sm">
                                                     <span class="input-group-text bg-white fw-bold text-indigo-700">Rp</span>
-                                                    <input type="number" name="click_charge" value="{{ $mat->click_charge ?? 0 }}" class="form-control form-control-sm fw-bold font-monospace" placeholder="1000" min="0">
+                                                    <input type="number" id="editMatClickCharge" name="click_charge" value="0" class="form-control form-control-sm fw-bold font-monospace" placeholder="1000" min="0">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <p class="text-[11px] text-slate-500 mb-0 mt-3">
-                                                    <i class="fa-solid fa-info-circle text-indigo-500 me-1"></i> Total HPP Item = Modal Bahan (Rp {{ number_format($mat->purchase_price, 0, ',', '.') }}) + Klik (Rp {{ number_format($mat->click_charge ?? 0, 0, ',', '.') }}) = <strong>Rp {{ number_format($mat->total_hpp, 0, ',', '.') }}</strong>
+                                                    <i class="fa-solid fa-info-circle text-indigo-500 me-1"></i> Total HPP Item = Modal Bahan + Klik Mesin
                                                 </p>
                                             </div>
                                         </div>
@@ -539,32 +549,12 @@
                                             </h6>
                                             <span class="text-slate-500 text-[11px]">Diskon bertingkat untuk pembelian banyak</span>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-primary py-1 px-2.5 text-xs font-semibold" onclick="addWholesaleRowMat('wholesale-edit-container-{{ $mat->id }}')">
+                                        <button type="button" class="btn btn-sm btn-primary py-1 px-2.5 text-xs font-semibold" onclick="addWholesaleRowMat('wholesale-edit-container-dynamic')">
                                             <i class="fa-solid fa-plus me-1"></i> Tambah Tier Grosir
                                         </button>
                                     </div>
 
-                                    <div id="wholesale-edit-container-{{ $mat->id }}" class="d-flex flex-column gap-2 mt-2">
-                                        @foreach($mat->wholesalePrices as $wIdx => $wp)
-                                            <div class="d-flex align-items-center gap-2 p-2 bg-white rounded border">
-                                                <div class="flex-fill">
-                                                    <label class="form-label text-slate-500 text-[10px] fw-bold mb-0.5 d-block">Minimal Beli (Qty/Pcs):</label>
-                                                    <input type="number" min="1" name="wholesale[{{ $wIdx }}][min_qty]" value="{{ $wp->min_qty }}" class="form-control form-control-sm" required>
-                                                </div>
-                                                <div class="flex-fill">
-                                                    <label class="form-label text-slate-500 text-[10px] fw-bold mb-0.5 d-block">Harga Grosir Satuan (Rp):</label>
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text bg-light">Rp</span>
-                                                        <input type="number" min="0" name="wholesale[{{ $wIdx }}][price]" value="{{ $wp->wholesale_price }}" class="form-control form-control-sm font-monospace font-bold" required>
-                                                    </div>
-                                                </div>
-                                                <div class="pt-3">
-                                                    <button type="button" class="btn btn-sm btn-outline-danger border-0 py-1 px-2" onclick="this.closest('.d-flex').remove()" title="Hapus Tier">
-                                                        <i class="fa-solid fa-trash-can"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        @endforeach
+                                    <div id="wholesale-edit-container-dynamic" class="d-flex flex-column gap-2 mt-2">
                                     </div>
                                 </div>
                             </div>
@@ -580,7 +570,48 @@
             </div>
         </div>
     </div>
-@endforeach
+
+<script>
+    const materialsData = @json($materials->keyBy("id"));
+
+    function openEditMaterialModal(id) {
+        const mat = materialsData[id];
+        if (!mat) return;
+
+        const modalEl = document.getElementById("modalEditMaterialDynamic");
+        const form = document.getElementById("formEditMaterialDynamic");
+        form.action = "{{ url("materials") }}/" + mat.id;
+
+        document.getElementById("editMatTitle").innerText = mat.material_name || "";
+        document.getElementById("editMatName").value = mat.material_name || "";
+        document.getElementById("editMatCategory").value = mat.category || "";
+        document.getElementById("editMatMachineTag").value = mat.machine_tag || "";
+        document.getElementById("editMatSupplierId").value = mat.supplier_id || "";
+        document.getElementById("editMatFixedSize").value = mat.fixed_size || "";
+        document.getElementById("editMatStockQty").value = mat.stock_qty || 0;
+        document.getElementById("editMatPurchasePrice").value = mat.purchase_price || 0;
+        document.getElementById("editMatRetailPrice").value = mat.retail_price || 0;
+
+        const clickToggle = document.getElementById("editMatToggleClick");
+        const clickWrap = document.getElementById("editMatClickWrapper");
+        clickToggle.checked = Boolean(mat.has_click_charge);
+        clickWrap.style.display = mat.has_click_charge ? "block" : "none";
+        document.getElementById("editMatClickCharge").value = mat.click_charge || 0;
+
+        const wsContainer = document.getElementById("wholesale-edit-container-dynamic");
+        wsContainer.innerHTML = "";
+        const wholesaleList = mat.wholesale_prices || mat.wholesalePrices || [];
+        if (wholesaleList && wholesaleList.length > 0) {
+            wholesaleList.forEach(function(wp) {
+                addWholesaleRowMat("wholesale-edit-container-dynamic", wp.min_qty, wp.wholesale_price);
+            });
+        }
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+</script>
+
 
 <script>
     function addWholesaleRowMat(containerId, minQty = '', price = '') {

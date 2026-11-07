@@ -44,7 +44,8 @@ class MaterialController extends Controller
             });
         }
 
-        $materials = $query->orderBy('created_at', 'desc')->get();
+        $perPage = (int)$request->input('per_page', 50);
+        $materials = $query->orderBy('created_at', 'desc')->paginate($perPage)->withQueryString();
         $suppliers = Supplier::orderBy('name')->get();
         $branches = Branch::all();
 

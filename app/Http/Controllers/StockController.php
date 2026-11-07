@@ -48,17 +48,14 @@ class StockController extends Controller
             $query->where('material_name', 'like', "%{$request->search}%");
         }
 
-        $materials = $query->get();
+        // Calculate summary metrics across full dataset
+        $totalItems = (clone $query)->count();
+        $totalStockQty = (clone $query)->sum('stock_qty');
+        $totalAssetValue = (clone $query)->selectRaw('SUM(stock_qty * purchase_price) as total_val')->value('total_val') ?: 0;
+        $lowStockCount = (clone $query)->where('stock_qty', '<', 5)->count();
 
-        // Calculate summary metrics
-        $totalItems = $materials->count();
-        $totalStockQty = $materials->sum('stock_qty');
-        $totalAssetValue = $materials->sum(function ($m) {
-            return $m->stock_qty * $m->purchase_price;
-        });
-        $lowStockCount = $materials->filter(function ($m) {
-            return $m->stock_qty <= 5;
-        })->count();
+        $perPage = (int)$request->input('per_page', 50);
+        $materials = $query->paginate($perPage)->withQueryString();
 
         // Count pending inspection items for badge counter
         $pendingCount = Purchase::where('status', 'pending_verification')
