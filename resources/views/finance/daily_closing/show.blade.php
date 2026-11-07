@@ -291,7 +291,20 @@
             @endif
 
             <!-- RINCIAN WASTE BAHAN (TRIAL & ERROR MESIN) -->
-            @if(!empty($report->waste_data) && count($report->waste_data) > 0)
+            @php
+    $displayWastes = !empty($report->waste_data) ? $report->waste_data : ($report->wastes->map(function($w) {
+        return [
+            'material_name' => $w->material->material_name ?? '-',
+            'roll_name' => $w->materialRoll ? ($w->materialRoll->roll_name ?: "Roll {$w->materialRoll->roll_width_m}m") : null,
+            'waste_qty' => $w->waste_qty,
+            'unit' => $w->unit,
+            'reason' => $w->reason,
+            'notes' => $w->notes,
+            'total_hpp' => $w->total_hpp,
+        ];
+    })->toArray());
+@endphp
+            @if(!empty($displayWastes) && count($displayWastes) > 0)
                 <div class="border rounded-2xl overflow-hidden">
                     <div class="bg-amber-900 text-white p-3 font-bold text-xs d-flex justify-content-between align-items-center">
                         <span class="d-flex align-items-center gap-2">
@@ -313,7 +326,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($report->waste_data as $w)
+                            @foreach($displayWastes as $w)
                                 <tr class="border-b">
                                     <td class="ps-3 py-1.5 font-bold text-slate-800">{{ $w['material_name'] ?? '-' }}</td>
                                     <td class="py-1.5 text-slate-600">

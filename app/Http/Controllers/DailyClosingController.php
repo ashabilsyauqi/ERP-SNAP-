@@ -341,6 +341,13 @@ class DailyClosingController extends Controller
             ->orderBy('material_name')
             ->get(['id', 'branch_id', 'material_name', 'category', 'unit', 'purchase_price', 'stock_qty']);
 
+        // Fetch any waste recorded today in Stock menu
+        $existingTodayWastes = DailyClosingWaste::with(['material', 'materialRoll', 'user'])
+            ->where('branch_id', $branchId)
+            ->whereDate('created_at', $targetDate)
+            ->get();
+        $existingTodayWasteTotalHpp = (float)$existingTodayWastes->sum('total_hpp');
+
         return view('finance.daily_closing.create', compact(
             'branches',
             'branch',
@@ -359,7 +366,9 @@ class DailyClosingController extends Controller
             'existingBossWithdrawalTotal',
             'openingCash',
             'expectedCash',
-            'branchMaterials'
+            'branchMaterials',
+            'existingTodayWastes',
+            'existingTodayWasteTotalHpp'
         ));
     }
 
@@ -573,6 +582,29 @@ class DailyClosingController extends Controller
                 }
             }
 
+            // Include any unlinked wastes recorded earlier today from the Stock page
+            $unlinkedTodayWastes = DailyClosingWaste::with(['material', 'materialRoll'])
+                ->where('branch_id', $branch->id)
+                ->whereDate('created_at', $request->closing_date)
+                ->whereNull('daily_closing_report_id')
+                ->get();
+
+            foreach ($unlinkedTodayWastes as $uw) {
+                $totalWasteHpp += (float)$uw->total_hpp;
+                $wasteRecords[] = [
+                    'material_id' => $uw->material_id,
+                    'material_name' => $uw->material->material_name ?? '-',
+                    'material_roll_id' => $uw->material_roll_id,
+                    'roll_name' => $uw->materialRoll ? ($uw->materialRoll->roll_name ?: "Roll {$uw->materialRoll->roll_width_m}m") : null,
+                    'waste_qty' => (float)$uw->waste_qty,
+                    'unit' => $uw->unit,
+                    'hpp_per_unit' => (float)$uw->hpp_per_unit,
+                    'total_hpp' => (float)$uw->total_hpp,
+                    'reason' => $uw->reason,
+                    'notes' => $uw->notes,
+                ];
+            }
+
             $reportNumber = DailyClosingReport::generateReportNumber($branch->nama_cabang);
 
             $report = DailyClosingReport::create([
@@ -605,22 +637,37 @@ class DailyClosingController extends Controller
                 'status' => 'submitted',
             ]);
 
-            // Save Daily Closing Wastes
+            // Save any newly added wastes from closing form
             foreach ($wasteRecords as $wr) {
-                DailyClosingWaste::create([
-                    'daily_closing_report_id' => $report->id,
-                    'branch_id' => $branch->id,
-                    'user_id' => $user->id,
-                    'material_id' => $wr['material_id'],
-                    'material_roll_id' => $wr['material_roll_id'],
-                    'waste_qty' => $wr['waste_qty'],
-                    'unit' => $wr['unit'],
-                    'hpp_per_unit' => $wr['hpp_per_unit'],
-                    'total_hpp' => $wr['total_hpp'],
-                    'reason' => $wr['reason'],
-                    'notes' => $wr['notes'],
-                ]);
+                // If it wasn't already in unlinkedTodayWastes
+                $alreadyExists = $unlinkedTodayWastes->contains(function($u) use ($wr) {
+                    return $u->material_id == $wr['material_id'] 
+                        && $u->material_roll_id == $wr['material_roll_id']
+                        && (float)$u->waste_qty == (float)$wr['waste_qty'];
+                });
+
+                if (!$alreadyExists) {
+                    DailyClosingWaste::create([
+                        'daily_closing_report_id' => $report->id,
+                        'branch_id' => $branch->id,
+                        'user_id' => $user->id,
+                        'material_id' => $wr['material_id'],
+                        'material_roll_id' => $wr['material_roll_id'],
+                        'waste_qty' => $wr['waste_qty'],
+                        'unit' => $wr['unit'],
+                        'hpp_per_unit' => $wr['hpp_per_unit'],
+                        'total_hpp' => $wr['total_hpp'],
+                        'reason' => $wr['reason'],
+                        'notes' => $wr['notes'],
+                    ]);
+                }
             }
+
+            // Link existing unlinked wastes from today
+            DailyClosingWaste::where('branch_id', $branch->id)
+                ->whereDate('created_at', $request->closing_date)
+                ->whereNull('daily_closing_report_id')
+                ->update(['daily_closing_report_id' => $report->id]);
 
             // Save Boss Withdrawal if entered on work sheet
             if ($bossWithdrawalAmount > 0) {
@@ -695,6 +742,7 @@ class DailyClosingController extends Controller
             }
         }
 
+        $report->wastes()->delete();
         $report->delete();
 
         return redirect()->route('daily-closing.index')->with('success', 'Laporan Tutup Hari berhasil dihapus.');

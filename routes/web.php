@@ -164,7 +164,7 @@ Route::middleware(['auth'])->group(function () {
     // ==========================================
     // STOCK MODULE (Manager & Owner Dropdown)
     // ==========================================
-    Route::middleware(['role:owner,manager'])->prefix('stock')->name('stock.')->group(function () {
+    Route::middleware(['role:owner,manager,cashier,operator'])->prefix('stock')->name('stock.')->group(function () {
         Route::get('/inventory', [\App\Http\Controllers\StockController::class, 'index'])->name('index');
         Route::get('/inspection', [\App\Http\Controllers\StockController::class, 'inspection'])->name('inspection');
         Route::get('/rejected', [\App\Http\Controllers\StockController::class, 'rejected'])->name('rejected');
@@ -172,5 +172,6 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/materials/{material}', [\App\Http\Controllers\StockController::class, 'update'])->name('update');
         Route::post('/purchases/{purchase}/verify', [\App\Http\Controllers\StockController::class, 'verify'])->name('purchases.verify');
         Route::post('/purchases/{purchase}/reject', [\App\Http\Controllers\StockController::class, 'reject'])->name('purchases.reject');
+        Route::post('/waste', [\App\Http\Controllers\StockController::class, 'storeWaste'])->name('waste.store');
     });
 });

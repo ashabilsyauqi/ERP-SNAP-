@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Material;
 use App\Models\Purchase;
 use App\Models\Branch;
+use App\Models\MaterialRoll;
+use App\Models\DailyClosingWaste;
+use App\Models\DailyClosingReport;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +21,7 @@ class StockController extends Controller
     {
         $user = Auth::user();
 
-        $query = Material::with(['supplier', 'branch', 'wholesalePrices'])->orderBy('material_name', 'asc');
+        $query = Material::with(['supplier', 'branch', 'wholesalePrices', 'rolls'])->orderBy('material_name', 'asc');
 
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
@@ -74,6 +77,20 @@ class StockController extends Controller
 
         $selectedCategory = $request->get('category', 'all');
 
+        $activeBranchId = ($branchId && $branchId !== 'all') ? (int)$branchId : ($user->branch_id ?: 1);
+
+        $materialsForWaste = Material::with(['rolls' => fn($rq) => $rq->orderBy('roll_width_m', 'asc')])
+            ->where('branch_id', $activeBranchId)
+            ->orderBy('category')
+            ->orderBy('material_name')
+            ->get(['id', 'branch_id', 'material_name', 'category', 'unit', 'purchase_price', 'stock_qty']);
+
+        $recentWastes = DailyClosingWaste::with(['material', 'materialRoll', 'user', 'branch'])
+            ->when($branchId && $branchId !== 'all', fn($q) => $q->where('branch_id', $branchId))
+            ->orderBy('created_at', 'desc')
+            ->take(15)
+            ->get();
+
         return view('stock.index', compact(
             'materials',
             'totalItems',
@@ -85,7 +102,9 @@ class StockController extends Controller
             'suppliers',
             'categories',
             'selectedCategory',
-            'branchId'
+            'branchId',
+            'materialsForWaste',
+            'recentWastes'
         ));
     }
 
@@ -409,5 +428,94 @@ class StockController extends Controller
         $purchase->save();
 
         return redirect()->route('stock.rejected')->with('success', "Pengadaan barang #{$purchase->po_number} berhasil ditolak/retur dan dicatat pada riwayat retur.");
+    }
+
+    /**
+     * Store material waste (Trial & Error Mesin) directly from Stock
+     */
+    public function storeWaste(Request $request)
+    {
+        $user = Auth::user();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        $request->validate([
+            'material_id'      => 'required|exists:materials,id',
+            'material_roll_id' => 'nullable|exists:material_rolls,id',
+            'waste_qty'        => 'required|numeric|min:0.01',
+            'reason'           => 'required|string|max:255',
+            'notes'            => 'nullable|string|max:500',
+            'branch_id'        => 'nullable|exists:branches,id',
+        ]);
+
+        $material = Material::findOrFail($request->material_id);
+        $branchId = ($isOwnerOrSuper && $request->filled('branch_id')) 
+            ? (int)$request->branch_id 
+            : ($material->branch_id ?: ($user->branch_id ?: 1));
+
+        $rollId = $request->filled('material_roll_id') ? (int)$request->material_roll_id : null;
+        $wasteQty = (float)$request->waste_qty;
+
+        return DB::transaction(function () use ($request, $user, $material, $branchId, $rollId, $wasteQty) {
+            $roll = $rollId ? MaterialRoll::find($rollId) : null;
+
+            if ($roll) {
+                $unit = 'm';
+                $rollWidth = (float)$roll->roll_width_m ?: 1.0;
+                $hppPerUnit = (float)$material->purchase_price * $rollWidth;
+                $totalHpp = round($wasteQty * $hppPerUnit, 2);
+
+                $newLength = max(0, round((float)$roll->current_length_m - $wasteQty, 2));
+                $roll->update(['current_length_m' => $newLength]);
+            } else {
+                $unit = $material->unit ?: 'pcs';
+                $hppPerUnit = (float)$material->purchase_price;
+                $totalHpp = round($wasteQty * $hppPerUnit, 2);
+
+                $newStock = max(0, round((float)$material->stock_qty - $wasteQty, 2));
+                $material->update(['stock_qty' => $newStock]);
+            }
+
+            // Check if there is an existing daily closing report today for this branch
+            $todayDate = date('Y-m-d');
+            $existingReport = DailyClosingReport::where('branch_id', $branchId)
+                ->whereDate('closing_date', $todayDate)
+                ->first();
+
+            $wasteRecord = DailyClosingWaste::create([
+                'daily_closing_report_id' => $existingReport ? $existingReport->id : null,
+                'branch_id' => $branchId,
+                'user_id' => $user->id,
+                'material_id' => $material->id,
+                'material_roll_id' => $roll ? $roll->id : null,
+                'waste_qty' => $wasteQty,
+                'unit' => $unit,
+                'hpp_per_unit' => $hppPerUnit,
+                'total_hpp' => $totalHpp,
+                'reason' => $request->reason,
+                'notes' => $request->notes,
+            ]);
+
+            // If report exists for today, update its total_waste_hpp and snapshot
+            if ($existingReport) {
+                $existingReport->increment('total_waste_hpp', $totalHpp);
+                $snap = $existingReport->waste_data ?: [];
+                $snap[] = [
+                    'material_id' => $material->id,
+                    'material_name' => $material->material_name,
+                    'material_roll_id' => $roll ? $roll->id : null,
+                    'roll_name' => $roll ? ($roll->roll_name ?: "Roll {$roll->roll_width_m}m") : null,
+                    'waste_qty' => $wasteQty,
+                    'unit' => $unit,
+                    'hpp_per_unit' => $hppPerUnit,
+                    'total_hpp' => $totalHpp,
+                    'reason' => $request->reason,
+                    'notes' => $request->notes,
+                ];
+                $existingReport->update(['waste_data' => $snap]);
+            }
+
+            $rollInfo = $roll ? " (Roll {$roll->roll_width_m}m, sisa {$roll->current_length_m}m)" : " (Sisa: {$material->stock_qty} {$unit})";
+            return redirect()->back()->with('success', "Waste bahan '{$material->material_name}'{$rollInfo} sebanyak {$wasteQty} {$unit} berhasil dicatat! Sisa stok telah dipotong otomatis.");
+        });
     }
 }

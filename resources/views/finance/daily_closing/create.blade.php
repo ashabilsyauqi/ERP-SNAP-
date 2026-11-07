@@ -279,6 +279,57 @@
                     </button>
                 </div>
 
+                @if(isset($existingTodayWastes) && $existingTodayWastes->count() > 0)
+                    <div class="bg-white rounded-xl border border-amber-300 overflow-hidden text-xs">
+                        <div class="bg-amber-100/80 px-3 py-1.5 font-bold text-amber-950 text-[11px] d-flex justify-content-between">
+                            <span class="d-flex align-items-center gap-1.5">
+                                <i class="fa-solid fa-boxes-stacked text-amber-700"></i>
+                                <span>Bahan Terbuang yang Telah Dicatat di Menu Stock Hari Ini (Otomatis Masuk Laporan):</span>
+                            </span>
+                            <span class="font-mono font-bold text-amber-900">Subtotal: Rp {{ number_format($existingTodayWasteTotalHpp, 0, ',', '.') }}</span>
+                        </div>
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr class="text-[10px] text-slate-500 uppercase bg-slate-50 border-b">
+                                    <th class="ps-3 py-1.5">Bahan Baku</th>
+                                    <th class="py-1.5">Gulungan Roll</th>
+                                    <th class="py-1.5 text-center">Qty Terbuang</th>
+                                    <th class="py-1.5">Alasan & Catatan</th>
+                                    <th class="pe-3 py-1.5 text-end">Kerugian HPP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($existingTodayWastes as $ew)
+                                    <tr>
+                                        <td class="ps-3 py-1.5 font-bold text-slate-800">{{ $ew->material->material_name ?? '-' }}</td>
+                                        <td class="py-1.5 text-slate-600 font-mono text-[11px]">
+                                            @if($ew->materialRoll)
+                                                <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px]">
+                                                    {{ $ew->materialRoll->roll_name ?: 'Roll ' . $ew->materialRoll->roll_width_m . 'm' }}
+                                                </span>
+                                            @else
+                                                <span class="text-slate-400 font-mono text-[11px]">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-1.5 text-center font-mono font-bold text-rose-700">
+                                            {{ $ew->waste_qty }} {{ $ew->unit }}
+                                        </td>
+                                        <td class="py-1.5">
+                                            <span class="font-semibold text-slate-800">{{ $ew->reason }}</span>
+                                            @if($ew->notes)
+                                                <small class="text-slate-500 d-block">{{ $ew->notes }}</small>
+                                            @endif
+                                        </td>
+                                        <td class="pe-3 py-1.5 text-end font-mono font-bold text-amber-800">
+                                            Rp {{ number_format($ew->total_hpp, 0, ',', '.') }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+
                 <!-- Dynamic Waste Rows -->
                 <div class="space-y-2">
                     <template x-if="wastes.length === 0">
@@ -913,8 +964,9 @@ function dailyClosingForm() {
             var qty = parseFloat(item.waste_qty) || 0;
             item.subtotal_hpp = Math.round(qty * (parseFloat(item.hpp_per_unit) || 0));
         },
+        initialStockWasteHpp: {{ (float)($existingTodayWasteTotalHpp ?? 0) }},
         get totalWasteHpp() {
-            return this.wastes.reduce(function(sum, item) { return sum + (parseFloat(item.subtotal_hpp) || 0); }, 0);
+            return this.initialStockWasteHpp + this.wastes.reduce(function(sum, item) { return sum + (parseFloat(item.subtotal_hpp) || 0); }, 0);
         },
         newExpenses: [],
         addExpenseRow: function() {
