@@ -13,156 +13,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-5xl mx-auto space-y-5"
-     x-data="{
-        cashSales: {{ (float)$totalCashSales }},
-        initialCashOut: {{ (float)$cashOut }},
-        bossWithdrawalAmount: {{ (float)($existingBossWithdrawalTotal ?? 0) }},
-        bills: {
-            100000: 0,
-            50000: 0,
-            20000: 0,
-            10000: 0,
-            5000: 0,
-            2000: 0,
-            1000: 0
-        },
-        coins: {
-            1000: 0,
-            500: 0,
-            200: 0,
-            100: 0
-        },
-        materialsList: @json($branchMaterials ?? []),
-        wastes: [],
-        addWasteRow() {
-            this.wastes.push({
-                material_id: '',
-                material_roll_id: '',
-                waste_qty: '',
-                unit: 'pcs',
-                hpp_per_unit: 0,
-                subtotal_hpp: 0,
-                reason: 'Trial Alignment Printhead',
-                notes: ''
-            });
-        },
-        removeWasteRow(index) {
-            this.wastes.splice(index, 1);
-        },
-        getMaterialRolls(materialId) {
-            if (!materialId) return [];
-            const mat = this.materialsList.find(m => m.id == materialId);
-            return (mat && mat.rolls) ? mat.rolls : [];
-        },
-        onMaterialChange(index) {
-            const item = this.wastes[index];
-            const mat = this.materialsList.find(m => m.id == item.material_id);
-            if (!mat) {
-                item.material_roll_id = '';
-                item.unit = 'pcs';
-                item.hpp_per_unit = 0;
-                this.calculateWasteHpp(index);
-                return;
-            }
-            if (mat.rolls && mat.rolls.length > 0) {
-                item.material_roll_id = mat.rolls[0].id;
-                item.unit = 'm';
-                const rollWidth = parseFloat(mat.rolls[0].roll_width_m) || 1.0;
-                item.hpp_per_unit = (parseFloat(mat.purchase_price) || 0) * rollWidth;
-            } else {
-                item.material_roll_id = '';
-                item.unit = mat.unit || 'pcs';
-                item.hpp_per_unit = parseFloat(mat.purchase_price) || 0;
-            }
-            this.calculateWasteHpp(index);
-        },
-        onRollChange(index) {
-            const item = this.wastes[index];
-            const mat = this.materialsList.find(m => m.id == item.material_id);
-            if (!mat) return;
-            const roll = (mat.rolls || []).find(r => r.id == item.material_roll_id);
-            if (roll) {
-                const rollWidth = parseFloat(roll.roll_width_m) || 1.0;
-                item.hpp_per_unit = (parseFloat(mat.purchase_price) || 0) * rollWidth;
-            } else {
-                item.hpp_per_unit = parseFloat(mat.purchase_price) || 0;
-            }
-            this.calculateWasteHpp(index);
-        },
-        calculateWasteHpp(index) {
-            const item = this.wastes[index];
-            const qty = parseFloat(item.waste_qty) || 0;
-            item.subtotal_hpp = Math.round(qty * (parseFloat(item.hpp_per_unit) || 0));
-        },
-        get totalWasteHpp() {
-            return this.wastes.reduce((sum, item) => sum + (parseFloat(item.subtotal_hpp) || 0), 0);
-        },
-        newExpenses: [],
-        addExpenseRow() {
-            this.newExpenses.push({
-                account_id: '{{ $expenseAccounts->first()->id ?? 11 }}',
-                keterangan: '',
-                amount: ''
-            });
-        },
-        removeExpenseRow(index) {
-            this.newExpenses.splice(index, 1);
-        },
-        get totalNewExpenses() {
-            return this.newExpenses.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-        },
-        get totalCashOut() {
-            return Number(this.initialCashOut) + this.totalNewExpenses;
-        },
-        get totalBossWithdrawal() {
-            return parseFloat(this.bossWithdrawalAmount) || 0;
-        },
-        get totalExpectedCash() {
-            return Math.max(0, Number(this.cashSales) - this.totalCashOut - this.totalBossWithdrawal);
-        },
-        get totalBills() {
-            return (this.bills[100000] * 100000) +
-                   (this.bills[50000] * 50000) +
-                   (this.bills[20000] * 20000) +
-                   (this.bills[10000] * 10000) +
-                   (this.bills[5000] * 5000) +
-                   (this.bills[2000] * 2000) +
-                   (this.bills[1000] * 1000);
-        },
-        get totalCoins() {
-            return (this.coins[1000] * 1000) +
-                   (this.coins[500] * 500) +
-                   (this.coins[200] * 200) +
-                   (this.coins[100] * 100);
-        },
-        get totalDenominations() {
-            return this.totalBills + this.totalCoins;
-        },
-        get actualCash() {
-            return this.totalDenominations;
-        },
-        get cashDifference() {
-            return this.actualCash - this.totalExpectedCash;
-        },
-        formatRp(val) {
-            return 'Rp ' + Math.round(val || 0).toLocaleString('id-ID');
-        },
-        adjustBill(nominal, delta) {
-            const current = parseInt(this.bills[nominal]) || 0;
-            this.bills[nominal] = Math.max(0, current + delta);
-        },
-        adjustCoin(nominal, delta) {
-            const current = parseInt(this.coins[nominal]) || 0;
-            this.coins[nominal] = Math.max(0, current + delta);
-        },
-        resetDenominations() {
-            if (confirm('Kosongkan semua hitungan lembaran dan koin?')) {
-                for (let k in this.bills) this.bills[k] = 0;
-                for (let k in this.coins) this.coins[k] = 0;
-            }
-        }
-     }">
+<div class="max-w-5xl mx-auto space-y-5" x-data="dailyClosingForm()">
     
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show rounded-2xl shadow-sm text-xs font-semibold" role="alert">
@@ -978,4 +829,158 @@
         </div>
     </form>
 </div>
+
+<script>
+function dailyClosingForm() {
+    return {
+        cashSales: {{ (float)$totalCashSales }},
+        initialCashOut: {{ (float)$cashOut }},
+        bossWithdrawalAmount: {{ (float)($existingBossWithdrawalTotal ?? 0) }},
+        bills: {
+            100000: 0,
+            50000: 0,
+            20000: 0,
+            10000: 0,
+            5000: 0,
+            2000: 0,
+            1000: 0
+        },
+        coins: {
+            1000: 0,
+            500: 0,
+            200: 0,
+            100: 0
+        },
+        materialsList: @json($branchMaterials ?? []),
+        wastes: [],
+        addWasteRow: function() {
+            this.wastes.push({
+                material_id: '',
+                material_roll_id: '',
+                waste_qty: '',
+                unit: 'pcs',
+                hpp_per_unit: 0,
+                subtotal_hpp: 0,
+                reason: 'Trial Alignment Printhead',
+                notes: ''
+            });
+        },
+        removeWasteRow: function(index) {
+            this.wastes.splice(index, 1);
+        },
+        getMaterialRolls: function(materialId) {
+            if (!materialId) return [];
+            var mat = this.materialsList.find(function(m) { return m.id == materialId; });
+            return (mat && mat.rolls) ? mat.rolls : [];
+        },
+        onMaterialChange: function(index) {
+            var item = this.wastes[index];
+            var mat = this.materialsList.find(function(m) { return m.id == item.material_id; });
+            if (!mat) {
+                item.material_roll_id = '';
+                item.unit = 'pcs';
+                item.hpp_per_unit = 0;
+                this.calculateWasteHpp(index);
+                return;
+            }
+            if (mat.rolls && mat.rolls.length > 0) {
+                item.material_roll_id = mat.rolls[0].id;
+                item.unit = 'm';
+                var rollWidth = parseFloat(mat.rolls[0].roll_width_m) || 1.0;
+                item.hpp_per_unit = (parseFloat(mat.purchase_price) || 0) * rollWidth;
+            } else {
+                item.material_roll_id = '';
+                item.unit = mat.unit || 'pcs';
+                item.hpp_per_unit = parseFloat(mat.purchase_price) || 0;
+            }
+            this.calculateWasteHpp(index);
+        },
+        onRollChange: function(index) {
+            var item = this.wastes[index];
+            var mat = this.materialsList.find(function(m) { return m.id == item.material_id; });
+            if (!mat) return;
+            var roll = (mat.rolls || []).find(function(r) { return r.id == item.material_roll_id; });
+            if (roll) {
+                var rollWidth = parseFloat(roll.roll_width_m) || 1.0;
+                item.hpp_per_unit = (parseFloat(mat.purchase_price) || 0) * rollWidth;
+            } else {
+                item.hpp_per_unit = parseFloat(mat.purchase_price) || 0;
+            }
+            this.calculateWasteHpp(index);
+        },
+        calculateWasteHpp: function(index) {
+            var item = this.wastes[index];
+            var qty = parseFloat(item.waste_qty) || 0;
+            item.subtotal_hpp = Math.round(qty * (parseFloat(item.hpp_per_unit) || 0));
+        },
+        get totalWasteHpp() {
+            return this.wastes.reduce(function(sum, item) { return sum + (parseFloat(item.subtotal_hpp) || 0); }, 0);
+        },
+        newExpenses: [],
+        addExpenseRow: function() {
+            this.newExpenses.push({
+                account_id: '{{ $expenseAccounts->first()->id ?? 11 }}',
+                keterangan: '',
+                amount: ''
+            });
+        },
+        removeExpenseRow: function(index) {
+            this.newExpenses.splice(index, 1);
+        },
+        get totalNewExpenses() {
+            return this.newExpenses.reduce(function(sum, item) { return sum + (parseFloat(item.amount) || 0); }, 0);
+        },
+        get totalCashOut() {
+            return Number(this.initialCashOut) + this.totalNewExpenses;
+        },
+        get totalBossWithdrawal() {
+            return parseFloat(this.bossWithdrawalAmount) || 0;
+        },
+        get totalExpectedCash() {
+            return Math.max(0, Number(this.cashSales) - this.totalCashOut - this.totalBossWithdrawal);
+        },
+        get totalBills() {
+            return (this.bills[100000] * 100000) +
+                   (this.bills[50000] * 50000) +
+                   (this.bills[20000] * 20000) +
+                   (this.bills[10000] * 10000) +
+                   (this.bills[5000] * 5000) +
+                   (this.bills[2000] * 2000) +
+                   (this.bills[1000] * 1000);
+        },
+        get totalCoins() {
+            return (this.coins[1000] * 1000) +
+                   (this.coins[500] * 500) +
+                   (this.coins[200] * 200) +
+                   (this.coins[100] * 100);
+        },
+        get totalDenominations() {
+            return this.totalBills + this.totalCoins;
+        },
+        get actualCash() {
+            return this.totalDenominations;
+        },
+        get cashDifference() {
+            return this.actualCash - this.totalExpectedCash;
+        },
+        formatRp: function(val) {
+            return 'Rp ' + Math.round(val || 0).toLocaleString('id-ID');
+        },
+        adjustBill: function(nominal, delta) {
+            var current = parseInt(this.bills[nominal]) || 0;
+            this.bills[nominal] = Math.max(0, current + delta);
+        },
+        adjustCoin: function(nominal, delta) {
+            var current = parseInt(this.coins[nominal]) || 0;
+            this.coins[nominal] = Math.max(0, current + delta);
+        },
+        resetDenominations: function() {
+            if (confirm('Kosongkan semua hitungan lembaran dan koin?')) {
+                for (var k in this.bills) this.bills[k] = 0;
+                for (var k in this.coins) this.coins[k] = 0;
+            }
+        }
+    };
+}
+</script>
 @endsection
