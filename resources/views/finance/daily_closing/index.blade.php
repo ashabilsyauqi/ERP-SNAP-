@@ -217,6 +217,11 @@
                             </td>
                             <td class="text-end font-mono font-bold text-slate-900">
                                 Rp {{ number_format($r->total_sales, 0, ',', '.') }}
+                                @if(!empty($r->total_waste_hpp) && $r->total_waste_hpp > 0)
+                                    <div class="text-[9px] text-amber-700 font-bold mt-0.5" title="Kerugian bahan terbuang (waste trial error)">
+                                        <i class="fa-solid fa-recycle text-[8px] me-0.5"></i> Waste: Rp {{ number_format($r->total_waste_hpp, 0, ',', '.') }}
+                                    </div>
+                                @endif
                             </td>
                             <td class="text-end font-mono font-bold text-emerald-700">
                                 + Rp {{ number_format($r->actual_cash, 0, ',', '.') }}

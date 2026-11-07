@@ -290,6 +290,60 @@
                 </div>
             @endif
 
+            <!-- RINCIAN WASTE BAHAN (TRIAL & ERROR MESIN) -->
+            @if(!empty($report->waste_data) && count($report->waste_data) > 0)
+                <div class="border rounded-2xl overflow-hidden">
+                    <div class="bg-amber-900 text-white p-3 font-bold text-xs d-flex justify-content-between align-items-center">
+                        <span class="d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-300"></i>
+                            Rincian Waste Bahan (Bahan Terbuang Karena Trial & Error)
+                        </span>
+                        <span class="font-mono text-amber-100 font-extrabold">
+                            Total Kerugian HPP: Rp {{ number_format($report->total_waste_hpp ?? 0, 0, ',', '.') }}
+                        </span>
+                    </div>
+                    <table class="table table-sm mb-0 text-xs">
+                        <thead>
+                            <tr class="bg-amber-50 text-[10px] text-amber-950 uppercase border-b">
+                                <th class="ps-3 py-2">Nama Bahan Baku</th>
+                                <th class="py-2">Media / Gulungan Roll</th>
+                                <th class="py-2 text-center">Qty Terbuang</th>
+                                <th class="py-2">Alasan & Catatan</th>
+                                <th class="pe-3 py-2 text-end">Kerugian HPP (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($report->waste_data as $w)
+                                <tr class="border-b">
+                                    <td class="ps-3 py-1.5 font-bold text-slate-800">{{ $w['material_name'] ?? '-' }}</td>
+                                    <td class="py-1.5 text-slate-600">
+                                        @if(!empty($w['roll_name']))
+                                            <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold">
+                                                <i class="fa-solid fa-scroll me-0.5"></i> {{ $w['roll_name'] }}
+                                            </span>
+                                        @else
+                                            <span class="text-slate-400 font-mono text-[11px]">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-1.5 text-center font-mono font-bold text-rose-700">
+                                        {{ $w['waste_qty'] }} {{ $w['unit'] }}
+                                    </td>
+                                    <td class="py-1.5">
+                                        <div class="font-semibold text-slate-800">{{ $w['reason'] ?? 'Trial / Error' }}</div>
+                                        @if(!empty($w['notes']))
+                                            <div class="text-[11px] text-slate-500">{{ $w['notes'] }}</div>
+                                        @endif
+                                    </td>
+                                    <td class="pe-3 py-1.5 text-end font-mono font-bold text-amber-800">
+                                        Rp {{ number_format($w['total_hpp'] ?? 0, 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
             <!-- Meteran Mesin & Catatan Produksi -->
             @if($report->click_count_total !== null || $report->production_notes)
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">

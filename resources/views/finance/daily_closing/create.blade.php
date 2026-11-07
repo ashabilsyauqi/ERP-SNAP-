@@ -33,6 +33,71 @@
             200: 0,
             100: 0
         },
+        materialsList: @json($branchMaterials ?? []),
+        wastes: [],
+        addWasteRow() {
+            this.wastes.push({
+                material_id: '',
+                material_roll_id: '',
+                waste_qty: '',
+                unit: 'pcs',
+                hpp_per_unit: 0,
+                subtotal_hpp: 0,
+                reason: 'Trial Alignment Printhead',
+                notes: ''
+            });
+        },
+        removeWasteRow(index) {
+            this.wastes.splice(index, 1);
+        },
+        getMaterialRolls(materialId) {
+            if (!materialId) return [];
+            const mat = this.materialsList.find(m => m.id == materialId);
+            return (mat && mat.rolls) ? mat.rolls : [];
+        },
+        onMaterialChange(index) {
+            const item = this.wastes[index];
+            const mat = this.materialsList.find(m => m.id == item.material_id);
+            if (!mat) {
+                item.material_roll_id = '';
+                item.unit = 'pcs';
+                item.hpp_per_unit = 0;
+                this.calculateWasteHpp(index);
+                return;
+            }
+            if (mat.rolls && mat.rolls.length > 0) {
+                item.material_roll_id = mat.rolls[0].id;
+                item.unit = 'm';
+                const rollWidth = parseFloat(mat.rolls[0].roll_width_m) || 1.0;
+                item.hpp_per_unit = (parseFloat(mat.purchase_price) || 0) * rollWidth;
+            } else {
+                item.material_roll_id = '';
+                item.unit = mat.unit || 'pcs';
+                item.hpp_per_unit = parseFloat(mat.purchase_price) || 0;
+            }
+            this.calculateWasteHpp(index);
+        },
+        onRollChange(index) {
+            const item = this.wastes[index];
+            const mat = this.materialsList.find(m => m.id == item.material_id);
+            if (!mat) return;
+            const roll = (mat.rolls || []).find(r => r.id == item.material_roll_id);
+            if (roll) {
+                const rollWidth = parseFloat(roll.roll_width_m) || 1.0;
+                item.hpp_per_unit = (parseFloat(mat.purchase_price) || 0) * rollWidth;
+            } else {
+                item.hpp_per_unit = parseFloat(mat.purchase_price) || 0;
+            }
+            this.calculateWasteHpp(index);
+        },
+        calculateWasteHpp(index) {
+            const item = this.wastes[index];
+            const qty = parseFloat(item.waste_qty) || 0;
+            item.subtotal_hpp = Math.round(qty * (parseFloat(item.hpp_per_unit) || 0));
+        },
+        get totalWasteHpp() {
+            return this.wastes.reduce((sum, item) => sum + (parseFloat(item.subtotal_hpp) || 0), 0);
+        },
         newExpenses: [],
         addExpenseRow() {
             this.newExpenses.push({
@@ -346,13 +411,160 @@
                 </div>
             </div>
 
+            <!-- 3B. PENCATATAN WASTE BAHAN (TRIAL & ERROR MESIN) -->
+            <div class="rounded-2xl border border-amber-300 bg-amber-50/40 p-4 space-y-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-xs font-extrabold uppercase tracking-wider text-amber-950 mb-0 d-flex align-items-center gap-1.5">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                            C. Pencatatan Waste Bahan (Trial & Error Mesin)
+                        </h6>
+                        <p class="text-[11px] text-amber-800/80 mb-0 mt-0.5">
+                            Catat bahan yang terbuang karena trial error kalibrasi mesin, warna tidak cocok, atau cacat potong. <strong>Otomatis mengurangi sisa stok Roll / Kertas</strong> tanpa mengurangi uang tunai fisik di laci kasir.
+                        </p>
+                    </div>
+                    <button type="button" @click="addWasteRow()" class="btn btn-sm text-xs font-bold rounded-xl px-3 py-1.5 shadow-sm d-inline-flex align-items-center gap-1 text-slate-900" style="background-color: #f59e0b; border-color: #f59e0b;">
+                        <i class="fa-solid fa-plus"></i> Tambah Waste Bahan
+                    </button>
+                </div>
+
+                <!-- Dynamic Waste Rows -->
+                <div class="space-y-2">
+                    <template x-if="wastes.length === 0">
+                        <div class="text-center py-3 bg-white/70 border border-dashed border-amber-300 rounded-xl text-xs text-slate-500">
+                            <i class="fa-solid fa-recycle text-amber-500 text-lg mb-1 d-block"></i>
+                            Tidak ada bahan terbuang / nihil waste hari ini. Klik <strong class="text-amber-800 cursor-pointer" @click="addWasteRow()">"+ Tambah Waste Bahan"</strong> jika ada bahan rusak atau trial error mesin.
+                        </div>
+                    </template>
+
+                    <template x-for="(waste, index) in wastes" :key="index">
+                        <div class="bg-white p-3 rounded-xl border border-amber-200 shadow-xs space-y-2 text-xs animate-fade-in">
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <!-- Pilih Material -->
+                                <div class="col-span-12 sm:col-span-4">
+                                    <label class="text-[10px] font-bold text-slate-600 uppercase block mb-1">
+                                        Pilih Bahan Baku <span class="text-red-500">*</span>
+                                    </label>
+                                    <select :name="'wastes[' + index + '][material_id]'" 
+                                            x-model="waste.material_id" 
+                                            @change="onMaterialChange(index)" 
+                                            class="form-select form-select-sm text-xs rounded-lg font-medium" 
+                                            required>
+                                        <option value="">-- Pilih Bahan Baku / Produk --</option>
+                                        @if(isset($branchMaterials))
+                                            @foreach($branchMaterials->groupBy('category') as $cat => $mats)
+                                                <optgroup label="{{ $cat ?: 'Lainnya' }}">
+                                                    @foreach($mats as $m)
+                                                        <option value="{{ $m->id }}">
+                                                            {{ $m->material_name }} ({{ $m->rolls->count() > 0 ? $m->rolls->count() . ' Gulungan Roll' : 'Stok: ' . $m->stock_qty . ' ' . ($m->unit ?: 'pcs') }})
+                                                        </option>
+                                                    @endforeach
+                                                </optgroup>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+
+                                <!-- Pilih Roll (Jika bahan berupa Roll) -->
+                                <div class="col-span-12 sm:col-span-3">
+                                    <label class="text-[10px] font-bold text-slate-600 uppercase block mb-1">
+                                        Pilihan Gulungan (Roll)
+                                    </label>
+                                    <select :name="'wastes[' + index + '][material_roll_id]'" 
+                                            x-model="waste.material_roll_id" 
+                                            @change="onRollChange(index)" 
+                                            class="form-select form-select-sm text-xs rounded-lg font-medium" 
+                                            :disabled="!getMaterialRolls(waste.material_id).length">
+                                        <template x-if="!getMaterialRolls(waste.material_id).length">
+                                            <option value="">(Bukan Produk Roll)</option>
+                                        </template>
+                                        <template x-for="r in getMaterialRolls(waste.material_id)" :key="r.id">
+                                            <option :value="r.id" x-text="`${r.roll_name || ('Roll ' + r.roll_width_m + 'm')} (Sisa: ${r.current_length_m}m)`"></option>
+                                        </template>
+                                    </select>
+                                </div>
+
+                                <!-- Jumlah Terbuang (Qty) -->
+                                <div class="col-span-6 sm:col-span-2">
+                                    <label class="text-[10px] font-bold text-slate-600 uppercase block mb-1">
+                                        Qty Terbuang <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" 
+                                               :name="'wastes[' + index + '][waste_qty]'" 
+                                               x-model.number="waste.waste_qty" 
+                                               @input="calculateWasteHpp(index)" 
+                                               class="form-control form-control-sm text-xs font-mono font-bold text-end rounded-start-lg" 
+                                               placeholder="0" 
+                                               min="0.1" 
+                                               step="0.01" 
+                                               required>
+                                        <span class="input-group-text text-[10px] bg-slate-100 font-bold" x-text="waste.unit"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Alasan Waste -->
+                                <div class="col-span-6 sm:col-span-3">
+                                    <label class="text-[10px] font-bold text-slate-600 uppercase block mb-1">
+                                        Alasan Waste
+                                    </label>
+                                    <select :name="'wastes[' + index + '][reason]'" 
+                                            x-model="waste.reason" 
+                                            class="form-select form-select-sm text-xs rounded-lg font-medium">
+                                        <option value="Trial Alignment Printhead">Trial Alignment Printhead</option>
+                                        <option value="Error Profil / Kalibrasi Warna">Error Profil / Kalibrasi Warna</option>
+                                        <option value="Bahan Macet / Mengkerut (Head Strike)">Bahan Macet / Mengkerut (Head Strike)</option>
+                                        <option value="Salah Ukuran / Salah File Desain">Salah Ukuran / Salah File Desain</option>
+                                        <option value="Rusak Finishing / Potongan Miring">Rusak Finishing / Potongan Miring</option>
+                                        <option value="Bahan Cacat dari Supplier">Bahan Cacat dari Supplier</option>
+                                        <option value="Lain-lain">Lain-lain</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Baris Kedua: Catatan & Subtotal HPP -->
+                            <div class="grid grid-cols-12 gap-2 items-center pt-1 border-t border-slate-100">
+                                <div class="col-span-12 sm:col-span-8">
+                                    <input type="text" 
+                                           :name="'wastes[' + index + '][notes]'" 
+                                           x-model="waste.notes" 
+                                           class="form-control form-control-sm text-xs rounded-lg" 
+                                           placeholder="Catatan detail (contoh: Mesin outdoor tinta kuning mampet, tes potong 1.5m)">
+                                </div>
+                                <div class="col-span-9 sm:col-span-3 text-end">
+                                    <span class="text-[10px] text-slate-400 block">Estimasi Nilai HPP Waste:</span>
+                                    <span class="font-mono font-bold text-xs text-amber-700" x-text="formatRp(waste.subtotal_hpp)"></span>
+                                </div>
+                                <div class="col-span-3 sm:col-span-1 text-end">
+                                    <button type="button" @click="removeWasteRow(index)" class="btn btn-sm btn-outline-danger p-1 rounded-lg text-xs" title="Hapus Baris">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Total Kerugian Waste Ringkasan -->
+                <div class="bg-amber-100/80 rounded-xl p-2.5 d-flex justify-content-between align-items-center text-xs font-bold text-amber-950">
+                    <div class="d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-amber-700"></i>
+                        <span>Total Kerugian Bahan Hari Ini (Waste HPP):</span>
+                        <span class="badge bg-white text-amber-800 border border-amber-300 text-[10px] font-normal ms-1">
+                            Potong Stok • Kas Laci Aman
+                        </span>
+                    </div>
+                    <div class="font-mono text-sm text-amber-900" x-text="formatRp(totalWasteHpp)"></div>
+                </div>
+            </div>
+
             <!-- 4. KAS DIAMBIL BOSS HARI INI (LANGSUNG DI LEMBAR KERJA) -->
             <div class="rounded-2xl border border-amber-300 bg-amber-50/40 p-4 space-y-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="text-xs font-extrabold uppercase tracking-wider text-amber-950 mb-0 d-flex align-items-center gap-1.5">
                             <i class="fa-solid fa-hand-holding-dollar text-amber-600"></i>
-                            C. Penarikan Kas oleh Boss Hari Ini (Diambil Boss)
+                            D. Penarikan Kas oleh Boss Hari Ini (Diambil Boss)
                         </h6>
                         <p class="text-[11px] text-amber-800/80 mb-0 mt-0.5">
                             Jika Boss / Owner mengambil kas dari laci hari ini (misal untuk disetor ke bank / kas pusat), catat di sini agar fisik laci tidak dihitung selisih tekor.
@@ -448,7 +660,7 @@
                     <div>
                         <h6 class="text-xs font-extrabold uppercase tracking-wider text-emerald-950 mb-0 d-flex align-items-center gap-1.5">
                             <i class="fa-solid fa-money-bill-wave text-emerald-600"></i>
-                            D. Kontrol Uang Fisik Kasir (Hitung Lembaran & Koin di Laci)
+                            E. Kontrol Uang Fisik Kasir (Hitung Lembaran & Koin di Laci)
                         </h6>
                         <p class="text-[11px] text-emerald-800/80 mb-0 mt-0.5">
                             Masukkan jumlah lembar dan keping uang tunai fisik yang ada di laci saat closing kasir.
@@ -670,7 +882,7 @@
                     <div>
                         <div class="text-xs font-extrabold uppercase tracking-wider d-flex align-items-center gap-1.5" style="color: #f59e0b;">
                             <i class="fa-solid fa-scale-balanced"></i>
-                            E. Status Rekonsiliasi Kas Laci & Selisih
+                            F. Status Rekonsiliasi Kas Laci & Selisih
                         </div>
                         <div class="text-[11px] mt-0.5" style="color: #94a3b8;">
                             Uang Cash Seharusnya = <strong>Kasir Tunai</strong> dikurangi <strong>Pengeluaran</strong> dikurangi <strong>Diambil Boss</strong>.

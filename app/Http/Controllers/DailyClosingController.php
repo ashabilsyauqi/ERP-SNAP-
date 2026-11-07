@@ -9,6 +9,9 @@ use App\Models\TransactionPayment;
 use App\Models\CashTransaction;
 use App\Models\BossCashWithdrawal;
 use App\Models\Account;
+use App\Models\DailyClosingWaste;
+use App\Models\Material;
+use App\Models\MaterialRoll;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -313,6 +316,15 @@ class DailyClosingController extends Controller
         $cashIn = 0;
         $expectedCash = max(0, $totalCashSales - $cashOut - $existingBossWithdrawalTotal);
 
+        // Branch Materials & Rolls for Waste Recording
+        $branchMaterials = Material::with(['rolls' => function($q) {
+                $q->orderBy('roll_width_m', 'asc');
+            }])
+            ->where('branch_id', $branchId)
+            ->orderBy('category')
+            ->orderBy('material_name')
+            ->get(['id', 'branch_id', 'material_name', 'category', 'unit', 'purchase_price', 'stock_qty']);
+
         return view('finance.daily_closing.create', compact(
             'branches',
             'branch',
@@ -330,7 +342,8 @@ class DailyClosingController extends Controller
             'existingBossWithdrawals',
             'existingBossWithdrawalTotal',
             'openingCash',
-            'expectedCash'
+            'expectedCash',
+            'branchMaterials'
         ));
     }
 
@@ -360,6 +373,8 @@ class DailyClosingController extends Controller
             'denominations' => 'nullable|array',
             'new_expenses' => 'nullable|array',
             'new_expenses.*' => 'nullable',
+            'wastes' => 'nullable|array',
+            'wastes.*' => 'nullable',
         ]);
 
         // Verifikasi PIN jika di lembar kerja ada penarikan kas oleh Boss
@@ -486,6 +501,62 @@ class DailyClosingController extends Controller
                 $clickCount = max(0, (int)$request->click_counter_end - (int)$request->click_counter_start);
             }
 
+            // Process Waste Bahan (Trial & Error Mesin)
+            $wastesInput = $request->input('wastes', []);
+            $wasteRecords = [];
+            $totalWasteHpp = 0;
+
+            if (is_array($wastesInput)) {
+                foreach ($wastesInput as $w) {
+                    $materialId = !empty($w['material_id']) ? (int)$w['material_id'] : null;
+                    $wasteQty = isset($w['waste_qty']) ? (float)$w['waste_qty'] : 0;
+                    $reason = trim($w['reason'] ?? 'Trial Alignment / Error');
+                    $notes = trim($w['notes'] ?? '');
+                    $rollId = !empty($w['material_roll_id']) ? (int)$w['material_roll_id'] : null;
+
+                    if ($materialId && $wasteQty > 0) {
+                        $mat = Material::find($materialId);
+                        if ($mat) {
+                            $roll = $rollId ? MaterialRoll::find($rollId) : null;
+                            
+                            if ($roll) {
+                                $unit = 'm';
+                                $rollWidth = (float)$roll->roll_width_m ?: 1.0;
+                                $hppPerUnit = (float)$mat->purchase_price * $rollWidth;
+                                $subtotalHpp = round($wasteQty * $hppPerUnit, 2);
+
+                                // Kurangi sisa panjang roll di gudang
+                                $newLength = max(0, round((float)$roll->current_length_m - $wasteQty, 2));
+                                $roll->update(['current_length_m' => $newLength]);
+                            } else {
+                                $unit = $mat->unit ?: 'pcs';
+                                $hppPerUnit = (float)$mat->purchase_price;
+                                $subtotalHpp = round($wasteQty * $hppPerUnit, 2);
+
+                                // Kurangi stok fisik bahan
+                                $newStock = max(0, round((float)$mat->stock_qty - $wasteQty, 2));
+                                $mat->update(['stock_qty' => $newStock]);
+                            }
+
+                            $totalWasteHpp += $subtotalHpp;
+
+                            $wasteRecords[] = [
+                                'material_id' => $mat->id,
+                                'material_name' => $mat->material_name,
+                                'material_roll_id' => $roll ? $roll->id : null,
+                                'roll_name' => $roll ? ($roll->roll_name ?: "Roll {$roll->roll_width_m}m") : null,
+                                'waste_qty' => $wasteQty,
+                                'unit' => $unit,
+                                'hpp_per_unit' => $hppPerUnit,
+                                'total_hpp' => $subtotalHpp,
+                                'reason' => $reason,
+                                'notes' => $notes,
+                            ];
+                        }
+                    }
+                }
+            }
+
             $reportNumber = DailyClosingReport::generateReportNumber($branch->nama_cabang);
 
             $report = DailyClosingReport::create([
@@ -507,6 +578,8 @@ class DailyClosingController extends Controller
                 'cash_difference' => $cashDifference,
                 'cash_denominations' => $cashDenominations,
                 'expenses_data' => $allExpenses,
+                'total_waste_hpp' => $totalWasteHpp,
+                'waste_data' => $wasteRecords,
                 'click_counter_start' => $request->click_counter_start,
                 'click_counter_end' => $request->click_counter_end,
                 'click_count_total' => $clickCount,
@@ -515,6 +588,23 @@ class DailyClosingController extends Controller
                 'manager_signed_at' => Carbon::now(),
                 'status' => 'submitted',
             ]);
+
+            // Save Daily Closing Wastes
+            foreach ($wasteRecords as $wr) {
+                DailyClosingWaste::create([
+                    'daily_closing_report_id' => $report->id,
+                    'branch_id' => $branch->id,
+                    'user_id' => $user->id,
+                    'material_id' => $wr['material_id'],
+                    'material_roll_id' => $wr['material_roll_id'],
+                    'waste_qty' => $wr['waste_qty'],
+                    'unit' => $wr['unit'],
+                    'hpp_per_unit' => $wr['hpp_per_unit'],
+                    'total_hpp' => $wr['total_hpp'],
+                    'reason' => $wr['reason'],
+                    'notes' => $wr['notes'],
+                ]);
+            }
 
             // Save Boss Withdrawal if entered on work sheet
             if ($bossWithdrawalAmount > 0) {
@@ -539,7 +629,7 @@ class DailyClosingController extends Controller
      */
     public function show($id)
     {
-        $report = DailyClosingReport::with(['branch', 'manager', 'owner'])->findOrFail($id);
+        $report = DailyClosingReport::with(['branch', 'manager', 'owner', 'wastes.material', 'wastes.materialRoll'])->findOrFail($id);
         $dayWithdrawals = BossCashWithdrawal::where('branch_id', $report->branch_id)
             ->whereDate('withdrawal_date', $report->closing_date)
             ->get();
@@ -578,7 +668,17 @@ class DailyClosingController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        $report = DailyClosingReport::findOrFail($id);
+        $report = DailyClosingReport::with('wastes')->findOrFail($id);
+        
+        // Restore stock deducted by waste
+        foreach ($report->wastes as $w) {
+            if ($w->material_roll_id) {
+                MaterialRoll::where('id', $w->material_roll_id)->increment('current_length_m', (float)$w->waste_qty);
+            } elseif ($w->material_id) {
+                Material::where('id', $w->material_id)->increment('stock_qty', (float)$w->waste_qty);
+            }
+        }
+
         $report->delete();
 
         return redirect()->route('daily-closing.index')->with('success', 'Laporan Tutup Hari berhasil dihapus.');

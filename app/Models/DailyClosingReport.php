@@ -30,6 +30,8 @@ class DailyClosingReport extends Model
         'cash_difference',
         'cash_denominations',
         'expenses_data',
+        'total_waste_hpp',
+        'waste_data',
         'click_counter_start',
         'click_counter_end',
         'click_count_total',
@@ -61,6 +63,8 @@ class DailyClosingReport extends Model
             'cash_difference' => 'decimal:2',
             'cash_denominations' => 'array',
             'expenses_data' => 'array',
+            'total_waste_hpp' => 'decimal:2',
+            'waste_data' => 'array',
         ];
     }
 
@@ -95,5 +99,10 @@ class DailyClosingReport extends Model
     public function isSubmitted(): bool
     {
         return $this->status === 'submitted';
+    }
+
+    public function wastes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(DailyClosingWaste::class);
     }
 }
