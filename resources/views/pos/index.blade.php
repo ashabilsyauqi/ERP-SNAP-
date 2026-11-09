@@ -1876,109 +1876,28 @@
         const summaryDesc = document.getElementById("dim_preview_roll_desc");
         if (!container) return;
 
-        const rolls = activeDimProduct.rolls || (productsCatalog[activeDimProduct.materialId]?.rolls) || [];
-        if (!rolls || rolls.length === 0) {
-            container.innerHTML = `<div class="text-[11px] text-slate-500 italic p-2 bg-slate-50 rounded-lg border">Tidak ada data gulungan roll khusus untuk bahan ini (stok dipotong per m²).</div>`;
-            if (summaryDesc) summaryDesc.innerText = "Potong Luas Biasa (m²)";
-            activeDimProduct.selectedRollOption = null;
-            return;
-        }
-
-        const candidates = evaluateRollsForDimension(rolls, widthM, lengthM, qty);
-
-        if (candidates.length === 0) {
-            const maxW = Math.max(...rolls.map(r => parseFloat(r.roll_width_m)));
-            container.innerHTML = `
-                <div class="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
-                    <div class="font-bold d-flex align-items-center gap-1.5 mb-1">
-                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
-                        <span>Ukuran Melebihi Lebar Roll Maksimal</span>
-                    </div>
-                    <div class="text-[11px]">Dimensi ${widthM.toFixed(2)}m x ${lengthM.toFixed(2)}m tidak muat di roll yang tersedia (Max ${maxW}m). Perlu sambungan bahan (seaming).</div>
-                </div>
-            `;
-            if (badge) {
-                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-300";
-                badge.innerText = "Perlu Sambungan";
-            }
-            if (summaryDesc) summaryDesc.innerText = "Perlu Sambungan (Lebar Melebihi Roll)";
-            activeDimProduct.selectedRollOption = null;
-            return;
-        }
-
-        // Tentukan kandidat yang aktif
-        let selectedCandidate = null;
-        if (activeDimProduct.selectedRollOption) {
-            selectedCandidate = candidates.find(c => 
-                c.roll_id === activeDimProduct.selectedRollOption.roll_id && 
-                c.orientation === activeDimProduct.selectedRollOption.orientation
-            );
-        }
-        if (!selectedCandidate) {
-            selectedCandidate = candidates[0]; // Rekomendasi terbaik
-        }
-        activeDimProduct.selectedRollOption = selectedCandidate;
-
-        let html = "";
-        candidates.forEach((c, idx) => {
-            const isBest = (idx === 0);
-            const isSelected = (c.roll_id === selectedCandidate.roll_id && c.orientation === selectedCandidate.orientation);
-            const isLowStock = !c.has_enough_stock;
-
-            html += `
-                <label class="d-flex align-items-center justify-content-between p-2 rounded-xl border transition cursor-pointer ${isSelected ? "border-blue-500 bg-blue-50/70 shadow-xs" : "border-slate-200 bg-white hover:border-slate-300"} ${isLowStock ? "opacity-60" : ""}" style="border-radius: 0.75rem;">
-                    <div class="d-flex align-items-center gap-2.5 min-w-0">
-                        <input type="radio" name="banner_roll_choice" value="${c.roll_id}_${c.orientation}" 
-                               ${isSelected ? "checked" : ""} 
-                               onchange="selectRollOption(${c.roll_id}, '${c.orientation}')"
-                               class="form-check-input text-blue-600 focus:ring-blue-500 h-4 w-4">
-                        <div class="min-w-0">
-                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                                <span class="font-bold text-xs ${isSelected ? "text-blue-900" : "text-slate-900"}">${c.roll_name || ("Roll " + c.roll_width_m + "m")}</span>
-                                <span class="badge bg-slate-100 text-slate-700 border border-slate-200 text-[10px] py-0.5 px-1.5">
-                                    Potong: <strong class="text-blue-700">${c.cut_length_m.toFixed(2)}m</strong>
-                                </span>
-                                ${c.orientation === "rotated" ? '<span class="badge bg-indigo-50 text-indigo-700 text-[9.5px] py-0.5 px-1.5">Diputar 90°</span>' : ""}
-                            </div>
-                            <div class="text-[10.5px] text-slate-500 mt-0.5 truncate">
-                                ${c.offcut_width_cm === 0 ? '<span class="text-emerald-600 font-semibold"><i class="fa-solid fa-circle-check me-0.5"></i>Zero Waste (Pas!)</span>' : `Sisa samping: <span class="text-amber-700 font-semibold">${c.offcut_width_cm} cm</span>`} • Sisa Roll: <strong>${c.current_length_m.toFixed(1)}m</strong>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-end flex-shrink-0 ms-2">
-                        ${isBest ? '<span class="badge bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-star text-amber-500 me-0.5"></i> Rekomendasi</span>' : (isLowStock ? '<span class="badge bg-rose-100 text-rose-800 text-[10px]">Stok Kurang</span>' : "")}
-                    </div>
-                </label>
-            `;
-        });
-
-        container.innerHTML = html;
-
         if (badge) {
-            badge.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-200";
-            badge.innerText = `Otomatis: ${selectedCandidate.roll_name || ("Roll " + selectedCandidate.roll_width_m + "m")}`;
+            badge.className = "text-[10px] font-bold px-2 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-200";
+            badge.innerText = "Antrean Kerja Admin Cetak";
         }
+        if (summaryDesc) summaryDesc.innerText = "Dipotong Otomatis oleh Admin Cetak";
 
-        if (summaryDesc) {
-            summaryDesc.innerHTML = `<span class="text-cyan-300">${selectedCandidate.roll_name || ("Roll " + selectedCandidate.roll_width_m + "m")}</span> ➜ Potong <strong class="text-yellow-300 font-bold">${selectedCandidate.cut_length_m.toFixed(2)}m</strong> (Total ${(selectedCandidate.cut_length_m * qty).toFixed(2)}m untuk ${qty}x) • ${selectedCandidate.offcut_width_cm === 0 ? '<span class="text-emerald-400">Zero Waste</span>' : `Waste: ${selectedCandidate.offcut_width_cm}cm`}`;
-        }
+        container.innerHTML = `
+            <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs">
+                <div class="d-flex align-items-center gap-2 font-bold mb-1">
+                    <i class="fa-solid fa-industry text-blue-600"></i>
+                    <span>Alokasi Roll & Pemotongan Bahan di Mesin</span>
+                </div>
+                <div class="text-[11px] text-blue-700 leading-relaxed">
+                    Kasir cukup input ukuran. Begitu pembayaran selesai diterima kasir, pesanan ini otomatis masuk antrean kerja <strong>Admin Cetak</strong> untuk dipotong pada gulungan fisik (Roll 1m, 2m, atau 3m).
+                </div>
+            </div>
+        `;
+        activeDimProduct.selectedRollOption = null;
     }
 
-    function selectRollOption(rollId, orientation) {
-        const rolls = activeDimProduct.rolls || (productsCatalog[activeDimProduct.materialId]?.rolls) || [];
-        let rawWidth = parseFloat(document.getElementById("banner_width_m")?.value) || 1.0;
-        let rawLength = parseFloat(document.getElementById("banner_length_m")?.value) || 1.0;
-        const qty = parseInt(document.getElementById("dim_qty")?.value, 10) || 1;
+    function selectRollOption() {}
 
-        const candidates = evaluateRollsForDimension(rolls, rawWidth, rawLength, qty);
-        const match = candidates.find(c => c.roll_id === rollId && c.orientation === orientation);
-        if (match) {
-            activeDimProduct.selectedRollOption = match;
-            renderRollSelectionOptions(rawWidth, rawLength, qty);
-        }
-    }
-
-// --- Confirm Custom Banner to Cart ---
     function confirmBannerDimensionAddToCart() {
         let rawWidth = parseFloat(document.getElementById('banner_width_m')?.value) || 1.0;
         let rawLength = parseFloat(document.getElementById('banner_length_m')?.value) || 1.0;
@@ -2008,6 +1927,7 @@
         }
 
         const noteDim = `${rawWidth.toFixed(2)}m x ${rawLength.toFixed(2)}m (${areaM2.toFixed(2)}m²) - ${finishing} [${eyeletDesc}]`;
+        const rollId = null, cutLen = null, rollWidth = null, offcutCm = null, rollOrientation = null;
 
         if (activeDimProduct.editCartId !== null) {
             // Edit existing cart item

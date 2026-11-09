@@ -23,6 +23,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'roll_width_snapshot',
     'offcut_width_cm',
     'dimension_text',
+    'production_status',
+    'printed_at',
+    'printed_by',
+    'print_batch_id',
+    'roll_area_used_m2',
+    'offcut_area_m2',
     'is_vendor_job',
     'vendor_name',
     'vendor_cost',
@@ -40,8 +46,11 @@ class TransactionDetail extends Model
         'shipping_cost' => 'decimal:2',
         'cut_length_m' => 'decimal:2',
         'roll_width_snapshot' => 'decimal:2',
+        'roll_area_used_m2' => 'decimal:2',
+        'offcut_area_m2' => 'decimal:2',
         'offcut_width_cm' => 'integer',
         'qty_ordered' => 'integer',
+        'printed_at' => 'datetime',
     ];
 
     public function transaction(): BelongsTo
@@ -57,6 +66,11 @@ class TransactionDetail extends Model
     public function materialRoll(): BelongsTo
     {
         return $this->belongsTo(MaterialRoll::class, 'material_roll_id');
+    }
+
+    public function printerUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'printed_by');
     }
 
     /**

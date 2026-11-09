@@ -336,19 +336,14 @@ class PosController extends Controller
 
                 // Deduct stock only if not draft (stock is deducted upon payment)
                 if (!$isDraft) {
-                    // Deduct length from physical roll if roll was chosen
-                    if (!empty($item['material_roll_id'])) {
-                        $roll = \App\Models\MaterialRoll::find($item['material_roll_id']);
-                        if ($roll) {
-                            $cutLen = (float)($item['cut_length_m'] ?? 0);
-                            $totalCut = $cutLen * $qty;
-                            $roll->current_length_m = max(0, (float)$roll->current_length_m - $totalCut);
-                            $roll->save();
-                        }
+                    if ($isCustomBanner) {
+                        // Banner custom: Stock is NOT deducted yet!
+                        // Customer pays first, then Admin Cetak chooses roll and deducts both roll length & material stock upon execution.
+                    } else {
+                        // Regular retail product: deduct stock immediately
+                        $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $qty);
+                        $materialToDeduct->save();
                     }
-                    $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($physicalAreaM2 * $qty)) : $qty;
-                    $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $stockDeductUnits);
-                    $materialToDeduct->save();
                 }
 
                 TransactionDetail::create([
@@ -360,10 +355,11 @@ class PosController extends Controller
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
                     'click_charge' => $clickChargePerUnit,
-                    'material_roll_id' => !empty($item['material_roll_id']) ? $item['material_roll_id'] : null,
-                    'cut_length_m' => !empty($item['cut_length_m']) ? (float)$item['cut_length_m'] : null,
-                    'roll_width_snapshot' => !empty($item['roll_width_snapshot']) ? (float)$item['roll_width_snapshot'] : null,
-                    'offcut_width_cm' => isset($item['offcut_width_cm']) ? (int)$item['offcut_width_cm'] : null,
+                    'material_roll_id' => null,
+                    'cut_length_m' => null,
+                    'roll_width_snapshot' => null,
+                    'offcut_width_cm' => null,
+                    'production_status' => $isCustomBanner ? 'pending' : 'completed',
                     'fixed_length_m' => $widthM ?: $fixedLength,
                     'custom_width_cm' => $customWidth,
                     'area_m2' => $physicalAreaM2 ?: $areaM2,
@@ -386,6 +382,14 @@ class PosController extends Controller
             $totalPrice = max(0, $originalPrice - $discountAmount);
 
             // Determine Payment & Order Status
+            $hasCustomBanner = false;
+            foreach ($request->items as $item) {
+                if (!empty($item['is_custom_banner'])) {
+                    $hasCustomBanner = true;
+                    break;
+                }
+            }
+
             if ($isDraft) {
                 $paidAmount = 0;
                 $remainingAmount = 0;
@@ -400,7 +404,7 @@ class PosController extends Controller
                     $paidAmount = $totalPrice;
                     $remainingAmount = 0;
                     $paymentStatus = 'PAID';
-                    $orderStatus = 'completed';
+                    $orderStatus = $hasCustomBanner ? 'in_production' : 'completed';
                 } else {
                     $paidAmount = $requestedDp;
                     $remainingAmount = max(0, $totalPrice - $paidAmount);
@@ -411,7 +415,7 @@ class PosController extends Controller
                 $paidAmount = $totalPrice;
                 $remainingAmount = 0;
                 $paymentStatus = 'PAID';
-                $orderStatus = 'completed';
+                $orderStatus = $hasCustomBanner ? 'in_production' : 'completed';
             }
 
             // Cross-Branch 25/75 Settlement Split Calculation
@@ -1170,9 +1174,12 @@ class PosController extends Controller
 
             // Deduct stock only if not draft
             if (!$isDraft) {
-                $stockDeductUnits = $isCustomBanner ? max(1, (int)ceil($physicalAreaM2 * $qty)) : $qty;
-                $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $stockDeductUnits);
-                $materialToDeduct->save();
+                if ($isCustomBanner) {
+                    // Custom banner: stock is deducted later upon print execution by Admin Cetak
+                } else {
+                    $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $qty);
+                    $materialToDeduct->save();
+                }
             }
 
             TransactionDetail::create([
@@ -1184,6 +1191,7 @@ class PosController extends Controller
                 'qty_ordered' => $qty,
                 'selling_price' => $unitPrice,
                 'click_charge' => $clickChargePerUnit,
+                'production_status' => $isCustomBanner ? 'pending' : 'completed',
                 'fixed_length_m' => $widthM ?: $fixedLength,
                 'custom_width_cm' => $customWidth,
                 'area_m2' => $physicalAreaM2 ?: $areaM2,
