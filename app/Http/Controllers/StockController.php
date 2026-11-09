@@ -21,7 +21,7 @@ class StockController extends Controller
     {
         $user = Auth::user();
 
-        $query = Material::with(['supplier', 'branch', 'wholesalePrices', 'rolls'])->orderBy('material_name', 'asc');
+        $query = Material::with(['supplier', 'branch', 'wholesalePrices', 'rolls', 'parentMaterial', 'linkedVariants'])->orderBy('material_name', 'asc');
 
         $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
 
@@ -47,6 +47,17 @@ class StockController extends Controller
         if ($request->filled('search')) {
             $query->where('material_name', 'like', "%{$request->search}%");
         }
+
+        if ($request->get('filter') === 'draft_opname') {
+            $query->whereNotNull('opname_draft_qty');
+        }
+
+        // Count pending draft opname items in selected branch
+        $baseBranchQuery = Material::query();
+        if ($branchId && $branchId !== 'all') {
+            $baseBranchQuery->where('branch_id', $branchId);
+        }
+        $draftOpnameCount = (clone $baseBranchQuery)->whereNotNull('opname_draft_qty')->count();
 
         // Calculate summary metrics across full dataset
         $totalItems = (clone $query)->count();
@@ -94,6 +105,7 @@ class StockController extends Controller
             'totalStockQty',
             'totalAssetValue',
             'lowStockCount',
+            'draftOpnameCount',
             'pendingCount',
             'branches',
             'suppliers',
@@ -299,7 +311,7 @@ class StockController extends Controller
     }
 
     /**
-     * Update Stock Opname
+     * Update Stock Opname (Simpan Draft Sementara / Terapkan ke Stok Sistem / Batalkan Draft)
      */
     public function update(Request $request, Material $material)
     {
@@ -311,19 +323,84 @@ class StockController extends Controller
 
         $validated = $request->validate([
             'category' => 'nullable|string|max:100',
-            'stock_qty' => 'required|integer|min:0',
+            'stock_qty' => 'required|numeric|min:0',
             'purchase_price' => 'nullable|numeric|min:0',
             'has_click_charge' => 'nullable|boolean',
             'click_charge' => 'nullable|numeric|min:0',
             'retail_price' => 'nullable|numeric|min:0',
             'opname_notes' => 'nullable|string|max:500',
+            'opname_action' => 'nullable|string|in:draft,apply,discard',
             'wholesale' => 'nullable|array',
             'wholesale.*.min_qty' => 'nullable|integer|min:1',
             'wholesale.*.price' => 'nullable|numeric|min:0',
         ]);
 
-        DB::transaction(function () use ($request, $material, $validated) {
-            $material->stock_qty = $validated['stock_qty'];
+        $action = $request->input('opname_action', 'apply');
+
+        // 1. BATALKAN DRAFT OPNAME
+        if ($action === 'discard') {
+            DB::transaction(function () use ($material, $user) {
+                $primaryId = $material->parent_material_id ?: $material->id;
+                Material::where('id', $primaryId)->orWhere('parent_material_id', $primaryId)->update([
+                    'opname_draft_qty' => null,
+                    'opname_draft_notes' => null,
+                    'opname_draft_at' => null,
+                    'opname_draft_by' => null,
+                ]);
+
+                \App\Models\StockOpnameLog::create([
+                    'branch_id' => $material->branch_id,
+                    'material_id' => $material->id,
+                    'user_id' => $user->id,
+                    'system_stock' => (float)$material->stock_qty,
+                    'physical_stock' => 0,
+                    'difference' => 0,
+                    'status' => 'discarded',
+                    'notes' => 'Draft opname dibatalkan oleh operator.',
+                ]);
+            });
+
+            return redirect()->route('stock.index')->with('success', "Draft hitung fisik untuk {$material->material_name} telah dibatalkan.");
+        }
+
+        $physicalStock = round((float)$validated['stock_qty'], 2);
+        $systemStock = round((float)$material->stock_qty, 2);
+        $diff = round($physicalStock - $systemStock, 2);
+
+        DB::transaction(function () use ($request, $material, $validated, $user, $action, $physicalStock, $systemStock, $diff) {
+            $primaryId = $material->parent_material_id ?: $material->id;
+
+            if ($action === 'draft') {
+                // HANYA SIMPAN SEMENTARA SEBAGAI DRAFT - JANGAN UBAH STOK SISTEM!
+                $material->opname_draft_qty = $physicalStock;
+                $material->opname_draft_notes = $validated['opname_notes'] ?? null;
+                $material->opname_draft_at = now();
+                $material->opname_draft_by = $user->id;
+
+                // Sync draft ke varian linked (1 Sisi / 2 Sisi)
+                Material::where('id', $primaryId)->orWhere('parent_material_id', $primaryId)->update([
+                    'opname_draft_qty' => $physicalStock,
+                    'opname_draft_notes' => $validated['opname_notes'] ?? null,
+                    'opname_draft_at' => now(),
+                    'opname_draft_by' => $user->id,
+                ]);
+            } else {
+                // TERAPKAN KE STOK SISTEM & BERSIHKAN DRAFT
+                $material->stock_qty = $physicalStock;
+                $material->opname_draft_qty = null;
+                $material->opname_draft_notes = null;
+                $material->opname_draft_at = null;
+                $material->opname_draft_by = null;
+
+                // Sinkronisasi stok fisik ke varian linked (1 Sisi / 2 Sisi berbagi 1 stok)
+                Material::where('id', $primaryId)->orWhere('parent_material_id', $primaryId)->update([
+                    'stock_qty' => $physicalStock,
+                    'opname_draft_qty' => null,
+                    'opname_draft_notes' => null,
+                    'opname_draft_at' => null,
+                    'opname_draft_by' => null,
+                ]);
+            }
 
             if ($request->filled('category')) {
                 $material->category = $validated['category'];
@@ -355,9 +432,26 @@ class StockController extends Controller
                     }
                 }
             }
+
+            // Catat log riwayat audit opname
+            \App\Models\StockOpnameLog::create([
+                'branch_id' => $material->branch_id,
+                'material_id' => $material->id,
+                'user_id' => $user->id,
+                'system_stock' => $systemStock,
+                'physical_stock' => $physicalStock,
+                'difference' => $diff,
+                'status' => $action === 'draft' ? 'draft' : 'applied',
+                'notes' => $validated['opname_notes'] ?? ($action === 'draft' ? 'Draft Opname Sementara' : 'Penyesuaian Stok Resmi'),
+            ]);
         });
 
-        return redirect()->route('stock.index')->with('success', "Stok & Harga Grosir {$material->material_name} berhasil diperbarui.");
+        $diffFormatted = ($diff > 0 ? "+{$diff}" : "{$diff}");
+        if ($action === 'draft') {
+            return redirect()->route('stock.index')->with('success', "📝 Draft hitung fisik {$material->material_name} berhasil disimpan sementara (Fisik: {$physicalStock}, Selisih: {$diffFormatted} Unit). Stok sistem TIDAK diubah (tetap {$systemStock}).");
+        } else {
+            return redirect()->route('stock.index')->with('success', "✅ Stok sistem {$material->material_name} resmi diperbarui menjadi {$physicalStock} Unit (Penyesuaian: {$diffFormatted}).");
+        }
     }
 
     /**
@@ -383,10 +477,10 @@ class StockController extends Controller
         DB::transaction(function () use ($purchase, $validated, $user) {
             $qtyReceived = (int) $validated['qty_received'];
 
-            // 1. Increment Material Stock
+            // 1. Increment Material Stock & sync linked variants
             $material = $purchase->material;
-            $material->stock_qty += $qtyReceived;
-            $material->save();
+            $newStock = round((float)$material->stock_qty + $qtyReceived, 2);
+            $material->syncStockToLinked($newStock);
 
             // 2. Update Purchase Status
             $purchase->status = 'received';
@@ -469,7 +563,7 @@ class StockController extends Controller
                 $totalHpp = round($wasteQty * $hppPerUnit, 2);
 
                 $newStock = max(0, round((float)$material->stock_qty - $wasteQty, 2));
-                $material->update(['stock_qty' => $newStock]);
+                $material->syncStockToLinked($newStock);
             }
 
             // Check if there is an existing daily closing report today for this branch

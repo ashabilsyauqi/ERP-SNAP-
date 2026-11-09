@@ -544,7 +544,7 @@ class SalesController extends Controller
                         } else {
                             $material->stock_qty += abs($diff);
                         }
-                        $material->save();
+                        $material->syncStockToLinked((float)$material->stock_qty);
                     }
 
                     $detail->qty_ordered = $newQty;
@@ -639,8 +639,8 @@ class SalesController extends Controller
                 }
                 $material = $detail->material;
                 if ($material) {
-                    $material->stock_qty += $detail->qty_ordered;
-                    $material->save();
+                    $newStock = (float)$material->stock_qty + (float)$detail->qty_ordered;
+                    $material->syncStockToLinked($newStock);
                 }
             }
 

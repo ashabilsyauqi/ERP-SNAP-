@@ -35,6 +35,10 @@
         category: '', 
         system_stock: 0, 
         stock_qty: 0, 
+        has_draft: false,
+        draft_qty: 0,
+        draft_notes: '',
+        draft_at: '',
         purchase_price: 0, 
         has_click_charge: false, 
         click_charge: 0, 
@@ -42,10 +46,10 @@
         wholesale: [] 
     },
     get variance() {
-        return (parseInt(this.editMaterial.stock_qty) || 0) - (parseInt(this.editMaterial.system_stock) || 0);
+        return (parseFloat(this.editMaterial.stock_qty) || 0) - (parseFloat(this.editMaterial.system_stock) || 0);
     },
     adjustQty(delta) {
-        let current = parseInt(this.editMaterial.stock_qty) || 0;
+        let current = parseFloat(this.editMaterial.stock_qty) || 0;
         let next = current + delta;
         if (next < 0) next = 0;
         this.editMaterial.stock_qty = next;
@@ -89,6 +93,20 @@
                 <div class="o_stat_text">Low Stock Alert (&le;5)</div>
             </div>
         </div>
+        <a href="{{ route('stock.index', array_merge(request()->except(['filter', 'page']), ['filter' => request('filter') === 'draft_opname' ? null : 'draft_opname'])) }}" 
+           class="o_stat_button bg-white shadow-sm text-decoration-none transition cursor-pointer {{ request('filter') === 'draft_opname' ? 'border-2 border-primary ring-2 ring-primary/20' : '' }}"
+           title="Klik untuk melihat hanya produk yang sedang memiliki draft opname">
+            <i class="fa-solid fa-clock-rotate-left {{ ($draftOpnameCount ?? 0) > 0 ? 'text-primary' : 'text-slate-400' }} fs-5"></i>
+            <div>
+                <div class="o_stat_value {{ ($draftOpnameCount ?? 0) > 0 ? 'text-primary font-black' : 'text-slate-700' }}">
+                    {{ number_format($draftOpnameCount ?? 0) }}
+                    @if(request('filter') === 'draft_opname')
+                        <span class="badge bg-primary text-white text-[9px] py-0 px-1 rounded-pill">Aktif</span>
+                    @endif
+                </div>
+                <div class="o_stat_text">Draft Opname (Tinjau Selisih)</div>
+            </div>
+        </a>
     </div>
 
     <!-- Category Filter Tabs (Pill Buttons) -->
@@ -137,14 +155,14 @@
                             <th style="width: 40px;" class="ps-3 text-center no-sort">
                                 <input type="checkbox" class="form-check-input">
                             </th>
-                            <th class="sortable">Product (Nama Bahan)</th>
-                            <th class="sortable">Kategori</th>
-                            <th class="sortable">Vendor</th>
-                            <th class="sortable">Specification / Unit</th>
-                            <th class="sortable text-end">Cost Price</th>
-                            <th class="sortable text-end">Sales Price & Wholesale</th>
-                            <th class="sortable text-center">On Hand Qty</th>
-                            <th class="text-center no-sort" style="width: 120px;">Stock Action</th>
+                            <th class="sortable text-nowrap">Product (Nama Bahan)</th>
+                            <th class="sortable text-nowrap">Kategori</th>
+                            <th class="sortable text-nowrap">Vendor</th>
+                            <th class="sortable text-nowrap">Specification / Unit</th>
+                            <th class="sortable text-end text-nowrap">Cost Price</th>
+                            <th class="sortable text-end text-nowrap">Sales Price & Wholesale</th>
+                            <th class="sortable text-center text-nowrap">On Hand Qty</th>
+                            <th class="text-center no-sort text-nowrap" style="min-width: 130px;">Stock Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -168,7 +186,18 @@
                                 </td>
                                 <td>
                                     <div class="fw-bold text-slate-800">{{ $material->material_name }}</div>
-                                    <span class="text-slate-400 font-mono text-[10px]">#MAT-{{ $material->id }} &bull; {{ $material->branch->nama_cabang ?? 'Pusat' }}</span>
+                                    <div class="d-inline-flex align-items-center gap-1.5 flex-wrap">
+                                        <span class="text-slate-400 font-mono text-[10px]">#MAT-{{ $material->id }} &bull; {{ $material->branch->nama_cabang ?? 'Pusat' }}</span>
+                                        @if($material->parent_material_id)
+                                            <span class="badge bg-purple-50 text-purple-700 border border-purple-200 text-nowrap d-inline-flex align-items-center gap-1" style="font-size: 10px;" title="Berbagi stok fisik dengan {{ $material->parentMaterial->material_name ?? '1 Sisi' }}">
+                                                <i class="fa-solid fa-link"></i> Linked: {{ $material->parentMaterial->material_name ?? '1 Sisi' }}
+                                            </span>
+                                        @elseif($material->linkedVariants->count() > 0)
+                                            <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-nowrap d-inline-flex align-items-center gap-1" style="font-size: 10px;" title="Stok induk untuk {{ $material->linkedVariants->count() }} varian (misal: 2 Sisi)">
+                                                <i class="fa-solid fa-layer-group"></i> Induk Stok ({{ $material->linkedVariants->count() }} varian)
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge {{ $badgeStyle }} border text-[11px] font-semibold px-2 py-0.5 rounded-md">
@@ -187,74 +216,103 @@
                                 <td>
                                     @if($material->fixed_size)
                                         <span class="badge bg-sky-50 text-sky-700 border border-sky-200 text-[11px] font-normal">
-                                            {{ $material->fixed_size }} Meter
+                                            Roll {{ $material->fixed_size }}m
                                         </span>
                                     @else
-                                        <span class="text-slate-500 text-[11px]">Standard / Pcs</span>
+                                        <span class="badge bg-slate-50 text-slate-600 border border-slate-200 text-[11px] font-normal">
+                                            {{ strtoupper($material->unit) }}
+                                        </span>
                                     @endif
                                 </td>
-                                <td class="text-end font-mono text-slate-700">
+                                <td class="text-end font-mono text-slate-700 text-nowrap">
                                     <div>Rp {{ number_format($material->purchase_price, 0, ',', '.') }}</div>
                                     @if($material->has_click_charge && $material->click_charge > 0)
-                                        <div class="text-[10px] text-indigo-600 font-sans mt-0.5" title="Biaya Mesin per Lembar">
-                                            <i class="fa-solid fa-print me-0.5"></i>+Klik Rp {{ number_format($material->click_charge, 0, ',', '.') }}
+                                        @php
+                                            $effClick = (float)$material->click_charge * ($material->print_sides == 2 ? 2 : 1);
+                                        @endphp
+                                        <div class="text-[10px] text-indigo-600 font-sans mt-0.5 text-nowrap" title="Biaya Mesin {{ $material->machine_tag ?: 'KM' }} per Lembar ({{ $material->print_sides == 2 ? '2x Pass Bolak-Balik' : '1x Pass' }})">
+                                            <i class="fa-solid fa-print me-0.5"></i>+Klik Rp {{ number_format($effClick, 0, ',', '.') }}
                                         </div>
                                     @endif
                                 </td>
-                                <td class="text-end">
+                                <td class="text-end text-nowrap">
                                     <div class="font-mono fw-bold text-teal-700">
                                         Rp {{ number_format($material->retail_price, 0, ',', '.') }}
                                     </div>
                                     @if($material->wholesalePrices->count() > 0)
-                                        <div class="text-[10px] text-indigo-600 font-semibold mt-0.5">
+                                        <div class="text-[10px] text-indigo-600 font-semibold mt-0.5 text-nowrap">
                                             {{ $material->wholesalePrices->count() }} Tier Grosir Aktif
                                         </div>
                                     @endif
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center text-nowrap">
                                     @if($material->rolls && $material->rolls->count() > 0)
-                                        <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold px-2 py-1 text-[11px]">
+                                        <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold px-2 py-1 text-[11px] text-nowrap">
                                             <i class="fa-solid fa-scroll me-1"></i> {{ $material->rolls->count() }} Roll ({{ round($material->rolls->sum('current_length_m'), 1) }}m)
                                         </span>
                                     @elseif($material->stock_qty <= 0)
-                                        <span class="badge bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-1 text-[11px]">
+                                        <span class="badge bg-rose-50 text-rose-700 border border-rose-200 font-bold px-2 py-1 text-[11px] text-nowrap">
                                             Out of Stock (0)
                                         </span>
                                     @elseif($material->stock_qty <= 5)
-                                        <span class="badge bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-1 text-[11px]">
-                                            Low: {{ $material->stock_qty }} Units
+                                        <span class="badge bg-amber-50 text-amber-700 border border-amber-200 font-bold px-2 py-1 text-[11px] text-nowrap">
+                                            Low: {{ (float)$material->stock_qty }} {{ $material->unit }}
                                         </span>
                                     @else
-                                        <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-1 text-[11px]">
-                                            {{ number_format($material->stock_qty) }} Units
+                                        <span class="badge bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-1 text-[11px] text-nowrap">
+                                            {{ (float)$material->stock_qty }} {{ $material->unit }}
                                         </span>
                                     @endif
+
+                                    @if(!is_null($material->opname_draft_qty))
+                                        @php
+                                            $draftDiff = round((float)$material->opname_draft_qty - (float)$material->stock_qty, 2);
+                                        @endphp
+                                        <div class="mt-1">
+                                            <span class="badge {{ $draftDiff < 0 ? 'bg-rose-50 text-rose-800 border-rose-300' : ($draftDiff > 0 ? 'bg-sky-50 text-sky-800 border-sky-300' : 'bg-emerald-50 text-emerald-800 border-emerald-300') }} border font-mono text-[10px] px-2 py-0.5 d-inline-flex align-items-center gap-1 shadow-2xs text-nowrap" 
+                                                title="Draft Hitung Fisik Tersimpan: {{ (float)$material->opname_draft_qty }} (Stok sistem belum diubah). Catatan: {{ $material->opname_draft_notes ?: '-' }}">
+                                                <i class="fa-solid fa-clock-rotate-left"></i>
+                                                <span>Fisik: <strong>{{ (float)$material->opname_draft_qty }}</strong></span>
+                                                <span class="fw-bold">({{ $draftDiff > 0 ? '+' . $draftDiff : $draftDiff }})</span>
+                                            </span>
+                                        </div>
+                                    @endif
                                 </td>
-                                <td class="text-center">
-                                    <div class="d-flex align-items-center justify-content-center gap-1">
-                                    <button type="button" class="btn btn-xs rounded-lg font-bold text-[10px] px-2 py-1 border text-amber-900 border-amber-300 bg-amber-50 hover:bg-amber-100" title="Catat waste trial error produk ini" onclick="openWasteModalFor({{ $material->id }})">
-                                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Waste
-                                    </button>
-                                    <button @click="
-                                        activeTab = 'opname';
-                                        editMaterial = {
-                                            id: '{{ $material->id }}',
-                                            name: '{{ addslashes($material->material_name) }}',
-                                            branch: '{{ addslashes($material->branch->nama_cabang ?? 'Pusat') }}',
-                                            category: '{{ addslashes($material->category ?? '') }}',
-                                            system_stock: {{ (int)$material->stock_qty }},
-                                            stock_qty: {{ (int)$material->stock_qty }},
-                                            purchase_price: {{ (float)$material->purchase_price }},
-                                            has_click_charge: {{ $material->has_click_charge ? 'true' : 'false' }},
-                                            click_charge: {{ (float)($material->click_charge ?? 0) }},
-                                            retail_price: {{ (float)$material->retail_price }},
-                                            wholesale: {{ json_encode($material->wholesalePrices->map(fn($w) => ['min_qty' => $w->min_qty, 'price' => $w->wholesale_price])) }}
-                                        };
-                                        if (!editMaterial.wholesale) editMaterial.wholesale = [];
-                                        editOpen = true;
-                                    " class="btn btn-sm btn-odoo-secondary py-0.5 px-2 text-xs">
-                                        <i class="fa-solid fa-sliders me-1"></i> Opname
-                                    </button>
+                                <td class="text-center text-nowrap">
+                                    <div class="d-inline-flex align-items-center justify-content-center gap-1.5 flex-nowrap">
+                                        <button type="button" class="btn btn-xs rounded-lg font-bold text-[10px] px-2.5 py-1 border text-amber-900 border-amber-300 bg-amber-50 hover:bg-amber-100 text-nowrap d-inline-flex align-items-center gap-1" title="Catat waste trial error produk ini" onclick="openWasteModalFor({{ $material->id }})">
+                                            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+                                            <span>Waste</span>
+                                        </button>
+
+                                        <button @click="
+                                            activeTab = 'opname';
+                                            editMaterial = {
+                                                id: '{{ $material->id }}',
+                                                name: '{{ addslashes($material->material_name) }}',
+                                                branch: '{{ addslashes($material->branch->nama_cabang ?? 'Pusat') }}',
+                                                category: '{{ addslashes($material->category ?? '') }}',
+                                                system_stock: {{ (float)$material->stock_qty }},
+                                                stock_qty: {{ is_null($material->opname_draft_qty) ? (float)$material->stock_qty : (float)$material->opname_draft_qty }},
+                                                has_draft: {{ is_null($material->opname_draft_qty) ? 'false' : 'true' }},
+                                                draft_qty: {{ is_null($material->opname_draft_qty) ? 0 : (float)$material->opname_draft_qty }},
+                                                draft_notes: '{{ addslashes($material->opname_draft_notes ?? '') }}',
+                                                draft_at: '{{ $material->opname_draft_at ? \Carbon\Carbon::parse($material->opname_draft_at)->format('d M Y H:i') : '' }}',
+                                                purchase_price: {{ (float)$material->purchase_price }},
+                                                has_click_charge: {{ $material->has_click_charge ? 'true' : 'false' }},
+                                                click_charge: {{ (float)($material->click_charge ?? 0) }},
+                                                retail_price: {{ (float)$material->retail_price }},
+                                                linked_parent: '{{ addslashes($material->parentMaterial->material_name ?? '') }}',
+                                                linked_variants_count: {{ $material->linkedVariants->count() }},
+                                                wholesale: {{ json_encode($material->wholesalePrices->map(fn($w) => ['min_qty' => $w->min_qty, 'price' => $w->wholesale_price])) }}
+                                            };
+                                            if (!editMaterial.wholesale) editMaterial.wholesale = [];
+                                            editOpen = true;
+                                        " class="btn btn-sm btn-odoo-secondary py-0.5 px-2.5 text-xs text-nowrap d-inline-flex align-items-center gap-1">
+                                            <i class="fa-solid fa-sliders"></i>
+                                            <span>Opname</span>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -288,11 +346,36 @@
                     <div class="o_kanban_record bg-white border rounded p-3 shadow-sm hover:shadow transition search-card" style="border-left: 4px solid {{ $material->stock_qty <= 5 ? '#e11d48' : '#008784' }} !important;">
                         <div class="d-flex justify-content-between align-items-start mb-1">
                             <span class="badge bg-slate-100 text-slate-700 border text-[10px]">{{ $material->category ?? 'Bahan' }}</span>
-                            <span class="badge {{ $material->stock_qty <= 5 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700' }} text-[10px]">
-                                {{ $material->stock_qty }} Units
-                            </span>
+                            <div class="text-end">
+                                <span class="badge {{ $material->stock_qty <= 5 ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700' }} text-[10px]">
+                                    {{ (float)$material->stock_qty }} Units
+                                </span>
+                                @if(!is_null($material->opname_draft_qty))
+                                    @php
+                                        $draftDiff = round((float)$material->opname_draft_qty - (float)$material->stock_qty, 2);
+                                    @endphp
+                                    <div class="mt-0.5">
+                                        <span class="badge {{ $draftDiff < 0 ? 'bg-rose-100 text-rose-800' : ($draftDiff > 0 ? 'bg-sky-100 text-sky-800' : 'bg-emerald-100 text-emerald-800') }} text-[9px] font-mono">
+                                            Draft: {{ (float)$material->opname_draft_qty }} ({{ $draftDiff > 0 ? '+' . $draftDiff : $draftDiff }})
+                                        </span>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                         <h6 class="fw-bold text-slate-900 mb-1 text-xs">{{ $material->material_name }}</h6>
+                        @if($material->parent_material_id)
+                            <div class="mb-1">
+                                <span class="badge bg-purple-50 text-purple-700 border border-purple-200 text-nowrap d-inline-flex align-items-center gap-1" style="font-size: 10px;">
+                                    <i class="fa-solid fa-link"></i> Linked: {{ $material->parentMaterial->material_name ?? '1 Sisi' }}
+                                </span>
+                            </div>
+                        @elseif($material->linkedVariants->count() > 0)
+                            <div class="mb-1">
+                                <span class="badge bg-indigo-50 text-indigo-700 border border-indigo-200 text-nowrap d-inline-flex align-items-center gap-1" style="font-size: 10px;">
+                                    <i class="fa-solid fa-layer-group"></i> Induk Stok ({{ $material->linkedVariants->count() }} varian)
+                                </span>
+                            </div>
+                        @endif
                         <div class="text-[11px] text-slate-500 mb-2">
                             <span>Harga: <strong class="text-teal-700">Rp {{ number_format($material->retail_price, 0, ',', '.') }}</strong></span>
                         </div>
@@ -305,8 +388,14 @@
                                     name: '{{ addslashes($material->material_name) }}',
                                     branch: '{{ addslashes($material->branch->nama_cabang ?? 'Pusat') }}',
                                     category: '{{ addslashes($material->category ?? '') }}',
-                                    system_stock: {{ (int)$material->stock_qty }},
-                                    stock_qty: {{ (int)$material->stock_qty }},
+                                    linked_parent: '{{ addslashes($material->parentMaterial->material_name ?? '') }}',
+                                    linked_variants_count: {{ $material->linkedVariants->count() }},
+                                    system_stock: {{ (float)$material->stock_qty }},
+                                    stock_qty: {{ is_null($material->opname_draft_qty) ? (float)$material->stock_qty : (float)$material->opname_draft_qty }},
+                                    has_draft: {{ is_null($material->opname_draft_qty) ? 'false' : 'true' }},
+                                    draft_qty: {{ is_null($material->opname_draft_qty) ? 0 : (float)$material->opname_draft_qty }},
+                                    draft_notes: '{{ addslashes($material->opname_draft_notes ?? '') }}',
+                                    draft_at: '{{ $material->opname_draft_at ? \Carbon\Carbon::parse($material->opname_draft_at)->format('d M Y H:i') : '' }}',
                                     purchase_price: {{ (float)$material->purchase_price }},
                                     has_click_charge: {{ $material->has_click_charge ? 'true' : 'false' }},
                                     click_charge: {{ (float)($material->click_charge ?? 0) }},
@@ -315,8 +404,9 @@
                                 };
                                 if (!editMaterial.wholesale) editMaterial.wholesale = [];
                                 editOpen = true;
-                            " class="btn btn-xs btn-odoo-secondary py-0.5 px-2 text-[10px]">
-                                <i class="fa-solid fa-sliders me-1"></i> Opname
+                            " class="btn btn-xs btn-odoo-secondary py-0.5 px-2.5 text-[10px] text-nowrap d-inline-flex align-items-center gap-1">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span>Opname</span>
                             </button>
                         </div>
                     </div>
@@ -574,6 +664,57 @@
                     
                     <!-- TAB 1: Hitung Fisik (Opname) -->
                     <div x-show="activeTab === 'opname'" class="space-y-4">
+                        <!-- Linked Stock Banner (if child or parent) -->
+                        <template x-if="editMaterial.linked_parent">
+                            <div class="p-3 rounded-xl bg-purple-50 border border-purple-200 d-flex align-items-center gap-2.5 text-purple-950 text-xs">
+                                <div class="w-8 h-8 rounded-lg bg-purple-200 text-purple-800 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="fa-solid fa-link fs-6"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Stok Bersama (Linked Stock)</div>
+                                    <div class="text-[11px] text-purple-800">
+                                        Produk ini adalah varian cetak yang berbagi stok lembar fisik dengan <strong x-text="editMaterial.linked_parent"></strong>. Perubahan stok di sini otomatis menyinkronkan kedua produk.
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="editMaterial.linked_variants_count > 0">
+                            <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200 d-flex align-items-center gap-2.5 text-indigo-950 text-xs">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-200 text-indigo-800 d-flex align-items-center justify-content-center flex-shrink-0">
+                                    <i class="fa-solid fa-layer-group fs-6"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Induk Stok Lembar Fisik</div>
+                                    <div class="text-[11px] text-indigo-800">
+                                        Produk ini memiliki <strong x-text="editMaterial.linked_variants_count"></strong> varian cetak terhubung (misal: 2 Sisi). Setiap penyesuaian stok fisik otomatis diterapkan ke varian tersebut.
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Alert Jika Sedang Ada Draft Opname Tersimpan -->
+                        <template x-if="editMaterial.has_draft">
+                            <div class="p-3 rounded-xl bg-amber-50 border border-amber-300 d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-lg bg-amber-200 text-amber-900 d-flex align-items-center justify-content-center font-bold">
+                                        <i class="fa-solid fa-clock-rotate-left"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-amber-950 text-xs">Sedang Tersimpan Sebagai Draft Opname</div>
+                                        <div class="text-[11px] text-amber-800">
+                                            Hitung fisik sementara: <strong x-text="editMaterial.draft_qty + ' unit'"></strong> 
+                                            (Selisih: <strong x-text="(editMaterial.draft_qty - editMaterial.system_stock > 0 ? '+' : '') + (editMaterial.draft_qty - editMaterial.system_stock) + ' unit'"></strong>).
+                                            <span class="d-block text-[10px] text-amber-700 mt-0.5">Stok sistem belum diubah, menunggu verifikasi / penerapan.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" name="opname_action" value="discard" class="btn btn-xs btn-outline-danger px-2.5 py-1 text-[11px] fw-bold rounded-lg shadow-2xs hover:bg-rose-100" onclick="return confirm('Batalkan draft hitung fisik ini?')">
+                                    <i class="fa-solid fa-trash me-1"></i> Batalkan Draft
+                                </button>
+                            </div>
+                        </template>
+
                         <!-- Core Opname Card: System vs Physical vs Variance -->
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                             <div class="row g-3 align-items-center">
@@ -667,7 +808,7 @@
                             <label class="form-label text-slate-700 fw-semibold text-xs mb-1">
                                 <i class="fa-solid fa-note-sticky text-slate-400 me-1"></i> Catatan Opname / Alasan Selisih (Opsional)
                             </label>
-                            <input type="text" name="opname_notes" class="form-control form-control-sm" placeholder="Contoh: 2 lembar rusak tertekuk saat cetak / salah hitung">
+                            <input type="text" name="opname_notes" x-model="editMaterial.draft_notes" class="form-control form-control-sm" placeholder="Contoh: 2 lembar rusak tertekuk saat cetak / salah hitung">
                         </div>
 
                         <!-- Footer Shortcut Info inside Tab 1 -->
@@ -824,12 +965,29 @@
 
                 </div>
 
-                <!-- Modal Footer -->
-                <div class="bg-slate-50 border-top px-5 py-3 d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn-odoo-secondary" @click="editOpen = false">Batal</button>
-                    <button type="submit" class="btn-odoo-primary px-4">
-                        <i class="fa-solid fa-floppy-disk me-1.5"></i> Simpan Hasil Opname
+                <!-- Modal Footer (Dua Pilihan: Simpan Sementara vs Terapkan ke Stok Sistem) -->
+                <div class="bg-slate-50 border-top px-4 py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-xl text-xs font-semibold px-3 py-2" @click="editOpen = false">
+                        Batal
                     </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- 1. SIMPAN DRAFT SEMENTARA (TIDAK MENGUBAH STOK SISTEM) -->
+                        <button type="submit" name="opname_action" value="draft" 
+                            class="btn btn-sm btn-outline-primary rounded-xl text-xs font-bold px-3.5 py-2 d-inline-flex align-items-center gap-1.5 shadow-2xs hover:bg-blue-50 transition" 
+                            title="Simpan hitungan fisik tanpa mengubah master stok sistem">
+                            <i class="fa-solid fa-bookmark text-primary"></i>
+                            <span x-text="editMaterial.has_draft ? 'Perbarui Draft Sementara' : 'Simpan Sementara (Draft)'"></span>
+                        </button>
+
+                        <!-- 2. TERAPKAN KE STOK SISTEM RESMI -->
+                        <button type="submit" name="opname_action" value="apply" 
+                            class="btn btn-sm text-white rounded-xl text-xs font-bold px-4 py-2 d-inline-flex align-items-center gap-1.5 shadow-sm transition hover:brightness-110" 
+                            style="background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); border: none;"
+                            title="Terapkan hasil hitung fisik ke master stok sistem sekarang">
+                            <i class="fa-solid fa-check-double"></i>
+                            <span>Terapkan ke Stok Sistem</span>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>

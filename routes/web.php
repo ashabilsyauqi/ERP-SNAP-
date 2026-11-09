@@ -181,6 +181,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:owner,manager,cashier,operator'])->prefix('production')->name('production.')->group(function () {
         Route::get('/banner', [\App\Http\Controllers\BannerProductionController::class, 'index'])->name('banner.index');
         Route::post('/banner/execute', [\App\Http\Controllers\BannerProductionController::class, 'executePrint'])->name('banner.execute');
+        Route::post('/banner/opname', [\App\Http\Controllers\BannerProductionController::class, 'storeOpname'])->name('banner.opname');
         Route::post('/banner/handover/{id}', [\App\Http\Controllers\BannerProductionController::class, 'handoverToCustomer'])->name('banner.handover');
         Route::get('/banner/rolls/{materialId}', [\App\Http\Controllers\BannerProductionController::class, 'getRollsByMaterial'])->name('banner.rolls');
     });

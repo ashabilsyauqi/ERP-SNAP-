@@ -25,3 +25,10 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+scratch/
+error_log
+public/error_log
+.user.ini
+php.ini
+.htaccess

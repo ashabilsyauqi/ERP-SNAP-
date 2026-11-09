@@ -558,9 +558,9 @@ class DailyClosingController extends Controller
                                 $hppPerUnit = (float)$mat->purchase_price;
                                 $subtotalHpp = round($wasteQty * $hppPerUnit, 2);
 
-                                // Kurangi stok fisik bahan
+                                // Kurangi stok fisik bahan & sinkronkan varian linked
                                 $newStock = max(0, round((float)$mat->stock_qty - $wasteQty, 2));
-                                $mat->update(['stock_qty' => $newStock]);
+                                $mat->syncStockToLinked($newStock);
                             }
 
                             $totalWasteHpp += $subtotalHpp;
@@ -738,7 +738,11 @@ class DailyClosingController extends Controller
             if ($w->material_roll_id) {
                 MaterialRoll::where('id', $w->material_roll_id)->increment('current_length_m', (float)$w->waste_qty);
             } elseif ($w->material_id) {
-                Material::where('id', $w->material_id)->increment('stock_qty', (float)$w->waste_qty);
+                $mat = Material::find($w->material_id);
+                if ($mat) {
+                    $newStock = round((float)$mat->stock_qty + (float)$w->waste_qty, 2);
+                    $mat->syncStockToLinked($newStock);
+                }
             }
         }
 

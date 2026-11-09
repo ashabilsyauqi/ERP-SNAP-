@@ -14,7 +14,9 @@
         .th-product { background-color: #312e81; color: #ffffff; }
         .th-tx { background-color: #0f172a; color: #ffffff; }
         
-        .kpi-highlight { background-color: #f3e8ff; color: #581c87; font-size: 12pt; font-weight: bold; }
+        .kpi-highlight { background-color: #f3e8ff; color: #581c87; font-size: 11pt; font-weight: bold; }
+        .kpi-cost { background-color: #ffe4e6; color: #9f1239; font-size: 11pt; font-weight: bold; }
+        .kpi-profit { background-color: #dcfce7; color: #166534; font-size: 11pt; font-weight: bold; }
         
         .text-center { text-align: center; }
         .text-right { text-align: right; }
@@ -28,25 +30,25 @@
     <!-- Header Section -->
     <table>
         <tr>
-            <td colspan="7" class="title-main" style="border: none;">SNAPRINT DIGITAL PRINTING</td>
+            <td colspan="11" class="title-main" style="border: none;">SNAPRINT DIGITAL PRINTING</td>
         </tr>
         <tr>
-            <td colspan="7" class="title-sub" style="border: none;">LAPORAN REKAPITULASI PENJUALAN MESIN (CABANG GRAND WISATA)</td>
+            <td colspan="11" class="title-sub" style="border: none;">LAPORAN REKAPITULASI PENJUALAN MESIN</td>
         </tr>
         <tr>
-            <td colspan="7" style="border: none; height: 10px;"></td>
+            <td colspan="11" style="border: none; height: 10px;"></td>
         </tr>
         <tr>
             <td style="border: none; font-weight: bold; width: 140px;">Label Mesin:</td>
-            <td colspan="2" style="border: none;"><strong>{{ $selectedTag === 'all' ? 'Semua Mesin Berlabel' : $selectedTag }}</strong></td>
+            <td colspan="3" style="border: none;"><strong>{{ $selectedTag === 'all' ? 'Semua Mesin Berlabel' : ($selectedTag === 'KM' ? 'KM (Konica Minolta)' : $selectedTag) }}</strong></td>
             <td style="border: none; font-weight: bold; width: 120px;">Periode:</td>
-            <td colspan="3" style="border: none;"><strong>{{ $periodLabel }}</strong></td>
+            <td colspan="6" style="border: none;"><strong>{{ $periodLabel }}</strong></td>
         </tr>
         <tr>
             <td style="border: none; font-weight: bold;">Cabang:</td>
-            <td colspan="2" style="border: none;"><strong>{{ $branchName }}</strong></td>
+            <td colspan="3" style="border: none;"><strong>{{ $branchName }}</strong></td>
             <td style="border: none; font-weight: bold;">Tanggal Unduh:</td>
-            <td colspan="3" style="border: none;">{{ now()->translatedFormat('d F Y H:i') }}</td>
+            <td colspan="6" style="border: none;">{{ now()->translatedFormat('d F Y H:i') }}</td>
         </tr>
     </table>
 
@@ -56,21 +58,25 @@
     <table>
         <thead>
             <tr>
-                <th colspan="4" style="background-color: #1e293b; color: #ffffff; text-align: left;">RINGKASAN TOTAL PENJUALAN MESIN</th>
+                <th colspan="6" style="background-color: #1e293b; color: #ffffff; text-align: left;">RINGKASAN KINERJA PENJUALAN & BIAYA KLIK MESIN</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td style="background-color: #f8fafc; font-weight: bold; width: 25%;">Total Penjualan (Omzet)</td>
-                <td class="kpi-highlight text-right" style="width: 25%;">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
-                <td style="background-color: #f8fafc; font-weight: bold; width: 25%;">Total Volume Cetak</td>
-                <td class="text-center fw-bold" style="width: 25%;">{{ number_format($totalItemsSold) }} Lembar/Pcs</td>
+                <td style="background-color: #f8fafc; font-weight: bold; width: 18%;">Total Penjualan (Omzet)</td>
+                <td class="kpi-highlight text-right" style="width: 15%;">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
+                <td style="background-color: #f8fafc; font-weight: bold; width: 18%;">Total Biaya Klik (HPP)</td>
+                <td class="kpi-cost text-right" style="width: 15%;">Rp {{ number_format($totalClickCharge, 0, ',', '.') }}</td>
+                <td style="background-color: #f8fafc; font-weight: bold; width: 18%;">Laba Kotor Mesin</td>
+                <td class="kpi-profit text-right" style="width: 16%;">Rp {{ number_format($totalGrossProfit, 0, ',', '.') }}</td>
             </tr>
             <tr>
-                <td style="background-color: #f8fafc; font-weight: bold;">Total Transaksi / Nota</td>
-                <td class="text-center fw-bold">{{ number_format($uniqueInvoicesCount) }} Invoice</td>
-                <td style="background-color: #f8fafc; font-weight: bold;">Rata-rata per Transaksi</td>
-                <td class="text-right fw-bold">Rp {{ number_format($avgTransactionValue, 0, ',', '.') }}</td>
+                <td style="background-color: #f8fafc; font-weight: bold;">Total Volume Cetak</td>
+                <td class="text-center fw-bold">{{ number_format($totalItemsSold) }} Lembar/Pcs</td>
+                <td style="background-color: #f8fafc; font-weight: bold;">Total Klik Mesin (Passes)</td>
+                <td class="text-center fw-bold" style="color: #0369a1;">{{ number_format($totalClicks) }} Klik</td>
+                <td style="background-color: #f8fafc; font-weight: bold;">Total Nota / Transaksi</td>
+                <td class="text-center fw-bold">{{ number_format($uniqueInvoicesCount) }} Invoice (Avg Rp {{ number_format($avgTransactionValue, 0, ',', '.') }})</td>
             </tr>
         </tbody>
     </table>
@@ -81,16 +87,20 @@
     <table>
         <thead>
             <tr>
-                <th colspan="7" class="th-product" style="text-align: left; font-size: 11pt;">TABEL 1: REKAPITULASI PENJUALAN PER PRODUK</th>
+                <th colspan="11" class="th-product" style="text-align: left; font-size: 11pt;">TABEL 1: REKAPITULASI PENJUALAN PER PRODUK</th>
             </tr>
             <tr>
                 <th style="width: 40px;">No</th>
-                <th style="width: 280px;">Nama Produk / Bahan</th>
-                <th style="width: 140px;">Kategori</th>
-                <th style="width: 150px;">Label Mesin</th>
-                <th style="width: 120px;">Harga Satuan</th>
-                <th style="width: 100px;">Qty Terjual</th>
-                <th style="width: 160px;">Total Penjualan (Omzet)</th>
+                <th style="width: 260px;">Nama Produk / Bahan</th>
+                <th style="width: 120px;">Kategori</th>
+                <th style="width: 100px;">Label Mesin</th>
+                <th style="width: 110px;">Harga Satuan</th>
+                <th style="width: 90px;">Qty Terjual</th>
+                <th style="width: 110px;">Tarif Klik</th>
+                <th style="width: 90px;">Total Klik</th>
+                <th style="width: 130px;">Biaya Klik</th>
+                <th style="width: 140px;">Total Omzet</th>
+                <th style="width: 140px;">Laba Mesin</th>
             </tr>
         </thead>
         <tbody>
@@ -102,19 +112,27 @@
                 <td class="text-center">{{ $prod['machine_tag'] ?: '-' }}</td>
                 <td class="text-right">Rp {{ number_format($prod['unit_price'], 0, ',', '.') }}</td>
                 <td class="text-center">{{ number_format($prod['qty_sold']) }}</td>
+                <td class="text-right">{{ $prod['click_rate'] > 0 ? 'Rp ' . number_format($prod['click_rate'], 0, ',', '.') : '-' }}</td>
+                <td class="text-center" style="color: #0369a1;">{{ $prod['total_clicks'] > 0 ? number_format($prod['total_clicks']) : '-' }}</td>
+                <td class="text-right" style="color: #be123c; font-weight: bold;">Rp {{ number_format($prod['total_click_cost'], 0, ',', '.') }}</td>
                 <td class="text-right fw-bold" style="color: #4338ca;">Rp {{ number_format($prod['total_omzet'], 0, ',', '.') }}</td>
+                <td class="text-right fw-bold" style="color: #15803d;">Rp {{ number_format($prod['gross_profit'], 0, ',', '.') }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="text-center" style="padding: 20px; color: #94a3b8;">Tidak ada data transaksi penjualan pada periode ini.</td>
+                <td colspan="11" class="text-center" style="padding: 20px; color: #94a3b8;">Tidak ada data transaksi penjualan pada periode ini.</td>
             </tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr class="bg-total">
-                <td colspan="5" class="text-center fw-bold" style="background-color: #f1f5f9;">TOTAL KESELURUHAN PENJUALAN</td>
+                <td colspan="5" class="text-center fw-bold" style="background-color: #f1f5f9;">TOTAL KESELURUHAN</td>
                 <td class="text-center fw-bold" style="background-color: #f1f5f9;">{{ number_format($totalItemsSold) }}</td>
+                <td style="background-color: #f1f5f9;"></td>
+                <td class="text-center fw-bold" style="background-color: #f1f5f9; color: #0369a1;">{{ number_format($totalClicks) }}</td>
+                <td class="text-right fw-bold" style="background-color: #ffe4e6; color: #9f1239;">Rp {{ number_format($totalClickCharge, 0, ',', '.') }}</td>
                 <td class="text-right fw-bold" style="background-color: #f3e8ff; color: #581c87;">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
+                <td class="text-right fw-bold" style="background-color: #dcfce7; color: #166534;">Rp {{ number_format($totalGrossProfit, 0, ',', '.') }}</td>
             </tr>
         </tfoot>
     </table>
@@ -125,32 +143,29 @@
     <table>
         <thead>
             <tr>
-                <th colspan="9" class="th-tx" style="text-align: left; font-size: 11pt;">TABEL 2: LOG RINCIAN TRANSAKSI NOTA / INVOICE</th>
+                <th colspan="11" class="th-tx" style="text-align: left; font-size: 11pt;">TABEL 2: LOG RINCIAN TRANSAKSI NOTA / INVOICE</th>
             </tr>
             <tr>
                 <th style="width: 40px;">No</th>
-                <th style="width: 150px;">No. Invoice</th>
-                <th style="width: 130px;">Tanggal & Jam</th>
-                <th style="width: 140px;">Cabang</th>
-                <th style="width: 160px;">Nama Pelanggan</th>
-                <th style="width: 250px;">Produk Dicetak</th>
-                <th style="width: 80px;">Qty</th>
-                <th style="width: 120px;">Harga Satuan</th>
-                <th style="width: 140px;">Subtotal Penjualan</th>
+                <th style="width: 140px;">No. Invoice</th>
+                <th style="width: 120px;">Tanggal & Jam</th>
+                <th style="width: 130px;">Cabang</th>
+                <th style="width: 150px;">Nama Pelanggan</th>
+                <th style="width: 220px;">Produk Dicetak</th>
+                <th style="width: 70px;">Qty</th>
+                <th style="width: 110px;">Harga Satuan</th>
+                <th style="width: 130px;">Subtotal Omzet</th>
+                <th style="width: 100px;">Tarif Klik</th>
+                <th style="width: 120px;">Biaya Klik</th>
             </tr>
         </thead>
         <tbody>
             @forelse($transactionDetails as $detail)
             @php
                 $tx = $detail->transaction;
-                $mat = $detail->material;
                 $lineQty = (float) $detail->qty_ordered;
                 $linePrice = (float) $detail->selling_price;
-                $areaM2 = (float) ($detail->area_m2 ?? 0);
-                $lineSubtotal = ($areaM2 > 0) ? ($areaM2 * $linePrice) : ($lineQty * $linePrice);
-                if ($lineSubtotal <= 0 && $linePrice > 0) {
-                    $lineSubtotal = $linePrice;
-                }
+                $lineSubtotal = $detail->computed_revenue ?? (($detail->area_m2 > 0) ? ($detail->area_m2 * $linePrice) : ($lineQty * $linePrice));
             @endphp
             <tr>
                 <td class="text-center">{{ $loop->iteration }}</td>
@@ -158,23 +173,27 @@
                 <td class="text-center">{{ $detail->created_at->format('d/m/Y H:i') }}</td>
                 <td class="text-left">{{ $tx && $tx->branch ? $tx->branch->nama_cabang : '-' }}</td>
                 <td class="text-left">{{ $tx ? ($tx->customer_name ?: 'Pelanggan Umum') : '-' }}</td>
-                <td class="text-left">{{ $mat ? $mat->material_name : '-' }}</td>
+                <td class="text-left">{{ $detail->item_name }}</td>
                 <td class="text-center">{{ number_format($lineQty) }}</td>
                 <td class="text-right">Rp {{ number_format($linePrice, 0, ',', '.') }}</td>
                 <td class="text-right fw-bold">Rp {{ number_format($lineSubtotal, 0, ',', '.') }}</td>
+                <td class="text-right">{{ ($detail->click_rate ?? 0) > 0 ? 'Rp ' . number_format($detail->click_rate, 0, ',', '.') : '-' }}</td>
+                <td class="text-right" style="color: #be123c;">Rp {{ number_format($detail->line_click_cost ?? 0, 0, ',', '.') }}</td>
             </tr>
             @empty
             <tr>
-                <td colspan="9" class="text-center" style="padding: 20px; color: #94a3b8;">Tidak ada transaksi.</td>
+                <td colspan="11" class="text-center" style="padding: 20px; color: #94a3b8;">Tidak ada transaksi.</td>
             </tr>
             @endforelse
         </tbody>
         <tfoot>
             <tr class="bg-total">
-                <td colspan="6" class="text-center fw-bold" style="background-color: #f1f5f9;">TOTAL RINCIAN PENJUALAN</td>
+                <td colspan="6" class="text-center fw-bold" style="background-color: #f1f5f9;">TOTAL RINCIAN TRANSAKSI</td>
                 <td class="text-center fw-bold" style="background-color: #f1f5f9;">{{ number_format($totalItemsSold) }}</td>
                 <td style="background-color: #f1f5f9;"></td>
                 <td class="text-right fw-bold" style="background-color: #f3e8ff; color: #581c87;">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
+                <td style="background-color: #f1f5f9;"></td>
+                <td class="text-right fw-bold" style="background-color: #ffe4e6; color: #9f1239;">Rp {{ number_format($totalClickCharge, 0, ',', '.') }}</td>
             </tr>
         </tfoot>
     </table>
@@ -184,15 +203,15 @@
     <!-- Signatures Section -->
     <table>
         <tr>
-            <td colspan="3" class="text-center" style="border: none;">
+            <td colspan="5" class="text-center" style="border: none;">
                 Dibuat Oleh,<br/><br/><br/><br/>
                 ( _________________________ )<br/>
-                <strong>Finance / Kasir Cabang Grand Wisata</strong>
+                <strong>Finance / Kasir</strong>
             </td>
-            <td colspan="2" style="border: none;"></td>
-            <td colspan="2" class="text-center" style="border: none;">
+            <td style="border: none;"></td>
+            <td colspan="5" class="text-center" style="border: none;">
                 Diketahui Oleh,<br/><br/><br/><br/>
-                ( <strong>{{ $selectedTag === 'all' ? 'Penanggung Jawab Mesin' : $selectedTag }}</strong> )<br/>
+                ( <strong>{{ $selectedTag === 'all' ? 'Penanggung Jawab Mesin' : ($selectedTag === 'KM' ? 'KM (Konica Minolta)' : $selectedTag) }}</strong> )<br/>
                 <strong>Penanggung Jawab Mesin KM</strong>
             </td>
         </tr>

@@ -530,7 +530,7 @@
                     ]
                 ]
             ];
-        } elseif (Str::startsWith($currentRoute, 'materials') || Str::startsWith($currentRoute, 'stock')) {
+        } elseif (Str::startsWith($currentRoute, 'materials') || Str::startsWith($currentRoute, 'stock') || Str::startsWith($currentRoute, 'production')) {
             $activeApp = 'Inventory';
             $appIcon = 'fa-boxes-stacked';
             $menuGroups = [

@@ -47,8 +47,8 @@
                 <select name="machine_tag" onchange="document.getElementById('machine-filter-form').submit()" class="form-select form-select-sm fw-bold border-purple-300 bg-purple-50/50 text-purple-900 rounded-xl text-xs" style="min-width: 180px;">
                     <option value="all" {{ ($selectedTag ?? '') === 'all' ? 'selected' : '' }}>Semua Mesin Berlabel</option>
                     @foreach($allMachineTags as $tag)
-                        <option value="{{ $tag }}" {{ ($selectedTag ?? 'Mesin KM') === $tag ? 'selected' : '' }}>
-                            {{ $tag }}
+                        <option value="{{ $tag }}" {{ ($selectedTag ?? 'KM') === $tag ? 'selected' : '' }}>
+                            {{ $tag === 'KM' ? 'KM (Konica Minolta)' : $tag }}
                         </option>
                     @endforeach
                 </select>
@@ -82,7 +82,7 @@
 
         <div class="d-flex align-items-center gap-2">
             <span class="badge bg-purple-100 text-purple-800 border border-purple-200 rounded-lg px-2.5 py-1.5 font-bold text-xs">
-                <i class="fa-solid fa-tag me-1"></i> {{ $selectedTag === 'all' ? 'Semua Label' : $selectedTag }}
+                <i class="fa-solid fa-gear me-1"></i> {{ $selectedTag === 'all' ? 'Semua Label' : ($selectedTag === 'KM' ? 'Mesin KM (Konica Minolta)' : $selectedTag) }}
             </span>
         </div>
     </form>
@@ -166,7 +166,7 @@
         <div>
             <h3 class="fw-bold text-slate-900 mb-1">Snaprint Digital Printing</h3>
             <h5 class="fw-bold text-purple-900 mb-0">LAPORAN REKAPITULASI PENJUALAN MESIN</h5>
-            <div class="text-xs text-slate-600 mt-1">Identifikasi Mesin: <strong>{{ $selectedTag }}</strong> &bull; Cabang: <strong>{{ $branchName }}</strong></div>
+            <div class="text-xs text-slate-600 mt-1">Identifikasi Mesin: <strong>{{ $selectedTag === 'KM' ? 'KM (Konica Minolta)' : $selectedTag }}</strong> &bull; Cabang: <strong>{{ $branchName }}</strong></div>
         </div>
         <div class="text-end">
             <div class="text-xs text-slate-500">Periode Laporan:</div>
@@ -176,8 +176,8 @@
     </div>
 </div>
 
-<!-- Financial Summary Cards (Pure Sales Performance) -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+<!-- Financial Summary Cards (Performance & Click Charges) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
     <!-- Card 1: Total Omzet Penjualan -->
     <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #7c3aed !important;">
         <div>
@@ -190,64 +190,83 @@
         </div>
     </div>
 
-    <!-- Card 2: Total Qty Terjual -->
+    <!-- Card 2: Total Biaya Klik Mesin (Click Charge Cost) -->
+    <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #e11d48 !important;">
+        <div>
+            <p class="text-[10px] font-bold text-rose-700 uppercase tracking-wider mb-1">Total Biaya Klik (HPP)</p>
+            <h4 class="text-base font-extrabold text-rose-800 font-mono mb-0">Rp {{ number_format($totalClickCharge, 0, ',', '.') }}</h4>
+            <small class="text-rose-500 font-medium text-[10px]">Beban sewa klik mesin</small>
+        </div>
+        <div class="p-2.5 bg-rose-50 text-rose-700 rounded-xl">
+            <i class="fa-solid fa-calculator text-lg"></i>
+        </div>
+    </div>
+
+    <!-- Card 3: Laba Kotor Mesin (Omzet - Biaya Klik) -->
+    <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #10b981 !important;">
+        <div>
+            <p class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-1">Laba Kotor Mesin</p>
+            <h4 class="text-base font-extrabold text-emerald-800 font-mono mb-0">Rp {{ number_format($totalGrossProfit, 0, ',', '.') }}</h4>
+            <small class="text-emerald-600 font-medium text-[10px]">Omzet - Biaya Klik</small>
+        </div>
+        <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl">
+            <i class="fa-solid fa-sack-dollar text-lg"></i>
+        </div>
+    </div>
+
+    <!-- Card 4: Total Klik Mesin (Passes) -->
+    <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #0284c7 !important;">
+        <div>
+            <p class="text-[10px] font-bold text-sky-700 uppercase tracking-wider mb-1">Total Klik Mesin</p>
+            <h4 class="text-base font-extrabold text-sky-950 font-mono mb-0">{{ number_format($totalClicks) }} <span class="text-xs font-sans text-slate-500">Klik</span></h4>
+            <small class="text-sky-600 font-medium text-[10px]">1x (1 Sisi) | 2x (2 Sisi)</small>
+        </div>
+        <div class="p-2.5 bg-sky-50 text-sky-700 rounded-xl">
+            <i class="fa-solid fa-print text-lg"></i>
+        </div>
+    </div>
+
+    <!-- Card 5: Total Volume & Transaksi -->
     <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #2563eb !important;">
         <div>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Volume Cetak</p>
-            <h4 class="text-base font-extrabold text-blue-950 font-mono mb-0">{{ number_format($totalItemsSold) }} <span class="text-xs font-sans text-slate-500">Lembar/Pcs</span></h4>
-            <small class="text-slate-400 text-[10px]">{{ count($productsMap) }} varian produk mesin</small>
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Volume & Transaksi</p>
+            <h4 class="text-base font-extrabold text-blue-950 font-mono mb-0">{{ number_format($totalItemsSold) }} <span class="text-xs font-sans text-slate-500">Lbr</span></h4>
+            <small class="text-slate-400 text-[10px]">{{ number_format($uniqueInvoicesCount) }} Nota (Avg Rp {{ number_format($avgTransactionValue, 0, ',', '.') }})</small>
         </div>
         <div class="p-2.5 bg-blue-50 text-blue-700 rounded-xl">
             <i class="fa-solid fa-layer-group text-lg"></i>
-        </div>
-    </div>
-
-    <!-- Card 3: Total Transaksi / Nota -->
-    <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #0284c7 !important;">
-        <div>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Nota / Struk</p>
-            <h4 class="text-base font-extrabold text-sky-950 font-mono mb-0">{{ number_format($uniqueInvoicesCount) }} <span class="text-xs font-sans text-slate-500">Invoice</span></h4>
-            <small class="text-slate-400 text-[10px]">Transaksi POS kasir</small>
-        </div>
-        <div class="p-2.5 bg-sky-50 text-sky-700 rounded-xl">
-            <i class="fa-solid fa-receipt text-lg"></i>
-        </div>
-    </div>
-
-    <!-- Card 4: Rata-rata per Nota (AOV) -->
-    <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-sm flex items-center justify-between" style="border-left: 4px solid #10b981 !important;">
-        <div>
-            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Rata-rata Nilai Nota</p>
-            <h4 class="text-base font-extrabold text-emerald-950 font-mono mb-0">Rp {{ number_format($avgTransactionValue, 0, ',', '.') }}</h4>
-            <small class="text-slate-500 font-medium text-[10px]">Rata-rata omzet per transaksi</small>
-        </div>
-        <div class="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl">
-            <i class="fa-solid fa-chart-line text-lg"></i>
         </div>
     </div>
 </div>
 
 <!-- Table 1: Rekap Penjualan per Produk Mesin -->
 <div class="o_form_sheet p-0 overflow-hidden mb-4">
-    <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center">
+    <div class="bg-slate-900 text-white px-4 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
             <i class="fa-solid fa-list-check text-teal-400"></i>
-            <h6 class="fw-bold mb-0 text-white">REKAPITULASI PENJUALAN PER PRODUK ({{ $selectedTag }})</h6>
+            <h6 class="fw-bold mb-0 text-white">REKAPITULASI PENJUALAN PER PRODUK ({{ $selectedTag === 'KM' ? 'KM - Konica Minolta' : $selectedTag }})</h6>
         </div>
-        <span class="badge bg-slate-800 border border-slate-700 text-slate-300 text-xs">Periode: {{ $periodLabel }}</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-slate-800 border border-slate-700 text-slate-300 text-xs">Periode: {{ $periodLabel }}</span>
+            <span class="badge bg-purple-900/60 border border-purple-500/30 text-purple-200 text-xs">{{ count($productsMap) }} Produk</span>
+        </div>
     </div>
 
     <div class="table-responsive">
         <table class="table table-hover o_list_table mb-0 align-middle">
             <thead>
                 <tr>
-                    <th style="width: 40px;" class="ps-3 text-center">No</th>
+                    <th style="width: 35px;" class="ps-3 text-center">No</th>
                     <th>Nama Produk / Bahan</th>
                     <th>Kategori</th>
-                    <th>Label Mesin</th>
-                    <th class="text-end">Harga Satuan</th>
+                    <th class="text-center">Label Mesin</th>
+                    <th class="text-end">Harga Jual</th>
                     <th class="text-center">Qty Terjual</th>
-                    <th class="text-end pe-3">Total Penjualan (Omzet)</th>
+                    <th class="text-end">Tarif Klik / Lbr</th>
+                    <th class="text-center">Total Klik</th>
+                    <th class="text-end text-rose-800">Biaya Klik (Total)</th>
+                    <th class="text-end text-purple-900">Total Omzet</th>
+                    <th class="text-end pe-3 text-emerald-800">Laba Mesin</th>
                 </tr>
             </thead>
             <tbody>
@@ -261,18 +280,40 @@
                         <td>
                             <span class="badge bg-slate-100 text-slate-700 border text-[10px]">{{ $p['category'] }}</span>
                         </td>
-                        <td>
+                        <td class="text-center">
                             <span class="badge bg-purple-50 text-purple-700 border border-purple-200 text-[10px]">
                                 <i class="fa-solid fa-gear me-1"></i>{{ $p['machine_tag'] }}
                             </span>
                         </td>
                         <td class="text-end font-mono text-xs">Rp {{ number_format($p['unit_price'], 0, ',', '.') }}</td>
                         <td class="text-center font-mono font-bold text-xs">{{ number_format($p['qty_sold']) }}</td>
-                        <td class="text-end font-mono font-bold text-purple-950 text-xs pe-3">Rp {{ number_format($p['total_omzet'], 0, ',', '.') }}</td>
+                        <td class="text-end font-mono text-xs text-slate-600">
+                            @if($p['click_rate'] > 0)
+                                Rp {{ number_format($p['click_rate'], 0, ',', '.') }}
+                            @else
+                                <span class="text-slate-400">-</span>
+                            @endif
+                        </td>
+                        <td class="text-center font-mono text-xs font-semibold text-sky-800">
+                            @if($p['total_clicks'] > 0)
+                                {{ number_format($p['total_clicks']) }}
+                            @else
+                                <span class="text-slate-400">-</span>
+                            @endif
+                        </td>
+                        <td class="text-end font-mono text-xs font-bold text-rose-700">
+                            @if($p['total_click_cost'] > 0)
+                                Rp {{ number_format($p['total_click_cost'], 0, ',', '.') }}
+                            @else
+                                <span class="text-slate-400">Rp 0</span>
+                            @endif
+                        </td>
+                        <td class="text-end font-mono font-bold text-purple-950 text-xs">Rp {{ number_format($p['total_omzet'], 0, ',', '.') }}</td>
+                        <td class="text-end font-mono font-bold text-emerald-700 text-xs pe-3">Rp {{ number_format($p['gross_profit'], 0, ',', '.') }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center py-5 text-muted">
+                        <td colspan="11" class="text-center py-5 text-muted">
                             <div class="p-3">
                                 <i class="fa-solid fa-gear text-slate-300 fs-1 mb-2"></i>
                                 <p class="mb-0 text-xs">Belum ada data penjualan untuk produk mesin <strong>{{ $selectedTag }}</strong> pada periode {{ $periodLabel }}.</p>
@@ -284,9 +325,13 @@
             @if(count($productsMap) > 0)
             <tfoot class="bg-slate-50 font-bold border-top border-2 text-xs">
                 <tr>
-                    <td colspan="5" class="ps-3 text-end uppercase text-slate-600">TOTAL KESELURUHAN PENJUALAN:</td>
+                    <td colspan="5" class="ps-3 text-end uppercase text-slate-600">TOTAL KESELURUHAN:</td>
                     <td class="text-center font-mono text-blue-900">{{ number_format($totalItemsSold) }}</td>
-                    <td class="text-end font-mono text-purple-900 pe-3">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
+                    <td></td>
+                    <td class="text-center font-mono text-sky-900">{{ number_format($totalClicks) }}</td>
+                    <td class="text-end font-mono text-rose-800">Rp {{ number_format($totalClickCharge, 0, ',', '.') }}</td>
+                    <td class="text-end font-mono text-purple-900">Rp {{ number_format($totalOmzet, 0, ',', '.') }}</td>
+                    <td class="text-end font-mono text-emerald-800 pe-3">Rp {{ number_format($totalGrossProfit, 0, ',', '.') }}</td>
                 </tr>
             </tfoot>
             @endif
@@ -301,6 +346,7 @@
             <i class="fa-solid fa-receipt text-indigo-600 text-xs"></i>
             <h6 class="fw-bold mb-0 text-slate-800 text-xs">RINCIAN INVOICE / STRUK TRANSAKSI TERKAIT ({{ $transactionDetails->count() }} Baris)</h6>
         </div>
+        <span class="text-slate-500 text-xs">Termasuk pencatatan Biaya Klik per transaksi</span>
     </div>
 
     <div class="table-responsive max-h-96 overflow-y-auto">
@@ -314,7 +360,9 @@
                     <th>Produk Mesin</th>
                     <th class="text-center">Qty</th>
                     <th class="text-end">Harga Satuan</th>
-                    <th class="text-end">Subtotal Penjualan</th>
+                    <th class="text-end">Subtotal Omzet</th>
+                    <th class="text-end text-rose-800">Tarif Klik</th>
+                    <th class="text-end text-rose-800">Biaya Klik</th>
                     <th>Cabang</th>
                     <th class="pe-3">Kasir</th>
                 </tr>
@@ -322,7 +370,7 @@
             <tbody>
                 @forelse($transactionDetails as $d)
                     @php
-                        $subtotal = ($d->area_m2 > 0) ? ($d->area_m2 * $d->selling_price) : ($d->qty_ordered * $d->selling_price);
+                        $subtotal = $d->computed_revenue ?? (($d->area_m2 > 0) ? ($d->area_m2 * $d->selling_price) : ($d->qty_ordered * $d->selling_price));
                     @endphp
                     <tr>
                         <td class="ps-3 text-center text-slate-400 font-mono">{{ $loop->iteration }}</td>
@@ -339,6 +387,20 @@
                         <td class="text-center font-mono font-bold">{{ $d->qty_ordered }}</td>
                         <td class="text-end font-mono text-slate-600">Rp {{ number_format($d->selling_price, 0, ',', '.') }}</td>
                         <td class="text-end font-mono font-bold text-purple-950">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
+                        <td class="text-end font-mono text-slate-600">
+                            @if(($d->click_rate ?? 0) > 0)
+                                Rp {{ number_format($d->click_rate, 0, ',', '.') }}
+                            @else
+                                <span class="text-slate-400">-</span>
+                            @endif
+                        </td>
+                        <td class="text-end font-mono font-bold text-rose-700">
+                            @if(($d->line_click_cost ?? 0) > 0)
+                                Rp {{ number_format($d->line_click_cost, 0, ',', '.') }}
+                            @else
+                                <span class="text-slate-400">Rp 0</span>
+                            @endif
+                        </td>
                         <td>
                             <span class="badge bg-slate-100 text-slate-700 border text-[10px]">{{ $d->transaction->branch->nama_cabang ?? 'Pusat' }}</span>
                         </td>
@@ -346,7 +408,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10" class="text-center py-4 text-slate-400">Belum ada transaksi terkait.</td>
+                        <td colspan="12" class="text-center py-4 text-slate-400">Belum ada transaksi terkait.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -364,7 +426,7 @@
         </div>
         <div>
             <div class="text-xs text-slate-500 mb-5">Diketahui & Diverifikasi Manajemen</div>
-            <div class="fw-bold text-slate-900 mt-5">( {{ $selectedTag }} )</div>
+            <div class="fw-bold text-slate-900 mt-5">( {{ $selectedTag === 'KM' ? 'KM - Konica Minolta' : $selectedTag }} )</div>
             <div class="text-[10px] text-slate-400 mt-1">Penanggung Jawab Mesin</div>
         </div>
     </div>

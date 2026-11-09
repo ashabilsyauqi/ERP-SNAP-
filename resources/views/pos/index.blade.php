@@ -221,8 +221,11 @@
                             <span class="badge {{ $badgeStyle }} border text-[11px] font-semibold px-2.5 py-0.5 rounded-lg truncate max-w-[140px]" title="{{ $material->category ?? 'Bahan' }}">
                                 {{ $material->category ?? 'Bahan' }}
                             </span>
-                            <span class="text-xs {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold flex-shrink-0">
-                                {{ $material->stock_qty }} pcs
+                            <span class="text-xs {{ $material->stock_qty > 10 ? 'text-emerald-600' : ($material->stock_qty > 0 ? 'text-amber-600' : 'text-rose-600') }} font-bold flex-shrink-0" title="{{ $material->parent_material_id ? 'Stok bersama: ' . ($material->parentMaterial->material_name ?? '1 Sisi') : 'Stok produk' }}">
+                                @if($material->parent_material_id)
+                                    <i class="fa-solid fa-link text-purple-600 me-0.5" title="Linked Stok"></i>
+                                @endif
+                                {{ (float)$material->stock_qty }} {{ $material->unit ?: 'pcs' }}
                             </span>
                         </div>
                         
@@ -1454,23 +1457,44 @@
         const nameLower = (name || '').toLowerCase();
         const catLower = (category || '').toLowerCase();
 
-        // Fixed packages and accessories should NOT open meteran dimension modal
-        if (nameLower.startsWith('paket ') || nameLower.startsWith('tiang ') || nameLower.includes('dtf a4') || nameLower.includes('dtf a3')) {
+        // 1. Definite Sheet, Retail, Merchandise, Document items: NEVER banner!
+        if (
+            catLower.includes('dokumen') ||
+            catLower.includes('sticker') ||
+            catLower.includes('stiker') ||
+            catLower.includes('kartu nama') ||
+            catLower.includes('brosur') ||
+            catLower.includes('nota') ||
+            catLower.includes('buku yasin') ||
+            catLower.includes('merchandise') ||
+            catLower.includes('finishing') ||
+            catLower.includes('stampel') ||
+            catLower.includes('tumbler') ||
+            nameLower.includes('art paper') ||
+            nameLower.includes('art carton') ||
+            nameLower.includes('blus white') ||
+            nameLower.includes('linen') ||
+            nameLower.includes('hvs') ||
+            nameLower.includes('foto coppy') ||
+            nameLower.includes('foto copy') ||
+            nameLower.includes('fotocopy') ||
+            nameLower.includes('scan ') ||
+            nameLower.startsWith('paket ') ||
+            nameLower.startsWith('tiang ') ||
+            nameLower.includes('dtf a4') ||
+            nameLower.includes('dtf a3')
+        ) {
             return false;
         }
 
-        // Check outdoor / indoor category
-        if (catLower.includes('outdoor') || catLower.includes('indoor') || catLower.includes('banner') || catLower.includes('spanduk')) {
-            return true;
-        }
-
-        // Keywords
-        const bannerKeywords = ['flexi', 'flexy', 'albatros', 'albatross', 'banner', 'spanduk', 'baliho', 'backdrop', 'ritrama', 'oneway', 'one way', 'kain banner', 'luster', 'polybanner', 'backlite', 'frontlite', 'korchin', 'hicon', 'xbanner', 'x-banner', 'roll up'];
+        // 2. Specific Banner keywords (Meteran)
+        const bannerKeywords = ['flexi', 'flexy', 'albatros', 'albatross', 'spanduk', 'baliho', 'backdrop', 'ritrama', 'oneway', 'one way', 'kain banner', 'luster', 'polybanner', 'backlite', 'frontlite', 'korchin', 'hicon', 'dtf meteran'];
         for (let kw of bannerKeywords) {
             if (nameLower.includes(kw)) return true;
         }
 
-        if (fixedSize && parseFloat(fixedSize) > 0) {
+        // 3. Category Outdoor / Indoor (meteran roll only)
+        if (catLower.includes('outdoor') || catLower.includes('indoor') || catLower.includes('spanduk')) {
             return true;
         }
 

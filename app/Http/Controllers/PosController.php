@@ -38,13 +38,16 @@ class PosController extends Controller
         }
 
         // Load all materials for this branch (excluding Tinta OPEX)
-        $materials = Material::with(['wholesalePrices', 'rolls'])
+        $materials = Material::with(['wholesalePrices', 'rolls', 'parentMaterial'])
             ->where('branch_id', $branchId)
             ->where('material_name', 'not like', '%tinta%')
             ->get()
             ->map(function($m) {
                 if (empty($m->category)) {
                     $m->category = 'Lainnya';
+                }
+                if ($m->parent_material_id && $m->parentMaterial) {
+                    $m->stock_qty = $m->parentMaterial->stock_qty;
                 }
                 return $m;
             })
@@ -312,9 +315,14 @@ class PosController extends Controller
                 }
 
                 // Click charge calculation per unit (if product has machine click charge)
-                $clickChargePerUnit = ($materialToDeduct->has_click_charge || (float)($materialToDeduct->click_charge ?? 0) > 0)
+                // 2 Sisi uses double click charge (print pass 2x) on the same paper stock
+                $clickMultiplier = ($materialToDeduct->print_sides == 2 || $materialToDeduct->parent_material_id || stripos($materialToDeduct->material_name, '2 sisi') !== false) ? 2 : 1;
+                $baseClick = ($materialToDeduct->has_click_charge || (float)($materialToDeduct->click_charge ?? 0) > 0)
                     ? (float)($materialToDeduct->click_charge ?? 0)
-                    : 0;
+                    : (($materialToDeduct->parentMaterial && ($materialToDeduct->parentMaterial->has_click_charge || (float)$materialToDeduct->parentMaterial->click_charge > 0))
+                        ? (float)$materialToDeduct->parentMaterial->click_charge
+                        : 0);
+                $clickChargePerUnit = $baseClick * $clickMultiplier;
 
                 // Price calculation
                 if ($isCustomBanner && $areaM2 > 0) {
@@ -340,9 +348,10 @@ class PosController extends Controller
                         // Banner custom: Stock is NOT deducted yet!
                         // Customer pays first, then Admin Cetak chooses roll and deducts both roll length & material stock upon execution.
                     } else {
-                        // Regular retail product: deduct stock immediately
-                        $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $qty);
-                        $materialToDeduct->save();
+                        // Regular retail product: deduct stock immediately from primary physical stock & sync all linked variants
+                        $primaryStockHolder = $materialToDeduct->getPrimaryMaterial();
+                        $newStock = max(0, round((float)$primaryStockHolder->stock_qty - $qty, 2));
+                        $primaryStockHolder->syncStockToLinked($newStock);
                     }
                 }
 
@@ -350,7 +359,7 @@ class PosController extends Controller
                     'transaction_id' => $transaction->id,
                     'material_id' => $materialToDeduct->id,
                     'product_name_snapshot' => $materialToDeduct->material_name,
-                    'unit_snapshot' => $materialToDeduct->fixed_size ? 'lembar' : 'm2',
+                    'unit_snapshot' => $isCustomBanner ? 'm²' : ($materialToDeduct->unit ?: 'lbr'),
                     'base_hpp_snapshot' => $materialToDeduct->purchase_price,
                     'qty_ordered' => $qty,
                     'selling_price' => $unitPrice,
@@ -614,8 +623,9 @@ class PosController extends Controller
                     $material = $detail->material;
                     $isCustomBanner = $detail->area_m2 > 0 && $detail->custom_width_cm > 0;
                     $deduct = $isCustomBanner ? max(1, (int)ceil($detail->area_m2 * $detail->qty_ordered)) : $detail->qty_ordered;
-                    $material->stock_qty = max(0, $material->stock_qty - $deduct);
-                    $material->save();
+                    $primaryStockHolder = $material->getPrimaryMaterial();
+                    $newStock = max(0, round((float)$primaryStockHolder->stock_qty - $deduct, 2));
+                    $primaryStockHolder->syncStockToLinked($newStock);
                 }
             }
 
@@ -1150,9 +1160,14 @@ class PosController extends Controller
             }
 
             // Click charge calculation per unit
-            $clickChargePerUnit = ($materialToDeduct->has_click_charge || (float)($materialToDeduct->click_charge ?? 0) > 0)
+            // 2 Sisi uses double click charge (print pass 2x) on the same paper stock
+            $clickMultiplier = ($materialToDeduct->print_sides == 2 || $materialToDeduct->parent_material_id || stripos($materialToDeduct->material_name, '2 sisi') !== false) ? 2 : 1;
+            $baseClick = ($materialToDeduct->has_click_charge || (float)($materialToDeduct->click_charge ?? 0) > 0)
                 ? (float)($materialToDeduct->click_charge ?? 0)
-                : 0;
+                : (($materialToDeduct->parentMaterial && ($materialToDeduct->parentMaterial->has_click_charge || (float)$materialToDeduct->parentMaterial->click_charge > 0))
+                    ? (float)$materialToDeduct->parentMaterial->click_charge
+                    : 0);
+            $clickChargePerUnit = $baseClick * $clickMultiplier;
 
             // Price calculation
             if ($isCustomBanner && $areaM2 > 0) {
@@ -1177,8 +1192,9 @@ class PosController extends Controller
                 if ($isCustomBanner) {
                     // Custom banner: stock is deducted later upon print execution by Admin Cetak
                 } else {
-                    $materialToDeduct->stock_qty = max(0, $materialToDeduct->stock_qty - $qty);
-                    $materialToDeduct->save();
+                    $primaryStockHolder = $materialToDeduct->getPrimaryMaterial();
+                    $newStock = max(0, round((float)$primaryStockHolder->stock_qty - $qty, 2));
+                    $primaryStockHolder->syncStockToLinked($newStock);
                 }
             }
 
@@ -1186,7 +1202,7 @@ class PosController extends Controller
                 'transaction_id' => $transaction->id,
                 'material_id' => $materialToDeduct->id,
                 'product_name_snapshot' => $materialToDeduct->material_name,
-                'unit_snapshot' => $materialToDeduct->fixed_size ? 'lembar' : 'm2',
+                'unit_snapshot' => $isCustomBanner ? 'm²' : ($materialToDeduct->unit ?: 'lbr'),
                 'base_hpp_snapshot' => $materialToDeduct->purchase_price,
                 'qty_ordered' => $qty,
                 'selling_price' => $unitPrice,

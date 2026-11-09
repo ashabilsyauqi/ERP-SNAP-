@@ -41,7 +41,12 @@ class MachineSalesReportController extends Controller
             ->filter()
             ->values();
 
-        $selectedTag = $request->input('machine_tag', 'Mesin KM');
+        // Ensure KM is present in machine tags list
+        if (!$allMachineTags->contains('KM')) {
+            $allMachineTags->prepend('KM');
+        }
+
+        $selectedTag = $request->input('machine_tag', 'KM');
 
         // Date & Period Filter (Cut-off date: 21st of each month)
         $timeframe = $request->input('timeframe', 'month');
@@ -94,7 +99,11 @@ class MachineSalesReportController extends Controller
             })
             ->whereHas('material', function ($q) use ($selectedTag) {
                 if ($selectedTag && $selectedTag !== 'all') {
-                    $q->where('machine_tag', $selectedTag);
+                    if (in_array(strtoupper($selectedTag), ['KM', 'MESIN KM'])) {
+                        $q->whereIn('machine_tag', ['KM', 'Mesin KM']);
+                    } else {
+                        $q->where('machine_tag', $selectedTag);
+                    }
                 } else {
                     $q->whereNotNull('machine_tag');
                 }
@@ -103,16 +112,19 @@ class MachineSalesReportController extends Controller
 
         $transactionDetails = $detailsQuery->orderBy('created_at', 'desc')->get();
 
-        // Aggregation per Product (Pure Sales)
+        // Aggregation per Product and Overall Totals
         $productsMap = [];
         $totalItemsSold = 0;
         $totalOmzet = 0;
+        $totalClicks = 0;
+        $totalClickCharge = 0;
+        $totalGrossProfit = 0;
 
         foreach ($transactionDetails as $detail) {
             $material = $detail->material;
-            $materialId = $material->id;
-            $materialName = $material->material_name;
-            $category = $material->category ?: 'Produk';
+            $materialId = $material ? $material->id : ($detail->material_id ?? 0);
+            $materialName = $detail->product_name_snapshot ?: ($material ? $material->material_name : 'Produk');
+            $category = ($material && $material->category) ? $material->category : 'Produk';
             
             $qty = (float) $detail->qty_ordered;
             $sellingPrice = (float) $detail->selling_price;
@@ -123,23 +135,69 @@ class MachineSalesReportController extends Controller
                 $revenue = (float) $detail->selling_price;
             }
 
+            // Click charge & click passes calculation
+            $is2Sisi = ($material && $material->print_sides == 2) || (stripos($materialName, '2 sisi') !== false);
+            $clicksPerUnit = $is2Sisi ? 2 : 1;
+
+            if ((float)($detail->click_charge ?? 0) > 0) {
+                $clickRate = (float)$detail->click_charge;
+            } elseif ($material && ($material->has_click_charge || (float)$material->click_charge > 0)) {
+                $clickRate = (float)$material->click_charge * ($is2Sisi ? 2 : 1);
+            } else {
+                if (stripos($materialName, 'art paper') !== false || stripos($materialName, 'art carton') !== false || stripos($materialName, 'blus white') !== false || stripos($materialName, 'linen') !== false || stripos($materialName, 'cromo') !== false || stripos($materialName, 'vinyl') !== false) {
+                    $clickRate = $is2Sisi ? 2000 : 1000;
+                } elseif (stripos($materialName, 'warna hvs a3') !== false) {
+                    $clickRate = $is2Sisi ? 1200 : 600;
+                } elseif (stripos($materialName, 'warna hvs a4') !== false || stripos($materialName, 'bw hvs a3') !== false) {
+                    $clickRate = $is2Sisi ? 500 : 250;
+                } elseif (stripos($materialName, 'bw hvs a4') !== false || stripos($materialName, 'foto coppy') !== false || stripos($materialName, 'fotocopy') !== false) {
+                    $clickRate = $is2Sisi ? 200 : 100;
+                } else {
+                    $clickRate = 0;
+                }
+            }
+
+            $lineClicks = ($clickRate > 0) ? ($qty * $clicksPerUnit) : 0;
+            $lineClickCost = $qty * $clickRate;
+            $lineGrossProfit = $revenue - $lineClickCost;
+
+            // Attach dynamic properties to detail for views
+            $detail->click_rate = $clickRate;
+            $detail->line_clicks = $lineClicks;
+            $detail->line_click_cost = $lineClickCost;
+            $detail->line_gross_profit = $lineGrossProfit;
+            $detail->computed_revenue = $revenue;
+
             $totalItemsSold += $qty;
             $totalOmzet += $revenue;
+            $totalClicks += $lineClicks;
+            $totalClickCharge += $lineClickCost;
+            $totalGrossProfit += $lineGrossProfit;
 
-            if (!isset($productsMap[$materialId])) {
-                $productsMap[$materialId] = [
+            // Group by material_name so all branches consolidate cleanly into single product lines
+            $productKey = trim($materialName);
+
+            if (!isset($productsMap[$productKey])) {
+                $productsMap[$productKey] = [
                     'material_id' => $materialId,
                     'product_name' => $materialName,
                     'category' => $category,
-                    'machine_tag' => $material->machine_tag,
-                    'unit_price' => $material->retail_price,
+                    'machine_tag' => $material ? $material->machine_tag : ($selectedTag ?? 'KM'),
+                    'unit_price' => $material ? $material->retail_price : $sellingPrice,
+                    'click_rate' => $clickRate,
                     'qty_sold' => 0,
+                    'total_clicks' => 0,
+                    'total_click_cost' => 0,
                     'total_omzet' => 0,
+                    'gross_profit' => 0,
                 ];
             }
 
-            $productsMap[$materialId]['qty_sold'] += $qty;
-            $productsMap[$materialId]['total_omzet'] += $revenue;
+            $productsMap[$productKey]['qty_sold'] += $qty;
+            $productsMap[$productKey]['total_clicks'] += $lineClicks;
+            $productsMap[$productKey]['total_click_cost'] += $lineClickCost;
+            $productsMap[$productKey]['total_omzet'] += $revenue;
+            $productsMap[$productKey]['gross_profit'] += $lineGrossProfit;
         }
 
         // Sort products by omzet descending
@@ -153,6 +211,9 @@ class MachineSalesReportController extends Controller
             'transactionDetails' => $transactionDetails,
             'totalItemsSold' => $totalItemsSold,
             'totalOmzet' => $totalOmzet,
+            'totalClicks' => $totalClicks,
+            'totalClickCharge' => $totalClickCharge,
+            'totalGrossProfit' => $totalGrossProfit,
             'uniqueInvoicesCount' => $uniqueInvoicesCount,
             'avgTransactionValue' => $avgTransactionValue,
             'allMachineTags' => $allMachineTags,
