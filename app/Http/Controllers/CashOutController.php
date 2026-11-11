@@ -29,21 +29,6 @@ class CashOutController extends Controller
             }
         }
 
-        // Auto-heal transactions whose dates were inverted due to DD/MM vs MM/DD parsing
-        try {
-            $misdated = CashTransaction::whereDate('created_at', '>=', '2026-10-01')
-                ->whereYear('tanggal', 2026)
-                ->whereDay('tanggal', 10)
-                ->whereMonth('tanggal', '!=', 10)
-                ->get();
-            foreach ($misdated as $mTrx) {
-                $intendedDay = Carbon::parse($mTrx->tanggal)->month;
-                $mTrx->update(['tanggal' => sprintf('2026-10-%02d', $intendedDay)]);
-            }
-        } catch (\Exception $e) {
-            // Safe fallback
-        }
-
         $query = CashTransaction::keluar()->with(['account', 'branch', 'user']);
 
         if ($branchId && $branchId !== 'all') {
@@ -62,7 +47,10 @@ class CashOutController extends Controller
             if ($sDate && $eDate) {
                 $query->where(function($q) use ($sDate, $eDate) {
                     $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $eDate . ' 23:59:59'])
-                      ->orWhereDate('tanggal', '>=', $sDate)->whereDate('tanggal', '<=', $eDate)
+                      ->orWhere(function($sub) use ($sDate, $eDate) {
+                          $sub->whereDate('tanggal', '>=', $sDate)
+                              ->whereDate('tanggal', '<=', $eDate);
+                      })
                       ->orWhereBetween('tanggal', [$sDate, $eDate]);
                 });
             }

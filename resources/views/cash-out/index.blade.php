@@ -13,15 +13,9 @@
 @section('content')
 <div id="main-view-wrapper" data-view-wrapper>
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show text-xs py-2 px-3 mb-3 border-0 shadow-sm" role="alert">
-            <i class="fa-solid fa-circle-check me-1"></i> {{ session('success') }}
-            <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-    @if(session('error') || $errors->any())
+    @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show text-xs py-2 px-3 mb-3 border-0 shadow-sm" role="alert">
-            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ session('error') ?? $errors->first() }}
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ $errors->first() }}
             <button type="button" class="btn-close py-2" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
