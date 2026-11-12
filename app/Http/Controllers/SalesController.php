@@ -493,10 +493,23 @@ class SalesController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
+        $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
+
         $request->validate([
             'customer_name' => 'nullable|string|max:255',
             'customer_phone' => 'nullable|string|max:50',
-            'payment_method' => 'required|string|in:Cash,Transfer,QRIS',
+            'payment_method' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) use ($transaction) {
+                    $allowed = ['Cash', 'Transfer', 'QRIS'];
+                    $isExistingSplit = str_starts_with(strtolower($transaction->payment_method ?? ''), 'split')
+                        && $value === $transaction->payment_method;
+                    if (!in_array($value, $allowed, true) && !$isExistingSplit) {
+                        $fail('Metode pembayaran tidak valid.');
+                    }
+                },
+            ],
             'payment_status' => 'required|string|in:PAID,PARTIAL,UNPAID',
             'order_status' => 'required|string|in:draft,pending,in_production,completed,cancelled',
             'branch_id' => 'nullable|exists:branches,id',
@@ -511,8 +524,6 @@ class SalesController extends Controller
 
         try {
             DB::beginTransaction();
-
-            $transaction = Transaction::with('transactionDetails.material')->findOrFail($id);
             $wasDraft = ($transaction->order_status === 'draft');
             $transaction->customer_name = $request->customer_name;
             $transaction->customer_phone = $request->customer_phone;

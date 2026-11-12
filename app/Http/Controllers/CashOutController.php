@@ -29,21 +29,6 @@ class CashOutController extends Controller
             }
         }
 
-        // Auto-heal transactions whose dates were inverted due to DD/MM vs MM/DD parsing
-        try {
-            $misdated = CashTransaction::whereDate('created_at', '>=', '2026-10-01')
-                ->whereYear('tanggal', 2026)
-                ->whereDay('tanggal', 10)
-                ->whereMonth('tanggal', '!=', 10)
-                ->get();
-            foreach ($misdated as $mTrx) {
-                $intendedDay = Carbon::parse($mTrx->tanggal)->month;
-                $mTrx->update(['tanggal' => sprintf('2026-10-%02d', $intendedDay)]);
-            }
-        } catch (\Exception $e) {
-            // Safe fallback
-        }
-
         $query = CashTransaction::keluar()->with(['account', 'branch', 'user']);
 
         if ($branchId && $branchId !== 'all') {
@@ -60,20 +45,14 @@ class CashOutController extends Controller
             $sDate = $this->parseFlexibleDate($request->start_date)?->toDateString();
             $eDate = $this->parseFlexibleDate($request->end_date)?->toDateString();
             if ($sDate && $eDate) {
-if ($sDate === $eDate) {
-                    $rawSlash = Carbon::parse($sDate)->format('d/m/Y');
-                    $query->where(function($q) use ($sDate, $rawSlash) {
-                        $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $sDate . ' 23:59:59'])
-                          ->orWhereDate('tanggal', '=', $sDate)
-                          ->orWhere('tanggal', $sDate)
-                          ->orWhere('tanggal', $rawSlash);
-                    });
-                } else {
-                    $query->where(function($q) use ($sDate, $eDate) {
-                        $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $eDate . ' 23:59:59'])
-                          ->orWhereDate('tanggal', '>=', $sDate)->whereDate('tanggal', '<=', $eDate);
-                    });
-                }
+                $query->where(function($q) use ($sDate, $eDate) {
+                    $q->whereBetween('tanggal', [$sDate . ' 00:00:00', $eDate . ' 23:59:59'])
+                      ->orWhere(function($sub) use ($sDate, $eDate) {
+                          $sub->whereDate('tanggal', '>=', $sDate)
+                              ->whereDate('tanggal', '<=', $eDate);
+                      })
+                      ->orWhereBetween('tanggal', [$sDate, $eDate]);
+                });
             }
         } elseif ($request->filled('start_date')) {
             $sDate = $this->parseFlexibleDate($request->start_date)?->toDateString();

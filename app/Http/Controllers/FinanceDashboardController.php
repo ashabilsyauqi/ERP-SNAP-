@@ -41,10 +41,14 @@ class FinanceDashboardController extends Controller
             $posQuery->where('branch_id', $branchId);
         }
 
-        // Stats
+        $startStr = $startOfMonth->toDateString();
+        $endStr = $endOfMonth->toDateString();
+
+        // Stats (use whereDate so mixed 'YYYY-MM-DD' and 'YYYY-MM-DD 00:00:00' SQLite dates match day 1 consistently)
         $totalKasMasuk = (clone $cashQuery)
             ->where('tipe', 'masuk')
-            ->whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+            ->whereDate('tanggal', '>=', $startStr)
+            ->whereDate('tanggal', '<=', $endStr)
             ->sum('jumlah');
 
         $totalKasKeluar = (clone $cashQuery)
@@ -52,7 +56,8 @@ class FinanceDashboardController extends Controller
             ->whereDoesntHave('account', function($q) {
                 $q->where('kode_akun', '6-1000'); // Exclude HPP accounting adjustments from actual cash outflow
             })
-            ->whereBetween('tanggal', [$startOfMonth, $endOfMonth])
+            ->whereDate('tanggal', '>=', $startStr)
+            ->whereDate('tanggal', '<=', $endStr)
             ->sum('jumlah');
 
         $saldoKas = (clone $cashQuery)->where('tipe', 'masuk')->sum('jumlah') - 

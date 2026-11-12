@@ -102,17 +102,19 @@ class SalesReportController extends Controller
         $driver = DB::connection()->getDriverName();
         $isSqlite = ($driver === 'sqlite');
 
+        $splitAllocations = $this->buildSplitAllocations($query, $period, $isAllBranches);
+        $paymentSelects = [
+            DB::raw('COUNT(id) as total_transactions'),
+            DB::raw('SUM(paid_amount) as total_sales'),
+            DB::raw("SUM(CASE WHEN LOWER(payment_method) IN ('cash', 'tunai') THEN paid_amount ELSE 0 END) as cash_sales"),
+            DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN paid_amount ELSE 0 END) as qris_sales"),
+            DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN paid_amount ELSE 0 END) as transfer_sales"),
+        ];
+
         // 1. Grouped Sales Table Query
         if ($period === 'daily') {
             $dateExpr = $isSqlite ? "strftime('%Y-%m-%d', created_at)" : "DATE(created_at)";
-            $selectFields = [
-                DB::raw("{$dateExpr} as date_val"),
-                DB::raw('COUNT(id) as total_transactions'),
-                DB::raw('SUM(paid_amount) as total_sales'),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN paid_amount ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN paid_amount ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN paid_amount ELSE 0 END) as transfer_sales")
-            ];
+            $selectFields = array_merge([DB::raw("{$dateExpr} as date_val")], $paymentSelects);
 
             $groupBy = ['date_val'];
             if ($isAllBranches) {
@@ -129,15 +131,17 @@ class SalesReportController extends Controller
 
             foreach ($rawRecords as $row) {
                 $branchObj = $branches->firstWhere('id', $row->branch_id);
+                $allocKey = $row->date_val . '|' . ($isAllBranches ? ($row->branch_id ?? 'none') : 'all');
+                $alloc = $splitAllocations[$allocKey] ?? ['cash' => 0.0, 'qris' => 0.0, 'transfer' => 0.0];
                 $salesData->push((object)[
                     'period_date' => Carbon::parse($row->date_val)->translatedFormat('d F Y'),
                     'raw_date' => Carbon::parse($row->date_val)->format('d/m'),
                     'branch_name' => $branchObj ? $branchObj->nama_cabang : 'Pusat',
                     'branch_id' => $row->branch_id ?? null,
                     'total_transactions' => $row->total_transactions,
-                    'cash_sales' => $row->cash_sales,
-                    'qris_sales' => $row->qris_sales,
-                    'transfer_sales' => $row->transfer_sales,
+                    'cash_sales' => (float) $row->cash_sales + $alloc['cash'],
+                    'qris_sales' => (float) $row->qris_sales + $alloc['qris'],
+                    'transfer_sales' => (float) $row->transfer_sales + $alloc['transfer'],
                     'total_sales' => $row->total_sales,
                 ]);
             }
@@ -145,15 +149,10 @@ class SalesReportController extends Controller
             $yearExpr = $isSqlite ? "strftime('%Y', created_at)" : "YEAR(created_at)";
             $monthExpr = $isSqlite ? "CAST(strftime('%m', created_at) AS INTEGER)" : "MONTH(created_at)";
 
-            $selectFields = [
+            $selectFields = array_merge([
                 DB::raw("{$yearExpr} as year_val"),
                 DB::raw("{$monthExpr} as month_val"),
-                DB::raw('COUNT(id) as total_transactions'),
-                DB::raw('SUM(paid_amount) as total_sales'),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN paid_amount ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN paid_amount ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN paid_amount ELSE 0 END) as transfer_sales")
-            ];
+            ], $paymentSelects);
 
             $groupBy = ['year_val', 'month_val'];
             if ($isAllBranches) {
@@ -172,15 +171,17 @@ class SalesReportController extends Controller
             foreach ($rawRecords as $row) {
                 $branchObj = $branches->firstWhere('id', $row->branch_id);
                 $monthName = Carbon::createFromDate((int)$row->year_val, (int)$row->month_val, 1)->translatedFormat('F Y');
+                $allocKey = ((int)$row->year_val . '-' . (int)$row->month_val) . '|' . ($isAllBranches ? ($row->branch_id ?? 'none') : 'all');
+                $alloc = $splitAllocations[$allocKey] ?? ['cash' => 0.0, 'qris' => 0.0, 'transfer' => 0.0];
                 $salesData->push((object)[
                     'period_date' => $monthName,
                     'raw_date' => Carbon::createFromDate((int)$row->year_val, (int)$row->month_val, 1)->format('M Y'),
                     'branch_name' => $branchObj ? $branchObj->nama_cabang : 'Pusat',
                     'branch_id' => $row->branch_id ?? null,
                     'total_transactions' => $row->total_transactions,
-                    'cash_sales' => $row->cash_sales,
-                    'qris_sales' => $row->qris_sales,
-                    'transfer_sales' => $row->transfer_sales,
+                    'cash_sales' => (float) $row->cash_sales + $alloc['cash'],
+                    'qris_sales' => (float) $row->qris_sales + $alloc['qris'],
+                    'transfer_sales' => (float) $row->transfer_sales + $alloc['transfer'],
                     'total_sales' => $row->total_sales,
                 ]);
             }
@@ -188,14 +189,7 @@ class SalesReportController extends Controller
             // Yearly
             $yearExpr = $isSqlite ? "strftime('%Y', created_at)" : "YEAR(created_at)";
 
-            $selectFields = [
-                DB::raw("{$yearExpr} as year_val"),
-                DB::raw('COUNT(id) as total_transactions'),
-                DB::raw('SUM(paid_amount) as total_sales'),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'cash' THEN paid_amount ELSE 0 END) as cash_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'qris' THEN paid_amount ELSE 0 END) as qris_sales"),
-                DB::raw("SUM(CASE WHEN LOWER(payment_method) = 'transfer' THEN paid_amount ELSE 0 END) as transfer_sales")
-            ];
+            $selectFields = array_merge([DB::raw("{$yearExpr} as year_val")], $paymentSelects);
 
             $groupBy = ['year_val'];
             if ($isAllBranches) {
@@ -212,15 +206,17 @@ class SalesReportController extends Controller
 
             foreach ($rawRecords as $row) {
                 $branchObj = $branches->firstWhere('id', $row->branch_id);
+                $allocKey = (string)$row->year_val . '|' . ($isAllBranches ? ($row->branch_id ?? 'none') : 'all');
+                $alloc = $splitAllocations[$allocKey] ?? ['cash' => 0.0, 'qris' => 0.0, 'transfer' => 0.0];
                 $salesData->push((object)[
                     'period_date' => 'Tahun ' . $row->year_val,
                     'raw_date' => 'Tahun ' . $row->year_val,
                     'branch_name' => $branchObj ? $branchObj->nama_cabang : 'Pusat',
                     'branch_id' => $row->branch_id ?? null,
                     'total_transactions' => $row->total_transactions,
-                    'cash_sales' => $row->cash_sales,
-                    'qris_sales' => $row->qris_sales,
-                    'transfer_sales' => $row->transfer_sales,
+                    'cash_sales' => (float) $row->cash_sales + $alloc['cash'],
+                    'qris_sales' => (float) $row->qris_sales + $alloc['qris'],
+                    'transfer_sales' => (float) $row->transfer_sales + $alloc['transfer'],
                     'total_sales' => $row->total_sales,
                 ]);
             }
@@ -301,6 +297,57 @@ class SalesReportController extends Controller
         ];
 
         return view('reports.sales', compact('salesData', 'chartData', 'period', 'branches', 'branchBreakdown', 'isAllBranches', 'timeframe', 'startDate', 'endDate', 'selectedBranchId', 'month', 'year'));
+    }
+
+    /**
+     * Aggregate payment channel breakdowns for Split transactions grouped by period bucket and branch.
+     */
+    protected function buildSplitAllocations($baseQuery, string $period, bool $isAllBranches): array
+    {
+        $splitTransactions = (clone $baseQuery)
+            ->whereRaw("LOWER(payment_method) LIKE 'split%'")
+            ->with('payments')
+            ->get(['id', 'branch_id', 'created_at', 'payment_method']);
+
+        $allocations = [];
+        foreach ($splitTransactions as $tx) {
+            if ($period === 'daily') {
+                $bucketKey = $tx->created_at->format('Y-m-d');
+            } elseif ($period === 'monthly') {
+                $bucketKey = (int)$tx->created_at->format('Y') . '-' . (int)$tx->created_at->format('n');
+            } else {
+                $bucketKey = $tx->created_at->format('Y');
+            }
+
+            $key = $bucketKey . '|' . ($isAllBranches ? ($tx->branch_id ?? 'none') : 'all');
+            if (!isset($allocations[$key])) {
+                $allocations[$key] = ['cash' => 0.0, 'qris' => 0.0, 'transfer' => 0.0];
+            }
+
+            foreach ($tx->payments as $payment) {
+                $channel = $this->classifyPaymentMethod($payment->payment_method);
+                if ($channel !== null) {
+                    $allocations[$key][$channel] += (float) $payment->amount;
+                }
+            }
+        }
+
+        return $allocations;
+    }
+
+    protected function classifyPaymentMethod(?string $method): ?string
+    {
+        $pm = strtolower(trim((string) $method));
+        if (in_array($pm, ['cash', 'tunai'], true)) {
+            return 'cash';
+        }
+        if ($pm === 'qris') {
+            return 'qris';
+        }
+        if ($pm === 'transfer') {
+            return 'transfer';
+        }
+        return null;
     }
 }
 

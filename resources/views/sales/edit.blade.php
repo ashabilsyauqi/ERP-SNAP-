@@ -82,6 +82,9 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Metode Pembayaran</label>
                         <select name="payment_method" class="form-select form-select-sm text-xs font-bold">
+                            @if(str_starts_with(strtolower($transaction->payment_method ?? ''), 'split'))
+                                <option value="{{ $transaction->payment_method }}" selected>🔀 {{ $transaction->payment_method }}</option>
+                            @endif
                             <option value="Cash" {{ $transaction->payment_method === 'Cash' ? 'selected' : '' }}>💵 Cash (Tunai)</option>
                             <option value="Transfer" {{ $transaction->payment_method === 'Transfer' ? 'selected' : '' }}>🏦 Transfer Bank</option>
                             <option value="QRIS" {{ $transaction->payment_method === 'QRIS' ? 'selected' : '' }}>📱 QRIS</option>
