@@ -105,19 +105,10 @@ class OwnerController extends Controller
             $clickChargeQuery->where($dateRangeFilter);
 
             // Older transactions settlement cash inflows received during this period (strictly from unique CashTransaction records)
-            $cashSettlements = CashTransaction::where('tipe', 'masuk')
-                ->whereNotNull('transaction_id')
-                ->where(function($q) use ($startDayStr, $endDayStr, $startDate, $endDate) {
-                    $q->whereBetween('tanggal', [$startDayStr, $endDayStr])
-                      ->orWhereBetween('created_at', [$startDate, $endDate]);
-                })
-                ->whereHas('transaction', function($t) use ($startDate, $branchId) {
-                    $t->where('created_at', '<', $startDate)
-                      ->whereNotIn('order_status', ['draft', 'cancelled'])
-                      ->when($branchId && $branchId !== 'all', fn($bq) => $bq->where('branch_id', $branchId));
-                })
-                ->with('transaction')
-                ->get();
+            $allPeriodSettlements = $this->fetchSettlementCashTransactions($startDate, $endDate, null, $startDate);
+            $cashSettlements = ($branchId && $branchId !== 'all')
+                ? $allPeriodSettlements->filter(fn($cs) => (int) ($cs->transaction->branch_id ?? 0) === (int) $branchId)->values()
+                : $allPeriodSettlements;
 
             $settleCash = 0;
             $settleQris = 0;
@@ -138,6 +129,8 @@ class OwnerController extends Controller
 
             $settleTotal = $settleCash + $settleQris + $settleTransfer;
         } else {
+            $allPeriodSettlements = collect();
+            $cashSettlements = collect();
             $settleCash = 0;
             $settleQris = 0;
             $settleTransfer = 0;
@@ -186,26 +179,35 @@ class OwnerController extends Controller
         $qrisSales = (float) $directQris + (float) $splitQris + $settleQris;
         $transferSales = (float) $directTransfer + (float) $splitTransfer + $settleTransfer;
 
-        // Branch Sales Comparison
-        $branchSalesData = Branch::all()->map(function ($branch) use ($timeframe, $month, $year, $startDateInput, $endDateInput) {
+        // Branch Sales Comparison (synchronized with Total Sales cash inflow basis)
+        $branchSettlementSums = $allPeriodSettlements
+            ->groupBy(fn($cs) => (int) ($cs->transaction->branch_id ?? 0))
+            ->map(fn($rows) => (float) $rows->sum('jumlah'));
+
+        $branchSalesData = Branch::all()->map(function ($branch) use ($startDate, $endDate, $branchSettlementSums) {
             $bQuery = Transaction::where('branch_id', $branch->id)->whereNotIn('order_status', ['draft', 'cancelled']);
-            if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
-                $bQuery->whereBetween('created_at', [Carbon::parse($startDateInput)->startOfDay(), Carbon::parse($endDateInput)->endOfDay()]);
-            } elseif ($timeframe === 'today' || $timeframe === '1D') {
-                $bQuery->whereDate('created_at', Carbon::today());
-            } elseif ($timeframe === '7days' || $timeframe === '7D') {
-                $bQuery->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay());
-            } elseif ($timeframe === 'month' || $timeframe === '1M') {
-                $bQuery->whereMonth('created_at', $month)->whereYear('created_at', $year);
-            } elseif ($timeframe === 'year' || $timeframe === '1Y') {
-                $bQuery->whereYear('created_at', $year);
+            if ($startDate && $endDate) {
+                $bQuery->whereBetween('created_at', [$startDate, $endDate]);
             }
-            $sales = (float) $bQuery->sum('total_price');
+            $sales = (float) $bQuery->sum('paid_amount') + ($branchSettlementSums[$branch->id] ?? 0.0);
             return [
                 'name' => $branch->nama_cabang,
                 'sales' => $sales,
             ];
         });
+
+        // Pre-index settlements by effective date so chart buckets match Total Sales without double-counting
+        $settleByDay = [];
+        $settleIdsByDay = [];
+        if ($startDate && $endDate) {
+            $minDay = $startDate->toDateString();
+            $maxDay = $endDate->toDateString();
+            foreach ($cashSettlements as $cs) {
+                $dKey = $this->resolveSettlementBucketDate($cs, $minDay, $maxDay);
+                $settleByDay[$dKey] = ($settleByDay[$dKey] ?? 0.0) + (float) $cs->jumlah;
+                $settleIdsByDay[$dKey][$cs->transaction_id] = true;
+            }
+        }
 
         // Interactive Trading Chart Data (Dynamic Labels & Series based on timeframe)
         $chartLabels = [];
@@ -214,37 +216,38 @@ class OwnerController extends Controller
         $chartNet = [];
         $chartAov = [];
 
-        if ($timeframe === 'custom' && $startDateInput && $endDateInput) {
-            $s = Carbon::parse($startDateInput)->startOfDay();
-            $e = Carbon::parse($endDateInput)->endOfDay();
-            $diffDays = $s->diffInDays($e);
+        if ($timeframe === 'custom' && $startDate && $endDate) {
+            $diffDays = $startDate->diffInDays($endDate);
 
             if ($diffDays <= 45) {
-                for ($cur = $s->copy(); $cur->lte($e); $cur->addDay()) {
+                for ($cur = $startDate->copy()->startOfDay(); $cur->lte($endDate); $cur->addDay()) {
+                    $dKey = $cur->toDateString();
                     $chartLabels[] = $cur->translatedFormat('d M');
                     $dTrx = Transaction::whereDate('created_at', $cur)
                         ->whereNotIn('order_status', ['draft', 'cancelled']);
                     if ($branchId && $branchId !== 'all') {
                         $dTrx->where('branch_id', $branchId);
                     }
-                    $salesVal = (float) $dTrx->sum('paid_amount');
-                    $volVal = (int) $dTrx->count();
+                    $salesVal = (float) $dTrx->sum('paid_amount') + ($settleByDay[$dKey] ?? 0.0);
+                    $volVal = (int) $dTrx->count() + count($settleIdsByDay[$dKey] ?? []);
                     $chartSales[] = $salesVal;
                     $chartVolume[] = $volVal;
                     $chartNet[] = $salesVal;
                     $chartAov[] = $volVal > 0 ? round($salesVal / $volVal) : 0;
                 }
             } else {
-                for ($cur = $s->copy()->startOfMonth(); $cur->lte($e); $cur->addMonth()) {
+                for ($cur = $startDate->copy()->startOfMonth(); $cur->lte($endDate); $cur->addMonth()) {
+                    $mStart = $cur->copy()->startOfMonth()->max($startDate);
+                    $mEnd = $cur->copy()->endOfMonth()->min($endDate);
                     $chartLabels[] = $cur->translatedFormat('M Y');
-                    $mSalesQuery = Transaction::whereYear('created_at', $cur->year)
-                        ->whereMonth('created_at', $cur->month)
+                    $mSalesQuery = Transaction::whereBetween('created_at', [$mStart, $mEnd])
                         ->whereNotIn('order_status', ['draft', 'cancelled']);
                     if ($branchId && $branchId !== 'all') {
                         $mSalesQuery->where('branch_id', $branchId);
                     }
-                    $salesVal = (float) $mSalesQuery->sum('paid_amount');
-                    $volVal = (int) $mSalesQuery->count();
+                    [$mSettleVal, $mSettleVol] = $this->sumIndexedSettlements($settleByDay, $settleIdsByDay, $mStart->toDateString(), $mEnd->toDateString());
+                    $salesVal = (float) $mSalesQuery->sum('paid_amount') + $mSettleVal;
+                    $volVal = (int) $mSalesQuery->count() + $mSettleVol;
                     $chartSales[] = $salesVal;
                     $chartVolume[] = $volVal;
                     $chartNet[] = $salesVal;
@@ -258,7 +261,7 @@ class OwnerController extends Controller
             $hourlyData = [];
             // Full 24-Hour Range (00:00 - 23:00) to support all 24 hours seamlessly
             for ($h = 0; $h <= 23; $h++) {
-                $hourlyData[$h] = ['sales' => 0.0, 'volume' => 0];
+                $hourlyData[$h] = ['sales' => 0.0, 'volume' => 0, 'settledIds' => []];
             }
 
             foreach ($todayTransactions as $trx) {
@@ -269,16 +272,26 @@ class OwnerController extends Controller
                 }
             }
 
+            foreach ($cashSettlements as $cs) {
+                $h = $cs->created_at->between($startDate, $endDate) ? (int) $cs->created_at->format('G') : 0;
+                if (isset($hourlyData[$h])) {
+                    $hourlyData[$h]['sales'] += (float) $cs->jumlah;
+                    $hourlyData[$h]['settledIds'][$cs->transaction_id] = true;
+                }
+            }
+
             foreach ($hourlyData as $hour => $data) {
+                $volVal = $data['volume'] + count($data['settledIds']);
                 $chartLabels[] = sprintf('%02d:00', $hour);
                 $chartSales[] = $data['sales'];
-                $chartVolume[] = $data['volume'];
+                $chartVolume[] = $volVal;
                 $chartNet[] = $data['sales'];
-                $chartAov[] = $data['volume'] > 0 ? round($data['sales'] / $data['volume']) : 0;
+                $chartAov[] = $volVal > 0 ? round($data['sales'] / $volVal) : 0;
             }
         } elseif ($timeframe === '7days' || $timeframe === '7D') {
             for ($d = 6; $d >= 0; $d--) {
                 $targetDate = Carbon::today()->subDays($d);
+                $dKey = $targetDate->toDateString();
                 $chartLabels[] = $targetDate->format('d M');
 
                 $dTrx = Transaction::whereDate('created_at', $targetDate)
@@ -287,8 +300,8 @@ class OwnerController extends Controller
                     $dTrx->where('branch_id', $branchId);
                 }
 
-                $salesVal = (float) $dTrx->sum('paid_amount');
-                $volVal = (int) $dTrx->count();
+                $salesVal = (float) $dTrx->sum('paid_amount') + ($settleByDay[$dKey] ?? 0.0);
+                $volVal = (int) $dTrx->count() + count($settleIdsByDay[$dKey] ?? []);
                 $chartSales[] = $salesVal;
                 $chartVolume[] = $volVal;
                 $chartNet[] = $salesVal;
@@ -298,6 +311,7 @@ class OwnerController extends Controller
             $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
             for ($d = 1; $d <= $daysInMonth; $d++) {
                 $targetDate = Carbon::createFromDate($year, $month, $d);
+                $dKey = $targetDate->toDateString();
                 $chartLabels[] = sprintf('%02d %s', $d, $targetDate->translatedFormat('M'));
 
                 $dTrx = Transaction::whereDate('created_at', $targetDate)
@@ -306,8 +320,8 @@ class OwnerController extends Controller
                     $dTrx->where('branch_id', $branchId);
                 }
 
-                $salesVal = (float) $dTrx->sum('paid_amount');
-                $volVal = (int) $dTrx->count();
+                $salesVal = (float) $dTrx->sum('paid_amount') + ($settleByDay[$dKey] ?? 0.0);
+                $volVal = (int) $dTrx->count() + count($settleIdsByDay[$dKey] ?? []);
                 $chartSales[] = $salesVal;
                 $chartVolume[] = $volVal;
                 $chartNet[] = $salesVal;
@@ -315,7 +329,9 @@ class OwnerController extends Controller
             }
         } elseif ($timeframe === 'year' || $timeframe === '1Y') {
             for ($m = 1; $m <= 12; $m++) {
-                $chartLabels[] = Carbon::create($year, $m, 1)->translatedFormat('M');
+                $mStart = Carbon::createFromDate($year, $m, 1)->startOfMonth();
+                $mEnd = $mStart->copy()->endOfMonth();
+                $chartLabels[] = $mStart->translatedFormat('M');
 
                 $mTrx = Transaction::whereYear('created_at', $year)
                     ->whereMonth('created_at', $m)
@@ -324,8 +340,9 @@ class OwnerController extends Controller
                     $mTrx->where('branch_id', $branchId);
                 }
 
-                $salesVal = (float) $mTrx->sum('paid_amount');
-                $volVal = (int) $mTrx->count();
+                [$mSettleVal, $mSettleVol] = $this->sumIndexedSettlements($settleByDay, $settleIdsByDay, $mStart->toDateString(), $mEnd->toDateString());
+                $salesVal = (float) $mTrx->sum('paid_amount') + $mSettleVal;
+                $volVal = (int) $mTrx->count() + $mSettleVol;
                 $chartSales[] = $salesVal;
                 $chartVolume[] = $volVal;
                 $chartNet[] = $salesVal;
@@ -335,6 +352,8 @@ class OwnerController extends Controller
             // Default / 'all': 6 months overview
             for ($i = 5; $i >= 0; $i--) {
                 $date = Carbon::now()->subMonths($i);
+                $mStart = $date->copy()->startOfMonth()->startOfDay();
+                $mEnd = $date->copy()->endOfMonth()->endOfDay();
                 $chartLabels[] = $date->translatedFormat('F Y');
 
                 $mSalesQuery = Transaction::whereYear('created_at', $date->year)
@@ -349,7 +368,8 @@ class OwnerController extends Controller
                     $mOpexQuery->where('branch_id', $branchId);
                 }
 
-                $mSales = (float) $mSalesQuery->sum('paid_amount');
+                $mSettlements = $this->fetchSettlementCashTransactions($mStart, $mEnd, $branchId, $mStart);
+                $mSales = (float) $mSalesQuery->sum('paid_amount') + (float) $mSettlements->sum('jumlah');
                 $mClickCharge = (float) CashTransaction::keluar()
                     ->whereHas('account', fn($q) => $q->where('kode_akun', '5-1100'))
                     ->whereYear('tanggal', $date->year)
@@ -361,7 +381,7 @@ class OwnerController extends Controller
                 $mOpex = (float) $mOpexQuery->whereDoesntHave('account', function($q) {
                     $q->whereIn('kode_akun', ['6-1000', '5-1100']);
                 })->sum('jumlah');
-                $mVol = (int) $mSalesQuery->count();
+                $mVol = (int) $mSalesQuery->count() + $mSettlements->pluck('transaction_id')->unique()->count();
 
                 $chartSales[] = $mSales;
                 $chartVolume[] = $mVol;
@@ -388,7 +408,7 @@ class OwnerController extends Controller
         $maxSalesIdx = !empty($chartSales) ? array_search($maxSales, $chartSales) : false;
         $peakSalesLabel = ($maxSalesIdx !== false && isset($chartLabels[$maxSalesIdx]) && $maxSales > 0) ? $chartLabels[$maxSalesIdx] . " (Rp " . number_format($maxSales, 0, ',', '.') . ")" : '-';
 
-        $recentTransactions = (clone $query)->with(['user', 'branch', 'transactionDetails.material'])->orderBy('created_at', 'desc')->take(10)->get();
+        $recentTransactions = (clone $query)->with(['user', 'branch', 'transactionDetails.material', 'payments'])->orderBy('created_at', 'desc')->take(10)->get();
         $branches = Branch::all();
         $startDate = $startDateInput;
         $endDate = $endDateInput;
@@ -547,5 +567,57 @@ class OwnerController extends Controller
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    /**
+     * Fetch settlement cash-in records received in [bucketStart, bucketEnd] for orders created before olderThanDate.
+     */
+    protected function fetchSettlementCashTransactions(Carbon $bucketStart, Carbon $bucketEnd, $branchId = null, ?Carbon $olderThanDate = null)
+    {
+        $startDayStr = $bucketStart->toDateString();
+        $endDayStr = $bucketEnd->toDateString();
+        $cutoff = $olderThanDate ?: $bucketStart;
+
+        return CashTransaction::where('tipe', 'masuk')
+            ->whereNotNull('transaction_id')
+            ->where(function ($q) use ($startDayStr, $endDayStr, $bucketStart, $bucketEnd) {
+                $q->where(function ($dq) use ($startDayStr, $endDayStr) {
+                    $dq->whereDate('tanggal', '>=', $startDayStr)
+                       ->whereDate('tanggal', '<=', $endDayStr);
+                })->orWhereBetween('created_at', [$bucketStart, $bucketEnd]);
+            })
+            ->whereHas('transaction', function ($t) use ($cutoff, $branchId) {
+                $t->where('created_at', '<', $cutoff)
+                  ->whereNotIn('order_status', ['draft', 'cancelled'])
+                  ->when($branchId && $branchId !== 'all', fn($bq) => $bq->where('branch_id', $branchId));
+            })
+            ->with('transaction')
+            ->get();
+    }
+
+    protected function resolveSettlementBucketDate(CashTransaction $cs, string $minDayStr, string $maxDayStr): string
+    {
+        if ($cs->tanggal) {
+            $tDate = Carbon::parse($cs->tanggal)->toDateString();
+            if ($tDate >= $minDayStr && $tDate <= $maxDayStr) {
+                return $tDate;
+            }
+        }
+        return $cs->created_at->toDateString();
+    }
+
+    protected function sumIndexedSettlements(array $settleByDay, array $settleIdsByDay, string $startDay, string $endDay): array
+    {
+        $sum = 0.0;
+        $uniqueIds = [];
+        foreach ($settleByDay as $d => $val) {
+            if ($d >= $startDay && $d <= $endDay) {
+                $sum += $val;
+                foreach (($settleIdsByDay[$d] ?? []) as $tid => $_) {
+                    $uniqueIds[$tid] = true;
+                }
+            }
+        }
+        return [$sum, count($uniqueIds)];
     }
 }

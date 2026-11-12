@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\CashierShift;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\Transaction;
 use App\Models\TransactionPayment;
 
@@ -67,9 +68,10 @@ class CashierShiftController extends Controller
         $splitCashSales = TransactionPayment::whereHas('transaction', function($q) use ($user, $activeShift, $shiftBranch) {
             $q->where('user_id', $user->id)
               ->where('branch_id', $shiftBranch)
+              ->whereRaw("LOWER(payment_method) LIKE 'split%'")
               ->whereNotIn('order_status', ['draft', 'cancelled'])
               ->whereBetween('created_at', [$activeShift->opened_at, now()]);
-        })->whereIn('payment_method', ['Cash', 'cash'])->sum('amount');
+        })->whereIn(DB::raw('LOWER(payment_method)'), ['cash', 'tunai'])->sum('amount');
 
         $cashSalesDuringShift = (float) $directCashSales + (float) $splitCashSales;
 

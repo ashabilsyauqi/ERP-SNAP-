@@ -423,6 +423,14 @@
                                 'subtotal' => $d->qty_ordered * $d->selling_price,
                             ];
                         });
+                        $paymentsList = $tx->payments && $tx->payments->count() > 0
+                            ? $tx->payments->sortBy('created_at')->map(fn($p) => [
+                                'date' => $p->created_at->format('d M Y H:i'),
+                                'method' => $p->payment_method,
+                                'amount' => (float) $p->amount,
+                                'note' => $p->reference_note ?: 'Pembayaran',
+                            ])->values()->all()
+                            : [];
                         $invPayload = [
                             'invoice_number' => $tx->invoice_number,
                             'created_at' => $tx->created_at->format('d M Y H:i'),
@@ -435,7 +443,8 @@
                             'customer_name' => $tx->customer_name,
                             'customer_phone' => $tx->customer_phone,
                             'total_price' => $tx->total_price,
-                            'items' => $invItems
+                            'items' => $invItems,
+                            'payments' => $paymentsList
                         ];
                     @endphp
                     <tr>
@@ -455,12 +464,17 @@
                         </td>
                         <td class="font-semibold text-slate-700">{{ $tx->user->full_name ?: ($tx->user->username ?? '-') }}</td>
                         <td>
-                            @if($tx->payment_method === 'Cash')
+                            @php
+                                $pmLower = strtolower($tx->payment_method ?? '');
+                            @endphp
+                            @if(str_starts_with($pmLower, 'split'))
+                                <span class="badge bg-purple-100 text-purple-800 text-[10px]">🔀 {{ $tx->payment_method }}</span>
+                            @elseif($pmLower === 'cash' || $pmLower === 'tunai')
                                 <span class="badge bg-emerald-100 text-emerald-800 text-[10px]">💵 Cash</span>
-                            @elseif($tx->payment_method === 'QRIS')
+                            @elseif($pmLower === 'qris')
                                 <span class="badge bg-blue-100 text-blue-800 text-[10px]">📱 QRIS</span>
                             @else
-                                <span class="badge bg-amber-100 text-amber-800 text-[10px]">🏦 Transfer</span>
+                                <span class="badge bg-amber-100 text-amber-800 text-[10px]">🏦 {{ $tx->payment_method ?? 'Transfer' }}</span>
                             @endif
                         </td>
                         <td class="text-end font-mono font-bold text-slate-900">
