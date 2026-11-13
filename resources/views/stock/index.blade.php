@@ -5,6 +5,10 @@
 
 @section('action-buttons')
 @if(auth()->user()->isManager() || auth()->user()->isOwner() || auth()->user()->isSuperAdmin())
+<a href="{{ route('stock.central') }}" class="btn btn-light border shadow-sm d-inline-flex align-items-center gap-1.5 text-decoration-none text-nowrap" style="font-size: 13px; padding: 6px 12px; border-radius: 6px; color: #5b21b6; border-color: #ddd6fe !important; background-color: #f5f3ff;">
+    <i class="fa-solid fa-network-wired"></i>
+    <span>Lihat Seluruh Cabang</span>
+</a>
 <button type="button" class="btn-odoo-primary border-0 shadow-sm d-inline-flex align-items-center gap-1.5 cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalAddProductStock">
     <i class="fa-solid fa-plus"></i>
     <span>+ Add Product</span>

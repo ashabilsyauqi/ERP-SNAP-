@@ -175,6 +175,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/waste', [\App\Http\Controllers\StockController::class, 'storeWaste'])->name('waste.store');
     });
 
+    // Central Consolidated Master Product & Cross-Branch Stock (Owner & Manager)
+    Route::middleware(['role:owner,manager,manajer_cabang'])->prefix('stock')->name('stock.')->group(function () {
+        Route::get('/central', [\App\Http\Controllers\StockController::class, 'central'])->name('central');
+    });
+
     // ==========================================
     // BANNER PRODUCTION WORKSTATION (Queue & Roll Allocator)
     // ==========================================

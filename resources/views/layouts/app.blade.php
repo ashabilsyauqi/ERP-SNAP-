@@ -538,25 +538,33 @@
                     'title' => 'Overview',
                     'type' => 'link',
                     'route' => 'materials.index',
-                    'role' => 'owner,manager'
+                    'role' => 'owner,manager,manajer_cabang'
+                ],
+                [
+                    'title' => 'Lihat Seluruh Cabang',
+                    'type' => 'link',
+                    'route' => 'stock.central',
+                    'role' => 'owner,manager,manajer_cabang'
                 ],
                 [
                     'title' => 'Operations',
                     'type' => 'dropdown',
-                    'role' => 'manager,owner',
+                    'role' => 'manager,manajer_cabang,owner',
                     'items' => [
                         ['title' => 'Produksi Banner & Alokasi Roll', 'route' => 'production.banner.index', 'role' => 'all'],
-                        ['title' => 'Data Stok & Opname (Physical Inventory)', 'route' => 'stock.index', 'role' => 'manager,owner'],
-                        ['title' => 'Pemeriksaan Barang Masuk (GRN Inspection)', 'route' => 'stock.inspection', 'role' => 'manager,owner'],
-                        ['title' => 'Barang Reject & Retur Supplier', 'route' => 'stock.rejected', 'role' => 'manager,owner'],
+                        ['title' => 'Data Stok & Opname (Physical Inventory)', 'route' => 'stock.index', 'role' => 'manager,manajer_cabang,owner'],
+                        ['title' => 'Lihat Seluruh Cabang (Stok Sentral)', 'route' => 'stock.central', 'role' => 'owner,manager,manajer_cabang'],
+                        ['title' => 'Pemeriksaan Barang Masuk (GRN Inspection)', 'route' => 'stock.inspection', 'role' => 'manager,manajer_cabang,owner'],
+                        ['title' => 'Barang Reject & Retur Supplier', 'route' => 'stock.rejected', 'role' => 'manager,manajer_cabang,owner'],
                     ]
                 ],
                 [
                     'title' => 'Products',
                     'type' => 'dropdown',
-                    'role' => 'owner,manager',
+                    'role' => 'owner,manager,manajer_cabang',
                     'items' => [
-                        ['title' => 'Master Bahan Baku & Produk', 'route' => 'materials.index', 'role' => 'owner,manager'],
+                        ['title' => 'Master Bahan Baku & Produk', 'route' => 'materials.index', 'role' => 'owner,manager,manajer_cabang'],
+                        ['title' => 'Produk Sentral (Lihat Seluruh Cabang)', 'route' => 'stock.central', 'role' => 'owner,manager,manajer_cabang'],
                     ]
                 ],
                 [
@@ -970,6 +978,9 @@
                        { name: 'Accounting & Finance', route: '{{ route('dashboard') }}', icon: 'fa-solid fa-wallet', bg: 'bg-gradient-to-tr from-emerald-600 to-teal-800', badge: {{ $pendingDailyClosingCount }} },
                       { name: 'Produksi Banner & Roll', route: '{{ route('production.banner.index') }}', icon: 'fa-solid fa-scroll', bg: 'bg-gradient-to-tr from-blue-600 to-indigo-800' },
                         { name: 'Inventory & Stock', route: '{{ route('stock.index') }}', icon: 'fa-solid fa-boxes-stacked', bg: 'bg-gradient-to-tr from-amber-500 to-orange-600' },
+                      @if(auth()->user()->isOwner() || auth()->user()->isManager())
+                      { name: 'Lihat Seluruh Cabang', route: '{{ route('stock.central') }}', icon: 'fa-solid fa-network-wired', bg: 'bg-gradient-to-tr from-violet-600 to-indigo-800' },
+                      @endif
                       { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
                        { name: 'Pengadaan & Pembelian', route: '{{ route('purchasing.plans.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700', badge: {{ $pendingPurchasingCount }} },
                       { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },
@@ -999,6 +1010,9 @@
                       { name: 'Cetak di Luar (Vendor)', route: '{{ route('outsource-orders.index') }}', icon: 'fa-solid fa-truck-ramp-box', bg: 'bg-gradient-to-tr from-violet-600 to-purple-800' },
                       { name: 'Produksi Banner & Roll', route: '{{ route('production.banner.index') }}', icon: 'fa-solid fa-scroll', bg: 'bg-gradient-to-tr from-blue-600 to-indigo-800' },
                         { name: 'Inventory & Stock', route: '{{ route('stock.index') }}', icon: 'fa-solid fa-boxes-stacked', bg: 'bg-gradient-to-tr from-amber-500 to-orange-600' },
+                      @if(auth()->user()->isOwner() || auth()->user()->isManager())
+                      { name: 'Lihat Seluruh Cabang', route: '{{ route('stock.central') }}', icon: 'fa-solid fa-network-wired', bg: 'bg-gradient-to-tr from-violet-600 to-indigo-800' },
+                      @endif
                       { name: 'Master Material', route: '{{ route('materials.index') }}', icon: 'fa-solid fa-cubes', bg: 'bg-gradient-to-tr from-cyan-600 to-blue-700' },
                        { name: 'Pengadaan & Pembelian', route: '{{ route('purchasing.plans.index') }}', icon: 'fa-solid fa-cart-shopping', bg: 'bg-gradient-to-tr from-blue-600 to-sky-700', badge: {{ $pendingPurchasingCount }} },
                       { name: 'Vendors / Supplier', route: '{{ route('suppliers.index') }}', icon: 'fa-solid fa-building', bg: 'bg-gradient-to-tr from-indigo-600 to-purple-800' },

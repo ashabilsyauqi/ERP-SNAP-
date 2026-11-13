@@ -609,4 +609,293 @@ class StockController extends Controller
             return redirect()->back()->with('success', "Waste bahan '{$material->material_name}'{$rollInfo} sebanyak {$wasteQty} {$unit} berhasil dicatat! Sisa stok telah dipotong otomatis.");
         });
     }
+
+    /**
+     * Halaman Produk Sentral & Sebaran Stok Lintas Cabang (1 Master Row per Produk).
+     * Dapat diakses oleh Owner/SuperAdmin maupun Manager untuk memantau stok terbaru seluruh cabang.
+     */
+    public function central(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user || !($user->isOwner() || $user->isSuperAdmin() || $user->isManager())) {
+            abort(403, 'Akses ditolak. Hanya Owner dan Manager yang dapat melihat stok sentral seluruh cabang.');
+        }
+
+        $branches = \App\Models\Branch::orderBy('id')->get();
+        $branchMap = $branches->keyBy('id');
+
+        $allMaterials = \App\Models\Material::with([
+                'branch',
+                'parentMaterial',
+                'rolls' => function ($q) {
+                    $q->where('status', 'active');
+                },
+            ])
+            ->whereNull('deleted_at')
+            ->orderBy('material_name')
+            ->orderBy('branch_id')
+            ->get();
+
+        // Kumpulkan opsi filter dari data aktif
+        $categories = $allMaterials->pluck('category')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        $machineTags = $allMaterials->pluck('machine_tag')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        // Konsolidasi 1 row per nama produk (case-insensitive trimmed key)
+        $grouped = [];
+        foreach ($allMaterials as $mat) {
+            $canonicalName = trim((string) $mat->material_name);
+            if ($canonicalName === '') {
+                continue;
+            }
+            $key = mb_strtolower($canonicalName);
+
+            $effectiveQty = ($mat->parent_material_id && $mat->parentMaterial)
+                ? (float) $mat->parentMaterial->stock_qty
+                : (float) $mat->stock_qty;
+
+            $activeRolls = $mat->rolls ?? collect();
+            $rollCount = $activeRolls->count();
+            $rollTotalMeters = (float) $activeRolls->sum('current_length_m');
+
+            $branchObj = $mat->branch ?? ($mat->branch_id ? $branchMap->get($mat->branch_id) : null);
+            $fullBranchName = ($branchObj && $branchObj->nama_cabang) ? $branchObj->nama_cabang : ('Cabang #' . ($mat->branch_id ?? '-'));
+            $shortBranchName = trim(str_ireplace(
+                ['Cabang ', 'Home Snaprint ', 'Snaprint ', '(Pusat)'],
+                '',
+                $fullBranchName
+            ));
+            if ($shortBranchName === '') {
+                $shortBranchName = $fullBranchName;
+            }
+
+            $stockState = $effectiveQty <= 0 ? 'empty' : ($effectiveQty <= 5 ? 'low' : 'healthy');
+            $unit = $mat->unit ?: 'Pcs';
+
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'key' => $key,
+                    'material_name' => $canonicalName,
+                    'category' => $mat->category ?: 'Umum',
+                    'unit' => $unit,
+                    'machine_tag' => $mat->machine_tag,
+                    'has_click_charge' => (bool) $mat->has_click_charge,
+                    'click_charge' => (float) ($mat->click_charge ?? 0),
+                    'print_sides' => $mat->print_sides,
+                    'is_linked_variant' => (bool) $mat->parent_material_id,
+                    'parent_name' => $mat->parentMaterial ? $mat->parentMaterial->material_name : null,
+                    'purchase_price' => (float) ($mat->purchase_price ?? 0),
+                    'retail_price' => (float) ($mat->retail_price ?? 0),
+                    'min_retail_price' => (float) ($mat->retail_price ?? 0),
+                    'max_retail_price' => (float) ($mat->retail_price ?? 0),
+                    'total_stock' => 0.0,
+                    'total_asset_value' => 0.0,
+                    'branch_count' => 0,
+                    'empty_branches' => 0,
+                    'low_branches' => 0,
+                    'healthy_branches' => 0,
+                    'has_opname_draft' => false,
+                    'total_rolls' => 0,
+                    'total_roll_meters' => 0.0,
+                    'latest_updated_at' => $mat->updated_at,
+                    'branch_stocks' => [],
+                ];
+            }
+
+            // Update harga rentang & tag jika ada baris cabang yang memiliki nilai lebih lengkap
+            $retailPrice = (float) ($mat->retail_price ?? 0);
+            if ($retailPrice > 0) {
+                if ($grouped[$key]['min_retail_price'] <= 0 || $retailPrice < $grouped[$key]['min_retail_price']) {
+                    $grouped[$key]['min_retail_price'] = $retailPrice;
+                }
+                if ($retailPrice > $grouped[$key]['max_retail_price']) {
+                    $grouped[$key]['max_retail_price'] = $retailPrice;
+                }
+            }
+            if (!$grouped[$key]['machine_tag'] && $mat->machine_tag) {
+                $grouped[$key]['machine_tag'] = $mat->machine_tag;
+            }
+            if (!$grouped[$key]['has_click_charge'] && $mat->has_click_charge) {
+                $grouped[$key]['has_click_charge'] = true;
+                $grouped[$key]['click_charge'] = (float) ($mat->click_charge ?? 0);
+            }
+            if ($mat->purchase_price > 0 && $grouped[$key]['purchase_price'] <= 0) {
+                $grouped[$key]['purchase_price'] = (float) $mat->purchase_price;
+            }
+            if ($mat->updated_at && (!$grouped[$key]['latest_updated_at'] || $mat->updated_at->gt($grouped[$key]['latest_updated_at']))) {
+                $grouped[$key]['latest_updated_at'] = $mat->updated_at;
+            }
+            if ($mat->opname_draft_qty !== null) {
+                $grouped[$key]['has_opname_draft'] = true;
+            }
+
+            $grouped[$key]['total_stock'] += $effectiveQty;
+            $grouped[$key]['total_asset_value'] += max(0, $effectiveQty) * (float) ($mat->purchase_price ?? 0);
+            $grouped[$key]['branch_count']++;
+            $grouped[$key]['total_rolls'] += $rollCount;
+            $grouped[$key]['total_roll_meters'] += $rollTotalMeters;
+
+            if ($stockState === 'empty') {
+                $grouped[$key]['empty_branches']++;
+            } elseif ($stockState === 'low') {
+                $grouped[$key]['low_branches']++;
+            } else {
+                $grouped[$key]['healthy_branches']++;
+            }
+
+            $grouped[$key]['branch_stocks'][] = [
+                'material_id' => $mat->id,
+                'branch_id' => $mat->branch_id,
+                'branch_name' => $fullBranchName,
+                'short_name' => $shortBranchName,
+                'stock_qty' => $effectiveQty,
+                'unit' => $unit,
+                'status' => $stockState,
+                'retail_price' => $retailPrice,
+                'purchase_price' => (float) ($mat->purchase_price ?? 0),
+                'roll_count' => $rollCount,
+                'roll_meters' => $rollTotalMeters,
+                'opname_draft_qty' => $mat->opname_draft_qty,
+                'is_linked' => (bool) $mat->parent_material_id,
+                'updated_at' => $mat->updated_at,
+            ];
+        }
+
+        // Urutkan label cabang di dalam setiap produk berdasar branch_id
+        foreach ($grouped as &$item) {
+            usort($item['branch_stocks'], function ($a, $b) {
+                return ((int) $a['branch_id']) <=> ((int) $b['branch_id']);
+            });
+        }
+        unset($item);
+
+        $masterCollection = collect(array_values($grouped));
+
+        // Hitung KPI Sentral Global sebelum filter tabel
+        $summary = [
+            'total_master_products' => $masterCollection->count(),
+            'total_branches' => $branches->count(),
+            'total_combined_stock' => $masterCollection->sum('total_stock'),
+            'total_asset_value' => $masterCollection->sum('total_asset_value'),
+            'products_with_empty_branch' => $masterCollection->where('empty_branches', '>', 0)->count(),
+            'products_with_low_branch' => $masterCollection->where('low_branches', '>', 0)->count(),
+        ];
+
+        // Terapkan filter
+        $search = trim((string) $request->input('search', ''));
+        $selectedCategory = $request->input('category', 'all');
+        $selectedMachine = $request->input('machine_tag', 'all');
+        $selectedBranchId = $request->input('branch_id', 'all');
+        $selectedStatus = $request->input('stock_status', 'all');
+        $sort = $request->input('sort', 'name_asc');
+
+        $filtered = $masterCollection->filter(function ($item) use ($search, $selectedCategory, $selectedMachine, $selectedBranchId, $selectedStatus) {
+            if ($search !== '') {
+                $needle = mb_strtolower($search);
+                $haystack = mb_strtolower(
+                    $item['material_name'] . ' ' .
+                    $item['category'] . ' ' .
+                    ($item['machine_tag'] ?? '') . ' ' .
+                    implode(' ', array_column($item['branch_stocks'], 'branch_name'))
+                );
+                if (!str_contains($haystack, $needle)) {
+                    return false;
+                }
+            }
+
+            if ($selectedCategory !== 'all' && $selectedCategory !== '' && $item['category'] !== $selectedCategory) {
+                return false;
+            }
+
+            if ($selectedMachine !== 'all' && $selectedMachine !== '') {
+                if ($selectedMachine === 'km_only') {
+                    if (stripos((string) $item['machine_tag'], 'KM') === false && !$item['has_click_charge']) {
+                        return false;
+                    }
+                } elseif ($selectedMachine === 'non_km') {
+                    if (stripos((string) $item['machine_tag'], 'KM') !== false || $item['has_click_charge']) {
+                        return false;
+                    }
+                } elseif ($item['machine_tag'] !== $selectedMachine) {
+                    return false;
+                }
+            }
+
+            if ($selectedBranchId !== 'all' && $selectedBranchId !== '') {
+                $hasBranch = collect($item['branch_stocks'])->contains(function ($bs) use ($selectedBranchId) {
+                    return (string) $bs['branch_id'] === (string) $selectedBranchId;
+                });
+                if (!$hasBranch) {
+                    return false;
+                }
+            }
+
+            if ($selectedStatus === 'empty' && $item['empty_branches'] <= 0) {
+                return false;
+            } elseif ($selectedStatus === 'low' && $item['low_branches'] <= 0) {
+                return false;
+            } elseif ($selectedStatus === 'available' && $item['total_stock'] <= 0) {
+                return false;
+            }
+
+            return true;
+        });
+
+        // Sorting
+        $filtered = match ($sort) {
+            'stock_desc' => $filtered->sortByDesc('total_stock'),
+            'stock_asc' => $filtered->sortBy('total_stock'),
+            'updated_desc' => $filtered->sortByDesc(fn ($item) => $item['latest_updated_at'] ? $item['latest_updated_at']->timestamp : 0),
+            default => $filtered->sortBy(fn ($item) => mb_strtolower($item['material_name'])),
+        };
+
+        $filtered = $filtered->values();
+
+        // Pagination (default 250 agar seluruh master produk dapat langsung difilter lewat Search bar atas)
+        $perPage = (int) $request->input('per_page', 250);
+        if ($perPage < 25 || $perPage > 500) {
+            $perPage = 250;
+        }
+        $currentPage = \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage();
+        $pageItems = $filtered->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        $masterProducts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $pageItems,
+            $filtered->count(),
+            $perPage,
+            $currentPage,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
+
+        $canViewPurchasePrice = $user->isOwner() || $user->isSuperAdmin();
+        $isOwnerOrSuper = $user->isOwner() || $user->isSuperAdmin();
+
+        return view('stock.central', compact(
+            'masterProducts',
+            'branches',
+            'categories',
+            'machineTags',
+            'summary',
+            'search',
+            'selectedCategory',
+            'selectedMachine',
+            'selectedBranchId',
+            'selectedStatus',
+            'sort',
+            'perPage',
+            'canViewPurchasePrice',
+            'isOwnerOrSuper'
+        ));
+    }
 }
